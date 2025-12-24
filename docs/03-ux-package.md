@@ -7,14 +7,6 @@ This document defines the MVP tile catalog explaining purpose, data inputs, disp
 
 ## 1) MVP tile catalog
 
-
-## Onboarding update (v0.2)
-
-- City-based selection via a search-first City Picker (no map in MVP).
-- Baseline units are chosen once on the Living step.
-- Destination units default are inferred from the destination country, with an optional override.
-- IANA time zones are derived from the chosen city record and shown under Advanced.
-
 ### Tile anatomy (shared)
 Each tile uses a consistent hierarchy:
 - **Title** (small)
@@ -37,6 +29,7 @@ Notes
 - “Home” means home system for the active Place.
 - Weather and currency are cached network-backed tiles.
 - Conversions and time zone logic work offline.
+- Clock preference (12-hour / 24-hour) is stored per Place and controls time formatting anywhere a clock appears.
 
 ### 2.1 Temperature
 Purpose: Make weather feel intuitive in both systems.
@@ -211,15 +204,17 @@ Purpose: Kill mental math for time differences.
 
 Inputs
 - Offline: time zone IDs from Place
+- Offline: clock preference from Place (12-hour or 24-hour)
 - System clock
 
 Display rules
 - Show both times with clear labels: “Home” and “Local”
+- Format times using the Place clock preference (12/24)
 - Include abbreviations when possible (MST, WET, etc.)
 - If DST changes affect offsets, show it as a normal result
 
 Rounding
-- None (use system time formatting)
+- None
 
 Learning aid
 - Human mode: “Local is +7 hours” (or similar) as a small line.
@@ -229,7 +224,6 @@ Accessibility
 - Label: “Time zones. Home 9:14 AM Mountain Time. Local 4:14 PM Western European Time.”
 
 ---
-
 ### 2.9 Currency quick view + mental math
 Purpose: Fast mental conversions without pretending to be financial guidance.
 
@@ -284,6 +278,15 @@ Widget states
 
 ## 4) Place badge defaults (tile group presets)
 
+These presets describe which tiles are ON by default for a Place badge.
+
+MVP slice #1 note
+- The first-run wizard does not ask the user to pick a badge.
+- Internal mapping for the two first-run Places:
+  - Home Base behaves like **Living**
+  - Destination behaves like **Visiting**
+- Badge selection can be exposed later in the Place editor without changing these defaults.
+
 Living (recommended default)
 - Weather: ON
 - Time zones: ON
@@ -307,7 +310,6 @@ Other
 - Everything else OFF by default
 
 ---
-
 ## 5) Learning-aid pattern library (MVP)
 
 Modes

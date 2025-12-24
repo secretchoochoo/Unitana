@@ -8,7 +8,7 @@ This document defines the MVP user flows and screen-to-screen navigation for Uni
 ## 1) Scope and principles
 
 ### MVP scope covered here
-- First-run setup (forced creation of exactly one default Place)
+- First-run setup (forced creation of Home Base + Destination; Home Base becomes the default Place)
 - Dashboard (the one-screen reason to open the app)
 - Place switcher and Place editor
 - Settings (learning mode, privacy, accessibility, subscription, widgets)
@@ -54,7 +54,7 @@ Naming convention: `S#` for screens, `M#` for modals/sheets.
 
 ### Screens (primary)
 - **S0** App Launch / Routing (decides First Run vs Dashboard)
-- **S1** First Run: Create Default Place (wizard)
+- **S1** First Run: Create Home Base + Destination (wizard)
 - **S2** Dashboard (Place-aware)
 - **S3** Place Switcher (sheet/modal)
 - **S4** Place Editor (create/edit)
@@ -98,60 +98,54 @@ Naming convention: `S#` for screens, `M#` for modals/sheets.
 
 ## 6) Core flows (Mermaid)
 
-### 6.1 App launch and first-run routing (v0.2 city-based)
-
+### 6.1 App launch and first-run routing
 ```mermaid
 flowchart TD
-  A["App Launch"] --> B{"Has default Place?"}
+  A["App Launch"] --> B{"Initial setup complete?"}
+  B -- "No" --> C["S1 First Run: Create Home Base + Destination"]
+  B -- "Yes" --> D["S2 Dashboard"]
 
-  B -- "No" --> W["S1 Welcome"]
-  W --> L["S1.2 Create Living (Baseline)"]
-  L --> LCity["Pick baseline city (City Picker)"]
-  LCity --> LUnits["Pick baseline units (Imperial/Metric)"]
-  LUnits --> V["S1.3 Create Visiting (Destination)"]
-  V --> VCity["Pick destination city (City Picker)"]
-  VCity --> VUnits["Confirm destination units (default inferred, editable)"]
-  VUnits --> Save["Persist Places locally + set active = Living"]
-  Save --> D["S2 Dashboard"]
-
-  B -- "Yes" --> D
+  C --> E{"Confirmed?"}
+  E -- "No" --> C
+  E -- "Yes" --> F["Persist Places locally"]
+  F --> D
 ```
 
 Notes
-- City Picker is search-first; no map in MVP.
-- IANA time zones are derived from the chosen city record and shown in Advanced (collapsed).
-- Destination units default are inferred from country; user can override.
+- First run is not skippable. Setup is complete only after the user confirms both a Home Base and a Destination.
+- The app should treat Home Base as the default Place on first entry to the Dashboard.
 
-### 6.2 First-run: Create Default Place (wizard)
+---
+### 6.2 First-run: Create Home Base + Destination (wizard)
 ```mermaid
 flowchart TD
-  A["S1 First Run Start"] --> B["Step 1: Name Place + Badge"]
-  B --> C["Step 2: Home system + Destination system"]
-  C --> D["Step 3: Time zones (Home + Local)"]
-  D --> E["Step 4: Enable tile group defaults"]
-  E --> F["Step 5: Weather city + Currency"]
-  F --> G["Review + Create"]
-  G --> H["Create Default Place + Enter Dashboard"]
+  A["S1 First Run Start"] --> B["Step 1: Create Home Base"]
+  B --> C["Step 2: Create Destination"]
+  C --> D["Step 3: Summary + Confirm"]
+  D --> E["Persist Places + Enter Dashboard"]
 ```
 
 Wizard step details
-- Step 1: Name + badge/type (Living, Visiting, Other)
-  - Helper copy: “You can create more Places later.”
-- Step 2: Home system and destination system
-  - Example: US customary vs Metric
-- Step 3: Time zones
-  - Default: Home + Local
-- Step 4: Tile group defaults
-  - Living: Weather, Time, Distance/Speed, Weight, Currency
-  - Visiting: Weather, Time, Currency, Distance/Speed
-  - Other: Minimal starter set
-- Step 5: Context (locked defaults)
-  - Weather location: **pick a city/region** (no current-location toggle in MVP)
-  - Currency: choose base and local currencies
-    - If badge is **Visiting**, currency is enabled by default
+- Step 1: Create Home Base
+  - Fields: Name, City, Unit System, Clock (12-hour or 24-hour)
+  - Helper copy: “Your baseline setup. These are the units you’re used to.”
+- Step 2: Create Destination
+  - Fields: City, Unit System, Clock (12-hour or 24-hour)
+  - Defaults: binary choices default to the opposite of Home Base (Unit System, 12/24)
+  - Helper copy: “This is where you practice translating less and recognizing more.”
+- Step 3: Summary
+  - Shows both configs clearly
+  - Actions:
+    - Confirm: create two Places and set Home Base as the default Place
+    - Reset: wipe draft and stored data, return to Step 1
+    - Edit Home Base or Destination: jump back in one tap
+
+Notes
+- First run is not skippable. User must create a Home Base and a Destination.
+- Place badges (Living, Visiting, Other) are not chosen in the wizard for MVP slice #1.
+  - Internal mapping: Home Base behaves like Living; Destination behaves like Visiting, until the Place editor exposes badge selection.
 
 ---
-
 ### 6.3 Dashboard flow (the home base)
 ```mermaid
 flowchart TD
@@ -214,7 +208,7 @@ flowchart TD
 ```
 
 Rules
-- There is always exactly one default Place.
+- There is always exactly one default Place (typically Home Base).
 - Default Place cannot be deleted. It can be changed.
 
 ### 7.2 Place editor (create/edit)

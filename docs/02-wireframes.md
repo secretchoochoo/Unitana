@@ -108,146 +108,117 @@ Design intent: a calm, trustworthy dashboard that works offline, avoids clutter,
 
 ---
 
-## S1 - First Run Wizard: Baseline + Visiting (forced)
+## S1 - First Run Wizard: Create Home Base + Destination (forced)
 
-### Purpose
-Create exactly one default Place (type: **Living**) on first run, and optionally a second Place (type: **Visiting**) to make the dashboard immediately useful for travel or relocation. The wizard optimizes for low friction and avoids redundant unit selectors.
+**Purpose:** Create two Places (Home Base + Destination). The wizard is not skippable.
 
-### Key UX decisions (v0.2)
-- **City-based selection** (search-first). The user picks a city; Unitana derives:
-  - IANA time zone (from the city record)
-  - a default unit system (from the country record), with an override in "Advanced"
-- **Ask for baseline units once**. Do not show both "home" and "local" unit selectors on the same screen.
-- **Advanced stays optional**. Most users never need to edit IANA strings or unit systems.
+**Steps (3)**
+1) Create Home Base
+2) Create Destination
+3) Summary + Confirm
 
-### S1.1 Welcome / start
-- Content: one sentence on what happens next.
-- Action: "Get started" -> Baseline setup.
+**Shared layout regions**
+- Progress indicator (Step X of 3)
+- Title + helper copy
+- Primary action button (Next / Confirm)
+- Secondary action (Back, except Step 1)
+- Optional destructive action (Reset) on Summary
 
+---
+
+### S1.1 - Step 1: Create Home Base
 ```
 +--------------------------------------------------+
-| Unitana                                           |
+| Step 1 of 3                                      |
+| Create Home Base                                 |
+| Your baseline setup. These are the units you’re  |
+| used to.                                         |
 |                                                  |
-| A decoder ring for living in two systems.         |
+| Name                                             |
+| [ Home (editable)                               ]|
 |                                                  |
-| We'll set up:                                     |
-|  1) Living (your baseline)                        |
-|  2) Visiting (where you're going)                 |
+| City                                             |
+| [ Search city...                                ]|
+|  - Denver, US (America/Denver)                   |
+|  - ...                                           |
 |                                                  |
-| [Get started]                                     |
-+--------------------------------------------------+
-```
-
-### S1.2 Create Living Place (Baseline)
-Fields are shown in this order.
-
-1) Place name (default "Living")
-2) Baseline city (picker, required)
-3) Baseline units (segmented: Imperial / Metric)
-4) Advanced (collapsed by default):
-   - Baseline time zone (read-only IANA derived from city)
-   - Edit time zone manually (optional, power users only)
-
-Interaction notes
-- Tapping the city row opens the City Picker (S1.4).
-- Baseline units default should be inferred from device locale (US -> Imperial, otherwise Metric) but remain user-editable.
-
-```
-+--------------------------------------------------+
-| Create Living Place                     [Prefill]|
-| Your default reference setup.                    |
+| Unit System                                      |
+| ( ) US customary     ( ) Metric                  |
 |                                                  |
-| Place name                                       |
-| [ Living                                    ]    |
+| Clock                                            |
+| ( ) 12-hour         ( ) 24-hour                  |
 |                                                  |
-| Baseline city                                    |
-| [ Select a city...                           > ] |
-|                                                  |
-| Baseline units                                   |
-| [ Imperial ] [ Metric ]                          |
-|                                                  |
-| Advanced  (collapsed)                            |
-|                                                  |
-|                                       [Next >]   |
+|                                    [ Next ]      |
 +--------------------------------------------------+
 ```
 
-### S1.3 Create Visiting Place (Destination)
-Fields are shown in this order.
+Notes
+- “City” is a search picker. No map picker in MVP.
+- No “Local city” on this screen.
+- No Advanced dropdown on this screen.
 
-1) Place name (default "Visiting")
-2) Destination city (picker, required)
-3) Destination units (default inferred; editable)
-4) Advanced (collapsed):
-   - Destination time zone (read-only IANA derived from city)
-   - Edit time zone manually (optional)
+---
 
-Context banner (top)
-- Show a short summary of the baseline selected on the prior step:
-  - "Baseline: Denver, Imperial" (example)
-
+### S1.2 - Step 2: Create Destination
 ```
 +--------------------------------------------------+
-| Create Visiting Place                    [Prefill]|
-| A second Place for travel or comparison.         |
-| Baseline: Denver, Imperial                       |
+| Step 2 of 3                                      |
+| Create Destination                               |
+| This is where you practice translating less and  |
+| recognizing more.                                |
 |                                                  |
-| Place name                                       |
-| [ Visiting                                  ]    |
+| City                                             |
+| [ Search city...                                ]|
+|  - Lisbon, PT (Europe/Lisbon)                    |
+|  - ...                                           |
 |                                                  |
-| Destination city                                 |
-| [ Select a city...                           > ] |
+| Unit System                                      |
+| ( ) Metric          ( ) US customary             |
+|  (defaults to opposite of Home Base)             |
 |                                                  |
-| Destination units                                |
-| [ Imperial ] [ Metric ]                          |
+| Clock                                            |
+| ( ) 24-hour         ( ) 12-hour                  |
+|  (defaults to opposite of Home Base)             |
 |                                                  |
-| Advanced  (collapsed)                            |
-|                                                  |
-| [< Back]                               [Finish]  |
+| [ Back ]                         [ Next ]        |
 +--------------------------------------------------+
 ```
 
-### S1.4 City Picker (search-first)
-This is a modal bottom sheet, optimized for one-handed use and fast selection.
+Notes
+- Step 2 defaults are the opposite of Home Base for binary choices (Unit System, 12/24).
+- Destination does not ask for a name in MVP slice #1.
 
-Sections
-- Search input (autofocus)
-- Suggested (optional, later): device city, recent picks
-- All cities (filtered list)
+---
 
-Rules
-- Show "City, Country" as the primary label.
-- Optionally show time zone (small, secondary) for transparency.
-
+### S1.3 - Step 3: Summary + Confirm
 ```
 +--------------------------------------------------+
-| Select a city                                    |
-| [ Search city or country...                  ]   |
+| Step 3 of 3                                      |
+| Summary                                          |
+| Double-check before you enter the dashboard.     |
 |                                                  |
-| Recent                                            |
-|  - Lisbon, PT                    Europe/Lisbon   |
+| Home Base                                        |
+|  Name: Home                                      |
+|  City: Denver, US                                |
+|  Unit System: US customary                        |
+|  Clock: 12-hour                                  |
+|  [ Edit Home Base ]                               |
 |                                                  |
-| Results                                           |
-|  - Denver, US                    America/Denver  |
-|  - Lisbon, PT                    Europe/Lisbon   |
-|  - London, GB                    Europe/London   |
+| Destination                                      |
+|  City: Lisbon, PT                                |
+|  Unit System: Metric                              |
+|  Clock: 24-hour                                  |
+|  [ Edit Destination ]                             |
 |                                                  |
+| [ Reset ]                [ Back ]   [ Confirm ]  |
 +--------------------------------------------------+
 ```
 
-### Completion behavior
-- On Finish:
-  - Persist both Places locally.
-  - Set **Living** as the active Place.
-  - Navigate to Dashboard.
+Notes
+- Confirm persists both Places and enters the Dashboard.
+- Reset clears any stored onboarding state and returns to Step 1.
 
-### Error states
-- If city is missing: inline error under the city row, and disable Next/Finish.
-
-### Accessibility notes
-- City rows read as: "Denver, United States, button".
-- Segmented controls expose selected state to VoiceOver/TalkBack.
-
+---
 ## S2 - Dashboard (the one-screen reason to open the app)
 
 **Purpose:** Calm overview. Minimal taps. Clear freshness.
