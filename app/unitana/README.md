@@ -1,4 +1,4 @@
-# unitana
+# Unitana
 
 A new Flutter project.
 
