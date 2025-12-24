@@ -27,8 +27,14 @@ class UnitanaStorage {
     return prefs.getString(_defaultPlaceIdKey);
   }
 
-  Future<void> saveDefaultPlaceId(String id) async {
+  /// Save or clear the default place id.
+  /// Passing null removes the stored key entirely.
+  Future<void> saveDefaultPlaceId(String? id) async {
     final prefs = await SharedPreferences.getInstance();
+    if (id == null) {
+      await prefs.remove(_defaultPlaceIdKey);
+      return;
+    }
     await prefs.setString(_defaultPlaceIdKey, id);
   }
 
@@ -38,5 +44,23 @@ class UnitanaStorage {
     if (raw == null) return null;
     return DateTime.tryParse(raw);
   }
-}
 
+  /// Save or clear the "last updated" timestamp.
+  /// Passing null removes the stored key entirely.
+  Future<void> saveLastUpdated(DateTime? dt) async {
+    final prefs = await SharedPreferences.getInstance();
+    if (dt == null) {
+      await prefs.remove(_lastUpdatedKey);
+      return;
+    }
+    await prefs.setString(_lastUpdatedKey, dt.toIso8601String());
+  }
+
+  /// Wipe all local persisted app state (MVP local-only).
+  Future<void> clearAll() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_placesKey);
+    await prefs.remove(_defaultPlaceIdKey);
+    await prefs.remove(_lastUpdatedKey);
+  }
+}

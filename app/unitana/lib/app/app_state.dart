@@ -36,5 +36,13 @@ class UnitanaAppState {
     await storage.saveDefaultPlaceId(newDefaultPlaceId);
     lastUpdated = await storage.loadLastUpdated();
   }
-}
 
+  /// Dev helper: wipe all local state so onboarding can be re-run.
+  /// Useful while iterating during MVP.
+  Future<void> resetAll() async {
+    places = [];
+    defaultPlaceId = null;
+    lastUpdated = null;
+    await storage.clearAll();
+  }
+}

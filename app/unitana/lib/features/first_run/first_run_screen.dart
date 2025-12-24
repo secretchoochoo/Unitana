@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../app/app_state.dart';
 import '../../models/place.dart';
+import '../../widgets/city_picker.dart';
+import '../../data/cities.dart';
 import '../dashboard/dashboard_screen.dart';
 
 enum UnitSystem { imperial, metric }
@@ -18,16 +20,16 @@ class _FirstRunScreenState extends State<FirstRunScreen> {
 
   // Living
   final livingNameCtrl = TextEditingController(text: 'Living');
-  final livingHomeTzCtrl = TextEditingController(text: 'America/Denver');
-  final livingLocalTzCtrl = TextEditingController(text: 'Europe/Lisbon');
+  City? livingHomeCity = const City(name: 'Denver', country: 'US', timeZone: 'America/Denver');
+  City? livingLocalCity = const City(name: 'Lisbon', country: 'PT', timeZone: 'Europe/Lisbon');
   UnitSystem livingHomeSystem = UnitSystem.imperial;
-  UnitSystem livingLocalSystem = UnitSystem.metric;
+  UnitSystem livingLocalSystem = UnitSystem.metric; // advanced only
 
   // Visiting
   final visitingNameCtrl = TextEditingController(text: 'Visiting');
-  final visitingHomeTzCtrl = TextEditingController(); // will inherit living
-  final visitingLocalTzCtrl = TextEditingController(text: 'Europe/Lisbon');
-  UnitSystem visitingHomeSystem = UnitSystem.imperial; // will inherit living
+  City? visitingHomeCity; // inherits living home
+  City? visitingLocalCity = const City(name: 'Lisbon', country: 'PT', timeZone: 'Europe/Lisbon');
+  UnitSystem visitingHomeSystem = UnitSystem.imperial; // advanced only
   UnitSystem visitingLocalSystem = UnitSystem.metric;
 
   @override
@@ -37,38 +39,27 @@ class _FirstRunScreenState extends State<FirstRunScreen> {
   }
 
   void _syncVisitingFromLiving() {
-    visitingHomeTzCtrl.text = livingHomeTzCtrl.text;
+    visitingHomeCity = livingHomeCity;
     visitingHomeSystem = livingHomeSystem;
   }
 
   @override
   void dispose() {
     livingNameCtrl.dispose();
-    livingHomeTzCtrl.dispose();
-    livingLocalTzCtrl.dispose();
     visitingNameCtrl.dispose();
-    visitingHomeTzCtrl.dispose();
-    visitingLocalTzCtrl.dispose();
     super.dispose();
-  }
-
-  bool _looksLikeIanaTz(String s) {
-    // lightweight check: "Region/City"
-    if (!s.contains('/')) return false;
-    if (s.length < 3) return false;
-    return true;
   }
 
   String? _validateStep() {
     if (step == 0) {
       if (livingNameCtrl.text.trim().isEmpty) return 'Give your Living Place a name.';
-      if (!_looksLikeIanaTz(livingHomeTzCtrl.text.trim())) return 'Living home time zone should look like America/Denver.';
-      if (!_looksLikeIanaTz(livingLocalTzCtrl.text.trim())) return 'Living local time zone should look like Europe/Lisbon.';
+      if (livingHomeCity == null) return 'Pick a Home city for Living.';
+      if (livingLocalCity == null) return 'Pick a Local city for Living.';
       return null;
     } else {
       if (visitingNameCtrl.text.trim().isEmpty) return 'Give your Visiting Place a name.';
-      if (!_looksLikeIanaTz(visitingHomeTzCtrl.text.trim())) return 'Visiting home time zone should look like America/Denver.';
-      if (!_looksLikeIanaTz(visitingLocalTzCtrl.text.trim())) return 'Visiting local time zone should look like Europe/Lisbon.';
+      if (visitingHomeCity == null) return 'Pick a Home city for Visiting.';
+      if (visitingLocalCity == null) return 'Pick a Local city for Visiting.';
       return null;
     }
   }
@@ -84,22 +75,19 @@ class _FirstRunScreenState extends State<FirstRunScreen> {
       setState(() {
         step = 1;
         _syncVisitingFromLiving();
-        // Helpful: visiting local tz defaults to living local tz unless user changes it
-        if (visitingLocalTzCtrl.text.trim().isEmpty) {
-          visitingLocalTzCtrl.text = livingLocalTzCtrl.text.trim();
-        }
-        visitingLocalSystem = livingLocalSystem;
+        // Default Visiting local city to Living local if user already picked one
+        visitingLocalCity = visitingLocalCity ?? livingLocalCity;
+        visitingLocalSystem = visitingLocalSystem; // keep
       });
       return;
     }
 
-    // Step 1: Persist both places
     final living = Place(
       id: 'living_v1',
       type: PlaceType.living,
       name: livingNameCtrl.text.trim(),
-      homeTimeZone: livingHomeTzCtrl.text.trim(),
-      localTimeZone: livingLocalTzCtrl.text.trim(),
+      homeTimeZone: livingHomeCity!.timeZone,
+      localTimeZone: livingLocalCity!.timeZone,
       homeSystem: livingHomeSystem.name,
       localSystem: livingLocalSystem.name,
     );
@@ -108,8 +96,8 @@ class _FirstRunScreenState extends State<FirstRunScreen> {
       id: 'visiting_v1',
       type: PlaceType.visiting,
       name: visitingNameCtrl.text.trim(),
-      homeTimeZone: visitingHomeTzCtrl.text.trim(),
-      localTimeZone: visitingLocalTzCtrl.text.trim(),
+      homeTimeZone: visitingHomeCity!.timeZone,
+      localTimeZone: visitingLocalCity!.timeZone,
       homeSystem: visitingHomeSystem.name,
       localSystem: visitingLocalSystem.name,
     );
@@ -127,15 +115,15 @@ class _FirstRunScreenState extends State<FirstRunScreen> {
 
   void _prefillExample() {
     setState(() {
-      livingNameCtrl.text = 'Living (US)';
-      livingHomeTzCtrl.text = 'America/Denver';
-      livingLocalTzCtrl.text = 'Europe/Lisbon';
+      livingNameCtrl.text = 'Living';
+      livingHomeCity = const City(name: 'Denver', country: 'US', timeZone: 'America/Denver');
+      livingLocalCity = const City(name: 'Lisbon', country: 'PT', timeZone: 'Europe/Lisbon');
       livingHomeSystem = UnitSystem.imperial;
       livingLocalSystem = UnitSystem.metric;
 
-      visitingNameCtrl.text = 'Visiting (Portugal)';
-      visitingHomeTzCtrl.text = livingHomeTzCtrl.text;
-      visitingLocalTzCtrl.text = 'Europe/Lisbon';
+      visitingNameCtrl.text = 'Visiting';
+      visitingHomeCity = livingHomeCity;
+      visitingLocalCity = const City(name: 'Porto', country: 'PT', timeZone: 'Europe/Lisbon');
       visitingHomeSystem = livingHomeSystem;
       visitingLocalSystem = UnitSystem.metric;
     });
@@ -152,20 +140,27 @@ class _FirstRunScreenState extends State<FirstRunScreen> {
     );
   }
 
+  Widget _cityRow({
+    required String label,
+    required City? value,
+    required VoidCallback onTap,
+  }) {
+    return ListTile(
+      contentPadding: EdgeInsets.zero,
+      title: Text(label),
+      subtitle: Text(value == null ? 'Choose a city' : '${value.label}  •  ${value.timeZone}'),
+      trailing: const Icon(Icons.chevron_right),
+      onTap: onTap,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isLiving = step == 0;
     final title = isLiving ? 'Create Living Place' : 'Create Visiting Place';
     final subtitle = isLiving
-        ? 'Your default reference setup. You can change this later.'
+        ? 'This is your default baseline setup. You can change it later.'
         : 'A second Place for travel or comparison.';
-
-    final nameCtrl = isLiving ? livingNameCtrl : visitingNameCtrl;
-    final homeTzCtrl = isLiving ? livingHomeTzCtrl : visitingHomeTzCtrl;
-    final localTzCtrl = isLiving ? livingLocalTzCtrl : visitingLocalTzCtrl;
-
-    final homeSystem = isLiving ? livingHomeSystem : visitingHomeSystem;
-    final localSystem = isLiving ? livingLocalSystem : visitingLocalSystem;
 
     return Scaffold(
       appBar: AppBar(
@@ -184,59 +179,107 @@ class _FirstRunScreenState extends State<FirstRunScreen> {
           const SizedBox(height: 16),
 
           TextField(
-            controller: nameCtrl,
+            controller: isLiving ? livingNameCtrl : visitingNameCtrl,
             decoration: const InputDecoration(
               labelText: 'Place name',
               hintText: 'Living',
             ),
           ),
-          const SizedBox(height: 12),
-
-          TextField(
-            controller: homeTzCtrl,
-            decoration: const InputDecoration(
-              labelText: 'Home time zone (IANA)',
-              hintText: 'America/Denver',
-            ),
-          ),
-          const SizedBox(height: 12),
-
-          TextField(
-            controller: localTzCtrl,
-            decoration: const InputDecoration(
-              labelText: 'Local time zone (IANA)',
-              hintText: 'Europe/Lisbon',
-            ),
-          ),
-          const SizedBox(height: 20),
-
-          const Text('Home unit system'),
-          const SizedBox(height: 8),
-          _segmentedUnit(homeSystem, (v) {
-            setState(() {
-              if (isLiving) {
-                livingHomeSystem = v;
-                _syncVisitingFromLiving();
-              } else {
-                visitingHomeSystem = v;
-              }
-            });
-          }),
           const SizedBox(height: 16),
 
-          const Text('Local unit system'),
-          const SizedBox(height: 8),
-          _segmentedUnit(localSystem, (v) {
-            setState(() {
-              if (isLiving) {
-                livingLocalSystem = v;
-              } else {
-                visitingLocalSystem = v;
-              }
-            });
-          }),
+          // City selection (replaces manual IANA entry)
+          _cityRow(
+            label: 'Home city',
+            value: isLiving ? livingHomeCity : visitingHomeCity,
+            onTap: () async {
+              final picked = await showCityPicker(context, initial: isLiving ? livingHomeCity : visitingHomeCity);
+              if (picked == null) return;
+              setState(() {
+                if (isLiving) {
+                  livingHomeCity = picked;
+                  _syncVisitingFromLiving();
+                } else {
+                  visitingHomeCity = picked;
+                }
+              });
+            },
+          ),
+          _cityRow(
+            label: 'Local city',
+            value: isLiving ? livingLocalCity : visitingLocalCity,
+            onTap: () async {
+              final picked = await showCityPicker(context, initial: isLiving ? livingLocalCity : visitingLocalCity);
+              if (picked == null) return;
+              setState(() {
+                if (isLiving) {
+                  livingLocalCity = picked;
+                } else {
+                  visitingLocalCity = picked;
+                }
+              });
+            },
+          ),
 
-          const SizedBox(height: 28),
+          const SizedBox(height: 16),
+
+          // Simplified unit selection:
+          // Living: show Home units only (Local units in Advanced)
+          // Visiting: show Local units only (Home units in Advanced)
+          if (isLiving) ...[
+            const Text('Home unit system'),
+            const SizedBox(height: 8),
+            _segmentedUnit(livingHomeSystem, (v) {
+              setState(() {
+                livingHomeSystem = v;
+                _syncVisitingFromLiving();
+              });
+            }),
+          ] else ...[
+            const Text('Local unit system'),
+            const SizedBox(height: 8),
+            _segmentedUnit(visitingLocalSystem, (v) {
+              setState(() => visitingLocalSystem = v);
+            }),
+          ],
+
+          const SizedBox(height: 20),
+
+          ExpansionTile(
+            title: const Text('Advanced'),
+            childrenPadding: const EdgeInsets.only(top: 8, bottom: 8),
+            children: [
+              if (isLiving) ...[
+                const Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text('Local unit system (optional)'),
+                ),
+                const SizedBox(height: 8),
+                _segmentedUnit(livingLocalSystem, (v) => setState(() => livingLocalSystem = v)),
+                const SizedBox(height: 16),
+              ] else ...[
+                const Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text('Home unit system (optional)'),
+                ),
+                const SizedBox(height: 8),
+                _segmentedUnit(visitingHomeSystem, (v) => setState(() => visitingHomeSystem = v)),
+                const SizedBox(height: 16),
+              ],
+
+              // Show the IANA time zones for transparency
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  isLiving
+                      ? 'Living time zones: ${livingHomeCity?.timeZone} → ${livingLocalCity?.timeZone}'
+                      : 'Visiting time zones: ${visitingHomeCity?.timeZone} → ${visitingLocalCity?.timeZone}',
+                ),
+              ),
+              const SizedBox(height: 8),
+            ],
+          ),
+
+          const SizedBox(height: 24),
 
           Row(
             children: [
