@@ -1,4 +1,4 @@
-# Unitana — Wireframes (MVP, Annotated)
+# Unitana - Wireframes (MVP, Annotated)
 File: `docs/02-wireframes.md`
 
 This is an implementation-ready wireframe package for Unitana’s MVP. It translates `01-flows.md` into concrete screens, layout regions, and interaction notes.
@@ -84,7 +84,7 @@ Design intent: a calm, trustworthy dashboard that works offline, avoids clutter,
 
 ## 2) Wireframe set (screen-by-screen)
 
-### S0 — App Launch / Routing
+### S0 - App Launch / Routing
 **Purpose:** Decide whether to show First Run or Dashboard.
 
 **Layout regions**
@@ -108,121 +108,147 @@ Design intent: a calm, trustworthy dashboard that works offline, avoids clutter,
 
 ---
 
-## S1 — First Run Wizard: Create Default Place (forced)
+## S1 - First Run Wizard: Baseline + Visiting (forced)
 
-**Purpose:** Create exactly one default Place. The wizard is not skippable.
+### Purpose
+Create exactly one default Place (type: **Living**) on first run, and optionally a second Place (type: **Visiting**) to make the dashboard immediately useful for travel or relocation. The wizard optimizes for low friction and avoids redundant unit selectors.
 
-**Steps (5)**
-1) Name + badge
-2) Systems (home/destination)
-3) Time zones (home/local)
-4) Tile groups (defaults by badge)
-5) Weather city + Currency (currency auto-on for Visiting)
+### Key UX decisions (v0.2)
+- **City-based selection** (search-first). The user picks a city; Unitana derives:
+  - IANA time zone (from the city record)
+  - a default unit system (from the country record), with an override in "Advanced"
+- **Ask for baseline units once**. Do not show both "home" and "local" unit selectors on the same screen.
+- **Advanced stays optional**. Most users never need to edit IANA strings or unit systems.
 
-**Shared layout regions**
-- Progress indicator (Step X of 5)
-- Title + helper copy
-- Primary action button (Next / Create)
-- Secondary action (Back, except Step 1)
-- Validation inline
+### S1.1 Welcome / start
+- Content: one sentence on what happens next.
+- Action: "Get started" -> Baseline setup.
 
-### S1.1 — Step 1: Name + Badge
 ```
 +--------------------------------------------------+
-| Step 1 of 5                                      |
-| Create your first Place                          |
-| A Place matches your trip or relocation.         |
+| Unitana                                           |
+|                                                  |
+| A decoder ring for living in two systems.         |
+|                                                  |
+| We'll set up:                                     |
+|  1) Living (your baseline)                        |
+|  2) Visiting (where you're going)                 |
+|                                                  |
+| [Get started]                                     |
++--------------------------------------------------+
+```
+
+### S1.2 Create Living Place (Baseline)
+Fields are shown in this order.
+
+1) Place name (default "Living")
+2) Baseline city (picker, required)
+3) Baseline units (segmented: Imperial / Metric)
+4) Advanced (collapsed by default):
+   - Baseline time zone (read-only IANA derived from city)
+   - Edit time zone manually (optional, power users only)
+
+Interaction notes
+- Tapping the city row opens the City Picker (S1.4).
+- Baseline units default should be inferred from device locale (US -> Imperial, otherwise Metric) but remain user-editable.
+
+```
++--------------------------------------------------+
+| Create Living Place                     [Prefill]|
+| Your default reference setup.                    |
 |                                                  |
 | Place name                                       |
-| [______________________________]                 |
+| [ Living                                    ]    |
 |                                                  |
-| Type                                             |
-| ( ) Living     ( ) Visiting     ( ) Other        |
+| Baseline city                                    |
+| [ Select a city...                           > ] |
 |                                                  |
-|            [ Next ]                              |
+| Baseline units                                   |
+| [ Imperial ] [ Metric ]                          |
+|                                                  |
+| Advanced  (collapsed)                            |
+|                                                  |
+|                                       [Next >]   |
 +--------------------------------------------------+
 ```
 
-### S1.2 — Step 2: Home + Destination systems
-```
-+--------------------------------------------------+
-| Step 2 of 5                                      |
-| Measurement systems                              |
-| What you know vs where you are.                  |
-|                                                  |
-| Home system                                      |
-| [ US Customary  v ]                              |
-|                                                  |
-| Local system                                     |
-| [ Metric        v ]                              |
-|                                                  |
-| [ Back ]                         [ Next ]        |
-+--------------------------------------------------+
-```
+### S1.3 Create Visiting Place (Destination)
+Fields are shown in this order.
 
-### S1.3 — Step 3: Time zones (Home + Local)
-```
-+--------------------------------------------------+
-| Step 3 of 5                                      |
-| Time zones                                       |
-| Always see home and local together.              |
-|                                                  |
-| Home time zone                                   |
-| [ America/Denver     v ]                         |
-|                                                  |
-| Local time zone                                  |
-| [ Europe/Lisbon      v ]                         |
-|                                                  |
-| [ Back ]                         [ Next ]        |
-+--------------------------------------------------+
-```
+1) Place name (default "Visiting")
+2) Destination city (picker, required)
+3) Destination units (default inferred; editable)
+4) Advanced (collapsed):
+   - Destination time zone (read-only IANA derived from city)
+   - Edit time zone manually (optional)
 
-### S1.4 — Step 4: Tile groups
-```
-+--------------------------------------------------+
-| Step 4 of 5                                      |
-| What should your dashboard show?                 |
-| You can change this any time.                    |
-|                                                  |
-| Weather                     [ ON ]               |
-| Time zones                  [ ON ]               |
-| Distance & speed            [ ON ]               |
-| Weight & groceries          [ ON ]               |
-| Cooking basics              [ OFF ]              |
-| Fitness basics              [ OFF ]              |
-| Currency                    [ ON ]               |
-|                                                  |
-| [ Back ]                         [ Next ]        |
-+--------------------------------------------------+
-```
-
-### S1.5 — Step 5: Weather city + Currency
-Defaults applied:
-- Weather: **city-based only**
-- Currency: **enabled by default** if Visiting
+Context banner (top)
+- Show a short summary of the baseline selected on the prior step:
+  - "Baseline: Denver, Imperial" (example)
 
 ```
 +--------------------------------------------------+
-| Step 5 of 5                                      |
-| Local context                                     |
-| Make this Place feel real.                        |
+| Create Visiting Place                    [Prefill]|
+| A second Place for travel or comparison.         |
+| Baseline: Denver, Imperial                       |
 |                                                  |
-| Weather city                                      |
-| [ Lisbon, PT            v ]                       |
+| Place name                                       |
+| [ Visiting                                  ]    |
 |                                                  |
-| Currency (Visiting: ON by default)                |
-| Base currency                                     |
-| [ USD                  v ]                        |
-| Local currency                                    |
-| [ EUR                  v ]                        |
+| Destination city                                 |
+| [ Select a city...                           > ] |
 |                                                  |
-| [ Back ]                       [ Create Place ]   |
+| Destination units                                |
+| [ Imperial ] [ Metric ]                          |
+|                                                  |
+| Advanced  (collapsed)                            |
+|                                                  |
+| [< Back]                               [Finish]  |
 +--------------------------------------------------+
 ```
 
----
+### S1.4 City Picker (search-first)
+This is a modal bottom sheet, optimized for one-handed use and fast selection.
 
-## S2 — Dashboard (the one-screen reason to open the app)
+Sections
+- Search input (autofocus)
+- Suggested (optional, later): device city, recent picks
+- All cities (filtered list)
+
+Rules
+- Show "City, Country" as the primary label.
+- Optionally show time zone (small, secondary) for transparency.
+
+```
++--------------------------------------------------+
+| Select a city                                    |
+| [ Search city or country...                  ]   |
+|                                                  |
+| Recent                                            |
+|  - Lisbon, PT                    Europe/Lisbon   |
+|                                                  |
+| Results                                           |
+|  - Denver, US                    America/Denver  |
+|  - Lisbon, PT                    Europe/Lisbon   |
+|  - London, GB                    Europe/London   |
+|                                                  |
++--------------------------------------------------+
+```
+
+### Completion behavior
+- On Finish:
+  - Persist both Places locally.
+  - Set **Living** as the active Place.
+  - Navigate to Dashboard.
+
+### Error states
+- If city is missing: inline error under the city row, and disable Next/Finish.
+
+### Accessibility notes
+- City rows read as: "Denver, United States, button".
+- Segmented controls expose selected state to VoiceOver/TalkBack.
+
+## S2 - Dashboard (the one-screen reason to open the app)
 
 **Purpose:** Calm overview. Minimal taps. Clear freshness.
 
@@ -280,7 +306,7 @@ Tap for details
 
 ---
 
-## S3 — Place Switcher (sheet)
+## S3 - Place Switcher (sheet)
 
 **Purpose:** Switch Places fast, create/edit, reorder, manage default.
 
@@ -316,7 +342,7 @@ Tap for details
 
 ---
 
-## S4 — Place Editor (new/edit)
+## S4 - Place Editor (new/edit)
 
 **Purpose:** One place to modify Place configuration without breaking the dashboard.
 
@@ -363,7 +389,7 @@ Tap for details
 
 ---
 
-## S5 — Settings
+## S5 - Settings
 
 **Purpose:** Global preferences, privacy stance, learning mode, subscription, widgets.
 
@@ -407,7 +433,7 @@ Tap for details
 
 ---
 
-## S6 — Paywall (modal)
+## S6 - Paywall (modal)
 
 **Primary trigger:** Widgets (user tries to exceed free widget allowance).
 
@@ -442,7 +468,7 @@ Tap for details
 
 ---
 
-## S7 — Widgets: Configure + Previews (in-app)
+## S7 - Widgets: Configure + Previews (in-app)
 
 **Purpose:** Configure widget snapshots per Place and tile set, with previews.
 
@@ -511,7 +537,7 @@ Tap for details
 
 ---
 
-## S8 — Manage Subscription
+## S8 - Manage Subscription
 
 **Purpose:** Explain what management means, then handoff to OS store.
 
@@ -531,7 +557,7 @@ Tap for details
 
 # Modals / Sheets
 
-## M1 — Tile Details (only when it adds value)
+## M1 - Tile Details (only when it adds value)
 **Use when:** user taps Currency, Time Zones, Weather, or other tiles where context helps.
 
 **Layout**
@@ -557,7 +583,7 @@ ASCII (example: Currency)
 
 ---
 
-## M2 — Rate Limit Notice
+## M2 - Rate Limit Notice
 **Use when:** pull-to-refresh is attempted too soon.
 
 ASCII
@@ -571,7 +597,7 @@ ASCII
 
 ---
 
-## M3 — Stale Data Explanation
+## M3 - Stale Data Explanation
 **Use when:** user taps freshness row or stale indicator.
 
 ASCII
@@ -589,7 +615,7 @@ ASCII
 
 ---
 
-## M4 — Widget Limit Sheet (leads to paywall)
+## M4 - Widget Limit Sheet (leads to paywall)
 **Use when:** user tries to exceed free widget allowance.
 
 ASCII

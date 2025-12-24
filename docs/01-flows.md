@@ -1,4 +1,4 @@
-# Unitana — Flows and Navigation Map (MVP)
+# Unitana - Flows and Navigation Map (MVP)
 File: `docs/01-flows.md`
 
 This document defines the MVP user flows and screen-to-screen navigation for Unitana. It is intentionally specific enough to implement, but still flexible enough for design iteration.
@@ -98,24 +98,29 @@ Naming convention: `S#` for screens, `M#` for modals/sheets.
 
 ## 6) Core flows (Mermaid)
 
-### 6.1 App launch and first-run routing
+### 6.1 App launch and first-run routing (v0.2 city-based)
+
 ```mermaid
 flowchart TD
   A["App Launch"] --> B{"Has default Place?"}
-  B -- "No" --> C["S1 First Run: Create Default Place"]
-  B -- "Yes" --> D["S2 Dashboard"]
 
-  C --> E{"Valid Place created?"}
-  E -- "No" --> C
-  E -- "Yes" --> F["Persist Place locally"]
-  F --> D
+  B -- "No" --> W["S1 Welcome"]
+  W --> L["S1.2 Create Living (Baseline)"]
+  L --> LCity["Pick baseline city (City Picker)"]
+  LCity --> LUnits["Pick baseline units (Imperial/Metric)"]
+  LUnits --> V["S1.3 Create Visiting (Destination)"]
+  V --> VCity["Pick destination city (City Picker)"]
+  VCity --> VUnits["Confirm destination units (default inferred, editable)"]
+  VUnits --> Save["Persist Places locally + set active = Living"]
+  Save --> D["S2 Dashboard"]
+
+  B -- "Yes" --> D
 ```
 
 Notes
-- First run is not skippable. User must create exactly one default Place.
-- “Living” is recommended, but user can pick Visiting or Other without friction.
-
----
+- City Picker is search-first; no map in MVP.
+- IANA time zones are derived from the chosen city record and shown in Advanced (collapsed).
+- Destination units default are inferred from country; user can override.
 
 ### 6.2 First-run: Create Default Place (wizard)
 ```mermaid

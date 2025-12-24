@@ -1,4 +1,4 @@
-# Unitana — UX Package (MVP)
+# Unitana - UX Package (MVP)
 File: `docs/03-ux-package.md`
 
 This document defines the MVP tile catalog explaining purpose, data inputs, display rules, rounding rules, learning aids, widget mappings, Place badge defaults, and accessibility rules. It is intended to remove ambiguity for implementation.
@@ -6,6 +6,14 @@ This document defines the MVP tile catalog explaining purpose, data inputs, disp
 ---
 
 ## 1) MVP tile catalog
+
+
+## Onboarding update (v0.2)
+
+- City-based selection via a search-first City Picker (no map in MVP).
+- Baseline units are chosen once on the Living step.
+- Destination units default are inferred from the destination country, with an optional override.
+- IANA time zones are derived from the chosen city record and shown under Advanced.
 
 ### Tile anatomy (shared)
 Each tile uses a consistent hierarchy:
