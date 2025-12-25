@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 
-import '../features/dashboard/dashboard_screen.dart';
-import '../features/first_run/first_run_screen.dart';
-import '../theme/app_theme.dart';
 import 'app_state.dart';
 import 'storage.dart';
+import '../features/first_run/first_run_screen.dart';
+import '../features/dashboard/dashboard_screen.dart';
 
 class UnitanaApp extends StatefulWidget {
   const UnitanaApp({super.key});
@@ -15,53 +14,57 @@ class UnitanaApp extends StatefulWidget {
 
 class _UnitanaAppState extends State<UnitanaApp> {
   late final UnitanaAppState _state;
-  bool _loading = true;
+  late final Future<void> _loadFuture;
 
   @override
   void initState() {
     super.initState();
     _state = UnitanaAppState(UnitanaStorage());
-    _bootstrap();
+    _loadFuture = _state.load(); // ✅ correct API (not loadState)
   }
 
-  Future<void> _bootstrap() async {
-    await _state.load();
-    if (!mounted) return;
-    setState(() => _loading = false);
-  }
-
-  bool _isOnboarded(UnitanaAppState state) {
-    // "Onboarded" means we have a default place id and it resolves to a place.
-    // This protects us from a stale defaultPlaceId.
-    return state.defaultPlaceId != null && state.defaultPlace != null;
+  @override
+  void dispose() {
+    _state.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_loading) {
-      return MaterialApp(
-        title: 'Unitana',
-        theme: UnitanaTheme.light(),
-        darkTheme: UnitanaTheme.dark(),
-        themeMode: ThemeMode.system,
-        debugShowCheckedModeBanner: false,
-        home: const Scaffold(body: Center(child: CircularProgressIndicator())),
-      );
-    }
+    final theme = ThemeData(
+      useMaterial3: true,
+      colorSchemeSeed: const Color(0xFF2E5C8A),
+    );
 
-    return AnimatedBuilder(
-      animation: _state,
-      builder: (context, _) {
-        final onboarded = _isOnboarded(_state);
-        return MaterialApp(
-          title: 'Unitana',
-          theme: UnitanaTheme.light(),
-          darkTheme: UnitanaTheme.dark(),
-          themeMode: ThemeMode.system,
-          debugShowCheckedModeBanner: false,
-          home: onboarded
-              ? DashboardScreen(state: _state)
-              : FirstRunScreen(state: _state),
+    return FutureBuilder<void>(
+      future: _loadFuture,
+      builder: (context, snapshot) {
+        // Basic startup shell while loading persisted state
+        if (snapshot.connectionState != ConnectionState.done) {
+          return MaterialApp(
+            debugShowCheckedModeBanner: false,
+            theme: theme,
+            home: const Scaffold(
+              body: Center(child: CircularProgressIndicator()),
+            ),
+          );
+        }
+
+        // ✅ Reactive rebuild on onboarding completion (notifyListeners)
+        return AnimatedBuilder(
+          animation: _state,
+          builder: (context, _) {
+            final bool isOnboarded =
+                _state.defaultPlaceId != null && _state.places.isNotEmpty;
+
+            return MaterialApp(
+              debugShowCheckedModeBanner: false,
+              theme: theme,
+              home: isOnboarded
+                  ? DashboardScreen(state: _state)
+                  : FirstRunScreen(state: _state),
+            );
+          },
         );
       },
     );

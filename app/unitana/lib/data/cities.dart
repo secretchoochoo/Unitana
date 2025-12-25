@@ -1,15 +1,30 @@
-/// A small curated city list for first-run and quick picking.
+/// A curated starter list (fallback) plus the shared City model.
 ///
-/// Notes:
-/// - `defaultUnitSystem` matches `Place.unitSystem` (String): 'imperial' or 'metric'
-/// - `defaultUse24h` matches `Place.use24h` (bool)
+/// The authoritative list is loaded from an asset via CityRepository:
+///   assets/data/cities_world_v1.json
 ///
-/// Keep this file lightweight and const-friendly.
+/// Keep this file const-friendly so the app can always boot even if the asset
+/// is missing or malformed.
 class City {
   final String id;
   final String cityName;
+
+  /// ISO 3166-1 alpha-2 (e.g. US, GB, PT)
   final String countryCode;
+
+  /// Country display name (e.g. United States, Portugal). Optional in fallback list.
+  final String countryName;
+
+  /// State/province code where applicable (e.g. CO, BC). Nullable.
+  final String? admin1Code;
+
+  /// State/province name where applicable (e.g. Colorado, British Columbia). Nullable.
+  final String? admin1Name;
+
+  /// IANA time zone ID (e.g. America/Denver, Europe/Lisbon)
   final String timeZoneId;
+
+  /// ISO 4217 (e.g. USD, EUR)
   final String currencyCode;
 
   /// 'imperial' | 'metric'
@@ -22,11 +37,38 @@ class City {
     required this.id,
     required this.cityName,
     required this.countryCode,
+    this.countryName = '',
+    this.admin1Code,
+    this.admin1Name,
     required this.timeZoneId,
     required this.currencyCode,
     required this.defaultUnitSystem,
     required this.defaultUse24h,
   });
+
+  factory City.fromJson(Map<String, dynamic> json) {
+    final id = (json['id'] as String?)?.trim();
+    final cityName = (json['cityName'] as String?)?.trim() ?? '';
+    final countryCode = (json['countryCode'] as String?)?.trim() ?? '';
+
+    // Reasonable fallback id if missing.
+    final computedId = '${cityName.toLowerCase().replaceAll(' ', '_')}_'
+        '${countryCode.toLowerCase()}';
+
+    return City(
+      id: (id == null || id.isEmpty) ? computedId : id,
+      cityName: cityName,
+      countryCode: countryCode,
+      countryName: (json['countryName'] as String?)?.trim() ?? '',
+      admin1Code: (json['admin1Code'] as String?)?.trim(),
+      admin1Name: (json['admin1Name'] as String?)?.trim(),
+      timeZoneId: (json['timeZoneId'] as String?)?.trim() ?? 'UTC',
+      currencyCode: (json['currencyCode'] as String?)?.trim() ?? '',
+      defaultUnitSystem:
+          (json['defaultUnitSystem'] as String?)?.trim() ?? 'metric',
+      defaultUse24h: (json['defaultUse24h'] as bool?) ?? true,
+    );
+  }
 
   String get display => '$cityName, $countryCode';
 }
@@ -37,6 +79,9 @@ const List<City> kCities = [
     id: 'denver_us',
     cityName: 'Denver',
     countryCode: 'US',
+    countryName: 'United States',
+    admin1Code: 'CO',
+    admin1Name: 'Colorado',
     timeZoneId: 'America/Denver',
     currencyCode: 'USD',
     defaultUnitSystem: 'imperial',
@@ -46,6 +91,9 @@ const List<City> kCities = [
     id: 'new_york_us',
     cityName: 'New York',
     countryCode: 'US',
+    countryName: 'United States',
+    admin1Code: 'NY',
+    admin1Name: 'New York',
     timeZoneId: 'America/New_York',
     currencyCode: 'USD',
     defaultUnitSystem: 'imperial',
@@ -55,6 +103,9 @@ const List<City> kCities = [
     id: 'los_angeles_us',
     cityName: 'Los Angeles',
     countryCode: 'US',
+    countryName: 'United States',
+    admin1Code: 'CA',
+    admin1Name: 'California',
     timeZoneId: 'America/Los_Angeles',
     currencyCode: 'USD',
     defaultUnitSystem: 'imperial',
@@ -64,6 +115,9 @@ const List<City> kCities = [
     id: 'chicago_us',
     cityName: 'Chicago',
     countryCode: 'US',
+    countryName: 'United States',
+    admin1Code: 'IL',
+    admin1Name: 'Illinois',
     timeZoneId: 'America/Chicago',
     currencyCode: 'USD',
     defaultUnitSystem: 'imperial',
@@ -75,6 +129,9 @@ const List<City> kCities = [
     id: 'toronto_ca',
     cityName: 'Toronto',
     countryCode: 'CA',
+    countryName: 'Canada',
+    admin1Code: 'ON',
+    admin1Name: 'Ontario',
     timeZoneId: 'America/Toronto',
     currencyCode: 'CAD',
     defaultUnitSystem: 'metric',
@@ -84,6 +141,9 @@ const List<City> kCities = [
     id: 'vancouver_ca',
     cityName: 'Vancouver',
     countryCode: 'CA',
+    countryName: 'Canada',
+    admin1Code: 'BC',
+    admin1Name: 'British Columbia',
     timeZoneId: 'America/Vancouver',
     currencyCode: 'CAD',
     defaultUnitSystem: 'metric',
@@ -95,6 +155,7 @@ const List<City> kCities = [
     id: 'lisbon_pt',
     cityName: 'Lisbon',
     countryCode: 'PT',
+    countryName: 'Portugal',
     timeZoneId: 'Europe/Lisbon',
     currencyCode: 'EUR',
     defaultUnitSystem: 'metric',
@@ -104,6 +165,7 @@ const List<City> kCities = [
     id: 'porto_pt',
     cityName: 'Porto',
     countryCode: 'PT',
+    countryName: 'Portugal',
     timeZoneId: 'Europe/Lisbon',
     currencyCode: 'EUR',
     defaultUnitSystem: 'metric',
@@ -115,6 +177,7 @@ const List<City> kCities = [
     id: 'london_gb',
     cityName: 'London',
     countryCode: 'GB',
+    countryName: 'United Kingdom',
     timeZoneId: 'Europe/London',
     currencyCode: 'GBP',
     defaultUnitSystem: 'metric',
@@ -124,140 +187,9 @@ const List<City> kCities = [
     id: 'paris_fr',
     cityName: 'Paris',
     countryCode: 'FR',
+    countryName: 'France',
     timeZoneId: 'Europe/Paris',
     currencyCode: 'EUR',
-    defaultUnitSystem: 'metric',
-    defaultUse24h: true,
-  ),
-  City(
-    id: 'madrid_es',
-    cityName: 'Madrid',
-    countryCode: 'ES',
-    timeZoneId: 'Europe/Madrid',
-    currencyCode: 'EUR',
-    defaultUnitSystem: 'metric',
-    defaultUse24h: true,
-  ),
-  City(
-    id: 'barcelona_es',
-    cityName: 'Barcelona',
-    countryCode: 'ES',
-    timeZoneId: 'Europe/Madrid',
-    currencyCode: 'EUR',
-    defaultUnitSystem: 'metric',
-    defaultUse24h: true,
-  ),
-  City(
-    id: 'rome_it',
-    cityName: 'Rome',
-    countryCode: 'IT',
-    timeZoneId: 'Europe/Rome',
-    currencyCode: 'EUR',
-    defaultUnitSystem: 'metric',
-    defaultUse24h: true,
-  ),
-  City(
-    id: 'milan_it',
-    cityName: 'Milan',
-    countryCode: 'IT',
-    timeZoneId: 'Europe/Rome',
-    currencyCode: 'EUR',
-    defaultUnitSystem: 'metric',
-    defaultUse24h: true,
-  ),
-  City(
-    id: 'berlin_de',
-    cityName: 'Berlin',
-    countryCode: 'DE',
-    timeZoneId: 'Europe/Berlin',
-    currencyCode: 'EUR',
-    defaultUnitSystem: 'metric',
-    defaultUse24h: true,
-  ),
-  City(
-    id: 'amsterdam_nl',
-    cityName: 'Amsterdam',
-    countryCode: 'NL',
-    timeZoneId: 'Europe/Amsterdam',
-    currencyCode: 'EUR',
-    defaultUnitSystem: 'metric',
-    defaultUse24h: true,
-  ),
-
-  // Nordics (metric, 24h)
-  City(
-    id: 'stockholm_se',
-    cityName: 'Stockholm',
-    countryCode: 'SE',
-    timeZoneId: 'Europe/Stockholm',
-    currencyCode: 'SEK',
-    defaultUnitSystem: 'metric',
-    defaultUse24h: true,
-  ),
-  City(
-    id: 'oslo_no',
-    cityName: 'Oslo',
-    countryCode: 'NO',
-    timeZoneId: 'Europe/Oslo',
-    currencyCode: 'NOK',
-    defaultUnitSystem: 'metric',
-    defaultUse24h: true,
-  ),
-  City(
-    id: 'copenhagen_dk',
-    cityName: 'Copenhagen',
-    countryCode: 'DK',
-    timeZoneId: 'Europe/Copenhagen',
-    currencyCode: 'DKK',
-    defaultUnitSystem: 'metric',
-    defaultUse24h: true,
-  ),
-
-  // LATAM (metric, 24h common)
-  City(
-    id: 'mexico_city_mx',
-    cityName: 'Mexico City',
-    countryCode: 'MX',
-    timeZoneId: 'America/Mexico_City',
-    currencyCode: 'MXN',
-    defaultUnitSystem: 'metric',
-    defaultUse24h: true,
-  ),
-  City(
-    id: 'sao_paulo_br',
-    cityName: 'São Paulo',
-    countryCode: 'BR',
-    timeZoneId: 'America/Sao_Paulo',
-    currencyCode: 'BRL',
-    defaultUnitSystem: 'metric',
-    defaultUse24h: true,
-  ),
-
-  // APAC (metric, 24h common)
-  City(
-    id: 'tokyo_jp',
-    cityName: 'Tokyo',
-    countryCode: 'JP',
-    timeZoneId: 'Asia/Tokyo',
-    currencyCode: 'JPY',
-    defaultUnitSystem: 'metric',
-    defaultUse24h: true,
-  ),
-  City(
-    id: 'seoul_kr',
-    cityName: 'Seoul',
-    countryCode: 'KR',
-    timeZoneId: 'Asia/Seoul',
-    currencyCode: 'KRW',
-    defaultUnitSystem: 'metric',
-    defaultUse24h: true,
-  ),
-  City(
-    id: 'sydney_au',
-    cityName: 'Sydney',
-    countryCode: 'AU',
-    timeZoneId: 'Australia/Sydney',
-    currencyCode: 'AUD',
     defaultUnitSystem: 'metric',
     defaultUse24h: true,
   ),
