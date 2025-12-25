@@ -3,64 +3,50 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/place.dart';
 
 class UnitanaStorage {
-  static const _placesKey = 'places_v1';
-  static const _defaultPlaceIdKey = 'default_place_id_v1';
-  static const _lastUpdatedKey = 'last_updated_v1';
+  static const String _kPlaces = 'places_v1';
+  static const String _kDefaultPlaceId = 'default_place_id_v1';
+  static const String _kProfileName = 'profile_name_v1';
 
   Future<List<Place>> loadPlaces() async {
     final prefs = await SharedPreferences.getInstance();
-    final raw = prefs.getString(_placesKey);
-    if (raw == null || raw.isEmpty) return [];
+    final raw = prefs.getString(_kPlaces);
+    if (raw == null || raw.trim().isEmpty) return [];
     final decoded = jsonDecode(raw) as List<dynamic>;
-    return decoded.map((e) => Place.fromJson(e as Map<String, dynamic>)).toList();
+    return decoded
+        .map((e) => Place.fromJson(e as Map<String, dynamic>))
+        .toList();
   }
 
   Future<void> savePlaces(List<Place> places) async {
     final prefs = await SharedPreferences.getInstance();
-    final encoded = jsonEncode(places.map((p) => p.toJson()).toList());
-    await prefs.setString(_placesKey, encoded);
-    await prefs.setString(_lastUpdatedKey, DateTime.now().toIso8601String());
+    final raw = jsonEncode(places.map((p) => p.toJson()).toList());
+    await prefs.setString(_kPlaces, raw);
   }
 
   Future<String?> loadDefaultPlaceId() async {
     final prefs = await SharedPreferences.getInstance();
-    return prefs.getString(_defaultPlaceIdKey);
+    return prefs.getString(_kDefaultPlaceId);
   }
 
-  /// Save or clear the default place id.
-  /// Passing null removes the stored key entirely.
-  Future<void> saveDefaultPlaceId(String? id) async {
+  Future<void> saveDefaultPlaceId(String id) async {
     final prefs = await SharedPreferences.getInstance();
-    if (id == null) {
-      await prefs.remove(_defaultPlaceIdKey);
-      return;
-    }
-    await prefs.setString(_defaultPlaceIdKey, id);
+    await prefs.setString(_kDefaultPlaceId, id);
   }
 
-  Future<DateTime?> loadLastUpdated() async {
+  Future<String?> loadProfileName() async {
     final prefs = await SharedPreferences.getInstance();
-    final raw = prefs.getString(_lastUpdatedKey);
-    if (raw == null) return null;
-    return DateTime.tryParse(raw);
+    return prefs.getString(_kProfileName);
   }
 
-  /// Save or clear the "last updated" timestamp.
-  /// Passing null removes the stored key entirely.
-  Future<void> saveLastUpdated(DateTime? dt) async {
+  Future<void> saveProfileName(String name) async {
     final prefs = await SharedPreferences.getInstance();
-    if (dt == null) {
-      await prefs.remove(_lastUpdatedKey);
-      return;
-    }
-    await prefs.setString(_lastUpdatedKey, dt.toIso8601String());
+    await prefs.setString(_kProfileName, name);
   }
 
-  /// Wipe all local persisted app state (MVP local-only).
   Future<void> clearAll() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_placesKey);
-    await prefs.remove(_defaultPlaceIdKey);
-    await prefs.remove(_lastUpdatedKey);
+    await prefs.remove(_kPlaces);
+    await prefs.remove(_kDefaultPlaceId);
+    await prefs.remove(_kProfileName);
   }
 }

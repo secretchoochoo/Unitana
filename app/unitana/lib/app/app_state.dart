@@ -1,48 +1,75 @@
+import 'package:flutter/material.dart';
 import '../models/place.dart';
 import 'storage.dart';
 
-class UnitanaAppState {
+class UnitanaAppState extends ChangeNotifier {
   final UnitanaStorage storage;
 
   List<Place> places = [];
   String? defaultPlaceId;
-  DateTime? lastUpdated;
 
-  UnitanaAppState({required this.storage});
+  /// Profile name lives alongside places (not inside a Place).
+  String profileName = 'My Places';
 
-  bool get hasDefaultPlace => defaultPlaceId != null;
-
-  Place? get defaultPlace {
-    if (defaultPlaceId == null) return null;
-    return places.where((p) => p.id == defaultPlaceId).cast<Place?>().firstWhere(
-          (p) => p != null,
-          orElse: () => null,
-        );
-  }
+  UnitanaAppState(this.storage);
 
   Future<void> load() async {
     places = await storage.loadPlaces();
     defaultPlaceId = await storage.loadDefaultPlaceId();
-    lastUpdated = await storage.loadLastUpdated();
+
+    final storedProfile = await storage.loadProfileName();
+    if (storedProfile != null && storedProfile.trim().isNotEmpty) {
+      profileName = storedProfile.trim();
+    }
+
+    notifyListeners();
   }
 
-  Future<void> setPlaces({
+  Future<void> setProfileName(String name) async {
+    final v = name.trim().isEmpty ? 'My Places' : name.trim();
+    profileName = v;
+    await storage.saveProfileName(v);
+    notifyListeners();
+  }
+
+  Future<void> overwritePlaces({
     required List<Place> newPlaces,
-    required String newDefaultPlaceId,
+    required String defaultId,
   }) async {
     places = newPlaces;
-    defaultPlaceId = newDefaultPlaceId;
+    defaultPlaceId = defaultId;
     await storage.savePlaces(newPlaces);
-    await storage.saveDefaultPlaceId(newDefaultPlaceId);
-    lastUpdated = await storage.loadLastUpdated();
+    await storage.saveDefaultPlaceId(defaultId);
+    notifyListeners();
   }
 
-  /// Dev helper: wipe all local state so onboarding can be re-run.
-  /// Useful while iterating during MVP.
+  Future<void> addOrReplacePlace(Place place) async {
+    final idx = places.indexWhere((p) => p.id == place.id);
+    if (idx >= 0) {
+      places[idx] = place;
+    } else {
+      places.add(place);
+    }
+    await storage.savePlaces(places);
+    notifyListeners();
+  }
+
+  Future<void> setDefaultPlaceId(String id) async {
+    defaultPlaceId = id;
+    await storage.saveDefaultPlaceId(id);
+    notifyListeners();
+  }
+
+  Place? get defaultPlace =>
+      places.where((p) => p.id == defaultPlaceId).isNotEmpty
+      ? places.firstWhere((p) => p.id == defaultPlaceId)
+      : (places.isNotEmpty ? places.first : null);
+
   Future<void> resetAll() async {
+    await storage.clearAll();
     places = [];
     defaultPlaceId = null;
-    lastUpdated = null;
-    await storage.clearAll();
+    profileName = 'My Places';
+    notifyListeners();
   }
 }

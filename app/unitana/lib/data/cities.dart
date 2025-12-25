@@ -1,43 +1,264 @@
+/// A small curated city list for first-run and quick picking.
+///
+/// Notes:
+/// - `defaultUnitSystem` matches `Place.unitSystem` (String): 'imperial' or 'metric'
+/// - `defaultUse24h` matches `Place.use24h` (bool)
+///
+/// Keep this file lightweight and const-friendly.
 class City {
-  final String name;
-  final String country;
-  final String timeZone; // IANA
-  const City({required this.name, required this.country, required this.timeZone});
+  final String id;
+  final String cityName;
+  final String countryCode;
+  final String timeZoneId;
+  final String currencyCode;
 
-  String get label => '$name, $country';
+  /// 'imperial' | 'metric'
+  final String defaultUnitSystem;
+
+  /// true = 24h clock
+  final bool defaultUse24h;
+
+  const City({
+    required this.id,
+    required this.cityName,
+    required this.countryCode,
+    required this.timeZoneId,
+    required this.currencyCode,
+    required this.defaultUnitSystem,
+    required this.defaultUse24h,
+  });
+
+  String get display => '$cityName, $countryCode';
 }
 
-// Curated MVP list (expand anytime). Keep it small and high-signal.
 const List<City> kCities = [
-  City(name: 'Denver', country: 'US', timeZone: 'America/Denver'),
-  City(name: 'New York', country: 'US', timeZone: 'America/New_York'),
-  City(name: 'Los Angeles', country: 'US', timeZone: 'America/Los_Angeles'),
-  City(name: 'Chicago', country: 'US', timeZone: 'America/Chicago'),
-  City(name: 'London', country: 'GB', timeZone: 'Europe/London'),
-  City(name: 'Lisbon', country: 'PT', timeZone: 'Europe/Lisbon'),
-  City(name: 'Porto', country: 'PT', timeZone: 'Europe/Lisbon'),
-  City(name: 'Paris', country: 'FR', timeZone: 'Europe/Paris'),
-  City(name: 'Berlin', country: 'DE', timeZone: 'Europe/Berlin'),
-  City(name: 'Rome', country: 'IT', timeZone: 'Europe/Rome'),
-  City(name: 'Madrid', country: 'ES', timeZone: 'Europe/Madrid'),
-  City(name: 'Barcelona', country: 'ES', timeZone: 'Europe/Madrid'),
-  City(name: 'Dublin', country: 'IE', timeZone: 'Europe/Dublin'),
-  City(name: 'Amsterdam', country: 'NL', timeZone: 'Europe/Amsterdam'),
-  City(name: 'Zurich', country: 'CH', timeZone: 'Europe/Zurich'),
-  City(name: 'Vienna', country: 'AT', timeZone: 'Europe/Vienna'),
-  City(name: 'Prague', country: 'CZ', timeZone: 'Europe/Prague'),
-  City(name: 'Stockholm', country: 'SE', timeZone: 'Europe/Stockholm'),
-  City(name: 'Oslo', country: 'NO', timeZone: 'Europe/Oslo'),
-  City(name: 'Copenhagen', country: 'DK', timeZone: 'Europe/Copenhagen'),
-  City(name: 'Athens', country: 'GR', timeZone: 'Europe/Athens'),
-  City(name: 'Istanbul', country: 'TR', timeZone: 'Europe/Istanbul'),
-  City(name: 'Tokyo', country: 'JP', timeZone: 'Asia/Tokyo'),
-  City(name: 'Seoul', country: 'KR', timeZone: 'Asia/Seoul'),
-  City(name: 'Singapore', country: 'SG', timeZone: 'Asia/Singapore'),
-  City(name: 'Sydney', country: 'AU', timeZone: 'Australia/Sydney'),
-  City(name: 'Melbourne', country: 'AU', timeZone: 'Australia/Melbourne'),
-  City(name: 'Mexico City', country: 'MX', timeZone: 'America/Mexico_City'),
-  City(name: 'Toronto', country: 'CA', timeZone: 'America/Toronto'),
-  City(name: 'Vancouver', country: 'CA', timeZone: 'America/Vancouver'),
-];
+  // USA (imperial, 12h)
+  City(
+    id: 'denver_us',
+    cityName: 'Denver',
+    countryCode: 'US',
+    timeZoneId: 'America/Denver',
+    currencyCode: 'USD',
+    defaultUnitSystem: 'imperial',
+    defaultUse24h: false,
+  ),
+  City(
+    id: 'new_york_us',
+    cityName: 'New York',
+    countryCode: 'US',
+    timeZoneId: 'America/New_York',
+    currencyCode: 'USD',
+    defaultUnitSystem: 'imperial',
+    defaultUse24h: false,
+  ),
+  City(
+    id: 'los_angeles_us',
+    cityName: 'Los Angeles',
+    countryCode: 'US',
+    timeZoneId: 'America/Los_Angeles',
+    currencyCode: 'USD',
+    defaultUnitSystem: 'imperial',
+    defaultUse24h: false,
+  ),
+  City(
+    id: 'chicago_us',
+    cityName: 'Chicago',
+    countryCode: 'US',
+    timeZoneId: 'America/Chicago',
+    currencyCode: 'USD',
+    defaultUnitSystem: 'imperial',
+    defaultUse24h: false,
+  ),
 
+  // Canada (metric-ish, 12h commonly)
+  City(
+    id: 'toronto_ca',
+    cityName: 'Toronto',
+    countryCode: 'CA',
+    timeZoneId: 'America/Toronto',
+    currencyCode: 'CAD',
+    defaultUnitSystem: 'metric',
+    defaultUse24h: false,
+  ),
+  City(
+    id: 'vancouver_ca',
+    cityName: 'Vancouver',
+    countryCode: 'CA',
+    timeZoneId: 'America/Vancouver',
+    currencyCode: 'CAD',
+    defaultUnitSystem: 'metric',
+    defaultUse24h: false,
+  ),
+
+  // Portugal (metric, 24h)
+  City(
+    id: 'lisbon_pt',
+    cityName: 'Lisbon',
+    countryCode: 'PT',
+    timeZoneId: 'Europe/Lisbon',
+    currencyCode: 'EUR',
+    defaultUnitSystem: 'metric',
+    defaultUse24h: true,
+  ),
+  City(
+    id: 'porto_pt',
+    cityName: 'Porto',
+    countryCode: 'PT',
+    timeZoneId: 'Europe/Lisbon',
+    currencyCode: 'EUR',
+    defaultUnitSystem: 'metric',
+    defaultUse24h: true,
+  ),
+
+  // Western Europe (metric, 24h)
+  City(
+    id: 'london_gb',
+    cityName: 'London',
+    countryCode: 'GB',
+    timeZoneId: 'Europe/London',
+    currencyCode: 'GBP',
+    defaultUnitSystem: 'metric',
+    defaultUse24h: true,
+  ),
+  City(
+    id: 'paris_fr',
+    cityName: 'Paris',
+    countryCode: 'FR',
+    timeZoneId: 'Europe/Paris',
+    currencyCode: 'EUR',
+    defaultUnitSystem: 'metric',
+    defaultUse24h: true,
+  ),
+  City(
+    id: 'madrid_es',
+    cityName: 'Madrid',
+    countryCode: 'ES',
+    timeZoneId: 'Europe/Madrid',
+    currencyCode: 'EUR',
+    defaultUnitSystem: 'metric',
+    defaultUse24h: true,
+  ),
+  City(
+    id: 'barcelona_es',
+    cityName: 'Barcelona',
+    countryCode: 'ES',
+    timeZoneId: 'Europe/Madrid',
+    currencyCode: 'EUR',
+    defaultUnitSystem: 'metric',
+    defaultUse24h: true,
+  ),
+  City(
+    id: 'rome_it',
+    cityName: 'Rome',
+    countryCode: 'IT',
+    timeZoneId: 'Europe/Rome',
+    currencyCode: 'EUR',
+    defaultUnitSystem: 'metric',
+    defaultUse24h: true,
+  ),
+  City(
+    id: 'milan_it',
+    cityName: 'Milan',
+    countryCode: 'IT',
+    timeZoneId: 'Europe/Rome',
+    currencyCode: 'EUR',
+    defaultUnitSystem: 'metric',
+    defaultUse24h: true,
+  ),
+  City(
+    id: 'berlin_de',
+    cityName: 'Berlin',
+    countryCode: 'DE',
+    timeZoneId: 'Europe/Berlin',
+    currencyCode: 'EUR',
+    defaultUnitSystem: 'metric',
+    defaultUse24h: true,
+  ),
+  City(
+    id: 'amsterdam_nl',
+    cityName: 'Amsterdam',
+    countryCode: 'NL',
+    timeZoneId: 'Europe/Amsterdam',
+    currencyCode: 'EUR',
+    defaultUnitSystem: 'metric',
+    defaultUse24h: true,
+  ),
+
+  // Nordics (metric, 24h)
+  City(
+    id: 'stockholm_se',
+    cityName: 'Stockholm',
+    countryCode: 'SE',
+    timeZoneId: 'Europe/Stockholm',
+    currencyCode: 'SEK',
+    defaultUnitSystem: 'metric',
+    defaultUse24h: true,
+  ),
+  City(
+    id: 'oslo_no',
+    cityName: 'Oslo',
+    countryCode: 'NO',
+    timeZoneId: 'Europe/Oslo',
+    currencyCode: 'NOK',
+    defaultUnitSystem: 'metric',
+    defaultUse24h: true,
+  ),
+  City(
+    id: 'copenhagen_dk',
+    cityName: 'Copenhagen',
+    countryCode: 'DK',
+    timeZoneId: 'Europe/Copenhagen',
+    currencyCode: 'DKK',
+    defaultUnitSystem: 'metric',
+    defaultUse24h: true,
+  ),
+
+  // LATAM (metric, 24h common)
+  City(
+    id: 'mexico_city_mx',
+    cityName: 'Mexico City',
+    countryCode: 'MX',
+    timeZoneId: 'America/Mexico_City',
+    currencyCode: 'MXN',
+    defaultUnitSystem: 'metric',
+    defaultUse24h: true,
+  ),
+  City(
+    id: 'sao_paulo_br',
+    cityName: 'São Paulo',
+    countryCode: 'BR',
+    timeZoneId: 'America/Sao_Paulo',
+    currencyCode: 'BRL',
+    defaultUnitSystem: 'metric',
+    defaultUse24h: true,
+  ),
+
+  // APAC (metric, 24h common)
+  City(
+    id: 'tokyo_jp',
+    cityName: 'Tokyo',
+    countryCode: 'JP',
+    timeZoneId: 'Asia/Tokyo',
+    currencyCode: 'JPY',
+    defaultUnitSystem: 'metric',
+    defaultUse24h: true,
+  ),
+  City(
+    id: 'seoul_kr',
+    cityName: 'Seoul',
+    countryCode: 'KR',
+    timeZoneId: 'Asia/Seoul',
+    currencyCode: 'KRW',
+    defaultUnitSystem: 'metric',
+    defaultUse24h: true,
+  ),
+  City(
+    id: 'sydney_au',
+    cityName: 'Sydney',
+    countryCode: 'AU',
+    timeZoneId: 'Australia/Sydney',
+    currencyCode: 'AUD',
+    defaultUnitSystem: 'metric',
+    defaultUse24h: true,
+  ),
+];
