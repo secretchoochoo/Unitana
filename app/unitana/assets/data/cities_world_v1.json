@@ -1,0 +1,86 @@
+[
+  {
+    "id": "denver_us",
+    "cityName": "Denver",
+    "countryCode": "US",
+    "countryName": "United States",
+    "admin1Code": "CO",
+    "admin1Name": "Colorado",
+    "timeZoneId": "America/Denver",
+    "currencyCode": "USD",
+    "defaultUnitSystem": "imperial",
+    "defaultUse24h": false
+  },
+  {
+    "id": "new_york_us",
+    "cityName": "New York",
+    "countryCode": "US",
+    "countryName": "United States",
+    "admin1Code": "NY",
+    "admin1Name": "New York",
+    "timeZoneId": "America/New_York",
+    "currencyCode": "USD",
+    "defaultUnitSystem": "imperial",
+    "defaultUse24h": false
+  },
+  {
+    "id": "vancouver_ca",
+    "cityName": "Vancouver",
+    "countryCode": "CA",
+    "countryName": "Canada",
+    "admin1Code": "BC",
+    "admin1Name": "British Columbia",
+    "timeZoneId": "America/Vancouver",
+    "currencyCode": "CAD",
+    "defaultUnitSystem": "metric",
+    "defaultUse24h": false
+  },
+  {
+    "id": "lisbon_pt",
+    "cityName": "Lisbon",
+    "countryCode": "PT",
+    "countryName": "Portugal",
+    "admin1Code": null,
+    "admin1Name": null,
+    "timeZoneId": "Europe/Lisbon",
+    "currencyCode": "EUR",
+    "defaultUnitSystem": "metric",
+    "defaultUse24h": true
+  },
+  {
+    "id": "porto_pt",
+    "cityName": "Porto",
+    "countryCode": "PT",
+    "countryName": "Portugal",
+    "admin1Code": null,
+    "admin1Name": null,
+    "timeZoneId": "Europe/Lisbon",
+    "currencyCode": "EUR",
+    "defaultUnitSystem": "metric",
+    "defaultUse24h": true
+  },
+  {
+    "id": "london_gb",
+    "cityName": "London",
+    "countryCode": "GB",
+    "countryName": "United Kingdom",
+    "admin1Code": null,
+    "admin1Name": null,
+    "timeZoneId": "Europe/London",
+    "currencyCode": "GBP",
+    "defaultUnitSystem": "metric",
+    "defaultUse24h": true
+  },
+  {
+    "id": "paris_fr",
+    "cityName": "Paris",
+    "countryCode": "FR",
+    "countryName": "France",
+    "admin1Code": null,
+    "admin1Name": null,
+    "timeZoneId": "Europe/Paris",
+    "currencyCode": "EUR",
+    "defaultUnitSystem": "metric",
+    "defaultUse24h": true
+  }
+]
