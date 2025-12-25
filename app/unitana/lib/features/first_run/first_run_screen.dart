@@ -1,14 +1,13 @@
 import 'package:flutter/material.dart';
-import '../../app/app_state.dart';
-import '../../models/place.dart';
-import '../../widgets/city_picker.dart';
-import '../../data/cities.dart';
-import '../dashboard/dashboard_screen.dart';
 
-enum UnitSystem { imperial, metric }
+import 'package:unitana/app/app_state.dart';
+import 'package:unitana/data/cities.dart';
+import 'package:unitana/models/place.dart';
+import 'package:unitana/widgets/city_picker.dart';
 
 class FirstRunScreen extends StatefulWidget {
   final UnitanaAppState state;
+
   const FirstRunScreen({super.key, required this.state});
 
   @override
@@ -16,288 +15,599 @@ class FirstRunScreen extends StatefulWidget {
 }
 
 class _FirstRunScreenState extends State<FirstRunScreen> {
-  int step = 0; // 0 = Living, 1 = Visiting
+  int _step = 0; // 0 welcome, 1 home, 2 destination, 3 review
+  bool _saving = false;
 
-  // Living
-  final livingNameCtrl = TextEditingController(text: 'Living');
-  City? livingHomeCity = const City(name: 'Denver', country: 'US', timeZone: 'America/Denver');
-  City? livingLocalCity = const City(name: 'Lisbon', country: 'PT', timeZone: 'Europe/Lisbon');
-  UnitSystem livingHomeSystem = UnitSystem.imperial;
-  UnitSystem livingLocalSystem = UnitSystem.metric; // advanced only
+  late final TextEditingController _profileCtrl;
 
-  // Visiting
-  final visitingNameCtrl = TextEditingController(text: 'Visiting');
-  City? visitingHomeCity; // inherits living home
-  City? visitingLocalCity = const City(name: 'Lisbon', country: 'PT', timeZone: 'Europe/Lisbon');
-  UnitSystem visitingHomeSystem = UnitSystem.imperial; // advanced only
-  UnitSystem visitingLocalSystem = UnitSystem.metric;
+  City? _homeCity;
+  City? _destCity;
+
+  // Place fields
+  String _homeUnit = 'imperial';
+  String _destUnit = 'metric';
+
+  bool _homeUse24h = false;
+  bool _destUse24h = true;
+
+  // Track whether the user has manually changed a toggle (so city selection
+  // does not override user intent).
+  bool _homeUnitTouched = false;
+  bool _destUnitTouched = false;
+  bool _homeClockTouched = false;
+  bool _destClockTouched = false;
 
   @override
   void initState() {
     super.initState();
-    _syncVisitingFromLiving();
-  }
-
-  void _syncVisitingFromLiving() {
-    visitingHomeCity = livingHomeCity;
-    visitingHomeSystem = livingHomeSystem;
+    _profileCtrl = TextEditingController(text: widget.state.profileName);
+    _seedFromState();
   }
 
   @override
   void dispose() {
-    livingNameCtrl.dispose();
-    visitingNameCtrl.dispose();
+    _profileCtrl.dispose();
     super.dispose();
   }
 
-  String? _validateStep() {
-    if (step == 0) {
-      if (livingNameCtrl.text.trim().isEmpty) return 'Give your Living Place a name.';
-      if (livingHomeCity == null) return 'Pick a Home city for Living.';
-      if (livingLocalCity == null) return 'Pick a Local city for Living.';
-      return null;
+  void _seedFromState() {
+    // Prefer existing places from app state if present.
+    final living = _firstWhereOrNull(
+      widget.state.places,
+      (p) => p.type == PlaceType.living,
+    );
+    final visiting = _firstWhereOrNull(
+      widget.state.places,
+      (p) => p.type == PlaceType.visiting,
+    );
+
+    if (living != null) {
+      _homeCity =
+          _findCity(living.cityName, living.countryCode) ?? _defaultHomeCity();
+      _homeUnit = living.unitSystem;
+      _homeUse24h = living.use24h;
+      _homeUnitTouched = true;
+      _homeClockTouched = true;
     } else {
-      if (visitingNameCtrl.text.trim().isEmpty) return 'Give your Visiting Place a name.';
-      if (visitingHomeCity == null) return 'Pick a Home city for Visiting.';
-      if (visitingLocalCity == null) return 'Pick a Local city for Visiting.';
-      return null;
+      _homeCity = _defaultHomeCity();
+      _applyCityDefaults(home: true);
+    }
+
+    if (visiting != null) {
+      _destCity =
+          _findCity(visiting.cityName, visiting.countryCode) ??
+          _defaultDestCity();
+      _destUnit = visiting.unitSystem;
+      _destUse24h = visiting.use24h;
+      _destUnitTouched = true;
+      _destClockTouched = true;
+    } else {
+      _destCity = _defaultDestCity();
+      _applyCityDefaults(home: false);
+    }
+
+    // If destination has not been touched, keep it opposite by default.
+    if (!_destUnitTouched) {
+      _destUnit = (_homeUnit == 'metric') ? 'imperial' : 'metric';
+    }
+    if (!_destClockTouched) {
+      _destUse24h = !_homeUse24h;
     }
   }
 
-  Future<void> _saveAndContinue() async {
-    final err = _validateStep();
-    if (err != null) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err)));
-      return;
-    }
-
-    if (step == 0) {
-      setState(() {
-        step = 1;
-        _syncVisitingFromLiving();
-        // Default Visiting local city to Living local if user already picked one
-        visitingLocalCity = visitingLocalCity ?? livingLocalCity;
-        visitingLocalSystem = visitingLocalSystem; // keep
-      });
-      return;
-    }
-
-    final living = Place(
-      id: 'living_v1',
-      type: PlaceType.living,
-      name: livingNameCtrl.text.trim(),
-      homeTimeZone: livingHomeCity!.timeZone,
-      localTimeZone: livingLocalCity!.timeZone,
-      homeSystem: livingHomeSystem.name,
-      localSystem: livingLocalSystem.name,
-    );
-
-    final visiting = Place(
-      id: 'visiting_v1',
-      type: PlaceType.visiting,
-      name: visitingNameCtrl.text.trim(),
-      homeTimeZone: visitingHomeCity!.timeZone,
-      localTimeZone: visitingLocalCity!.timeZone,
-      homeSystem: visitingHomeSystem.name,
-      localSystem: visitingLocalSystem.name,
-    );
-
-    await widget.state.setPlaces(
-      newPlaces: [living, visiting],
-      newDefaultPlaceId: living.id,
-    );
-
-    if (!mounted) return;
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (_) => DashboardScreen(state: widget.state)),
+  City _defaultHomeCity() {
+    return kCities.firstWhere(
+      (c) => c.id == 'denver_us',
+      orElse: () => kCities.first,
     );
   }
 
-  void _prefillExample() {
+  City _defaultDestCity() {
+    return kCities.firstWhere(
+      (c) => c.id == 'lisbon_pt',
+      orElse: () => kCities.first,
+    );
+  }
+
+  City? _findCity(String cityName, String countryCode) {
+    return _firstWhereOrNull(
+      kCities,
+      (c) => c.cityName == cityName && c.countryCode == countryCode,
+    );
+  }
+
+  T? _firstWhereOrNull<T>(List<T> items, bool Function(T) test) {
+    for (final item in items) {
+      if (test(item)) return item;
+    }
+    return null;
+  }
+
+  void _applyCityDefaults({required bool home}) {
+    final city = home ? _homeCity : _destCity;
+    if (city == null) return;
+
+    if (home) {
+      if (!_homeUnitTouched) _homeUnit = city.defaultUnitSystem;
+      if (!_homeClockTouched) _homeUse24h = city.defaultUse24h;
+    } else {
+      if (!_destUnitTouched) _destUnit = city.defaultUnitSystem;
+      if (!_destClockTouched) _destUse24h = city.defaultUse24h;
+    }
+  }
+
+  bool get _canContinue {
+    if (_step == 0) return true; // profile optional
+    if (_step == 1) return _homeCity != null;
+    if (_step == 2) return _destCity != null;
+    return true;
+  }
+
+  void _goTo(int step) => setState(() => _step = step);
+
+  void _back() {
+    if (_step <= 0) return;
+    _goTo(_step - 1);
+  }
+
+  void _next() {
+    if (_step >= 3) return;
+    if (!_canContinue) return;
+    _goTo(_step + 1);
+  }
+
+  String _unitLabel(String u) => u == 'metric' ? 'Metric' : 'Imperial';
+
+  String _clockLabel(bool use24h) => use24h ? '24-hour' : '12-hour';
+
+  String _timeSamplePrimary(bool use24h) => use24h ? '19:55' : '7:55 PM';
+
+  String _timeSampleSecondary(bool use24h) => use24h ? '7:55 PM' : '19:55';
+
+  String _tempPreview(String unitSystem) {
+    const f = 68;
+    const c = 20;
+    return unitSystem == 'metric' ? '$c°C ($f°F)' : '$f°F ($c°C)';
+  }
+
+  String _windPreview(String unitSystem) {
+    const mph = 12;
+    const kmh = 19;
+    return unitSystem == 'metric'
+        ? '$kmh km/h ($mph mph)'
+        : '$mph mph ($kmh km/h)';
+  }
+
+  Future<void> _pickCity({required bool home}) async {
+    final selected = await showModalBottomSheet<City>(
+      context: context,
+      isScrollControlled: true,
+      builder: (_) =>
+          CityPicker(cities: kCities, selected: home ? _homeCity : _destCity),
+    );
+
+    if (selected == null) return;
+
     setState(() {
-      livingNameCtrl.text = 'Living';
-      livingHomeCity = const City(name: 'Denver', country: 'US', timeZone: 'America/Denver');
-      livingLocalCity = const City(name: 'Lisbon', country: 'PT', timeZone: 'Europe/Lisbon');
-      livingHomeSystem = UnitSystem.imperial;
-      livingLocalSystem = UnitSystem.metric;
+      if (home) {
+        _homeCity = selected;
+        _applyCityDefaults(home: true);
 
-      visitingNameCtrl.text = 'Visiting';
-      visitingHomeCity = livingHomeCity;
-      visitingLocalCity = const City(name: 'Porto', country: 'PT', timeZone: 'Europe/Lisbon');
-      visitingHomeSystem = livingHomeSystem;
-      visitingLocalSystem = UnitSystem.metric;
+        // If destination has not been touched, keep it opposite by default.
+        if (!_destUnitTouched) {
+          _destUnit = (_homeUnit == 'metric') ? 'imperial' : 'metric';
+        }
+        if (!_destClockTouched) {
+          _destUse24h = !_homeUse24h;
+        }
+      } else {
+        _destCity = selected;
+        _applyCityDefaults(home: false);
+      }
     });
   }
 
-  Widget _segmentedUnit(UnitSystem value, ValueChanged<UnitSystem> onChanged) {
-    return SegmentedButton<UnitSystem>(
-      segments: const [
-        ButtonSegment(value: UnitSystem.imperial, label: Text('Imperial')),
-        ButtonSegment(value: UnitSystem.metric, label: Text('Metric')),
-      ],
-      selected: <UnitSystem>{value},
-      onSelectionChanged: (set) => onChanged(set.first),
+  Future<void> _finish() async {
+    final home = _homeCity;
+    final dest = _destCity;
+    if (home == null || dest == null) return;
+
+    setState(() => _saving = true);
+    try {
+      await widget.state.setProfileName(_profileCtrl.text);
+
+      final homePlace = Place(
+        id: 'living',
+        type: PlaceType.living,
+        name: 'Home',
+        cityName: home.cityName,
+        countryCode: home.countryCode,
+        timeZoneId: home.timeZoneId,
+        unitSystem: _homeUnit,
+        use24h: _homeUse24h,
+      );
+
+      final destPlace = Place(
+        id: 'visiting',
+        type: PlaceType.visiting,
+        name: 'Destination',
+        cityName: dest.cityName,
+        countryCode: dest.countryCode,
+        timeZoneId: dest.timeZoneId,
+        unitSystem: _destUnit,
+        use24h: _destUse24h,
+      );
+
+      await widget.state.overwritePlaces(
+        newPlaces: [homePlace, destPlace],
+        defaultId: homePlace.id,
+      );
+
+      // No navigation necessary. UnitanaApp listens to state changes and will
+      // swap FirstRunScreen for DashboardScreen.
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  Widget _kvRow(String k, String v) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 110,
+            child: Text(
+              '$k:',
+              style: const TextStyle(fontWeight: FontWeight.w700),
+            ),
+          ),
+          Expanded(child: Text(v)),
+        ],
+      ),
     );
   }
 
-  Widget _cityRow({
-    required String label,
-    required City? value,
+  Widget _placeCard({
+    required String title,
+    required City city,
+    required String unitSystem,
+    required bool use24h,
     required VoidCallback onTap,
   }) {
-    return ListTile(
-      contentPadding: EdgeInsets.zero,
-      title: Text(label),
-      subtitle: Text(value == null ? 'Choose a city' : '${value.label}  •  ${value.timeZone}'),
-      trailing: const Icon(Icons.chevron_right),
-      onTap: onTap,
+    return Card(
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      title,
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                  ),
+                  const Icon(Icons.chevron_right),
+                ],
+              ),
+              const SizedBox(height: 10),
+              _kvRow('City', city.display),
+              _kvRow('Units', _unitLabel(unitSystem)),
+              _kvRow('Clock', _clockLabel(use24h)),
+              _kvRow(
+                'Time',
+                '${_timeSamplePrimary(use24h)} (${_timeSampleSecondary(use24h)})',
+              ),
+              _kvRow('Temp', _tempPreview(unitSystem)),
+              _kvRow('Wind', _windPreview(unitSystem)),
+              _kvRow('Currency', city.currencyCode),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _stepWelcome() {
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Welcome', style: Theme.of(context).textTheme.headlineSmall),
+          const SizedBox(height: 8),
+          const Text(
+            'Set up a Home and a Destination so Unitana can show your dual reality side by side.',
+          ),
+          const SizedBox(height: 18),
+          TextField(
+            controller: _profileCtrl,
+            decoration: const InputDecoration(
+              labelText: 'Profile name (optional)',
+              hintText: 'Ex: Portugal Move, Japan Trip',
+              border: OutlineInputBorder(),
+            ),
+            textInputAction: TextInputAction.done,
+          ),
+          const SizedBox(height: 10),
+          const Text(
+            'You can change all of this later. This just gets you to a useful dashboard quickly.',
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _stepHome() {
+    final city = _homeCity;
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Home', style: Theme.of(context).textTheme.headlineSmall),
+          const SizedBox(height: 8),
+          const Text('Pick the place that feels like your baseline.'),
+          const SizedBox(height: 16),
+          OutlinedButton.icon(
+            onPressed: () => _pickCity(home: true),
+            icon: const Icon(Icons.location_city),
+            label: Text(city == null ? 'Choose a city' : city.display),
+          ),
+          const SizedBox(height: 16),
+          Text('Units', style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: 8),
+          SegmentedButton<String>(
+            segments: const [
+              ButtonSegment(value: 'imperial', label: Text('Imperial')),
+              ButtonSegment(value: 'metric', label: Text('Metric')),
+            ],
+            selected: {_homeUnit},
+            onSelectionChanged: (v) {
+              setState(() {
+                _homeUnit = v.first;
+                _homeUnitTouched = true;
+                if (!_destUnitTouched) {
+                  _destUnit = (_homeUnit == 'metric') ? 'imperial' : 'metric';
+                }
+              });
+            },
+          ),
+          const SizedBox(height: 18),
+          Text('Clock', style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: 8),
+          SegmentedButton<bool>(
+            segments: const [
+              ButtonSegment(value: false, label: Text('12-hour')),
+              ButtonSegment(value: true, label: Text('24-hour')),
+            ],
+            selected: {_homeUse24h},
+            onSelectionChanged: (v) {
+              setState(() {
+                _homeUse24h = v.first;
+                _homeClockTouched = true;
+                if (!_destClockTouched) {
+                  _destUse24h = !_homeUse24h;
+                }
+              });
+            },
+          ),
+          const SizedBox(height: 18),
+          if (city != null)
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(14),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Preview',
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    const SizedBox(height: 8),
+                    _kvRow('Time', _timeSamplePrimary(_homeUse24h)),
+                    _kvRow('Temp', _tempPreview(_homeUnit)),
+                    _kvRow('Wind', _windPreview(_homeUnit)),
+                    _kvRow('Currency', city.currencyCode),
+                  ],
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _stepDestination() {
+    final city = _destCity;
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Destination', style: Theme.of(context).textTheme.headlineSmall),
+          const SizedBox(height: 8),
+          const Text('Pick the place you are traveling to or learning next.'),
+          const SizedBox(height: 16),
+          OutlinedButton.icon(
+            onPressed: () => _pickCity(home: false),
+            icon: const Icon(Icons.flight_takeoff),
+            label: Text(city == null ? 'Choose a city' : city.display),
+          ),
+          const SizedBox(height: 16),
+          Text('Units', style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: 8),
+          SegmentedButton<String>(
+            segments: const [
+              ButtonSegment(value: 'imperial', label: Text('Imperial')),
+              ButtonSegment(value: 'metric', label: Text('Metric')),
+            ],
+            selected: {_destUnit},
+            onSelectionChanged: (v) {
+              setState(() {
+                _destUnit = v.first;
+                _destUnitTouched = true;
+              });
+            },
+          ),
+          const SizedBox(height: 18),
+          Text('Clock', style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: 8),
+          SegmentedButton<bool>(
+            segments: const [
+              ButtonSegment(value: false, label: Text('12-hour')),
+              ButtonSegment(value: true, label: Text('24-hour')),
+            ],
+            selected: {_destUse24h},
+            onSelectionChanged: (v) {
+              setState(() {
+                _destUse24h = v.first;
+                _destClockTouched = true;
+              });
+            },
+          ),
+          const SizedBox(height: 18),
+          if (city != null)
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(14),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Preview',
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    const SizedBox(height: 8),
+                    _kvRow('Time', _timeSamplePrimary(_destUse24h)),
+                    _kvRow('Temp', _tempPreview(_destUnit)),
+                    _kvRow('Wind', _windPreview(_destUnit)),
+                    _kvRow('Currency', city.currencyCode),
+                  ],
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _stepReview() {
+    final home = _homeCity;
+    final dest = _destCity;
+    final profile = _profileCtrl.text.trim();
+
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Review', style: Theme.of(context).textTheme.headlineSmall),
+          const SizedBox(height: 8),
+          const Text('Tap any card to edit it.'),
+          const SizedBox(height: 14),
+          Card(
+            child: InkWell(
+              onTap: () => _goTo(0),
+              child: Padding(
+                padding: const EdgeInsets.all(14),
+                child: Row(
+                  children: [
+                    const Icon(Icons.badge),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        profile.isEmpty ? 'My Places' : profile,
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                    ),
+                    const Icon(Icons.chevron_right),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          if (home != null)
+            _placeCard(
+              title: 'Home',
+              city: home,
+              unitSystem: _homeUnit,
+              use24h: _homeUse24h,
+              onTap: () => _goTo(1),
+            ),
+          if (dest != null)
+            _placeCard(
+              title: 'Destination',
+              city: dest,
+              unitSystem: _destUnit,
+              use24h: _destUse24h,
+              onTap: () => _goTo(2),
+            ),
+        ],
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final isLiving = step == 0;
-    final title = isLiving ? 'Create Living Place' : 'Create Visiting Place';
-    final subtitle = isLiving
-        ? 'This is your default baseline setup. You can change it later.'
-        : 'A second Place for travel or comparison.';
+    final steps = <Widget>[
+      _stepWelcome(),
+      _stepHome(),
+      _stepDestination(),
+      _stepReview(),
+    ];
+
+    final isLast = _step == 3;
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(title),
-        actions: [
-          TextButton(
-            onPressed: _prefillExample,
-            child: const Text('Prefill'),
-          ),
-        ],
+        title: const Text('Setup'),
+        leading: _step == 0
+            ? null
+            : IconButton(icon: const Icon(Icons.arrow_back), onPressed: _back),
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          Text(subtitle),
-          const SizedBox(height: 16),
-
-          TextField(
-            controller: isLiving ? livingNameCtrl : visitingNameCtrl,
-            decoration: const InputDecoration(
-              labelText: 'Place name',
-              hintText: 'Living',
+      body: SafeArea(
+        child: Column(
+          children: [
+            LinearProgressIndicator(value: (_step + 1) / 4),
+            Expanded(child: SingleChildScrollView(child: steps[_step])),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+              child: Row(
+                children: [
+                  if (_step > 0)
+                    OutlinedButton(onPressed: _back, child: const Text('Back')),
+                  const Spacer(),
+                  if (!isLast)
+                    FilledButton(
+                      onPressed: _canContinue ? _next : null,
+                      child: const Text('Continue'),
+                    )
+                  else
+                    FilledButton.icon(
+                      onPressed:
+                          (_homeCity != null && _destCity != null && !_saving)
+                          ? _finish
+                          : null,
+                      icon: _saving
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.check),
+                      label: Text(_saving ? 'Saving' : 'Finish'),
+                    ),
+                ],
+              ),
             ),
-          ),
-          const SizedBox(height: 16),
-
-          // City selection (replaces manual IANA entry)
-          _cityRow(
-            label: 'Home city',
-            value: isLiving ? livingHomeCity : visitingHomeCity,
-            onTap: () async {
-              final picked = await showCityPicker(context, initial: isLiving ? livingHomeCity : visitingHomeCity);
-              if (picked == null) return;
-              setState(() {
-                if (isLiving) {
-                  livingHomeCity = picked;
-                  _syncVisitingFromLiving();
-                } else {
-                  visitingHomeCity = picked;
-                }
-              });
-            },
-          ),
-          _cityRow(
-            label: 'Local city',
-            value: isLiving ? livingLocalCity : visitingLocalCity,
-            onTap: () async {
-              final picked = await showCityPicker(context, initial: isLiving ? livingLocalCity : visitingLocalCity);
-              if (picked == null) return;
-              setState(() {
-                if (isLiving) {
-                  livingLocalCity = picked;
-                } else {
-                  visitingLocalCity = picked;
-                }
-              });
-            },
-          ),
-
-          const SizedBox(height: 16),
-
-          // Simplified unit selection:
-          // Living: show Home units only (Local units in Advanced)
-          // Visiting: show Local units only (Home units in Advanced)
-          if (isLiving) ...[
-            const Text('Home unit system'),
-            const SizedBox(height: 8),
-            _segmentedUnit(livingHomeSystem, (v) {
-              setState(() {
-                livingHomeSystem = v;
-                _syncVisitingFromLiving();
-              });
-            }),
-          ] else ...[
-            const Text('Local unit system'),
-            const SizedBox(height: 8),
-            _segmentedUnit(visitingLocalSystem, (v) {
-              setState(() => visitingLocalSystem = v);
-            }),
           ],
-
-          const SizedBox(height: 20),
-
-          ExpansionTile(
-            title: const Text('Advanced'),
-            childrenPadding: const EdgeInsets.only(top: 8, bottom: 8),
-            children: [
-              if (isLiving) ...[
-                const Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text('Local unit system (optional)'),
-                ),
-                const SizedBox(height: 8),
-                _segmentedUnit(livingLocalSystem, (v) => setState(() => livingLocalSystem = v)),
-                const SizedBox(height: 16),
-              ] else ...[
-                const Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text('Home unit system (optional)'),
-                ),
-                const SizedBox(height: 8),
-                _segmentedUnit(visitingHomeSystem, (v) => setState(() => visitingHomeSystem = v)),
-                const SizedBox(height: 16),
-              ],
-
-              // Show the IANA time zones for transparency
-              Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  isLiving
-                      ? 'Living time zones: ${livingHomeCity?.timeZone} → ${livingLocalCity?.timeZone}'
-                      : 'Visiting time zones: ${visitingHomeCity?.timeZone} → ${visitingLocalCity?.timeZone}',
-                ),
-              ),
-              const SizedBox(height: 8),
-            ],
-          ),
-
-          const SizedBox(height: 24),
-
-          Row(
-            children: [
-              if (!isLiving)
-                TextButton(
-                  onPressed: () => setState(() => step = 0),
-                  child: const Text('Back'),
-                ),
-              const Spacer(),
-              ElevatedButton(
-                onPressed: _saveAndContinue,
-                child: Text(isLiving ? 'Next' : 'Finish'),
-              ),
-            ],
-          ),
-        ],
+        ),
       ),
     );
   }
 }
-
