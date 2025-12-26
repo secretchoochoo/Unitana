@@ -1,7 +1,6 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
-import 'package:unitana/data/cities.dart';
+
+import '../data/cities.dart';
 
 class CityPicker extends StatefulWidget {
   final List<City> cities;
@@ -14,222 +13,95 @@ class CityPicker extends StatefulWidget {
 }
 
 class _CityPickerState extends State<CityPicker> {
-  static const int _maxResults = 200;
+  final TextEditingController _searchController = TextEditingController();
 
-  final TextEditingController _queryCtrl = TextEditingController();
-
-  Timer? _debounce;
-  String _q = '';
-
-  late List<City> _sorted;
-  late Map<String, String> _searchIndexById;
+  String _query = '';
 
   @override
   void initState() {
     super.initState();
-    _rehydrateIndexes(widget.cities);
-  }
-
-  @override
-  void didUpdateWidget(covariant CityPicker oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.cities != widget.cities) {
-      _rehydrateIndexes(widget.cities);
-    }
-  }
-
-  void _rehydrateIndexes(List<City> cities) {
-    _sorted = List<City>.from(cities)
-      ..sort((a, b) => a.display.toLowerCase().compareTo(b.display.toLowerCase()));
-
-    _searchIndexById = {
-      for (final c in _sorted) c.id: _buildSearchIndex(c),
-    };
+    _searchController.addListener(() {
+      setState(() => _query = _searchController.text);
+    });
   }
 
   @override
   void dispose() {
-    _debounce?.cancel();
-    _queryCtrl.dispose();
+    _searchController.dispose();
     super.dispose();
-  }
-
-  void _onQueryChanged(String v) {
-    _debounce?.cancel();
-    _debounce = Timer(const Duration(milliseconds: 130), () {
-      if (!mounted) return;
-      setState(() => _q = v);
-    });
-  }
-
-  String _buildSearchIndex(City c) {
-    final tokens = <String>[
-      c.cityName,
-      c.countryCode,
-      c.countryName,
-      c.timeZoneId,
-      c.currencyCode,
-      if (c.admin1Code != null) c.admin1Code!,
-      if (c.admin1Name != null) c.admin1Name!,
-      ..._countryAliases(c),
-      ..._timeZoneAliases(c.timeZoneId),
-      ..._currencyAliases(c.currencyCode),
-    ];
-
-    final joined = tokens
-        .where((t) => t.trim().isNotEmpty)
-        .join(' ')
-        .toLowerCase();
-
-    return joined;
-  }
-
-  List<String> _countryAliases(City c) {
-    // Keep this conservative and obvious.
-    // Expand as we learn real user queries.
-    final cc = c.countryCode.toUpperCase();
-    if (cc == 'US') return const ['usa', 'u.s.', 'united states', 'america'];
-    if (cc == 'GB') return const ['uk', 'u.k.', 'united kingdom', 'britain'];
-    if (cc == 'PT') return const ['portugal'];
-    return const [];
-  }
-
-  List<String> _currencyAliases(String currencyCode) {
-    final code = currencyCode.toUpperCase();
-    if (code == 'EUR') return const ['euro', 'eu'];
-    if (code == 'USD') return const ['dollar', 'usd'];
-    if (code == 'GBP') return const ['pound', 'sterling'];
-    if (code == 'CAD') return const ['canadian dollar'];
-    return const [];
-  }
-
-  List<String> _timeZoneAliases(String timeZoneId) {
-    // MVP mapping: add common acronyms as search tokens.
-    // This does not attempt to model DST precisely; it only improves findability.
-    switch (timeZoneId) {
-      case 'America/Denver':
-        return const ['mst', 'mdt', 'mountain'];
-      case 'America/Los_Angeles':
-        return const ['pst', 'pdt', 'pacific'];
-      case 'America/New_York':
-        return const ['est', 'edt', 'eastern'];
-      case 'America/Chicago':
-        return const ['cst', 'cdt', 'central'];
-      case 'Europe/Lisbon':
-        return const ['wet', 'west', 'gmt'];
-      case 'Europe/London':
-        return const ['gmt', 'bst'];
-      case 'Europe/Paris':
-        return const ['cet', 'cest'];
-      default:
-        return const [];
-    }
-  }
-
-  String _subtitleFor(City c) {
-    final country = c.countryName.trim().isEmpty ? c.countryCode : c.countryName;
-
-    final regionParts = <String>[];
-    if ((c.admin1Name ?? '').trim().isNotEmpty) regionParts.add(c.admin1Name!.trim());
-    if ((c.admin1Code ?? '').trim().isNotEmpty) regionParts.add(c.admin1Code!.trim());
-
-    final region = regionParts.isEmpty ? null : regionParts.join(' · ');
-    final left = region == null ? country : '$country · $region';
-
-    return '$left · ${c.timeZoneId} · ${c.currencyCode}';
   }
 
   @override
   Widget build(BuildContext context) {
-    final q = _q.trim().toLowerCase();
-
-    final matches = q.isEmpty
-        ? _sorted
-        : _sorted
-            .where((c) => (_searchIndexById[c.id] ?? '').contains(q))
-            .toList(growable: false);
-
-    final limited = matches.length > _maxResults
-        ? matches.take(_maxResults).toList(growable: false)
-        : matches;
-
-    final countLabel = matches.length > _maxResults
-        ? 'Showing $_maxResults of ${matches.length} matches'
-        : '${matches.length} matches';
+    final cities = _filter(widget.cities, _query);
 
     return FractionallySizedBox(
       heightFactor: 0.88,
       child: SafeArea(
         top: false,
         child: Padding(
-          padding: EdgeInsets.only(
-            left: 16,
-            right: 16,
-            top: 12,
-            bottom: MediaQuery.of(context).viewInsets.bottom + 12,
-          ),
+          padding: const EdgeInsets.all(16),
           child: Column(
-            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Row(
                 children: [
-                  Expanded(
+                  const Expanded(
                     child: Text(
                       'Choose a city',
-                      style: Theme.of(context).textTheme.titleLarge,
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                  TextButton(
-                    onPressed: () => Navigator.of(context).pop<City?>(null),
-                    child: const Text('Cancel'),
+                  IconButton(
+                    tooltip: 'Close',
+                    icon: const Icon(Icons.close),
+                    onPressed: () => Navigator.of(context).pop(),
                   ),
                 ],
               ),
               const SizedBox(height: 8),
               TextField(
-                controller: _queryCtrl,
+                controller: _searchController,
                 decoration: InputDecoration(
-                  hintText: 'Search city, country, region, time zone, currency…',
+                  hintText: 'Search city, country, code, timezone',
                   prefixIcon: const Icon(Icons.search),
-                  suffixIcon: _queryCtrl.text.isEmpty
+                  suffixIcon: _query.trim().isEmpty
                       ? null
                       : IconButton(
-                          onPressed: () {
-                            setState(() {
-                              _debounce?.cancel();
-                              _queryCtrl.clear();
-                              _q = '';
-                            });
-                          },
-                          icon: const Icon(Icons.close),
                           tooltip: 'Clear',
+                          icon: const Icon(Icons.clear),
+                          onPressed: () {
+                            _searchController.clear();
+                            FocusScope.of(context).unfocus();
+                          },
                         ),
-                  border: const OutlineInputBorder(),
-                ),
-                onChanged: _onQueryChanged,
-              ),
-              const SizedBox(height: 8),
-              Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  countLabel,
-                  style: Theme.of(context).textTheme.bodySmall,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 12),
               Expanded(
-                child: ListView.separated(
-                  itemCount: limited.length,
-                  separatorBuilder: (context, index) => const Divider(height: 1),
-                  itemBuilder: (context, i) {
-                    final c = limited[i];
-                    final isSelected = widget.selected?.id == c.id;
+                child: ListView.builder(
+                  itemCount: cities.length,
+                  itemBuilder: (context, index) {
+                    final city = cities[index];
+                    final selected = widget.selected?.id == city.id;
 
                     return ListTile(
-                      title: Text(c.display),
-                      subtitle: Text(_subtitleFor(c)),
-                      trailing: isSelected ? const Icon(Icons.check) : null,
-                      onTap: () => Navigator.of(context).pop<City>(c),
+                      leading: selected
+                          ? Icon(
+                              Icons.check_circle,
+                              color: Theme.of(context).colorScheme.primary,
+                            )
+                          : const Icon(Icons.location_city_outlined),
+                      title: Text(city.cityName),
+                      subtitle: Text(_subtitle(city)),
+                      onTap: () => Navigator.of(context).pop(city),
                     );
                   },
                 ),
@@ -239,5 +111,236 @@ class _CityPickerState extends State<CityPicker> {
         ),
       ),
     );
+  }
+
+  String _subtitle(City city) {
+    final parts = <String>[
+      if ((city.admin1Name ?? '').isNotEmpty) city.admin1Name!,
+      if ((city.countryName ?? '').isNotEmpty) city.countryName!,
+      if (city.countryName == null || city.countryName!.isEmpty)
+        city.countryCode,
+    ];
+
+    // Add quick timezone hint without making the line too long.
+    final tz = city.timeZoneId;
+    if (tz.isNotEmpty) {
+      parts.add(tz);
+    }
+
+    return parts.join(' • ');
+  }
+
+  List<City> _filter(List<City> all, String queryRaw) {
+    final q = _normQuery(queryRaw);
+    if (q.isEmpty) {
+      // Prefer curated cities when query is empty (no need for kPopularCityIds).
+      final popular = <City>[];
+      final byId = {for (final c in all) c.id: c};
+
+      for (final curated in kCuratedCities) {
+        // Use dataset copy when present; fall back to curated entry.
+        popular.add(byId[curated.id] ?? curated);
+      }
+
+      return popular.isEmpty ? all.take(150).toList(growable: false) : popular;
+    }
+
+    final tokens = _tokenize(q);
+
+    // Safety valve: keep the list snappy on very broad searches.
+    const maxResults = 250;
+    final results = <City>[];
+
+    for (final c in all) {
+      final haystack = _buildHaystack(c);
+      var ok = true;
+      for (final t in tokens) {
+        if (!haystack.contains(t)) {
+          ok = false;
+          break;
+        }
+      }
+      if (!ok) continue;
+
+      results.add(c);
+      if (results.length >= maxResults) break;
+    }
+
+    // Basic relevance: cityName prefix wins.
+    results.sort((a, b) {
+      final an = _normQuery(a.cityName);
+      final bn = _normQuery(b.cityName);
+      final ap = an.startsWith(q);
+      final bp = bn.startsWith(q);
+      if (ap != bp) return ap ? -1 : 1;
+      return an.compareTo(bn);
+    });
+
+    return results;
+  }
+
+  String _buildHaystack(City c) {
+    final parts = <String>[
+      c.cityName,
+      c.countryCode,
+      c.countryName ?? '',
+      c.iso3 ?? '',
+      c.admin1Name ?? '',
+      c.admin1Code ?? '',
+      c.continent ?? '',
+      _continentName(c.continent),
+      c.timeZoneId,
+      ..._tzAbbrsFor(c.timeZoneId),
+      c.currencyCode,
+      c.currencySymbol ?? '',
+      c.currencySymbolNarrow ?? '',
+      c.currencySymbolNative ?? '',
+    ];
+
+    // Add common shorthand.
+    if (c.countryCode.toUpperCase() == 'US') {
+      parts.addAll(['USA', 'UNITED STATES', 'U S']);
+    }
+    if (c.countryCode.toUpperCase() == 'GB') {
+      parts.addAll(['UK', 'UNITED KINGDOM', 'GREAT BRITAIN']);
+    }
+
+    return _normQuery(parts.join(' '));
+  }
+
+  List<String> _tokenize(String q) {
+    final raw = q
+        .split(' ')
+        .where((t) => t.trim().isNotEmpty)
+        .toList(growable: false);
+
+    // If the user typed an abbreviation as spaced letters ("u s a"), collapse it.
+    if (raw.length >= 2 && raw.every((t) => t.length == 1)) {
+      return [raw.join()];
+    }
+
+    return raw;
+  }
+
+  String _normQuery(String input) {
+    var s = input.trim();
+    if (s.isEmpty) return '';
+
+    // Fold diacritics.
+    s = CityPickerUtils.foldDiacritics(s);
+
+    // Keep letters/numbers, turn other chars into spaces.
+    s = s.toLowerCase();
+    s = s.replaceAll(RegExp(r'[^a-z0-9]+'), ' ');
+    s = s.replaceAll(RegExp(r'\s+'), ' ').trim();
+    return s;
+  }
+
+  String _continentName(String? code) {
+    switch ((code ?? '').toUpperCase()) {
+      case 'NA':
+        return 'north america';
+      case 'SA':
+        return 'south america';
+      case 'EU':
+        return 'europe';
+      case 'AF':
+        return 'africa';
+      case 'AS':
+        return 'asia';
+      case 'OC':
+        return 'oceania';
+      default:
+        return '';
+    }
+  }
+
+  List<String> _tzAbbrsFor(String iana) {
+    switch (iana) {
+      case 'America/New_York':
+        return const ['est', 'edt'];
+      case 'America/Chicago':
+        return const ['cst', 'cdt'];
+      case 'America/Denver':
+        return const ['mst', 'mdt'];
+      case 'America/Los_Angeles':
+        return const ['pst', 'pdt'];
+      case 'Europe/London':
+        return const ['gmt', 'bst'];
+      case 'Europe/Lisbon':
+        return const ['wet', 'west'];
+      case 'Europe/Paris':
+        return const ['cet', 'cest'];
+      default:
+        return const [];
+    }
+  }
+}
+
+/// Shared helpers, kept separate so CityRepository can reuse without importing UI.
+class CityPickerUtils {
+  static String foldDiacritics(String input) {
+    var s = input;
+    const map = {
+      'à': 'a',
+      'á': 'a',
+      'â': 'a',
+      'ã': 'a',
+      'ä': 'a',
+      'å': 'a',
+      'ç': 'c',
+      'è': 'e',
+      'é': 'e',
+      'ê': 'e',
+      'ë': 'e',
+      'ì': 'i',
+      'í': 'i',
+      'î': 'i',
+      'ï': 'i',
+      'ñ': 'n',
+      'ò': 'o',
+      'ó': 'o',
+      'ô': 'o',
+      'õ': 'o',
+      'ö': 'o',
+      'ù': 'u',
+      'ú': 'u',
+      'û': 'u',
+      'ü': 'u',
+      'ý': 'y',
+      'ÿ': 'y',
+      'À': 'A',
+      'Á': 'A',
+      'Â': 'A',
+      'Ã': 'A',
+      'Ä': 'A',
+      'Å': 'A',
+      'Ç': 'C',
+      'È': 'E',
+      'É': 'E',
+      'Ê': 'E',
+      'Ë': 'E',
+      'Ì': 'I',
+      'Í': 'I',
+      'Î': 'I',
+      'Ï': 'I',
+      'Ñ': 'N',
+      'Ò': 'O',
+      'Ó': 'O',
+      'Ô': 'O',
+      'Õ': 'O',
+      'Ö': 'O',
+      'Ù': 'U',
+      'Ú': 'U',
+      'Û': 'U',
+      'Ü': 'U',
+      'Ý': 'Y',
+    };
+
+    map.forEach((k, v) {
+      s = s.replaceAll(k, v);
+    });
+
+    return s;
   }
 }

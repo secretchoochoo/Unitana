@@ -16,16 +16,28 @@ class FirstRunScreen extends StatefulWidget {
 }
 
 class _FirstRunScreenState extends State<FirstRunScreen> {
-  // 0: Splash
+  final CityRepository _cityRepo = CityRepository.instance;
+
+  /// We start with a curated list so onboarding never blocks on asset IO.
+  /// If the full dataset loads successfully, we swap it in.
+  List<City> _cities = List<City>.from(kCuratedCities);
+
+  // 0: Welcome
   // 1: Profile name
   // 2: Home
   // 3: Destination
   // 4: Review
-  int _step = 0;
+  static const int _pageCount = 5;
+
+  // Shared animation duration for subtle UI transitions in the wizard.
+  static const Duration _kAnim = Duration(milliseconds: 220);
+
+  final PageController _pageCtrl = PageController();
+  int _page = 0;
+  int _maxVisited = 0;
+  bool _isRevertingSwipe = false;
 
   final TextEditingController _profileCtrl = TextEditingController();
-
-  List<City> _allCities = const <City>[];
 
   City? _homeCity;
   City? _destCity;
@@ -41,32 +53,62 @@ class _FirstRunScreenState extends State<FirstRunScreen> {
   bool _homeClockTouched = false;
   bool _destClockTouched = false;
 
-  bool _loading = true;
-
   @override
   void initState() {
     super.initState();
+
+    // Bootstrap immediately (no spinner), then try to load the full dataset.
     _bootstrapFromState();
+    _loadCitiesBestEffort();
   }
 
   @override
   void dispose() {
     _profileCtrl.dispose();
+    _pageCtrl.dispose();
     super.dispose();
   }
 
-  Future<void> _bootstrapFromState() async {
-    // Load cities first so all subsequent logic can search across the authoritative list.
-    final cities = await CityRepository.loadCities();
+  Future<void> _loadCitiesBestEffort() async {
+    try {
+      final loaded = await _cityRepo.load();
+      if (!mounted) return;
 
+      setState(() {
+        _cities = loaded;
+        _refreshSelectedCitiesFromNewList();
+      });
+    } catch (_) {
+      // CityRepository already falls back to curated cities on failure.
+      // This is an extra safety net.
+    }
+  }
+
+  void _refreshSelectedCitiesFromNewList() {
+    // If we already picked a city from the curated list, keep the selection but
+    // try to swap it to the equivalent object in the new list (for metadata).
+    if (_homeCity != null) {
+      final match = _cities.firstWhere(
+        (c) => c.id == _homeCity!.id,
+        orElse: () => _homeCity!,
+      );
+      _homeCity = match;
+    }
+    if (_destCity != null) {
+      final match = _cities.firstWhere(
+        (c) => c.id == _destCity!.id,
+        orElse: () => _destCity!,
+      );
+      _destCity = match;
+    }
+  }
+
+  void _bootstrapFromState() {
+    // AppState is already loaded in app.dart before showing FirstRunScreen.
     final places = widget.state.places;
     final profile = widget.state.profileName;
 
-    if (!mounted) return;
-
     setState(() {
-      _allCities = cities;
-
       _profileCtrl.text = (profile == 'My Places') ? '' : profile;
 
       if (places.isNotEmpty) {
@@ -96,36 +138,27 @@ class _FirstRunScreenState extends State<FirstRunScreen> {
         _applyCityDefaults(home: true);
         _applyCityDefaults(home: false);
       }
-
-      _loading = false;
     });
   }
 
-  List<City> get _citiesOrFallback =>
-      _allCities.isNotEmpty ? _allCities : kCities;
-
   City _fallbackHomeCity() {
-    final list = _citiesOrFallback;
-    return list.firstWhere(
+    return _cities.firstWhere(
       (c) => c.id == 'denver_us',
-      orElse: () => list.first,
+      orElse: () => _cities.first,
     );
   }
 
   City _fallbackDestCity() {
-    final list = _citiesOrFallback;
-    return list.firstWhere(
+    return _cities.firstWhere(
       (c) => c.id == 'lisbon_pt',
-      orElse: () => list.first,
+      orElse: () => _cities.first,
     );
   }
 
   City? _cityForPlace(Place place) {
     // Place stores cityName/countryCode/timeZoneId (no cityId).
-    final list = _citiesOrFallback;
-
     // Try strict match first.
-    for (final c in list) {
+    for (final c in _cities) {
       if (c.cityName == place.cityName &&
           c.countryCode == place.countryCode &&
           c.timeZoneId == place.timeZoneId) {
@@ -134,7 +167,7 @@ class _FirstRunScreenState extends State<FirstRunScreen> {
     }
 
     // Fallback: city + country (timezone might differ in future).
-    for (final c in list) {
+    for (final c in _cities) {
       if (c.cityName == place.cityName && c.countryCode == place.countryCode) {
         return c;
       }
@@ -156,42 +189,58 @@ class _FirstRunScreenState extends State<FirstRunScreen> {
     }
   }
 
-  String _appBarTitle() {
-    switch (_step) {
-      case 0:
-        return 'Unitana';
-      case 1:
-        return 'What should we call it?';
-      case 2:
-        return 'Where are you from?';
-      case 3:
-        return 'Where are you going?';
-      case 4:
-        return 'Any changes?';
-      default:
-        return 'Unitana';
-    }
-  }
-
-  double _progressValue() => (_step.clamp(0, 4)) / 4.0;
-
   bool get _canContinue {
-    if (_step == 0) return true;
-    if (_step == 1) return true;
-    if (_step == 2) return _homeCity != null;
-    if (_step == 3) return _destCity != null;
+    if (_page == 0) return true;
+    if (_page == 1) return true;
+    if (_page == 2) return _homeCity != null;
+    if (_page == 3) return _destCity != null;
     return true;
   }
 
+  bool _canGoToStep(int target) {
+    if (target < 0 || target >= _pageCount) return false;
+    if (target == _page) return true;
+
+    // Allow going backward and revisiting any already-visited step.
+    if (target <= _maxVisited) return true;
+
+    // Allow moving forward one step at a time only when the current step is valid.
+    if (target == _page + 1 && _canContinue) return true;
+
+    return false;
+  }
+
+  void _goToStep(int target) {
+    if (!_canGoToStep(target)) return;
+    _goTo(target);
+  }
+
+  Future<void> _goTo(int index) async {
+    final next = index.clamp(0, _pageCount - 1);
+    if (!_canGoToStep(next)) return;
+
+    setState(() {
+      _page = next;
+      if (next > _maxVisited) _maxVisited = next;
+    });
+
+    await _pageCtrl.animateToPage(
+      next,
+      duration: _kAnim,
+      curve: Curves.easeOutCubic,
+    );
+  }
+
   void _next() {
-    if (_step < 4 && _canContinue) {
-      setState(() => _step++);
+    if (!_canContinue) return;
+    if (_page < _pageCount - 1) {
+      _goTo(_page + 1);
     }
   }
 
   void _back() {
-    if (_step > 0) {
-      setState(() => _step--);
+    if (_page > 0) {
+      _goTo(_page - 1);
     }
   }
 
@@ -272,11 +321,14 @@ class _FirstRunScreenState extends State<FirstRunScreen> {
     final fromSym = symbols[fromCode] ?? '';
     final toSym = symbols[toCode] ?? '';
 
+    // Show symbol + ISO to avoid ambiguity ($ USD vs $ CAD).
     final fromText = fromSym.isEmpty
         ? '$fromCode ${fromAmount.toStringAsFixed(0)}'
-        : '$fromSym${fromAmount.toStringAsFixed(0)}';
+        : '$fromSym $fromCode ${fromAmount.toStringAsFixed(0)}';
 
-    final toText = toSym.isEmpty ? '$toCode $toAmount' : '$toSym$toAmount';
+    final toText = toSym.isEmpty
+        ? '$toCode $toAmount'
+        : '$toSym $toCode $toAmount';
 
     return '$fromText ≈ $toText';
   }
@@ -285,10 +337,8 @@ class _FirstRunScreenState extends State<FirstRunScreen> {
     final selected = await showModalBottomSheet<City>(
       context: context,
       isScrollControlled: true,
-      builder: (_) => CityPicker(
-        cities: _citiesOrFallback,
-        selected: home ? _homeCity : _destCity,
-      ),
+      builder: (_) =>
+          CityPicker(cities: _cities, selected: home ? _homeCity : _destCity),
     );
 
     if (selected == null) return;
@@ -350,34 +400,80 @@ class _FirstRunScreenState extends State<FirstRunScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (_loading) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
-    }
-
-    final showBack = _step >= 2;
-
     return Scaffold(
-      appBar: AppBar(
-        title: Text(_appBarTitle()),
-        leading: showBack
-            ? IconButton(icon: const Icon(Icons.arrow_back), onPressed: _back)
-            : null,
-        bottom: _step == 0
-            ? null
-            : PreferredSize(
-                preferredSize: const Size.fromHeight(4),
-                child: LinearProgressIndicator(value: _progressValue()),
-              ),
-      ),
+      appBar: null,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(20, 18, 20, 20),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(child: _buildStepBody(context)),
-              const SizedBox(height: 16),
-              _buildFooter(context),
+              Expanded(
+                child: PageView(
+                  controller: _pageCtrl,
+                  physics: const PageScrollPhysics(),
+                  onPageChanged: (idx) {
+                    if (_isRevertingSwipe) {
+                      _isRevertingSwipe = false;
+                      return;
+                    }
+
+                    if (!_canGoToStep(idx)) {
+                      _isRevertingSwipe = true;
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        if (!mounted) return;
+                        _pageCtrl.animateToPage(
+                          _page,
+                          duration: _kAnim,
+                          curve: Curves.easeOutCubic,
+                        );
+                      });
+                      return;
+                    }
+
+                    setState(() {
+                      _page = idx;
+                      if (idx > _maxVisited) _maxVisited = idx;
+                    });
+                  },
+                  children: [
+                    KeyedSubtree(
+                      key: const Key('first_run_step_welcome'),
+                      child: _welcomeStep(context),
+                    ),
+                    KeyedSubtree(
+                      key: const Key('first_run_step_profile'),
+                      child: _profileStep(context),
+                    ),
+                    KeyedSubtree(
+                      key: const Key('first_run_step_home'),
+                      child: _placeStep(context, home: true),
+                    ),
+                    KeyedSubtree(
+                      key: const Key('first_run_step_destination'),
+                      child: _placeStep(context, home: false),
+                    ),
+                    KeyedSubtree(
+                      key: const Key('first_run_step_review'),
+                      child: _reviewStep(context),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 14),
+              _buildPagerControls(context),
+              if (_page == 4) ...[
+                const SizedBox(height: 14),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton.icon(
+                    key: const Key('first_run_finish_button'),
+                    onPressed: _saveAndFinish,
+                    icon: const Icon(Icons.check),
+                    label: const Text('Finish'),
+                  ),
+                ),
+              ],
             ],
           ),
         ),
@@ -385,59 +481,109 @@ class _FirstRunScreenState extends State<FirstRunScreen> {
     );
   }
 
-  Widget _buildStepBody(BuildContext context) {
-    switch (_step) {
-      case 0:
-        return _splashStep(context);
-      case 1:
-        return _profileStep(context);
-      case 2:
-        return _placeStep(context, home: true);
-      case 3:
-        return _placeStep(context, home: false);
-      case 4:
-        return _reviewStep(context);
-      default:
-        return const SizedBox.shrink();
-    }
-  }
+  Widget _buildPagerControls(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
 
-  Widget _buildFooter(BuildContext context) {
-    if (_step == 0) {
-      return Align(
-        alignment: Alignment.bottomRight,
-        child: FilledButton(onPressed: _next, child: const Text('Start')),
-      );
-    }
+    final canPrev = _canGoToStep(_page - 1);
+    final canNext = _canGoToStep(_page + 1);
 
-    if (_step == 4) {
-      return Row(
+    return SafeArea(
+      top: false,
+      child: Row(
         children: [
-          OutlinedButton(onPressed: _back, child: const Text('Back')),
-          const Spacer(),
-          FilledButton.icon(
-            onPressed: _saveAndFinish,
-            icon: const Icon(Icons.check),
-            label: const Text('Finish'),
+          _navIconButton(
+            key: const Key('first_run_nav_prev'),
+            icon: Icons.chevron_left,
+            enabled: canPrev,
+            onPressed: _back,
+            cs: cs,
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Center(
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: _buildDots(context),
+              ),
+            ),
+          ),
+          const SizedBox(width: 14),
+          _navIconButton(
+            key: const Key('first_run_nav_next'),
+            icon: Icons.chevron_right,
+            enabled: canNext,
+            onPressed: _next,
+            cs: cs,
           ),
         ],
-      );
-    }
-
-    return Row(
-      children: [
-        if (_step >= 2)
-          OutlinedButton(onPressed: _back, child: const Text('Back')),
-        const Spacer(),
-        FilledButton(
-          onPressed: _canContinue ? _next : null,
-          child: const Text('Continue'),
-        ),
-      ],
+      ),
     );
   }
 
-  Widget _splashStep(BuildContext context) {
+  Widget _navIconButton({
+    required Key key,
+    required IconData icon,
+    required bool enabled,
+    required VoidCallback onPressed,
+    required ColorScheme cs,
+  }) {
+    return IconButton(
+      key: key,
+      onPressed: enabled ? onPressed : null,
+      icon: Icon(icon),
+      iconSize: 34,
+      padding: const EdgeInsets.all(12),
+      constraints: const BoxConstraints.tightFor(width: 56, height: 56),
+      style: IconButton.styleFrom(
+        backgroundColor: enabled
+            ? cs.primaryContainer
+            : cs.surfaceContainerHighest,
+        foregroundColor: enabled ? cs.onPrimaryContainer : cs.onSurfaceVariant,
+        shape: const StadiumBorder(),
+      ),
+    );
+  }
+
+  Widget _buildDots(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: List.generate(5, (i) {
+        final active = i == _page;
+        final visited = i <= _maxVisited;
+        final canTap = visited || (i == _page + 1 && _canContinue);
+
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 6),
+          child: InkWell(
+            onTap: canTap ? () => _goToStep(i) : null,
+            borderRadius: BorderRadius.circular(999),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 10),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 160),
+                curve: Curves.easeOut,
+                width: active ? 30 : 12,
+                height: 12,
+                decoration: BoxDecoration(
+                  color: active
+                      ? cs.primary
+                      : (canTap
+                            ? cs.onSurfaceVariant.withAlpha(120)
+                            : cs.onSurfaceVariant.withAlpha(60)),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+              ),
+            ),
+          ),
+        );
+      }),
+    );
+  }
+
+  Widget _welcomeStep(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -457,13 +603,6 @@ class _FirstRunScreenState extends State<FirstRunScreen> {
         const SizedBox(height: 18),
         Center(
           child: Text(
-            'Unitana',
-            style: Theme.of(context).textTheme.headlineMedium,
-          ),
-        ),
-        const SizedBox(height: 10),
-        Center(
-          child: Text(
             'A decoder ring for real life.',
             style: Theme.of(context).textTheme.titleMedium,
           ),
@@ -478,11 +617,7 @@ class _FirstRunScreenState extends State<FirstRunScreen> {
           'Next we’ll name this setup, then pick a Home and a Destination.',
           style: Theme.of(context).textTheme.bodyMedium,
         ),
-        const Spacer(),
-        Text(
-          'No pressure. Everything here can be edited later.',
-          style: Theme.of(context).textTheme.bodySmall,
-        ),
+        const SizedBox(height: 24),
       ],
     );
   }
@@ -491,28 +626,16 @@ class _FirstRunScreenState extends State<FirstRunScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Give this setup a name',
-          style: Theme.of(context).textTheme.headlineSmall,
-        ),
-        const SizedBox(height: 8),
-        Text(
-          'This name makes it easy to recognize later, especially once you add more places.',
-          style: Theme.of(context).textTheme.bodyLarge,
-        ),
-        const SizedBox(height: 14),
+        const SizedBox(height: 6),
         TextField(
+          key: const Key('first_run_profile_name_field'),
           controller: _profileCtrl,
           decoration: const InputDecoration(
             labelText: 'Profile name (optional)',
             hintText: 'My Places',
+            helperText: 'You can change this later.',
             border: OutlineInputBorder(),
           ),
-        ),
-        const SizedBox(height: 10),
-        Text(
-          'You can edit this later. Multiple profiles are planned for premium (details TBD).',
-          style: Theme.of(context).textTheme.bodySmall,
         ),
       ],
     );
@@ -523,22 +646,19 @@ class _FirstRunScreenState extends State<FirstRunScreen> {
     final unit = home ? _homeUnit : _destUnit;
     final use24h = home ? _homeUse24h : _destUse24h;
 
-    final title = home ? 'Home' : 'Destination';
-    final subtitle = home
-        ? 'Pick the place that feels like your baseline.'
-        : 'Pick the place you’re traveling to (or moving to, and calling it a “trip” for now).';
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(title, style: Theme.of(context).textTheme.headlineSmall),
-        const SizedBox(height: 8),
-        Text(subtitle, style: Theme.of(context).textTheme.bodyLarge),
-        const SizedBox(height: 14),
         OutlinedButton.icon(
+          key: home
+              ? const Key('first_run_home_city_button')
+              : const Key('first_run_dest_city_button'),
           onPressed: () => _pickCity(home: home),
           icon: Icon(home ? Icons.location_city : Icons.flight_takeoff),
-          label: Text(city?.display ?? 'Choose a city'),
+          label: Text(
+            city?.display ??
+                (home ? 'Choose Home city' : 'Choose Destination city'),
+          ),
         ),
         const SizedBox(height: 18),
         Text('Units', style: Theme.of(context).textTheme.titleLarge),
@@ -600,7 +720,8 @@ class _FirstRunScreenState extends State<FirstRunScreen> {
                 ),
                 _kvRow('Temp', _tempPreview(unit)),
                 _kvRow('Wind', _windPreview(unit)),
-                _kvRow('Currency', city?.currencyCode ?? '—'),
+                // Show symbol + ISO if available.
+                _kvRow('Currency', city?.currencyLabel ?? 'N/A'),
               ],
             ),
           ),
@@ -626,133 +747,140 @@ class _FirstRunScreenState extends State<FirstRunScreen> {
         ? _tzDiffLabel(fromTz: destTz, toTz: homeTz)
         : '';
 
-    final homeCurrency = home?.currencyCode ?? '';
-    final destCurrency = dest?.currencyCode ?? '';
+    return SingleChildScrollView(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SizedBox(height: 6),
+          Card(
+            child: InkWell(
+              borderRadius: BorderRadius.circular(12),
+              onTap: () => _goTo(1),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 12,
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.badge_outlined),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        profile,
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                    ),
+                    const Icon(Icons.edit_outlined),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          _placeReviewCard(
+            context,
+            title: 'Home',
+            city: home,
+            unitSystem: _homeUnit,
+            use24h: _homeUse24h,
+            tzExtra: homeVsDest,
+            otherCurrency: dest?.currencyCode,
+            onTap: () => _goTo(2),
+          ),
+          const SizedBox(height: 12),
+          _placeReviewCard(
+            context,
+            title: 'Destination',
+            city: dest,
+            unitSystem: _destUnit,
+            use24h: _destUse24h,
+            tzExtra: destVsHome,
+            otherCurrency: home?.currencyCode,
+            onTap: () => _goTo(3),
+          ),
+        ],
+      ),
+    );
+  }
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text('Review', style: Theme.of(context).textTheme.headlineSmall),
-        const SizedBox(height: 8),
-        Text(
-          'Tap a card to edit it.',
-          style: Theme.of(context).textTheme.bodyLarge,
-        ),
-        const SizedBox(height: 14),
-        Card(
-          child: InkWell(
-            borderRadius: BorderRadius.circular(12),
-            onTap: () => setState(() => _step = 1),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-              child: Row(
+  Widget _placeReviewCard(
+    BuildContext context, {
+    required String title,
+    required City? city,
+    required String unitSystem,
+    required bool use24h,
+    required String tzExtra,
+    required String? otherCurrency,
+    required VoidCallback onTap,
+  }) {
+    final tz = city?.timeZoneId ?? 'N/A';
+    final tzLine = tzExtra.isEmpty ? tz : '$tz ($tzExtra)';
+
+    final currencyCode = city?.currencyCode;
+    String currencyLine = city?.currencyLabel ?? 'N/A';
+    if (currencyCode != null &&
+        otherCurrency != null &&
+        otherCurrency.isNotEmpty) {
+      currencyLine = _currencyExample(
+        fromCode: currencyCode,
+        toCode: otherCurrency,
+      );
+    }
+
+    return Card(
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
                 children: [
-                  const Icon(Icons.badge_outlined),
-                  const SizedBox(width: 10),
                   Expanded(
                     child: Text(
-                      profile,
-                      style: Theme.of(context).textTheme.titleMedium,
+                      title,
+                      style: Theme.of(context).textTheme.titleLarge,
                     ),
                   ),
                   const Icon(Icons.edit_outlined),
                 ],
               ),
-            ),
-          ),
-        ),
-        const SizedBox(height: 10),
-        Card(
-          child: InkWell(
-            borderRadius: BorderRadius.circular(12),
-            onTap: () => setState(() => _step = 2),
-            child: Padding(
-              padding: const EdgeInsets.all(14),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Home', style: Theme.of(context).textTheme.titleLarge),
-                  const SizedBox(height: 8),
-                  Text(home?.display ?? '—'),
-                  const SizedBox(height: 6),
-                  Text(
-                    '${_unitLabel(_homeUnit)} · ${_clockLabel(_homeUse24h)}',
-                    style: Theme.of(context).textTheme.bodyMedium,
-                  ),
-                  if (homeVsDest.isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 6),
-                      child: Text(
-                        'To Destination: $homeVsDest',
-                        style: Theme.of(context).textTheme.bodySmall,
-                      ),
-                    ),
-                  const SizedBox(height: 6),
-                  Text(
-                    homeCurrency.isEmpty ? '' : 'Currency: $homeCurrency',
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
-                ],
+              const SizedBox(height: 10),
+              _kvRow('City', city?.display ?? 'N/A', boldKey: true),
+              _kvRow('Time zone', tzLine, boldKey: true),
+              _kvRow('Units', _unitLabel(unitSystem), boldKey: true),
+              _kvRow('Clock', _clockLabel(use24h), boldKey: true),
+              const SizedBox(height: 8),
+              _kvRow(
+                'Time',
+                '${_timeSamplePrimary(use24h)} (${_timeSampleSecondary(use24h)})',
+                boldKey: true,
               ),
-            ),
+              _kvRow('Temp', _tempPreview(unitSystem), boldKey: true),
+              _kvRow('Wind', _windPreview(unitSystem), boldKey: true),
+              _kvRow('Currency', currencyLine, boldKey: true),
+            ],
           ),
         ),
-        const SizedBox(height: 10),
-        Card(
-          child: InkWell(
-            borderRadius: BorderRadius.circular(12),
-            onTap: () => setState(() => _step = 3),
-            child: Padding(
-              padding: const EdgeInsets.all(14),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Destination',
-                    style: Theme.of(context).textTheme.titleLarge,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(dest?.display ?? '—'),
-                  const SizedBox(height: 6),
-                  Text(
-                    '${_unitLabel(_destUnit)} · ${_clockLabel(_destUse24h)}',
-                    style: Theme.of(context).textTheme.bodyMedium,
-                  ),
-                  if (destVsHome.isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 6),
-                      child: Text(
-                        'To Home: $destVsHome',
-                        style: Theme.of(context).textTheme.bodySmall,
-                      ),
-                    ),
-                  const SizedBox(height: 6),
-                  Text(
-                    destCurrency.isEmpty ? '' : 'Currency: $destCurrency',
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(height: 14),
-        if (homeCurrency.isNotEmpty && destCurrency.isNotEmpty)
-          Text(
-            'Example: ${_currencyExample(fromCode: homeCurrency, toCode: destCurrency)}',
-            style: Theme.of(context).textTheme.bodySmall,
-          ),
-      ],
+      ),
     );
   }
 
-  Widget _kvRow(String k, String v) {
+  Widget _kvRow(String key, String value, {bool boldKey = false}) {
+    final keyStyle = boldKey
+        ? const TextStyle(fontWeight: FontWeight.w600)
+        : const TextStyle();
     return Padding(
-      padding: const EdgeInsets.only(bottom: 6),
+      padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(width: 72, child: Text(k)),
-          Expanded(child: Text(v)),
+          SizedBox(width: 92, child: Text('$key:', style: keyStyle)),
+          Expanded(child: Text(value)),
         ],
       ),
     );

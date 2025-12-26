@@ -1,28 +1,39 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-//
-// NOTE:
-// This test has been adapted from the default Flutter counter example.
-// Unitana does not use a counter or a MyApp widget, so this is now a simple
-// smoke test that verifies the app builds and renders without errors.
-
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:unitana/app/app.dart';
+import 'package:unitana/app/app_state.dart';
+import 'package:unitana/app/storage.dart';
+import 'package:unitana/features/first_run/first_run_screen.dart';
 
 void main() {
-  testWidgets('Unitana app builds smoke test', (WidgetTester tester) async {
-    // Build the Unitana app and trigger the initial frame.
-    await tester.pumpWidget(const UnitanaApp());
+  testWidgets('First run welcome stays until user navigates forward', (
+    WidgetTester tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
 
-    // Allow async initialization (storage load, etc.) to settle.
-    await tester.pump();
+    final state = UnitanaAppState(UnitanaStorage());
+    await state.load();
 
-    // Verify that the root app widget is present.
-    expect(find.byType(UnitanaApp), findsOneWidget);
+    await tester.pumpWidget(MaterialApp(home: FirstRunScreen(state: state)));
+
+    await tester.pumpAndSettle();
+
+    expect(find.text('A decoder ring for real life.'), findsOneWidget);
+    expect(find.byKey(const Key('first_run_profile_name_field')), findsNothing);
+
+    await tester.tap(find.byKey(const Key('first_run_nav_next')));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const Key('first_run_profile_name_field')),
+      findsOneWidget,
+    );
+    expect(find.text('A decoder ring for real life.'), findsNothing);
+
+    await tester.tap(find.byKey(const Key('first_run_nav_prev')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('A decoder ring for real life.'), findsOneWidget);
   });
 }

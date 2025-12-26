@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Optional git hook. To enable:
+#   git config core.hooksPath tools/githooks
+
+./tools/verify.sh

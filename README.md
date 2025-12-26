@@ -1,60 +1,64 @@
 # Unitana
 
-Unitana is a travel-first “decoder ring” that helps people live in two measurement systems at once, so they learn through exposure instead of constant translation.
+Unitana is a travel-first “decoder ring” app that helps people live in two measurement systems at once, so they learn through exposure.
 
-It’s built for travelers and relocators who want to feel oriented quickly: weather, time zones, distance/speed, weights, cooking basics, fitness metrics, and currency cues, shown side-by-side in a calm dashboard (plus display-only widgets).
+## Quick start
 
----
+From the Flutter project root:
 
-## Project status
-**Phase:** Pre-build (docs-first)  
-**Current focus:** Lock MVP truth, flows, and wireframes before committing to a full UI build.
+```bash
+flutter pub get
+flutter analyze
+flutter test
+flutter run
+```
 
----
+## Project layout
 
-## Where to start (source of truth)
-- **MVP truth (why we exist + hard constraints):** `docs/00-mvp-truth.md`
-- **Flows / navigation map (next):** `docs/01-flows.md`
-- **Wireframes (after flows):** `docs/02-wireframes.md`
-- **Architecture decisions (short, durable):** `docs/adr/`
+- `lib/main.dart` – app entry
+- `lib/features/first_run/` – first-run setup wizard
+  - `first_run_screen.dart` – the wizard UI and state
+- `test/` – basic widget test scaffold
 
----
+## First-run wizard
 
-## Guiding principles
-- Calm dashboard, not a kitchen-sink utility
-- Offline-first trust (cached data shown honestly)
-- Widgets designed around real refresh constraints (no fake real-time)
-- Learning aids are orientation helpers, not authorities
-- Accessibility is day one
+The wizard is implemented as a controlled `PageView` (no free swipe by default) with:
 
----
+- A single state owner (`_FirstRunScreenState`) that holds draft values for:
+  - profile name
+  - home + destination place configuration
+- A bottom navigation/control area that:
+  - gates forward navigation to keep the user in a simple, linear flow
+  - allows “back” and “next” where appropriate
+  - exposes “Finish” on the review step
 
-## Repo conventions (so future-us stays sane)
-- Docs live in `docs/` and evolve alongside code.
-- Every non-trivial decision gets a short ADR in `docs/adr/`.
-- Prefer small commits with clear messages.
+The review step renders “card” style summaries for each place. These cards are intended to become the visual basis for the dashboard widgets.
 
-**Suggested commit prefixes**
-- `docs:` documentation changes
-- `feat:` new feature work
-- `fix:` bug fixes
-- `chore:` tooling/repo maintenance
-- `test:` tests only
-- `refactor:` refactors without behavior change
+## Documentation
 
----
+Project documentation lives in `docs/`:
 
-## Development
-Not wired up yet (stack selection pending).
+- `docs/postmortems/` – what we learned while building and stabilizing flows
+- `docs/architecture/` – current state diagrams and component structure
+- `docs/ai/` – prompts, workflows, and guidance for AI-assisted development
+- `docs/context/` – compact machine-ingestible context (JSON) used to seed new chats
 
-When we pick the stack, this section will include:
-- local prerequisites
-- install steps
-- build/run commands for iOS and Android
-- how widgets are tested
-- how release builds are produced
+Start here:
 
----
+- `docs/ai/WORKING_WITH_CHATGPT.md`
+- `docs/ai/continuation_prompt.md`
 
-## License
-TBD (defaulting to “All Rights Reserved” until we decide otherwise).
+
+## Local quality checks
+
+Run the standard verification sequence:
+
+```bash
+./tools/verify.sh
+```
+
+Optional: enable a local pre-commit hook so you can’t accidentally commit code that fails analyze/test:
+
+```bash
+git config core.hooksPath tools/githooks
+```

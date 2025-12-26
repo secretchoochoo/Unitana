@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../app/app_state.dart';
 import '../../app/app.dart';
+import '../../data/city_repository.dart';
 
 class DashboardScreen extends StatelessWidget {
   final UnitanaAppState state;
@@ -8,6 +9,10 @@ class DashboardScreen extends StatelessWidget {
 
   Future<void> _resetAndReroute(BuildContext context) async {
     await state.resetAll();
+
+    // Clear in-process caches so the next boot behaves like a fresh install
+    // during development.
+    CityRepository.instance.resetCache();
 
     // Replace the navigation stack with a fresh UnitanaApp instance.
     // UnitanaApp will re-bootstrap state and route to FirstRunScreen because

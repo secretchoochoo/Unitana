@@ -1,196 +1,396 @@
-/// A curated starter list (fallback) plus the shared City model.
+// City dataset + curated lists used by the city picker and onboarding.
+//
+// Source of truth is the JSON asset (cities_v1.json) loaded by CityRepository.
+// This file defines the City model plus a small curated list for UX defaults
+// (popular/quick picks).
+
+import 'dart:math' as math;
+
+/// Currency symbols used for display.
 ///
-/// The authoritative list is loaded from an asset via CityRepository:
-///   assets/data/cities_world_v1.json
-///
-/// Keep this file const-friendly so the app can always boot even if the asset
-/// is missing or malformed.
+/// We intentionally display both symbol and ISO code (e.g. "$ USD")
+/// to avoid ambiguity across currencies that share the same symbol.
+const Map<String, String> kCurrencySymbols = {
+  'USD': r'$',
+  'EUR': '€',
+  'GBP': '£',
+  'JPY': '¥',
+  'CNY': '¥',
+  'KRW': '₩',
+  'INR': '₹',
+  'CAD': r'$',
+  'AUD': r'$',
+  'NZD': r'$',
+  'CHF': 'CHF',
+  'SEK': 'kr',
+  'NOK': 'kr',
+  'DKK': 'kr',
+  'PLN': 'zł',
+  'CZK': 'Kč',
+  'HUF': 'Ft',
+  'RON': 'lei',
+  'BGN': 'лв',
+  'TRY': '₺',
+  'RUB': '₽',
+  'UAH': '₴',
+  'BRL': r'R$',
+  'MXN': r'$',
+  'ARS': r'$',
+  'CLP': r'$',
+  'COP': r'$',
+  'PEN': 'S/',
+  'ZAR': 'R',
+  'ILS': '₪',
+  'SAR': '﷼',
+  'AED': 'د.إ',
+  'QAR': '﷼',
+  'KWD': 'د.ك',
+  'EGP': '£',
+  'NGN': '₦',
+  'KES': 'KSh',
+  'GHS': '₵',
+  'ETB': 'Br',
+  'MAD': 'د.م.',
+  'TND': 'د.ت',
+  'DZD': 'د.ج',
+  'XOF': 'CFA',
+  'XAF': 'CFA',
+  'BDT': '৳',
+  'PKR': '₨',
+  'LKR': '₨',
+  'NPR': '₨',
+  'THB': '฿',
+  'VND': '₫',
+  'IDR': 'Rp',
+  'MYR': 'RM',
+  'SGD': r'$',
+  'HKD': r'$',
+  'TWD': r'$',
+  'PHP': '₱',
+  'ISK': 'kr',
+  'IRR': '﷼',
+  'IQD': 'ع.د',
+  'JOD': 'د.ا',
+  'OMR': '﷼',
+  'BHD': 'ب.د',
+};
+
 class City {
   final String id;
   final String cityName;
-
-  /// ISO 3166-1 alpha-2 (e.g. US, GB, PT)
   final String countryCode;
-
-  /// Country display name (e.g. United States, Portugal). Optional in fallback list.
-  final String countryName;
-
-  /// State/province code where applicable (e.g. CO, BC). Nullable.
-  final String? admin1Code;
-
-  /// State/province name where applicable (e.g. Colorado, British Columbia). Nullable.
-  final String? admin1Name;
-
-  /// IANA time zone ID (e.g. America/Denver, Europe/Lisbon)
   final String timeZoneId;
-
-  /// ISO 4217 (e.g. USD, EUR)
   final String currencyCode;
 
-  /// 'imperial' | 'metric'
-  final String defaultUnitSystem;
+  // Optional administrative / enrichment fields (may be absent in JSON).
+  final String? admin1Code;
+  final String? admin1Name;
+  final String? countryName;
+  final String? iso3;
+  final String? continent;
 
-  /// true = 24h clock
-  final bool defaultUse24h;
+  // Optional “defaults” (if absent, we infer from country).
+  final String? _defaultUnitSystem;
+  final bool? _defaultUse24h;
+
+  // Optional coordinates (for ranking / future proximity features).
+  final double? lat;
+  final double? lon;
 
   const City({
     required this.id,
     required this.cityName,
     required this.countryCode,
-    this.countryName = '',
-    this.admin1Code,
-    this.admin1Name,
     required this.timeZoneId,
     required this.currencyCode,
-    required this.defaultUnitSystem,
-    required this.defaultUse24h,
-  });
+    this.admin1Code,
+    this.admin1Name,
+    this.countryName,
+    this.iso3,
+    this.continent,
+    String? defaultUnitSystem,
+    bool? defaultUse24h,
+    this.lat,
+    this.lon,
+  }) : _defaultUnitSystem = defaultUnitSystem,
+       _defaultUse24h = defaultUse24h;
+
+  /// e.g. "Denver, CO, US" / "Lisbon, PT"
+  String get display => primaryLabel;
+
+  /// Display label used in lists. Example: "Denver, CO, US" or "Lisbon, PT".
+  String get primaryLabel {
+    final cc = countryCode.toUpperCase();
+    final a1 = (admin1Code ?? '').trim();
+    if (a1.isEmpty) return '$cityName, $cc';
+    return '$cityName, $a1, $cc';
+  }
+
+  /// Secondary label used in lists. Example: "America/Denver · $ USD"
+  String get secondaryLabel => '$timeZoneId · $currencyLabel';
+
+  String get countryLabel => countryCode.toUpperCase();
+
+  String get currencyLabel {
+    final code = currencyCode.trim().toUpperCase();
+    final sym = kCurrencySymbols[code] ?? '';
+    if (sym.isEmpty) return code;
+    return '$sym $code';
+  }
+
+  /// Currency symbol variants; best-effort based on currencyCode.
+  String? get currencySymbol {
+    final code = currencyCode.trim().toUpperCase();
+    return kCurrencySymbols[code];
+  }
+
+  String? get currencySymbolNarrow => currencySymbol;
+  String? get currencySymbolNative => currencySymbol;
+
+  /// Onboarding defaults. If the dataset provides defaults, use them.
+  /// Otherwise infer from country.
+  String get defaultUnitSystem {
+    final v = _defaultUnitSystem;
+    if (v != null && v.isNotEmpty) return v;
+
+    final cc = countryCode.toUpperCase();
+    // US + common holdouts.
+    if (cc == 'US' || cc == 'LR' || cc == 'MM') return 'imperial';
+    return 'metric';
+  }
+
+  bool get defaultUse24h {
+    final v = _defaultUse24h;
+    if (v != null) return v;
+
+    final cc = countryCode.toUpperCase();
+    // US defaults 12h; most others 24h for onboarding.
+    if (cc == 'US') return false;
+    return true;
+  }
 
   factory City.fromJson(Map<String, dynamic> json) {
-    final id = (json['id'] as String?)?.trim();
-    final cityName = (json['cityName'] as String?)?.trim() ?? '';
-    final countryCode = (json['countryCode'] as String?)?.trim() ?? '';
-
-    // Reasonable fallback id if missing.
-    final computedId = '${cityName.toLowerCase().replaceAll(' ', '_')}_'
-        '${countryCode.toLowerCase()}';
-
     return City(
-      id: (id == null || id.isEmpty) ? computedId : id,
-      cityName: cityName,
-      countryCode: countryCode,
-      countryName: (json['countryName'] as String?)?.trim() ?? '',
-      admin1Code: (json['admin1Code'] as String?)?.trim(),
-      admin1Name: (json['admin1Name'] as String?)?.trim(),
-      timeZoneId: (json['timeZoneId'] as String?)?.trim() ?? 'UTC',
-      currencyCode: (json['currencyCode'] as String?)?.trim() ?? '',
-      defaultUnitSystem:
-          (json['defaultUnitSystem'] as String?)?.trim() ?? 'metric',
-      defaultUse24h: (json['defaultUse24h'] as bool?) ?? true,
+      id: (json['id'] ?? '').toString(),
+      cityName: (json['cityName'] ?? '').toString(),
+      countryCode: (json['countryCode'] ?? '').toString(),
+      timeZoneId: (json['timeZoneId'] ?? '').toString(),
+      currencyCode: (json['currencyCode'] ?? '').toString(),
+      admin1Code: json['admin1Code']?.toString(),
+      admin1Name: json['admin1Name']?.toString(),
+      countryName: json['countryName']?.toString(),
+      iso3: json['iso3']?.toString(),
+      continent: json['continent']?.toString(),
+      defaultUnitSystem: json['defaultUnitSystem']?.toString(),
+      defaultUse24h: (json['defaultUse24h'] is bool)
+          ? json['defaultUse24h'] as bool
+          : null,
+      lat: (json['lat'] is num) ? (json['lat'] as num).toDouble() : null,
+      lon: (json['lon'] is num) ? (json['lon'] as num).toDouble() : null,
     );
   }
 
-  String get display => '$cityName, $countryCode';
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'cityName': cityName,
+    'countryCode': countryCode,
+    'timeZoneId': timeZoneId,
+    'currencyCode': currencyCode,
+    'admin1Code': admin1Code,
+    'admin1Name': admin1Name,
+    'countryName': countryName,
+    'iso3': iso3,
+    'continent': continent,
+    'defaultUnitSystem': _defaultUnitSystem,
+    'defaultUse24h': _defaultUse24h,
+    'lat': lat,
+    'lon': lon,
+  };
+
+  /// Rough distance helper for ranking (optional use).
+  double distanceTo(double? otherLat, double? otherLon) {
+    if (lat == null || lon == null || otherLat == null || otherLon == null) {
+      return double.infinity;
+    }
+    final dLat = (otherLat - lat!) * math.pi / 180.0;
+    final dLon = (otherLon - lon!) * math.pi / 180.0;
+    final a =
+        math.sin(dLat / 2) * math.sin(dLat / 2) +
+        math.cos(lat! * math.pi / 180.0) *
+            math.cos(otherLat * math.pi / 180.0) *
+            math.sin(dLon / 2) *
+            math.sin(dLon / 2);
+    final c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a));
+    const earthRadiusKm = 6371.0;
+    return earthRadiusKm * c;
+  }
 }
 
-const List<City> kCities = [
-  // USA (imperial, 12h)
+/// Small, curated list used for onboarding defaults and “quick picks”.
+///
+/// This should remain small and intentionally “world-spanning”.
+const List<City> kCuratedCities = [
   City(
     id: 'denver_us',
     cityName: 'Denver',
     countryCode: 'US',
-    countryName: 'United States',
-    admin1Code: 'CO',
-    admin1Name: 'Colorado',
     timeZoneId: 'America/Denver',
     currencyCode: 'USD',
     defaultUnitSystem: 'imperial',
     defaultUse24h: false,
+    admin1Code: 'CO',
+    admin1Name: 'Colorado',
+    countryName: 'United States',
+    iso3: 'USA',
+    continent: 'NA',
+    lat: 39.7392,
+    lon: -104.9903,
   ),
   City(
     id: 'new_york_us',
     cityName: 'New York',
     countryCode: 'US',
-    countryName: 'United States',
-    admin1Code: 'NY',
-    admin1Name: 'New York',
     timeZoneId: 'America/New_York',
     currencyCode: 'USD',
     defaultUnitSystem: 'imperial',
     defaultUse24h: false,
+    admin1Code: 'NY',
+    admin1Name: 'New York',
+    countryName: 'United States',
+    iso3: 'USA',
+    continent: 'NA',
   ),
   City(
     id: 'los_angeles_us',
     cityName: 'Los Angeles',
     countryCode: 'US',
-    countryName: 'United States',
-    admin1Code: 'CA',
-    admin1Name: 'California',
     timeZoneId: 'America/Los_Angeles',
     currencyCode: 'USD',
     defaultUnitSystem: 'imperial',
     defaultUse24h: false,
+    admin1Code: 'CA',
+    admin1Name: 'California',
+    countryName: 'United States',
+    iso3: 'USA',
+    continent: 'NA',
   ),
   City(
     id: 'chicago_us',
     cityName: 'Chicago',
     countryCode: 'US',
-    countryName: 'United States',
-    admin1Code: 'IL',
-    admin1Name: 'Illinois',
     timeZoneId: 'America/Chicago',
     currencyCode: 'USD',
     defaultUnitSystem: 'imperial',
     defaultUse24h: false,
+    admin1Code: 'IL',
+    admin1Name: 'Illinois',
+    countryName: 'United States',
+    iso3: 'USA',
+    continent: 'NA',
   ),
-
-  // Canada (metric-ish, 12h commonly)
+  City(
+    id: 'miami_us',
+    cityName: 'Miami',
+    countryCode: 'US',
+    timeZoneId: 'America/New_York',
+    currencyCode: 'USD',
+    defaultUnitSystem: 'imperial',
+    defaultUse24h: false,
+    admin1Code: 'FL',
+    admin1Name: 'Florida',
+    countryName: 'United States',
+    iso3: 'USA',
+    continent: 'NA',
+  ),
   City(
     id: 'toronto_ca',
     cityName: 'Toronto',
     countryCode: 'CA',
-    countryName: 'Canada',
-    admin1Code: 'ON',
-    admin1Name: 'Ontario',
     timeZoneId: 'America/Toronto',
     currencyCode: 'CAD',
     defaultUnitSystem: 'metric',
     defaultUse24h: false,
+    admin1Code: 'ON',
+    admin1Name: 'Ontario',
+    countryName: 'Canada',
+    iso3: 'CAN',
+    continent: 'NA',
   ),
   City(
     id: 'vancouver_ca',
     cityName: 'Vancouver',
     countryCode: 'CA',
-    countryName: 'Canada',
-    admin1Code: 'BC',
-    admin1Name: 'British Columbia',
     timeZoneId: 'America/Vancouver',
     currencyCode: 'CAD',
     defaultUnitSystem: 'metric',
     defaultUse24h: false,
+    admin1Code: 'BC',
+    admin1Name: 'British Columbia',
+    countryName: 'Canada',
+    iso3: 'CAN',
+    continent: 'NA',
   ),
-
-  // Portugal (metric, 24h)
+  City(
+    id: 'london_gb',
+    cityName: 'London',
+    countryCode: 'GB',
+    timeZoneId: 'Europe/London',
+    currencyCode: 'GBP',
+    defaultUnitSystem: 'metric',
+    defaultUse24h: true,
+    countryName: 'United Kingdom',
+    iso3: 'GBR',
+    continent: 'EU',
+  ),
   City(
     id: 'lisbon_pt',
     cityName: 'Lisbon',
     countryCode: 'PT',
-    countryName: 'Portugal',
     timeZoneId: 'Europe/Lisbon',
     currencyCode: 'EUR',
     defaultUnitSystem: 'metric',
     defaultUse24h: true,
+    countryName: 'Portugal',
+    iso3: 'PRT',
+    continent: 'EU',
   ),
   City(
     id: 'porto_pt',
     cityName: 'Porto',
     countryCode: 'PT',
-    countryName: 'Portugal',
     timeZoneId: 'Europe/Lisbon',
     currencyCode: 'EUR',
     defaultUnitSystem: 'metric',
     defaultUse24h: true,
-  ),
-
-  // Western Europe (metric, 24h)
-  City(
-    id: 'london_gb',
-    cityName: 'London',
-    countryCode: 'GB',
-    countryName: 'United Kingdom',
-    timeZoneId: 'Europe/London',
-    currencyCode: 'GBP',
-    defaultUnitSystem: 'metric',
-    defaultUse24h: true,
+    countryName: 'Portugal',
+    iso3: 'PRT',
+    continent: 'EU',
   ),
   City(
-    id: 'paris_fr',
-    cityName: 'Paris',
-    countryCode: 'FR',
-    countryName: 'France',
-    timeZoneId: 'Europe/Paris',
+    id: 'amsterdam_nl',
+    cityName: 'Amsterdam',
+    countryCode: 'NL',
+    timeZoneId: 'Europe/Amsterdam',
     currencyCode: 'EUR',
     defaultUnitSystem: 'metric',
     defaultUse24h: true,
+    countryName: 'Netherlands',
+    iso3: 'NLD',
+    continent: 'EU',
+  ),
+  City(
+    id: 'tokyo_jp',
+    cityName: 'Tokyo',
+    countryCode: 'JP',
+    timeZoneId: 'Asia/Tokyo',
+    currencyCode: 'JPY',
+    defaultUnitSystem: 'metric',
+    defaultUse24h: true,
+    countryName: 'Japan',
+    iso3: 'JPN',
+    continent: 'AS',
   ),
 ];
+
+/// Backwards-compatible alias.
+const List<City> kCities = kCuratedCities;

@@ -1,0 +1,42 @@
+{
+  "project": {
+    "name": "Unitana",
+    "thesis": "A travel-first decoder ring that shows dual reality side-by-side so people learn through exposure.",
+    "platform": "Flutter",
+    "mvp": {
+      "devices": ["iOS", "Android", "Tablets (responsive)"],
+      "not_in_mvp": ["Watch apps"]
+    }
+  },
+  "current_status": {
+    "first_run_wizard": {
+      "state": "stable",
+      "primary_file": "lib/features/first_run/first_run_screen.dart",
+      "steps": ["intro", "profile", "home", "destination", "review"],
+      "navigation": {
+        "mechanism": "PageView + PageController",
+        "gating": "maxVisited"
+      }
+    }
+  },
+  "lessons_learned": {
+    "common_failures": [
+      "missing private fields after refactors (undefined_identifier)",
+      "layout overflow in review step",
+      "Expanded inside scroll views causing unbounded constraints"
+    ],
+    "mitigations": [
+      "patch only one concept per change",
+      "grep for identifier before renaming",
+      "prefer Flexible over Expanded inside scroll",
+      "run analyze/test after every patch"
+    ]
+  },
+  "next_slice": {
+    "dashboard": {
+      "goal": "A widget board inspired by the review cards.",
+      "layout": "modular grid, 4-column mental model with 2x tiles",
+      "must_support": ["home vs destination glance", "education through dual units", "accessible typography"]
+    }
+  }
+}
