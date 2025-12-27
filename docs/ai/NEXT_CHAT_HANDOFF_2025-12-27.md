@@ -54,7 +54,7 @@ Run a cleanup and hardening sprint:
 - Create a compact “context database” (JSON) so future chats can load stable decisions quickly.
 
 ## Working rules
-- Prefer diff-based, minimal patches over file rewrites.
+- Prefer minimal, reversible changes, but deliver them as downloadable patch zips containing full revised files.
 - Never refactor core models or navigation without a plan.
 - Always include verification steps for every change:
   - `dart format .`

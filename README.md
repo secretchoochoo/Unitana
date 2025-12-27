@@ -1,11 +1,11 @@
 # Unitana
 
 ```
- _   _ _   _ _   _ _____ _   _   _
-| | | | \ | | \ | |_   _| \ | | / \
-| | | |  \| |  \| | | | |  \| |/ _ \
-| |_| | |\  | |\  | | | | |\  / ___ \
- \___/|_| \_|_| \_| |_| |_| \_/_/   \_\
+U   U  N   N  I  TTTTT  AAAAA  N   N  AAAAA
+U   U  NN  N  I    T    A   A  NN  N  A   A
+U   U  N N N  I    T    AAAAA  N N N  AAAAA
+U   U  N  NN  I    T    A   A  N  NN  A   A
+ UUU   N   N  I    T    A   A  N   N  A   A
 ```
 
 Unitana is a travel-first “decoder ring” app that helps people live in two measurement systems at once, so they learn through exposure.
@@ -54,7 +54,7 @@ Project documentation lives in `docs/`:
 Start here:
 
 - `docs/ai/WORKING_WITH_CHATGPT.md`
-- `docs/ai/continuation_prompt.md`
+- `docs/ai/NEXT_CHAT_PROMPT.md`
 
 
 ## Local quality checks
@@ -64,6 +64,11 @@ Run the standard verification sequence:
 ```bash
 ./tools/verify.sh
 ```
+
+## Testing notes
+
+- Smoke and regression widget tests live in `app/unitana/test/`.
+- Prefer `ValueKey('...')` selectors in tests, rather than matching on visible copy.
 
 Optional: enable a local pre-commit hook so you can’t accidentally commit code that fails analyze/test:
 

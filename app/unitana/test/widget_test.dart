@@ -16,24 +16,26 @@ void main() {
     await state.load();
 
     await tester.pumpWidget(MaterialApp(home: FirstRunScreen(state: state)));
-
     await tester.pumpAndSettle();
 
-    expect(find.text('A decoder ring for real life.'), findsOneWidget);
-    expect(find.byKey(const Key('first_run_profile_name_field')), findsNothing);
+    // We key the steps so this test survives copy and layout changes.
+    expect(
+      find.byKey(const ValueKey('first_run_step_welcome')),
+      findsOneWidget,
+    );
 
-    await tester.tap(find.byKey(const Key('first_run_nav_next')));
+    await tester.tap(find.byKey(const ValueKey('first_run_nav_next')));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const ValueKey('first_run_step_home')), findsOneWidget);
+    expect(find.byKey(const ValueKey('first_run_step_welcome')), findsNothing);
+
+    await tester.tap(find.byKey(const ValueKey('first_run_nav_prev')));
     await tester.pumpAndSettle();
 
     expect(
-      find.byKey(const Key('first_run_profile_name_field')),
+      find.byKey(const ValueKey('first_run_step_welcome')),
       findsOneWidget,
     );
-    expect(find.text('A decoder ring for real life.'), findsNothing);
-
-    await tester.tap(find.byKey(const Key('first_run_nav_prev')));
-    await tester.pumpAndSettle();
-
-    expect(find.text('A decoder ring for real life.'), findsOneWidget);
   });
 }

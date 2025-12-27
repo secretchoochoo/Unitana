@@ -116,3 +116,12 @@ When copying code through multiple tools, prefer explicit escapes for characters
 - euro: `\u20AC`
 
 If the UI needs those symbols dynamically, keep them in one place (a formatter helper) so they do not appear scattered across widgets.
+
+### Test selector hygiene
+
+When writing widget tests, prefer `ValueKey('...')` lookups over brittle text matching.
+
+Notes:
+
+- `Key('some_id')` and `ValueKey('some_id')` compare equal, but `ValueKey` is clearer and avoids confusion about constructors.
+- Keep keys stable even when copy changes. Tests should survive UI copy tuning.

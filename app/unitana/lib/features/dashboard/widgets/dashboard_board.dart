@@ -222,8 +222,6 @@ class DashboardBoard extends StatelessWidget {
         ? place.timeZoneId
         : '${place.timeZoneId} $diff';
 
-    // Place stores unit system as a string ("metric" | "imperial") and clock
-    // preference as a bool (use24h). Keep dashboard logic aligned with the model.
     final units = place.unitSystem == 'metric' ? 'Metric' : 'Imperial';
     final clock = place.use24h ? '24h' : '12h';
 

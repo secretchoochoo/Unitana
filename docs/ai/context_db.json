@@ -1,0 +1,383 @@
+{
+  "schema_version": "1.0",
+  "project": {
+    "name": "Unitana",
+    "type": "cross-platform mobile app",
+    "thesis": "A travel-first decoder ring that shows dual reality side-by-side (temperature, distance, time, currency) so users learn through repeated exposure.",
+    "status": {
+      "boots_on_ios": true,
+      "dashboard_stable": true,
+      "first_run_wizard_stable": true
+    }
+  },
+  "operator_preferences": {
+    "role": "Executive Operator",
+    "delivery_format": {
+      "preferred": "downloadable patch zip with full-file replacements",
+      "notes": [
+        "Each slice ships as a zip that can be unzipped over the repo root.",
+        "Include a short list of changed, added, and removed paths.",
+        "Include verification commands and smallest-iPhone device check notes."
+      ]
+    },
+    "change_strategy": {
+      "default": "small, reversible slices",
+      "avoid": [
+        "large refactors without a plan",
+        "navigation rewrites",
+        "core model changes"
+      ]
+    }
+  },
+  "working_rules": {
+    "verification_commands": [
+      "dart format .",
+      "flutter analyze",
+      "flutter test",
+      "flutter run"
+    ],
+    "device_check": {
+      "minimum_target": "smallest iPhone class",
+      "focus": [
+        "RenderFlex overflows",
+        "tile constraints",
+        "wizard dot count",
+        "modal flows"
+      ]
+    },
+    "engineering_guardrails": {
+      "avoid_theme_null_assertions": true,
+      "prefer_safe_unicode_escapes": [
+        "\\u00B0",
+        "\\u20AC"
+      ],
+      "small_tile_constraints": "Tiles can be roughly 147x147 on small iPhones, designs must degrade gracefully."
+    }
+  },
+  "uiux": {
+    "design_direction": "Soft Geometry",
+    "typography": {
+      "accent_font": {
+        "name": "Shadows Into Light",
+        "usage": [
+          "Welcome wordmark 'Unitana'",
+          "First-run slide headers for 'Home' and 'Destination'",
+          "First-run section headers: Units, Clock, Preview",
+          "Review: profile name",
+          "Review: card titles 'Home' and 'Destination'",
+          "Dashboard: app bar profile name"
+        ],
+        "non_usage": [
+          "Review field labels such as City, Time zone, Units, Clock (kept in current font for readability and layout stability)"
+        ]
+      },
+      "alignment": {
+        "welcome": "center",
+        "wizard_slide_headers": "center",
+        "review_profile_pill": "center group (flag + name), edit icon pinned right",
+        "dashboard_appbar_title": "center"
+      }
+    }
+  },
+  "onboarding": {
+    "wizard_steps": {
+      "count": 4,
+      "order": [
+        "Welcome",
+        "Home",
+        "Destination",
+        "Review"
+      ],
+      "removed": [
+        "Profile Name"
+      ]
+    },
+    "profile_naming": {
+      "default": "Destination city (example: 'Lisbon')",
+      "country_indicator": "Destination flag emoji derived from ISO2 country code when available",
+      "edit": "Review step bottom sheet modal",
+      "overwrite_rule": "Derived default should not overwrite a user-edited custom name"
+    }
+  },
+  "dashboard": {
+    "appbar": {
+      "profile_badge": "Destination flag emoji when available",
+      "profile_name": "Centered and rendered in Shadows Into Light"
+    }
+  },
+  "slices": [
+    {
+      "id": "slice_01",
+      "date": "2025-12-27",
+      "title": "Dashboard compile hardening + smoke test",
+      "summary": [
+        "Hardened dashboard data usage against Place model fields.",
+        "Added a dashboard widget smoke test sized to smallest-phone constraints."
+      ],
+      "files": {
+        "modified": [
+          "app/unitana/lib/features/dashboard/widgets/dashboard_board.dart"
+        ],
+        "added": [
+          "app/unitana/test/dashboard_smoke_test.dart"
+        ],
+        "removed": []
+      }
+    },
+    {
+      "id": "slice_02",
+      "date": "2025-12-27",
+      "title": "Wizard 5 to 4 slides, move profile naming into Review",
+      "summary": [
+        "Removed the standalone Profile Name step.",
+        "Added Review-based profile naming with default derived from destination and modal editor.",
+        "Aligned Review typography and spacing."
+      ],
+      "files": {
+        "modified": [
+          "app/unitana/lib/features/first_run/first_run_screen.dart",
+          "docs/ai/WORKING_WITH_CHATGPT.md",
+          "docs/ai/NEXT_CHAT_PROMPT.md",
+          "docs/ai/NEXT_CHAT_HANDOFF_2025-12-27.md"
+        ],
+        "added": [],
+        "removed": []
+      }
+    },
+    {
+      "id": "slice_03",
+      "date": "2025-12-27",
+      "title": "Fix wizard overflow and update widget test",
+      "summary": [
+        "Fixed a RenderFlex overflow in first-run steps by adding scroll where needed.",
+        "Updated widget tests to match the new wizard flow."
+      ],
+      "files": {
+        "modified": [
+          "app/unitana/lib/features/first_run/first_run_screen.dart",
+          "app/unitana/test/widget_test.dart"
+        ],
+        "added": [],
+        "removed": []
+      }
+    },
+    {
+      "id": "slice_04",
+      "date": "2025-12-27",
+      "title": "Welcome slide refresh + wizard dot count cleanup + font dependency",
+      "summary": [
+        "Updated Welcome slide layout and added Google Fonts dependency.",
+        "Aligned wizard dots to step count and improved Review header behavior."
+      ],
+      "files": {
+        "modified": [
+          "app/unitana/lib/features/first_run/first_run_screen.dart",
+          "app/unitana/pubspec.yaml",
+          "app/unitana/test/widget_test.dart"
+        ],
+        "added": [],
+        "removed": []
+      }
+    },
+    {
+      "id": "slice_05",
+      "date": "2025-12-27",
+      "title": "Typography consistency: Shadows Into Light for circled headers",
+      "summary": [
+        "Applied Shadows Into Light selectively to slide headers and specific section headers.",
+        "Centered Review pill content (flag + profile name) and updated dashboard app bar styling."
+      ],
+      "files": {
+        "modified": [
+          "app/unitana/lib/features/first_run/first_run_screen.dart",
+          "app/unitana/lib/features/dashboard/dashboard_screen.dart",
+          "app/unitana/pubspec.yaml"
+        ],
+        "added": [],
+        "removed": []
+      }
+    },
+    {
+      "id": "slice_06",
+      "date": "2025-12-27",
+      "title": "Dashboard compile fixes",
+      "summary": [
+        "Fixed missing imports and removed references to non-existent Settings screen.",
+        "Reduced warning churn by removing unused declarations."
+      ],
+      "files": {
+        "modified": [
+          "app/unitana/lib/features/dashboard/dashboard_screen.dart",
+          "app/unitana/lib/features/first_run/first_run_screen.dart"
+        ],
+        "added": [],
+        "removed": []
+      }
+    },
+    {
+      "id": "slice_07",
+      "date": "2025-12-27",
+      "title": "Analyzer cleanup: remove withOpacity deprecations",
+      "summary": [
+        "Replaced deprecated withOpacity calls to satisfy flutter analyze."
+      ],
+      "files": {
+        "modified": [
+          "app/unitana/lib/features/dashboard/dashboard_screen.dart"
+        ],
+        "added": [],
+        "removed": []
+      }
+    },
+    {
+      "id": "slice_08",
+      "date": "2025-12-27",
+      "title": "Context database and slice template",
+      "summary": [
+        "Added docs/ai/context_db.json as the durable context source for new chats.",
+        "Added docs/ai/SLICE_TEMPLATE.md and basic docs indexing and revision history conventions."
+      ],
+      "files": {
+        "modified": [],
+        "added": [
+          "docs/ai/context_db.json",
+          "docs/ai/SLICE_TEMPLATE.md",
+          "docs/README.md",
+          "docs/ai/README.md",
+          "docs/ai/REVISION_HISTORY_CONVENTION.md"
+        ],
+        "removed": []
+      }
+    },
+    {
+      "id": "slice_09",
+      "date": "2025-12-27",
+      "title": "Wizard visual polish and profile-first copy",
+      "summary": [
+        "Refined first-run wizard typography using Shadows Into Light for selected headers and the profile name.",
+        "Adjusted intro slide spacing and reinforced the profile badge (flag emoji) in onboarding and dashboard."
+      ],
+      "files": {
+        "modified": [
+          "app/unitana/lib/features/first_run/first_run_screen.dart",
+          "app/unitana/lib/features/dashboard/dashboard_screen.dart",
+          "app/unitana/pubspec.yaml"
+        ],
+        "added": [],
+        "removed": []
+      }
+    },
+    {
+      "id": "slice_10",
+      "date": "2025-12-27",
+      "title": "Test selector and compile fixes",
+      "summary": [
+        "Fixed widget tests by using ValueKey selectors for wizard navigation and step keys.",
+        "Cleaned up dashboard compile issues introduced during UI iteration."
+      ],
+      "files": {
+        "modified": [
+          "app/unitana/test/widget_test.dart",
+          "app/unitana/test/app_smoke_test.dart",
+          "app/unitana/lib/features/dashboard/dashboard_screen.dart"
+        ],
+        "added": [],
+        "removed": []
+      }
+    },
+    {
+      "id": "slice_11",
+      "date": "2025-12-27",
+      "title": "Regression tests and docs IA hardening",
+      "summary": [
+        "Added regression widget tests focused on small-screen overflow prevention (dashboard and first-run review).",
+        "Added shared test helpers to capture framework errors like RenderFlex overflow.",
+        "Updated docs IA and links; added docs/testing.md; updated AI workflow docs and the context database."
+      ],
+      "files": {
+        "modified": [
+          "README.md",
+          "docs/README.md",
+          "docs/ai/README.md",
+          "docs/ai/WORKING_WITH_CHATGPT.md",
+          "docs/ai/context_db.json"
+        ],
+        "added": [
+          "docs/testing.md",
+          "app/unitana/test/test_utils.dart",
+          "app/unitana/test/dashboard_regression_test.dart",
+          "app/unitana/test/first_run_review_regression_test.dart"
+        ],
+        "removed": []
+      }
+    },
+    {
+      "id": "slice_12",
+      "date": "2025-12-27",
+      "title": "README banner typo fix",
+      "intent": "Fix UNITANA ASCII header spelling in README.",
+      "changed_files": [
+        "README.md"
+      ],
+      "added_files": [],
+      "removed_files": [],
+      "verification": [
+        "dart format .",
+        "flutter analyze",
+        "flutter test"
+      ],
+      "notes": [
+        "No runtime impact; documentation-only."
+      ]
+    }
+  ],
+  "current_pain_points": [
+    "Small-tile layout constraints on small iPhones (about 147x147).",
+    "Avoiding fragile copy that triggers overflows.",
+    "Avoiding null assertions on theme extensions.",
+    "Keeping flutter analyze clean to reduce churn."
+  ],
+  "next_backlog": [
+    {
+      "id": "slice_13",
+      "title": "Dashboard redesign design spec (new chat)",
+      "type": "design_only",
+      "status": "planned",
+      "owner_roles": [
+        "Product & Strategy Lead",
+        "UI/UX Lead",
+        "Mobile Engineering Lead",
+        "QA & Release Lead",
+        "Senior Technical Writer",
+        "AI Workflow/Prompt Engineer"
+      ],
+      "deliverables": [
+        "Two alternative layouts for a profile-first dashboard (Places tile + tools)",
+        "Chosen layout with breakpoint rules (2/3/4 columns), copy hierarchy, accessibility notes",
+        "Implementation plan split into 2–4 small slices with acceptance criteria and verification commands",
+        "Identify doc/context updates needed during implementation"
+      ],
+      "notes": [
+        "Run as a fresh chat; attach repo zip plus docs/ai/context_db.json and the Slice 13 prompt file."
+      ]
+    },
+    {
+      "id": "docs_ia_pass",
+      "title": "Docs information architecture pass",
+      "notes": [
+        "Ensure /docs structure is coherent.",
+        "Ensure READMEs match their directories.",
+        "Adopt a simple revision history convention."
+      ]
+    },
+    {
+      "id": "context_db_growth",
+      "title": "Expand context_db with stable decisions",
+      "notes": [
+        "Add new slice entries as part of each patch note.",
+        "Add design token references and key widget keys as they stabilize.",
+        "Keep a short \"known gotchas\" list with links to fixes."
+      ]
+    }
+  ]
+}

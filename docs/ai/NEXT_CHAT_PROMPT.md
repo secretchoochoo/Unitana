@@ -45,8 +45,8 @@ flutter run
 
 ## Working agreements
 
-- Provide patches as small, surgical diffs.
-- Avoid renaming or moving functions unless you also update all references.
+- Provide patches as downloadable zip files containing full revised copies of edited files (repo-relative paths).
+- Keep changes small and reversible; avoid renaming or moving functions unless you also update all references.
 - If you introduce a new identifier, declare it in the same patch.
 
 ## Next execution slice: Dashboard widget board
