@@ -1,0 +1,60 @@
+{
+  "project": "Unitana",
+  "date": "2025-12-27",
+  "high_level": {
+    "north_star": "A travel-first decoder ring that teaches by repeated dual-reality exposure.",
+    "operator_mode": "User runs commands; assistant provides precise, small, reversible steps."
+  },
+  "stability_lessons": [
+    {
+      "theme": "Small-tile layout budgets",
+      "symptom": "RenderFlex overflowed by N pixels on the bottom",
+      "root_cause": "Column children taller than a fixed tile height (often ~147x147 on small iPhones).",
+      "fix_pattern": [
+        "Make secondary/footer/hint sections optional and omit when empty",
+        "Use maxLines + ellipsis for title and value",
+        "Introduce a compact mode keyed off constraints",
+        "Keep placeholder tiles minimal until final copy is locked"
+      ],
+      "anti_patterns": [
+        "Fixed vertical spacing assuming unlimited height",
+        "Always-rendered footers/hints",
+        "Using internal scroll views inside tiles"
+      ]
+    },
+    {
+      "theme": "Null safety",
+      "symptom": "Null check operator used on a null value",
+      "root_cause": "Force-unwrapping theme extensions or optional values in widget build.",
+      "fix_pattern": [
+        "Avoid `!` for theme extensions; provide safe fallbacks",
+        "Treat optional copy as optional UI",
+        "Fail closed: render a minimal tile instead of crashing"
+      ]
+    },
+    {
+      "theme": "Unicode and copy/paste brittleness",
+      "symptom": "Symbols render inconsistently or break patches",
+      "fix_pattern": [
+        "Prefer \\u00B0 for degrees and \\u20AC for euro in source strings",
+        "Keep currency symbols in a centralized formatter"
+      ]
+    }
+  ],
+  "workflow": {
+    "change_slicing": [
+      "One feature or fix per patch",
+      "Keep patches to a small set of files",
+      "Always include verification commands"
+    ],
+    "verification": [
+      "dart format .",
+      "flutter analyze",
+      "flutter run"
+    ],
+    "patching": {
+      "preferred": "diff-based apply_patch edits",
+      "avoid": "rewriting large files without necessity"
+    }
+  }
+}

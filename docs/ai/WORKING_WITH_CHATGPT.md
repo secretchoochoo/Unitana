@@ -85,3 +85,34 @@ When touching navigation, layout constraints, or platform behavior, anchor decis
 - platform differences: iOS safe areas, text scaling, accessibility
 
 Tip: treat Flutter docs as the source of truth when a change feels “subtle”. Subtle is where most UI regressions are born.
+
+## Lessons learned: dashboard tile stability
+
+### RenderFlex overflow policy
+Small tiles must be treated as “layout budgeted” components. Any text beyond the minimum should be designed to degrade gracefully, not fail layout.
+
+Practical standards:
+
+- **No required footers** in small tiles. Footers are optional and must be omitted when empty.
+- **Secondary text is optional**; if present, it must be 1 line max in compact layouts and always ellipsized.
+- **Never rely on fixed spacers** to separate sections in a fixed-height tile. Prefer conditional gaps.
+- **Keep tiles resilient**: passing an empty string for secondary/footer should render nothing, not blank space that still consumes layout.
+
+### Null safety policy for theme extensions
+Avoid `!` on theme extensions inside widgets. Extensions can be absent during theme transitions, tests, or partial refactors.
+
+Preferred pattern:
+
+- use `Theme.of(context).extension<T>() ?? T.fallback()` if you have a safe fallback
+- or keep layout tokens in a non-nullable theme wrapper used by all routes
+
+### Deprecation hygiene
+When Flutter flags a deprecation (for example `withOpacity`), treat it like a small but real tech-debt ticket. Fix it immediately when you touch the file so it does not keep resurfacing.
+
+### Unicode and symbol hygiene
+When copying code through multiple tools, prefer explicit escapes for characters that are frequently mangled:
+
+- degrees: `\u00B0`
+- euro: `\u20AC`
+
+If the UI needs those symbols dynamically, keep them in one place (a formatter helper) so they do not appear scattered across widgets.
