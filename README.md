@@ -1,5 +1,13 @@
 # Unitana
 
+```
+ _   _ _   _ _   _ _____ _   _   _
+| | | | \ | | \ | |_   _| \ | | / \
+| | | |  \| |  \| | | | |  \| |/ _ \
+| |_| | |\  | |\  | | | | |\  / ___ \
+ \___/|_| \_|_| \_| |_| |_| \_/_/   \_\
+```
+
 Unitana is a travel-first “decoder ring” app that helps people live in two measurement systems at once, so they learn through exposure.
 
 ## Quick start

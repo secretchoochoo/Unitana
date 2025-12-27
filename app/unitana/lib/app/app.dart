@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 
+import '../features/dashboard/dashboard_screen.dart';
+import '../features/first_run/first_run_screen.dart';
+import '../models/place.dart';
+import '../theme/app_theme.dart';
 import 'app_state.dart';
 import 'storage.dart';
-import '../features/first_run/first_run_screen.dart';
-import '../features/dashboard/dashboard_screen.dart';
 
 class UnitanaApp extends StatefulWidget {
   const UnitanaApp({super.key});
@@ -13,60 +15,59 @@ class UnitanaApp extends StatefulWidget {
 }
 
 class _UnitanaAppState extends State<UnitanaApp> {
-  late final UnitanaAppState _state;
-  late final Future<void> _loadFuture;
+  late final UnitanaAppState _state = UnitanaAppState(UnitanaStorage());
+  bool _ready = false;
 
   @override
   void initState() {
     super.initState();
-    _state = UnitanaAppState(UnitanaStorage());
-    _loadFuture = _state.load(); // ✅ correct API (not loadState)
+    _bootstrap();
   }
 
-  @override
-  void dispose() {
-    _state.dispose();
-    super.dispose();
+  Future<void> _bootstrap() async {
+    await _state.load();
+    if (!mounted) return;
+    setState(() {
+      _ready = true;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    final theme = ThemeData(
-      useMaterial3: true,
-      colorSchemeSeed: const Color(0xFF2E5C8A),
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      theme: UnitanaTheme.dark(),
+      darkTheme: UnitanaTheme.dark(),
+      themeMode: ThemeMode.dark,
+      home: _ready
+          ? _HomeRouter(state: _state)
+          : const Scaffold(body: Center(child: CircularProgressIndicator())),
     );
+  }
+}
 
-    return FutureBuilder<void>(
-      future: _loadFuture,
-      builder: (context, snapshot) {
-        // Basic startup shell while loading persisted state
-        if (snapshot.connectionState != ConnectionState.done) {
-          return MaterialApp(
-            debugShowCheckedModeBanner: false,
-            theme: theme,
-            home: const Scaffold(
-              body: Center(child: CircularProgressIndicator()),
-            ),
-          );
-        }
+class _HomeRouter extends StatelessWidget {
+  final UnitanaAppState state;
 
-        // ✅ Reactive rebuild on onboarding completion (notifyListeners)
-        return AnimatedBuilder(
-          animation: _state,
-          builder: (context, _) {
-            final bool isOnboarded =
-                _state.defaultPlaceId != null && _state.places.isNotEmpty;
+  const _HomeRouter({required this.state});
 
-            return MaterialApp(
-              debugShowCheckedModeBanner: false,
-              theme: theme,
-              home: isOnboarded
-                  ? DashboardScreen(state: _state)
-                  : FirstRunScreen(state: _state),
-            );
-          },
-        );
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: state,
+      builder: (context, _) {
+        final isSetupComplete = _isSetupComplete(state);
+        return isSetupComplete
+            ? DashboardScreen(state: state)
+            : FirstRunScreen(state: state);
       },
     );
+  }
+
+  static bool _isSetupComplete(UnitanaAppState state) {
+    final places = state.places;
+    final hasLiving = places.any((p) => p.type == PlaceType.living);
+    final hasVisiting = places.any((p) => p.type == PlaceType.visiting);
+    return hasLiving && hasVisiting;
   }
 }

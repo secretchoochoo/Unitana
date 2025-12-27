@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:unitana/app/app_state.dart';
 import 'package:unitana/data/cities.dart';
 import 'package:unitana/data/city_repository.dart';
+import 'package:unitana/features/dashboard/dashboard_screen.dart';
 import 'package:unitana/models/place.dart';
 import 'package:unitana/widgets/city_picker.dart';
 
@@ -67,6 +68,76 @@ class _FirstRunScreenState extends State<FirstRunScreen> {
     _profileCtrl.dispose();
     _pageCtrl.dispose();
     super.dispose();
+  }
+
+  ButtonStyle _segmentedStyle(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
+    return ButtonStyle(
+      backgroundColor: WidgetStateProperty.resolveWith<Color>((states) {
+        if (states.contains(WidgetState.selected)) {
+          return cs.primaryContainer;
+        }
+        return cs.surface;
+      }),
+      foregroundColor: WidgetStateProperty.resolveWith<Color>((states) {
+        if (states.contains(WidgetState.selected)) {
+          return cs.onPrimaryContainer;
+        }
+        return cs.onSurface;
+      }),
+      side: WidgetStateProperty.resolveWith<BorderSide?>((states) {
+        if (states.contains(WidgetState.selected)) {
+          return BorderSide(color: cs.primary);
+        }
+        return BorderSide(color: cs.outline);
+      }),
+      shape: WidgetStatePropertyAll(
+        RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
+      ),
+      padding: const WidgetStatePropertyAll(
+        EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      ),
+      textStyle: WidgetStatePropertyAll(
+        tt.titleSmall?.copyWith(fontWeight: FontWeight.w600),
+      ),
+    );
+  }
+
+  Widget _cityPickButton(
+    BuildContext context, {
+    required Key key,
+    required VoidCallback onPressed,
+    required IconData icon,
+    required String label,
+  }) {
+    final cs = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 520),
+        child: SizedBox(
+          width: double.infinity,
+          child: OutlinedButton.icon(
+            key: key,
+            onPressed: onPressed,
+            icon: Icon(icon, size: 20),
+            label: Text(label),
+            style: OutlinedButton.styleFrom(
+              backgroundColor: cs.surface,
+              foregroundColor: cs.onSurface,
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+              textStyle: textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+              shape: const StadiumBorder(),
+              side: BorderSide(color: cs.outline),
+            ).copyWith(iconColor: WidgetStatePropertyAll(cs.primary)),
+          ),
+        ),
+      ),
+    );
   }
 
   Future<void> _loadCitiesBestEffort() async {
@@ -396,6 +467,16 @@ class _FirstRunScreenState extends State<FirstRunScreen> {
       newPlaces: [homePlace, destPlace],
       defaultId: homePlace.id,
     );
+
+    if (!mounted) return;
+
+    // If this wizard was opened from an in-app reset flow, the previous routes may
+    // have been removed. To ensure we always land on the dashboard, explicitly
+    // replace the stack with the dashboard.
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => DashboardScreen(state: widget.state)),
+      (route) => false,
+    );
   }
 
   @override
@@ -462,9 +543,14 @@ class _FirstRunScreenState extends State<FirstRunScreen> {
               ),
               const SizedBox(height: 14),
               _buildPagerControls(context),
-              if (_page == 4) ...[
-                const SizedBox(height: 14),
-                SizedBox(
+              const SizedBox(height: 14),
+              // Keep the footer height consistent across all steps so controls don't jump.
+              Visibility(
+                visible: _page == 4,
+                maintainAnimation: true,
+                maintainSize: true,
+                maintainState: true,
+                child: SizedBox(
                   width: double.infinity,
                   child: FilledButton.icon(
                     key: const Key('first_run_finish_button'),
@@ -473,7 +559,7 @@ class _FirstRunScreenState extends State<FirstRunScreen> {
                     label: const Text('Finish'),
                   ),
                 ),
-              ],
+              ),
             ],
           ),
         ),
@@ -594,10 +680,17 @@ class _FirstRunScreenState extends State<FirstRunScreen> {
             width: 84,
             height: 84,
             decoration: BoxDecoration(
-              color: cs.primaryContainer,
+              color: cs.surface,
+              border: Border.all(color: cs.outlineVariant),
               borderRadius: BorderRadius.circular(22),
             ),
-            child: Icon(Icons.public, size: 44, color: cs.onPrimaryContainer),
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Image.asset(
+                'assets/brand/unitana_logo.png',
+                fit: BoxFit.contain,
+              ),
+            ),
           ),
         ),
         const SizedBox(height: 18),
@@ -649,16 +742,16 @@ class _FirstRunScreenState extends State<FirstRunScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        OutlinedButton.icon(
+        _cityPickButton(
+          context,
           key: home
               ? const Key('first_run_home_city_button')
               : const Key('first_run_dest_city_button'),
           onPressed: () => _pickCity(home: home),
-          icon: Icon(home ? Icons.location_city : Icons.flight_takeoff),
-          label: Text(
-            city?.display ??
-                (home ? 'Choose Home city' : 'Choose Destination city'),
-          ),
+          icon: home ? Icons.location_city : Icons.flight_takeoff,
+          label:
+              city?.display ??
+              (home ? 'Choose Home city' : 'Choose Destination city'),
         ),
         const SizedBox(height: 18),
         Text('Units', style: Theme.of(context).textTheme.titleLarge),
@@ -668,6 +761,7 @@ class _FirstRunScreenState extends State<FirstRunScreen> {
             ButtonSegment<String>(value: 'imperial', label: Text('Imperial')),
             ButtonSegment<String>(value: 'metric', label: Text('Metric')),
           ],
+          style: _segmentedStyle(context),
           selected: {unit},
           onSelectionChanged: (v) {
             final next = v.first;
@@ -690,6 +784,7 @@ class _FirstRunScreenState extends State<FirstRunScreen> {
             ButtonSegment<bool>(value: false, label: Text('12-hour')),
             ButtonSegment<bool>(value: true, label: Text('24-hour')),
           ],
+          style: _segmentedStyle(context),
           selected: {use24h},
           onSelectionChanged: (v) {
             final next = v.first;
