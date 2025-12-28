@@ -39,6 +39,24 @@
         "Prefer \\u00B0 for degrees and \\u20AC for euro in source strings",
         "Keep currency symbols in a centralized formatter"
       ]
+    },
+    {
+      "theme": "Widget API drift",
+      "symptom": "flutter analyze fails with undefined identifiers, missing required named parameters, and nullable vs non-nullable argument mismatches.",
+      "root_cause": "Refactor changed call sites, constructor signatures, and helper methods in different steps, introducing parameter drift and invented types not present in the model layer.",
+      "fix_pattern": [
+        "Freeze the public widget API while refactoring internals; change signatures only in a single coordinated pass.",
+        "Do an import/type audit before referencing domain enums or models; verify the symbol exists in the repo.",
+        "Make nullability explicit: either handle null locally or require non-null at the boundary, but do not mix.",
+        "Run flutter analyze after each local refactor chunk; do not proceed when red.",
+        "Add focused widget tests around the refactored surface before switching the dashboard to use it."
+      ],
+      "anti_patterns": [
+        "Adding new named parameters without updating all call sites",
+        "Referencing types that are not defined in the current codebase",
+        "Using placeholder helper methods that are never implemented",
+        "Duplicating named parameters in constructors or ButtonStyle"
+      ]
     }
   ],
   "workflow": {

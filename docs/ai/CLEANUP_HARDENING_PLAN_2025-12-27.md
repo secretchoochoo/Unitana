@@ -69,3 +69,15 @@
 - `flutter analyze` is clean.
 - A basic dashboard rendering test exists.
 - Docs have: retro, cleanup plan, updated AI workflow guidance, and a next-chat handoff prompt.
+
+
+## P1.5: Compile gates (SEV-1 prevention)
+1. **Micro-step verification**
+   - When editing a widget used by the dashboard, run `flutter analyze` before moving to the next file.
+   - When adding or changing a constructor/named parameter, update all call sites in the same patch.
+
+2. **No invented types rule**
+   - Do not introduce new domain enums or model fields unless the slice plan explicitly lists them and the patch includes the corresponding imports and tests.
+
+3. **Parallel UI rollouts**
+   - For dashboard refactors, add new widgets alongside the old and switch via a small boolean or feature flag so rollback is a one-line change.

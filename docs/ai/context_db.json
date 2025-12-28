@@ -329,6 +329,45 @@
       "notes": [
         "No runtime impact; documentation-only."
       ]
+    },
+    {
+      "id": "slice_13",
+      "date": "2025-12-27",
+      "title": "Places Hero tile refactor attempt, compile break, and rollback to stable baseline",
+      "status": "rolled_back",
+      "summary": [
+        "Attempted to replace the existing dashboard Destination/Home tiles with a new full-width Places Hero widget and segmented toggle behavior.",
+        "Implementation diverged from existing models and widget APIs (null-safety mismatches, missing imports/types, and constructor parameter drift), causing flutter analyze and widget tests to fail.",
+        "Rolled back to the last known-good baseline where the app boots and tests pass; preserved learnings via retro/postmortem and updated the AI context DB so the next chat can restart safely."
+      ],
+      "artifacts": {
+        "failed_patch_zips": [
+          "unitana_patch_sev1_restore_places_hero_tile_2025-12-27.zip",
+          "unitana_patch_sev1_places_hero_tile_compile_fix_2025-12-27.zip"
+        ],
+        "reference_images": [
+          "Screenshot 2025-12-27 at 9.38.45 PM.png",
+          "ChatGPT Image Dec 27, 2025, 10_56_06 PM.png"
+        ]
+      },
+      "primary_failures": [
+        "Null-safety contract drift (PlacesHeroSelection? passed where PlacesHeroSelection required).",
+        "Invented or missing domain types (UnitSystem) and helper methods (_formatTime) not wired to existing code.",
+        "Constructor signatures and named parameters out of sync (prefersMetric, localLabel/homeLabel/isCompact; required parameters missing).",
+        "Duplicate named parameters and deprecated APIs introduced during rapid iteration."
+      ],
+      "lessons_learned": [
+        "Snapshot and preserve public widget APIs (constructors, required params, typedefs) until the integration pass; avoid opportunistic API edits mid-stream.",
+        "Treat any new domain enum or model as a cross-cutting change that requires an explicit plan and an import audit; do not invent types that are not already in the codebase.",
+        "Keep analysis green at micro-steps (flutter analyze frequently), then run flutter test at checkpoints; stop when either gate fails.",
+        "Prefer parallel implementation: add new widgets alongside old and switch usage behind a small toggle; avoid replacing the dashboard in one pass.",
+        "Record recurring failure modes (null-safety, API drift, invented types) as hard workflow rules for future chats."
+      ],
+      "next_actions": [
+        "Write a SEV-1 style postmortem for the failed Places Hero attempt and define a safer re-implementation plan (parallel widget plus feature flag).",
+        "Update docs/ai/WORKING_WITH_CHATGPT.md with hard rules for null-safety, constructor drift, and import/type verification.",
+        "Regenerate NEXT_CHAT_HANDOFF and NEXT_CHAT_PROMPT so the next implementation chat starts from the stable baseline but includes the aspirational mock and acceptance criteria."
+      ]
     }
   ],
   "current_pain_points": [

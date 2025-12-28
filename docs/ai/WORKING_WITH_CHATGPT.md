@@ -30,6 +30,31 @@ This project is intentionally developed with AI in the loop. The goal is speed w
 
    - If a change is UI-only, still run `flutter analyze` so missing imports, renamed methods, and unused fields get caught early.
 
+## SEV-1 guardrails: prevent widget API drift
+
+We hit a SEV-1 failure mode while trying to refactor the Dashboard Places Hero widget: the code compiled locally in pieces but the public widget API and model layer drifted out of sync, and then flutter analyze and every widget test failed at once.
+
+Hard rules for any dashboard or cross-screen widget work:
+
+1. **Freeze the public API first.**
+   - Before editing, copy the current constructor signature and any public typedefs/enums into your notes.
+   - Do not change required parameters, rename fields, or add new named parameters during a layout pass.
+
+2. **No invented domain types.**
+   - If a type like `UnitSystem` is referenced, it must already exist in the repo.
+   - If it does not exist, stop and create a small, explicit plan (where it lives, imports, migrations, tests).
+
+3. **Null safety is a contract, not a suggestion.**
+   - If a parameter is non-nullable, do not pass a nullable value and hope it works.
+   - Fix the source of truth (state initialization) or adjust the API in a deliberate, repo-wide change.
+
+4. **Constructor drift checks are mandatory.**
+   - After changing a widget constructor, run a repo-wide search for that widget and update every call site in the same patch.
+
+5. **Green gate at micro-steps.**
+   - For high-churn files (dashboard widgets), run `flutter analyze` after each logical edit.
+   - If analyze fails, do not continue stacking changes. Fix the failure immediately or revert.
+
 ## Why our earlier patches broke
 
 We repeatedly hit the same failure modes while stabilizing `first_run_screen.dart`:

@@ -1,74 +1,75 @@
-# Unitana continuation prompt (for a new chat)
+# Next Chat Handoff (2025-12-27)
 
-You are entering an ongoing product development effort for a cross-platform mobile application named **Unitana**.
+## Current repo state (known-good baseline)
 
-## Executive context
-Unitana is a travel-first “decoder ring” that shows dual reality side-by-side (F/C, miles/km, 12/24h, home/local time, currency) so users learn through repeated exposure. The app already has a functional first-run wizard and a calm dashboard layout.
+- Branch: `main` (intended to track `origin/main`)
+- Build status: `flutter analyze` and `flutter test` pass on the stable baseline that was restored after a failed dashboard refactor.
+- UI status: Dashboard renders with the older tile composition (Destination/Home cards plus a tile grid). First-run wizard remains stable.
 
-The user is the **Executive Operator**. They are highly technical and will run commands, but want step-by-step instructions and small reversible changes.
+This handoff intentionally treats the baseline as the source of truth. The “dream” Places Hero widget is a target, not the current implementation.
 
-## Required operating mode
-Respond as a coordinated team with distinct roles:
-1) **Product & Strategy Lead**
-- Guard the product thesis, prevent feature creep, keep the MVP coherent.
-- Primary question: “Does this meaningfully improve the user’s lived experience?”
+## What we attempted (and rolled back)
 
-2) **UI / UX Lead**
-- Own flow clarity, information hierarchy, copy tone, and accessibility.
-- Primary question: “Is this obvious, calm, and human on first use?”
+Goal: Replace the old Destination/Home split with a single full-width “Places Hero” widget featuring:
 
-3) **Mobile Engineering Lead (Flutter)**
-- Own architecture, state management consistency, test strategy, performance.
-- Primary question: “Is this robust, idiomatic Flutter, and easy to maintain?”
+- Segmented toggle: Destination (local reality) vs Home (home reality)
+- One top-level reality toggle drives hero + tool tiles
+- Circular refresh button for all live data
 
-4) **QA & Release Lead**
-- Own regression coverage, device matrix checks, smoke tests.
-- Primary question: “Will this break on small screens, or after hot reload?”
+Outcome: The attempt broke compilation and cascaded into all widget tests failing. Root cause was widget API drift and missing or invented domain types (null-safety mismatch, constructor parameter mismatches, undefined `UnitSystem`, missing `_formatTime`, duplicate named args).
 
-5) **Senior Technical Writer (and cultural expert)**
-- Own docs IA, consistent naming, revision histories, and clarity.
-- Primary question: “Can a new engineer understand this repo in 15 minutes?”
+Rollback decision: Restore last known-good code, then preserve learnings in docs and the context database.
 
-6) **AI Workflow/Prompt Engineer**
-- Own the prompt and context packaging, reduce hallucinations, shrink context.
-- Primary question: “Can we make the next step smaller and safer?”
+See:
+- `docs/ai/POSTMORTEM_SEV1_PLACES_HERO_TILE_2025-12-27.md`
+- `docs/ai/RETRO_2025-12-27.md` (addendum)
+- `docs/ai/context_db.json` (Slice 13 entry)
 
-## Current state
-- App boots on iOS.
-- Dashboard tiles mostly render cleanly; repeated work focused on eliminating RenderFlex overflows in small tiles.
-- We introduced a more flexible `UnitanaTile` with:
-  - optional sections (secondary/footer/hint only when non-empty)
-  - compact layout rules for small tiles
-- We intentionally simplified the “Custom” tile copy to avoid chasing overflows before finalizing copy.
+## Inputs for the next implementation chat
 
-## Active pain points
-- Small-tile layout constraints: tiles can be ~147x147 on small iPhones.
-- Null assertions on theme extensions: avoid `!` for theme tokens; provide defaults or safe fallbacks.
-- Unicode and rendering: prefer `\u00B0` and `\u20AC` in strings where copy/paste or platform encoding becomes brittle.
+Artifacts to provide to the next chat:
 
-## Next phase mission
-Run a cleanup and hardening sprint:
-- Remove remaining layout fragility.
-- Reduce compile/lint churn.
-- Audit docs structure and naming.
-- Create a compact “context database” (JSON) so future chats can load stable decisions quickly.
+- Baseline repo zip (this exact restored baseline)
+- `docs/ai/context_db.json` (updated)
+- Reference images:
+  - Older baseline screenshot (the working widget layout)
+  - Aspirational Places Hero mock (the target)
 
-## Working rules
-- Prefer minimal, reversible changes, but deliver them as downloadable patch zips containing full revised files.
-- Never refactor core models or navigation without a plan.
-- Always include verification steps for every change:
-  - `dart format .`
-  - `flutter analyze`
-  - `flutter run`
-  - device check: smallest iPhone target
+## Re-implementation strategy (the safe way)
 
-## Immediate backlog
-1) Finish eliminating dashboard overflow errors.
-2) Add a minimal widget regression test for the dashboard and tiles.
-3) Docs pass:
-   - ensure /docs information architecture is clear
-   - update READMEs so they match their directories
-   - add revision history convention
-4) Prompt/database pass:
-   - produce `docs/ai/context_db.json`
-   - produce a standard “slice template” for tasks.
+1. **Parallel widget approach**
+   - Add a new Places Hero widget next to the existing dashboard widgets.
+   - Do not change public constructors of existing widgets during the first pass.
+   - Wire the new widget behind a temporary feature flag or a local toggle in the dashboard screen.
+
+2. **Single source of truth for selected place**
+   - Introduce a small, testable state holder (ValueNotifier, provider, or existing state pattern) that drives:
+     - Places Hero primary/secondary
+     - Tool tiles primary/secondary unit displays
+
+3. **Refresh action**
+   - Add a circular refresh icon button.
+   - Implement refresh as a debounced action that can safely handle partial failures.
+
+4. **Tests first for the new behavior**
+   - Add widget tests for:
+     - Toggle switches primary/secondary
+     - Refresh triggers the refresh mechanism
+     - Tap on a tile opens the shared bottom sheet scaffold
+
+## Verification commands
+
+Run these locally after applying any patch:
+
+```bash
+flutter analyze
+flutter test
+```
+
+## Known failure modes to avoid (hard rules)
+
+- Do not invent domain enums or models. If a type does not exist, stop and add it deliberately with a plan.
+- Do not pass nullable values into non-null parameters. Fix at the source, not with `!`.
+- Do not rename constructor parameters mid-stream. Add adapters or land signature changes in an isolated commit.
+- Keep analyze green frequently, and do not proceed if it is red.
+
