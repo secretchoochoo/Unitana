@@ -1034,18 +1034,23 @@ class _FirstRunScreenState extends State<FirstRunScreen> {
                   children: [
                     Align(
                       alignment: Alignment.center,
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(flag, style: const TextStyle(fontSize: 18)),
-                          const SizedBox(width: 12),
-                          Text(
-                            profileName,
-                            style: scriptProfileName,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
+                      child: SizedBox(
+                        width: double.infinity,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(flag, style: const TextStyle(fontSize: 18)),
+                            const SizedBox(width: 12),
+                            Flexible(
+                              child: Text(
+                                profileName,
+                                style: scriptProfileName,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                     const Align(

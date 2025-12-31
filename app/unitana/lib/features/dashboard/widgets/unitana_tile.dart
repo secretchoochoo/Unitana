@@ -9,6 +9,7 @@ class UnitanaTile extends StatelessWidget {
   final String footer;
   final String? hint;
   final VoidCallback? onTap;
+  final VoidCallback? onLongPress;
   final IconData? leadingIcon;
   final Gradient? backgroundGradient;
 
@@ -20,6 +21,7 @@ class UnitanaTile extends StatelessWidget {
     required this.footer,
     this.hint,
     this.onTap,
+    this.onLongPress,
     this.leadingIcon,
     this.backgroundGradient,
   });
@@ -69,25 +71,34 @@ class UnitanaTile extends StatelessWidget {
         builder: (context, constraints) {
           final isCompact =
               (constraints.maxHeight.isFinite &&
-                  constraints.maxHeight <= 160) ||
+                  constraints.maxHeight <= 120) ||
               (constraints.maxWidth.isFinite && constraints.maxWidth <= 160);
 
-          // Content sections are optional. When a section is empty, we omit it entirely.
-          // This avoids RenderFlex overflows in tight tiles (147x147, etc.).
-          final hasSecondary = safeSecondary.trim().isNotEmpty;
+          final isMicro =
+              (constraints.maxHeight.isFinite && constraints.maxHeight <= 92) ||
+              (constraints.maxWidth.isFinite && constraints.maxWidth <= 140);
+
+          final pad = isMicro
+              ? tokens.gutterXS * 0.45
+              : (isCompact ? tokens.gutterXS * 0.6 : tokens.gutterXS);
+          final vGap = isMicro
+              ? tokens.gutterXS * 0.15
+              : (isCompact ? tokens.gutterXS * 0.35 : tokens.gutterXS * 0.6);
+          final hGap = isMicro
+              ? tokens.gutterXS * 0.25
+              : (isCompact ? tokens.gutterXS * 0.5 : tokens.gutterXS * 0.75);
+          final midGap = isMicro
+              ? tokens.gutterXS * 0.1
+              : (isCompact ? tokens.gutterXS * 0.25 : tokens.gutterXS * 0.4);
+
+          final iconBox = isMicro ? 24.0 : (isCompact ? 28.0 : 32.0);
+          final iconRadius = isMicro ? 8.0 : (isCompact ? 9.0 : 12.0);
+          final iconSize = isMicro ? 13.0 : (isCompact ? 15.0 : 18.0);
+
+          final primarySize = isMicro ? 16.0 : (isCompact ? 18.0 : 28.0);
+
+          final hasSecondary = safeSecondary.trim().isNotEmpty && !isMicro;
           final hasFooter = safeFooter.trim().isNotEmpty;
-
-          // Compact tiles (147x147, etc.) need tighter metrics to avoid RenderFlex overflows.
-          final pad = isCompact ? tokens.gutterXS * 0.70 : tokens.gutterS;
-          final vGap = isCompact ? (tokens.gutterXS * 0.35) : tokens.gutterS;
-          final hGap = isCompact ? (tokens.gutterXS * 0.50) : tokens.gutterS;
-          final midGap = isCompact ? (tokens.gutterXS * 0.25) : tokens.gutterXS;
-
-          final iconBox = isCompact ? 28.0 : 36.0;
-          final iconRadius = isCompact ? 9.0 : 12.0;
-          final iconSize = isCompact ? 15.0 : 18.0;
-
-          final primarySize = isCompact ? 18.0 : 28.0;
 
           return Padding(
             padding: EdgeInsets.all(pad),
@@ -129,30 +140,38 @@ class UnitanaTile extends StatelessWidget {
                   ],
                 ),
                 SizedBox(height: vGap),
-                Text(
-                  safePrimary,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  softWrap: false,
-                  style: text.headlineMedium?.copyWith(
-                    color: scheme.onSurface,
-                    fontWeight: FontWeight.w800,
-                    fontSize: primarySize,
-                    height: 1.0,
+                Align(
+                  alignment: Alignment.center,
+                  child: Text(
+                    safePrimary,
+                    textAlign: TextAlign.center,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    softWrap: false,
+                    style: text.headlineMedium?.copyWith(
+                      color: scheme.onSurface,
+                      fontWeight: FontWeight.w800,
+                      fontSize: primarySize,
+                      height: 1.0,
+                    ),
                   ),
                 ),
                 if (hasSecondary) ...[
                   SizedBox(height: midGap),
-                  Text(
-                    safeSecondary,
-                    maxLines: isCompact ? 1 : 2,
-                    overflow: TextOverflow.ellipsis,
-                    softWrap: false,
-                    style: (isCompact ? text.bodyMedium : text.bodyLarge)
-                        ?.copyWith(
-                          color: scheme.onSurfaceVariant,
-                          fontWeight: FontWeight.w600,
-                        ),
+                  Align(
+                    alignment: Alignment.center,
+                    child: Text(
+                      safeSecondary,
+                      textAlign: TextAlign.center,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      softWrap: false,
+                      style: (isCompact ? text.bodyMedium : text.bodyLarge)
+                          ?.copyWith(
+                            color: scheme.onSurfaceVariant,
+                            fontWeight: FontWeight.w600,
+                          ),
+                    ),
                   ),
                 ],
                 if (hasFooter) ...[
@@ -203,7 +222,12 @@ class UnitanaTile extends StatelessWidget {
       button: onTap != null,
       child: Material(
         color: Colors.transparent,
-        child: InkWell(onTap: onTap, borderRadius: borderRadius, child: card),
+        child: InkWell(
+          onTap: onTap,
+          onLongPress: onLongPress,
+          borderRadius: borderRadius,
+          child: card,
+        ),
       ),
     );
   }

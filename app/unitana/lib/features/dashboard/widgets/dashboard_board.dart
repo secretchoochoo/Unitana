@@ -4,240 +4,563 @@ import 'package:flutter/material.dart';
 
 import '../../../app/app_state.dart';
 import '../../../models/place.dart';
-import '../../../theme/theme_extensions.dart';
 import '../models/dashboard_board_item.dart';
+import '../models/dashboard_live_data.dart';
+import '../models/dashboard_layout_controller.dart';
+import '../models/dashboard_session_controller.dart';
+import '../models/tool_definitions.dart';
+import '../models/activity_lenses.dart';
+import 'places_hero_v2.dart';
+import 'tool_modal_bottom_sheet.dart';
 import 'unitana_tile.dart';
 
-class DashboardBoard extends StatelessWidget {
-  final UnitanaAppState state;
-  final double availableWidth;
+// Layout constants for the dashboard grid.
+// The board measures itself based on available width and derives tile geometry
+// from these values.
+const int _minRowsPhone = 6;
+const int _minRowsTablet = 5;
+const double _gap = 12.0;
+const double _tileHeightRatio = 0.78;
 
+String _lensNameForId(String? id) {
+  // Avoid hard-coding a specific “default” lens constant; fall back to the
+  // first available lens to keep this widget resilient to lens set changes.
+  if (ActivityLenses.all.isEmpty) return 'Tools';
+
+  final normalized = id?.trim();
+  if (normalized == null || normalized.isEmpty) return 'Tools';
+
+  return ActivityLenses.all
+      .firstWhere(
+        (l) => l.id == normalized,
+        orElse: () => ActivityLenses.all.first,
+      )
+      .name;
+}
+
+class DashboardBoard extends StatefulWidget {
+  final UnitanaAppState state;
+  final DashboardSessionController session;
+  final DashboardLiveDataController liveData;
+  final DashboardLayoutController layout;
+  final double availableWidth;
+  final bool isEditing;
+  final String? focusActionTileId;
+  final ValueChanged<String?> onEnteredEditMode;
+  final VoidCallback onConsumedFocusTileId;
   const DashboardBoard({
     super.key,
     required this.state,
+    required this.session,
+    required this.liveData,
+    required this.layout,
     required this.availableWidth,
+    required this.isEditing,
+    required this.focusActionTileId,
+    required this.onEnteredEditMode,
+    required this.onConsumedFocusTileId,
   });
 
   @override
+  State<DashboardBoard> createState() => _DashboardBoardState();
+}
+
+class _DashboardBoardState extends State<DashboardBoard> {
+  String? _lastFocusId;
+  bool _pendingShowActions = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _syncFocus(widget.focusActionTileId);
+  }
+
+  @override
+  void didUpdateWidget(covariant DashboardBoard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.focusActionTileId != widget.focusActionTileId) {
+      _syncFocus(widget.focusActionTileId);
+    }
+  }
+
+  void _syncFocus(String? id) {
+    _lastFocusId = id;
+    _pendingShowActions = id != null && id.trim().isNotEmpty;
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final cols = _columnsForWidth(availableWidth);
-    final items = _defaultItems();
+    if (widget.isEditing && _pendingShowActions && _lastFocusId != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        if (!mounted) return;
+        final id = _lastFocusId;
+        if (id == null) return;
 
-    final layout = Theme.of(context).extension<UnitanaLayoutTokens>();
-    final gap = layout?.gridGap ?? 12.0;
+        _pendingShowActions = false;
+        widget.onConsumedFocusTileId();
 
-    final cell = _cellSize(availableWidth, cols, gap);
+        final item = widget.layout.items.firstWhere(
+          (i) => i.id == id,
+          orElse: () => const DashboardBoardItem(
+            id: '',
+            kind: DashboardItemKind.emptySlot,
+            span: DashboardTileSpan.oneByOne,
+          ),
+        );
+        if (item.id.isEmpty) return;
+        await _showTileActions(context, item);
+      });
+    }
 
-    final placements = _place(items, cols);
-    final rows = placements.isEmpty
-        ? 1
-        : (placements.map((p) => p.row + p.span.rowSpan).reduce(math.max));
+    final places = widget.state.places;
+    final home = _pickHome(places);
+    final dest = _pickDestination(places);
 
-    final height = rows * cell + (rows - 1) * gap;
+    final cols = widget.availableWidth >= 520 ? 3 : 2;
+
+    final toolItems = ToolDefinitions.all
+        .map(
+          (t) => DashboardBoardItem(
+            id: t.id,
+            kind: _kindForToolId(t.id),
+            span: DashboardTileSpan.oneByOne,
+          ),
+        )
+        .toList();
+
+    final items = <DashboardBoardItem>[
+      const DashboardBoardItem(
+        id: 'places_hero_v2',
+        kind: DashboardItemKind.placesHero,
+        span: DashboardTileSpan.fullWidthTwoTall,
+      ),
+      ...toolItems,
+      ...widget.layout.items,
+    ];
+
+    final placed = _place(items, cols);
+    final rowsUsed = placed.isEmpty
+        ? 0
+        : placed.map((p) => p.row + p.span.rowSpan).reduce(math.max);
+
+    // Give the grid some breathing room so users see open slots without
+    // entering edit mode. This also makes the “+” affordance discoverable.
+    final minRows = cols <= 2 ? _minRowsPhone : _minRowsTablet;
+    final targetRows = math.max(rowsUsed, minRows);
+
+    final tileW = (widget.availableWidth - (cols - 1) * _gap) / cols;
+    final tileH = tileW * _tileHeightRatio;
+    final boardH = targetRows == 0
+        ? 0.0
+        : targetRows * tileH + (targetRows - 1) * _gap;
+
+    final occupied = _occupiedCells(placed);
+    final placeholders = _placeholderCells(occupied, cols, targetRows);
 
     return SizedBox(
-      height: height,
+      height: boardH,
       child: Stack(
         children: [
-          for (final p in placements)
+          // “Empty cell” affordances.
+          for (final cell in placeholders)
             Positioned(
-              left: p.col * (cell + gap),
-              top: p.row * (cell + gap),
-              width: p.span.colSpan * cell + (p.span.colSpan - 1) * gap,
-              height: p.span.rowSpan * cell + (p.span.rowSpan - 1) * gap,
-              child: _buildTile(context, p.item),
+              left: cell.col * (tileW + _gap),
+              top: cell.row * (tileH + _gap),
+              width: tileW,
+              height: tileH,
+              child: _AddToolTile(
+                key: ValueKey('dashboard_add_slot_${cell.row}_${cell.col}'),
+                onTap: () => _showToolPicker(
+                  context,
+                  anchor: DashboardAnchor(index: cell.row * cols + cell.col),
+                ),
+              ),
+            ),
+          for (final p in placed)
+            Positioned(
+              left: p.col * (tileW + _gap),
+              top: p.row * (tileH + _gap),
+              width: p.span.colSpan * tileW + (p.span.colSpan - 1) * _gap,
+              height: p.span.rowSpan * tileH + (p.span.rowSpan - 1) * _gap,
+              child: _buildTile(context, p.item, home, dest),
             ),
         ],
       ),
     );
   }
 
-  static int _columnsForWidth(double w) {
-    if (w >= 840) return 4;
-    if (w >= 600) return 3;
-    return 2;
-  }
-
-  static double _cellSize(double width, int cols, double gap) {
-    final totalGap = gap * (cols - 1);
-    return (width - totalGap) / cols;
-  }
-
-  List<DashboardBoardItem> _defaultItems() {
-    return const [
-      DashboardBoardItem(
-        id: 'dest',
-        kind: DashboardItemKind.destinationSummary,
-        span: DashboardTileSpan.twoByOne,
-      ),
-      DashboardBoardItem(
-        id: 'home',
-        kind: DashboardItemKind.homeSummary,
-        span: DashboardTileSpan.twoByOne,
-      ),
-      DashboardBoardItem(
-        id: 'temp',
-        kind: DashboardItemKind.quickTemp,
-        span: DashboardTileSpan.oneByOne,
-      ),
-      DashboardBoardItem(
-        id: 'dist',
-        kind: DashboardItemKind.quickDistance,
-        span: DashboardTileSpan.oneByOne,
-      ),
-      DashboardBoardItem(
-        id: 'currency',
-        kind: DashboardItemKind.quickCurrency,
-        span: DashboardTileSpan.twoByTwo,
-      ),
-      DashboardBoardItem(
-        id: 'add',
-        kind: DashboardItemKind.addTile,
-        span: DashboardTileSpan.oneByOne,
-      ),
-    ];
-  }
-
-  Widget _buildTile(BuildContext context, DashboardBoardItem item) {
-    final home = _pickHome(state.places);
-    final dest = _pickDestination(state.places);
-
+  Widget _buildTile(
+    BuildContext context,
+    DashboardBoardItem item,
+    Place? home,
+    Place? dest,
+  ) {
     switch (item.kind) {
-      case DashboardItemKind.destinationSummary:
-        return _placeTile(
+      case DashboardItemKind.placesHero:
+        return PlacesHeroV2(
+          key: const Key('places_hero_v2'),
+          home: home,
+          destination: dest,
+          session: widget.session,
+          liveData: widget.liveData,
+        );
+      case DashboardItemKind.toolHeight:
+        return _toolTile(
           context,
-          label: 'Destination',
-          place: dest,
-          otherPlace: home,
-          footer: 'Saved',
-          icon: Icons.place_rounded,
-          onTap: () => _snack(context, 'Destination tile (coming soon).'),
+          item,
+          ToolDefinitions.height,
+          activePlace: widget.session.reality == DashboardReality.home
+              ? home
+              : dest,
         );
-
-      case DashboardItemKind.homeSummary:
-        return _placeTile(
+      case DashboardItemKind.toolBaking:
+        return _toolTile(
           context,
-          label: 'Home',
-          place: home,
-          otherPlace: dest,
-          footer: 'Saved',
-          icon: Icons.home_rounded,
-          onTap: () => _snack(context, 'Home tile (coming soon).'),
+          item,
+          ToolDefinitions.baking,
+          activePlace: widget.session.reality == DashboardReality.home
+              ? home
+              : dest,
         );
-
-      case DashboardItemKind.quickTemp:
-        return _converterTile(
+      case DashboardItemKind.toolLiquids:
+        return _toolTile(
           context,
-          title: 'Temperature',
-          icon: Icons.device_thermostat_rounded,
-          primary: _formatTempForDestination(dest),
-          secondary: _formatTempForHome(home),
-          footer: 'Tap to convert',
-          onTap: () => _snack(context, 'Temp converter (coming soon).'),
+          item,
+          ToolDefinitions.liquids,
+          activePlace: widget.session.reality == DashboardReality.home
+              ? home
+              : dest,
         );
-
-      case DashboardItemKind.quickDistance:
-        return _converterTile(
+      case DashboardItemKind.toolArea:
+        return _toolTile(
           context,
-          title: 'Distance',
-          icon: Icons.straighten_rounded,
-          primary: _formatDistanceForDestination(dest),
-          secondary: _formatDistanceForHome(home),
-          footer: 'Tap to convert',
-          onTap: () => _snack(context, 'Distance converter (coming soon).'),
+          item,
+          ToolDefinitions.area,
+          activePlace: widget.session.reality == DashboardReality.home
+              ? home
+              : dest,
         );
-
-      case DashboardItemKind.quickCurrency:
-        final pair = _currencyPair(home, dest);
-        return _converterTile(
-          context,
-          title: 'Currency',
-          icon: Icons.currency_exchange_rounded,
-          primary: pair.primary,
-          secondary: pair.secondary,
-          footer: 'Tap to convert',
-          hint: '${pair.fromCode} to ${pair.toCode}',
-          onTap: () => _snack(context, 'Currency converter (coming soon).'),
-        );
-
-      case DashboardItemKind.addTile:
-        final brand = Theme.of(context).extension<UnitanaBrandTokens>();
-        return UnitanaTile(
-          // Keep this tile intentionally minimal for now. We'll flesh out
-          // customization UX once the feature flow is finalized.
-          title: 'Custom',
-          primary: 'Custom',
-          secondary: '',
-          footer: '',
-          leadingIcon: Icons.add_rounded,
-          backgroundGradient: brand?.brandGradient,
-          onTap: () => _snack(context, 'Add tile (coming soon).'),
-        );
+      case DashboardItemKind.emptySlot:
+        // Empty slots are rendered separately as “+” placeholders.
+        return const SizedBox.shrink();
     }
   }
 
-  Widget _converterTile(
-    BuildContext context, {
-    required String title,
-    required IconData icon,
-    required String primary,
-    required String secondary,
-    required String footer,
-    String? hint,
-    VoidCallback? onTap,
+  Widget _toolTile(
+    BuildContext context,
+    DashboardBoardItem item,
+    ToolDefinition tool, {
+    required Place? activePlace,
   }) {
-    return UnitanaTile(
-      title: title,
+    final latest = widget.session.latestFor(tool.canonicalToolId);
+    final labels = _pickToolLabels(
+      tool: tool,
+      latest: latest,
+      activePlace: activePlace,
+    );
+    final preferMetric = (activePlace?.unitSystem ?? 'metric') == 'metric';
+    final primary = labels.$1;
+    final secondary = labels.$2;
+
+    final tile = UnitanaTile(
+      title: tool.title,
+      // UnitanaTile expects an IconData, not an Icon widget.
+      leadingIcon: tool.icon,
       primary: primary,
       secondary: secondary,
-      footer: footer,
-      hint: hint,
-      leadingIcon: icon,
-      onTap: onTap,
+      footer: widget.isEditing ? 'Edit mode' : 'Tap to convert',
+      onLongPress: item.userAdded
+          ? () {
+              if (!widget.isEditing) {
+                // Enter edit mode without triggering a second actions sheet.
+                widget.onEnteredEditMode(null);
+              }
+              _showTileActions(context, item);
+            }
+          : null,
+      onTap: widget.isEditing
+          ? null
+          : () {
+              ToolModalBottomSheet.show(
+                context,
+                tool: tool,
+                session: widget.session,
+                preferMetric: preferMetric,
+              );
+            },
     );
-  }
 
-  Widget _placeTile(
-    BuildContext context, {
-    required String label,
-    required Place? place,
-    required Place? otherPlace,
-    required String footer,
-    required IconData icon,
-    VoidCallback? onTap,
-  }) {
-    if (place == null) {
-      return UnitanaTile(
-        title: label,
-        primary: 'Not set',
-        secondary: 'Run setup to add a place',
-        footer: 'Setup',
-        leadingIcon: icon,
-        onTap: onTap,
+    if (!widget.isEditing || !item.userAdded) {
+      return KeyedSubtree(
+        key: ValueKey('dashboard_item_${item.id}'),
+        child: tile,
       );
     }
 
-    final diff = _timeZoneDiffLabel(otherPlace, place);
-    final secondary = diff == null
-        ? place.timeZoneId
-        : '${place.timeZoneId} $diff';
-
-    final units = place.unitSystem == 'metric' ? 'Metric' : 'Imperial';
-    final clock = place.use24h ? '24h' : '12h';
-
-    return UnitanaTile(
-      title: label,
-      primary: place.cityName,
-      secondary: secondary,
-      hint: 'Units: $units | Clock: $clock',
-      footer: footer,
-      leadingIcon: icon,
-      onTap: onTap,
+    return Stack(
+      key: ValueKey('dashboard_item_${item.id}'),
+      children: [
+        tile,
+        Positioned(
+          top: 8,
+          right: 8,
+          child: _EditRemoveBadge(
+            onTap: () async {
+              final ok = await _confirmRemoveTile(context, tool.title);
+              if (!ok) return;
+              if (!context.mounted) return;
+              await widget.layout.removeItem(item.id);
+            },
+          ),
+        ),
+      ],
     );
   }
 
-  static void _snack(BuildContext context, String text) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(text)));
+  Future<bool> _confirmRemoveTile(BuildContext context, String label) async {
+    final decision = await showModalBottomSheet<bool>(
+      context: context,
+      useSafeArea: true,
+      showDragHandle: true,
+      builder: (sheetContext) {
+        final scheme = Theme.of(sheetContext).colorScheme;
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Remove $label?',
+                style: Theme.of(
+                  sheetContext,
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'This tile will be removed from your dashboard.',
+                style: Theme.of(sheetContext).textTheme.bodyMedium?.copyWith(
+                  color: scheme.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.of(sheetContext).pop(false),
+                      child: const Text('Cancel'),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: FilledButton(
+                      onPressed: () => Navigator.of(sheetContext).pop(true),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: scheme.error,
+                        foregroundColor: scheme.onError,
+                      ),
+                      child: const Text('Remove'),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
+    );
+
+    return decision ?? false;
+  }
+
+  Future<void> _showTileActions(
+    BuildContext context,
+    DashboardBoardItem item,
+  ) async {
+    final action = await showModalBottomSheet<_TileEditAction>(
+      context: context,
+      showDragHandle: true,
+      useSafeArea: true,
+      builder: (sheetContext) {
+        final scheme = Theme.of(sheetContext).colorScheme;
+        return SafeArea(
+          top: false,
+          child: Wrap(
+            children: [
+              ListTile(
+                leading: const Icon(Icons.swap_horiz),
+                title: const Text('Replace tile'),
+                onTap: () =>
+                    Navigator.of(sheetContext).pop(_TileEditAction.replace),
+              ),
+              ListTile(
+                leading: Icon(Icons.delete_outline, color: scheme.error),
+                title: Text(
+                  'Remove tile',
+                  style: TextStyle(color: scheme.error),
+                ),
+                onTap: () =>
+                    Navigator.of(sheetContext).pop(_TileEditAction.remove),
+              ),
+              const SizedBox(height: 8),
+            ],
+          ),
+        );
+      },
+    );
+
+    if (action == null) return;
+    if (!context.mounted) return;
+
+    switch (action) {
+      case _TileEditAction.replace:
+        final picked = await showModalBottomSheet<ToolDefinition>(
+          context: context,
+          isScrollControlled: true,
+          useSafeArea: true,
+          showDragHandle: true,
+          builder: (_) => const ToolPickerSheet(),
+        );
+        if (picked == null) return;
+        if (!context.mounted) return;
+        await widget.layout.replaceItem(item.id, picked);
+        if (!context.mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Tile replaced with ${picked.title}.')),
+        );
+        return;
+      case _TileEditAction.remove:
+        final ok = await _confirmRemoveTile(context, _titleForItem(item));
+        if (!ok) return;
+        if (!context.mounted) return;
+        await widget.layout.removeItem(item.id);
+        if (!context.mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Tile removed from dashboard.')),
+        );
+        return;
+    }
+  }
+
+  String _titleForItem(DashboardBoardItem item) {
+    switch (item.kind) {
+      case DashboardItemKind.placesHero:
+        return 'Hero';
+      case DashboardItemKind.toolHeight:
+        return ToolDefinitions.height.title;
+      case DashboardItemKind.toolBaking:
+        return ToolDefinitions.baking.title;
+      case DashboardItemKind.toolLiquids:
+        return ToolDefinitions.liquids.title;
+      case DashboardItemKind.toolArea:
+        return ToolDefinitions.area.title;
+      case DashboardItemKind.emptySlot:
+        return 'Tile';
+    }
+  }
+
+  Iterable<_Cell> _cellsForPlaced(_Placed p) sync* {
+    // Span is carried on the placement.
+    for (var r = 0; r < p.span.rowSpan; r += 1) {
+      for (var c = 0; c < p.span.colSpan; c += 1) {
+        yield _Cell(p.col + c, p.row + r);
+      }
+    }
+  }
+
+  Set<_Cell> _occupiedCells(List<_Placed> placed) {
+    final out = <_Cell>{};
+    for (final p in placed) {
+      out.addAll(_cellsForPlaced(p));
+    }
+    return out;
+  }
+
+  List<_Cell> _placeholderCells(Set<_Cell> occupied, int cols, int rows) {
+    final out = <_Cell>[];
+    for (var r = 0; r < rows; r += 1) {
+      for (var c = 0; c < cols; c += 1) {
+        final cell = _Cell(c, r);
+        if (!occupied.contains(cell)) {
+          out.add(cell);
+        }
+      }
+    }
+    return out;
+  }
+
+  Future<void> _showToolPicker(
+    BuildContext context, {
+    DashboardAnchor? anchor,
+  }) async {
+    final picked = await showModalBottomSheet<ToolDefinition>(
+      context: context,
+      useSafeArea: true,
+      showDragHandle: true,
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      builder: (ctx) => const ToolPickerSheet(),
+    );
+    if (picked == null) return;
+
+    if (!context.mounted) return;
+
+    await widget.layout.addTool(picked, anchor: anchor);
+
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text('Added ${picked.title}')));
+  }
+
+  (String, String) _pickToolLabels({
+    required ToolDefinition tool,
+    required ConversionRecord? latest,
+    required Place? activePlace,
+  }) {
+    // Default to tool defaults, then prefer the most recent run.
+    var a = latest?.inputLabel ?? tool.defaultPrimary;
+    var b = latest?.outputLabel ?? tool.defaultSecondary;
+
+    final preferMetric = (activePlace?.unitSystem ?? 'metric') == 'metric';
+    final aIsMetric = _isMetricLabel(tool.id, a);
+    final bIsMetric = _isMetricLabel(tool.id, b);
+
+    if (preferMetric) {
+      if (!aIsMetric && bIsMetric) return (b, a);
+      return (a, b);
+    }
+    // Prefer imperial.
+    final aIsImperial = !aIsMetric;
+    final bIsImperial = !bIsMetric;
+    if (!aIsImperial && bIsImperial) return (b, a);
+    return (a, b);
+  }
+
+  bool _isMetricLabel(String toolId, String label) {
+    final l = label.toLowerCase();
+    return switch (toolId) {
+      'height' => l.contains('cm'),
+      'baking' => l.contains('ml'),
+      'liquids' => l.contains('ml'),
+      'area' => l.contains('m²') || l.contains('m2'),
+      _ => false,
+    };
+  }
+
+  static DashboardItemKind _kindForToolId(String id) {
+    switch (id) {
+      case 'height':
+        return DashboardItemKind.toolHeight;
+      case 'baking':
+        return DashboardItemKind.toolBaking;
+      case 'liquids':
+        return DashboardItemKind.toolLiquids;
+      case 'area':
+        return DashboardItemKind.toolArea;
+      default:
+        return DashboardItemKind.toolHeight;
+    }
   }
 
   static Place? _pickHome(List<Place> places) {
@@ -253,110 +576,6 @@ class DashboardBoard extends StatelessWidget {
     }
     if (places.length >= 2) return places[1];
     return places.isEmpty ? null : places.first;
-  }
-
-  static String? _timeZoneDiffLabel(Place? reference, Place? place) {
-    if (reference == null || place == null) return null;
-
-    final ref = _tzOffsetHours(reference.timeZoneId);
-    final cur = _tzOffsetHours(place.timeZoneId);
-    if (ref == null || cur == null) return null;
-
-    final delta = cur - ref;
-    if (delta == 0) return '(same as Home)';
-
-    final sign = delta > 0 ? '+' : '';
-    return '($sign${delta}h vs Home)';
-  }
-
-  static int? _tzOffsetHours(String tzId) {
-    // Minimal starter map; replace with timezone math later.
-    switch (tzId) {
-      case 'America/Denver':
-        return -7;
-      case 'America/Los_Angeles':
-        return -8;
-      case 'America/New_York':
-        return -5;
-      case 'Europe/Lisbon':
-        return 0;
-      case 'Europe/London':
-        return 0;
-      case 'Europe/Paris':
-        return 1;
-      default:
-        return null;
-    }
-  }
-
-  static String _formatTempForDestination(Place? dest) {
-    final metric = dest?.unitSystem == 'metric';
-    final degree = String.fromCharCode(0x00B0);
-    return metric ? '20${degree}C' : '68${degree}F';
-  }
-
-  static String _formatTempForHome(Place? home) {
-    final metric = home?.unitSystem == 'metric';
-    final degree = String.fromCharCode(0x00B0);
-    return metric ? 'Home: 20${degree}C' : 'Home: 68${degree}F';
-  }
-
-  static String _formatDistanceForDestination(Place? dest) {
-    final metric = dest?.unitSystem == 'metric';
-    return metric ? '16 km' : '10 mi';
-  }
-
-  static String _formatDistanceForHome(Place? home) {
-    final metric = home?.unitSystem == 'metric';
-    return metric ? 'Home: 16 km' : 'Home: 10 mi';
-  }
-
-  static _CurrencyPair _currencyPair(Place? home, Place? dest) {
-    final fromCode = _currencyForCountry(home?.countryCode);
-    final toCode = _currencyForCountry(dest?.countryCode);
-
-    // Placeholder example: show destination amount as the primary line.
-    final primary = _formatMoney(toCode, 10);
-    final secondary = 'Approx: ${_formatMoney(fromCode, 11)}';
-
-    return _CurrencyPair(
-      fromCode: fromCode,
-      toCode: toCode,
-      primary: primary,
-      secondary: secondary,
-    );
-  }
-
-  static String _currencyForCountry(String? countryCode) {
-    switch (countryCode) {
-      case 'US':
-        return 'USD';
-      case 'CA':
-        return 'CAD';
-      case 'GB':
-        return 'GBP';
-      case 'PT':
-      case 'DE':
-      case 'FR':
-      case 'ES':
-      case 'IT':
-        return 'EUR';
-      default:
-        return 'EUR';
-    }
-  }
-
-  static String _formatMoney(String code, num amount) {
-    final symbol = switch (code) {
-      'USD' => r'$',
-      'CAD' => r'CA$',
-      'EUR' => String.fromCharCode(0x20AC),
-      'GBP' => String.fromCharCode(0x00A3),
-      _ => '',
-    };
-
-    if (symbol.isEmpty) return '$amount $code';
-    return '$symbol$amount';
   }
 
   List<_Placed> _place(List<DashboardBoardItem> items, int cols) {
@@ -384,8 +603,43 @@ class DashboardBoard extends StatelessWidget {
     }
 
     final placed = <_Placed>[];
+    final unanchored = <DashboardBoardItem>[];
 
+    // First pass: attempt to place anchored items exactly where the user tapped.
     for (final item in items) {
+      if (item.anchor == null) {
+        unanchored.add(item);
+        continue;
+      }
+
+      final clampedSpan = DashboardTileSpan(
+        colSpan: math.min(item.span.colSpan, cols),
+        rowSpan: item.span.rowSpan,
+      );
+
+      final index = item.anchor!.index;
+      final targetRow = index ~/ cols;
+      final targetCol = index % cols;
+
+      if (canFit(targetCol, targetRow, clampedSpan)) {
+        occupy(targetCol, targetRow, clampedSpan);
+        placed.add(
+          _Placed(
+            item: item,
+            col: targetCol,
+            row: targetRow,
+            span: clampedSpan,
+          ),
+        );
+      } else {
+        // If the anchor can no longer be honored (different columns, overlaps,
+        // or span changes), fall back to dense placement.
+        unanchored.add(item);
+      }
+    }
+
+    // Second pass: dense placement for everything else.
+    for (final item in unanchored) {
       final clampedSpan = DashboardTileSpan(
         colSpan: math.min(item.span.colSpan, cols),
         rowSpan: item.span.rowSpan,
@@ -409,7 +663,110 @@ class DashboardBoard extends StatelessWidget {
       }
     }
 
+    // Keep stacking order deterministic.
+    placed.sort((a, b) {
+      final byRow = a.row.compareTo(b.row);
+      if (byRow != 0) return byRow;
+      return a.col.compareTo(b.col);
+    });
+
     return placed;
+  }
+}
+
+class _Cell {
+  final int col;
+  final int row;
+
+  const _Cell(this.col, this.row);
+
+  @override
+  bool operator ==(Object other) {
+    return other is _Cell && other.col == col && other.row == row;
+  }
+
+  @override
+  int get hashCode => Object.hash(col, row);
+}
+
+class _AddToolTile extends StatelessWidget {
+  final VoidCallback onTap;
+
+  const _AddToolTile({super.key, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    final fg = theme.colorScheme.onSurface.withValues(alpha: 0.55);
+    final border = theme.dividerColor.withValues(alpha: 0.35);
+
+    return Material(
+      color: theme.cardColor,
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: border),
+          ),
+          child: Center(child: Icon(Icons.add, size: 40, color: fg)),
+        ),
+      ),
+    );
+  }
+}
+
+class ToolPickerSheet extends StatelessWidget {
+  const ToolPickerSheet({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final tools = ToolDefinitions.all;
+    final theme = Theme.of(context);
+
+    return ListView(
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+          child: Text('Choose a tool', style: theme.textTheme.titleMedium),
+        ),
+        for (final tool in tools)
+          ListTile(
+            leading: Icon(tool.icon),
+            title: Text(tool.title),
+            subtitle: Text(_lensNameForId(tool.lensId)),
+            onTap: () => Navigator.of(context).pop(tool),
+          ),
+        const SizedBox(height: 8),
+      ],
+    );
+  }
+}
+
+class _EditRemoveBadge extends StatelessWidget {
+  final VoidCallback onTap;
+
+  const _EditRemoveBadge({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Material(
+      color: scheme.surfaceContainerHighest.withValues(alpha: 0.92),
+      shape: const CircleBorder(),
+      child: InkWell(
+        onTap: onTap,
+        customBorder: const CircleBorder(),
+        child: Padding(
+          padding: const EdgeInsets.all(6),
+          child: Icon(Icons.close, size: 18, color: scheme.error),
+        ),
+      ),
+    );
   }
 }
 
@@ -427,16 +784,4 @@ class _Placed {
   });
 }
 
-class _CurrencyPair {
-  final String fromCode;
-  final String toCode;
-  final String primary;
-  final String secondary;
-
-  const _CurrencyPair({
-    required this.fromCode,
-    required this.toCode,
-    required this.primary,
-    required this.secondary,
-  });
-}
+enum _TileEditAction { replace, remove }

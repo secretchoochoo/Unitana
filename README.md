@@ -54,7 +54,7 @@ Project documentation lives in `docs/`:
 Start here:
 
 - `docs/ai/WORKING_WITH_CHATGPT.md`
-- `docs/ai/NEXT_CHAT_PROMPT.md`
+- `docs/ai/prompts/NEXT_CHAT_PROMPT.md`
 
 
 ## Local quality checks

@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:unitana/app/app_state.dart';
@@ -45,37 +45,52 @@ void main() {
     final state = UnitanaAppState(storage);
     await state.load();
 
-    final oldOnError = FlutterError.onError;
-    final errors = <FlutterErrorDetails>[];
-    FlutterError.onError = (FlutterErrorDetails details) {
-      errors.add(details);
-    };
-
-    addTearDown(() {
-      FlutterError.onError = oldOnError;
-    });
-
     await tester.binding.setSurfaceSize(const Size(320, 568));
-    addTearDown(() async {
+
+    try {
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: UnitanaTheme.dark(),
+          darkTheme: UnitanaTheme.dark(),
+          themeMode: ThemeMode.dark,
+          home: DashboardScreen(state: state),
+        ),
+      );
+
+      // Avoid pumpAndSettle: some widgets may schedule periodic work or
+      // animations that would keep the test "unsettled".
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 150));
+
+      // Drain any exceptions (including RenderFlex overflow) thrown during the
+      // initial layout / paint.
+      final thrown = <Object>[];
+      Object? exception;
+      while ((exception = tester.takeException()) != null) {
+        thrown.add(exception!);
+      }
+      expect(
+        thrown,
+        isEmpty,
+        reason: thrown.map((e) => e.toString()).join('\n\n'),
+      );
+      expect(find.text('Cody'), findsOneWidget);
+
+      // Places Hero V2 should be present.
+      expect(find.byKey(const ValueKey('places_hero_v2')), findsOneWidget);
+
+      // Default tool tiles (exact labels may evolve; keep this test flexible).
+      final hasHeight = find.text('Height').evaluate().isNotEmpty;
+      final hasDistance = find.text('Distance').evaluate().isNotEmpty;
+      expect(hasHeight || hasDistance, isTrue);
+      expect(find.text('Baking'), findsOneWidget);
+      expect(find.text('Liquids'), findsOneWidget);
+      expect(find.text('Area'), findsOneWidget);
+
+      // Each tile includes the same helper text.
+      expect(find.text('Tap to convert'), findsNWidgets(4));
+    } finally {
       await tester.binding.setSurfaceSize(null);
-    });
-
-    await tester.pumpWidget(
-      MaterialApp(
-        theme: UnitanaTheme.dark(),
-        darkTheme: UnitanaTheme.dark(),
-        themeMode: ThemeMode.dark,
-        home: DashboardScreen(state: state),
-      ),
-    );
-
-    await tester.pumpAndSettle();
-
-    expect(errors, isEmpty);
-    expect(tester.takeException(), isNull);
-    expect(find.text('Cody'), findsOneWidget);
-    expect(find.text('Temperature'), findsOneWidget);
-    expect(find.text('Distance'), findsOneWidget);
-    expect(find.text('Currency'), findsOneWidget);
+    }
   });
 }

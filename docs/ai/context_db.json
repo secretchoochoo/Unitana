@@ -1,5 +1,5 @@
 {
-  "schema_version": "1.0",
+  "schema_version": "1.1",
   "project": {
     "name": "Unitana",
     "type": "cross-platform mobile app",
@@ -77,6 +77,21 @@
         "review_profile_pill": "center group (flag + name), edit icon pinned right",
         "dashboard_appbar_title": "center"
       }
+    },
+    "dashboard_widgets": {
+      "hierarchy": {
+        "position": "Use two-level hierarchy primarily for navigation and mental grouping, not for duplicating calculations.",
+        "top_level_role": "Top-level category sets iconography, modal aesthetic, and default layout behaviors.",
+        "sub_level_role": "Subcategory selects the specific tool/calculation; tools can be referenced from multiple categories without copy-paste logic."
+      },
+      "defaults": {
+        "principle": "Default tiles should be high-frequency, low-friction, and demonstrably useful day-to-day for travelers and movers.",
+        "behavior": "Hero is fixed at top; grid below is scrollable; empty cells show '+' affordances for adding tools."
+      },
+      "tablet_policy": {
+        "now": "Mobile-first; keep breakpoints conservative and avoid special-case layouts until tablet sprint.",
+        "later": "Tablet design should be a full-scope pass (dashboard grid, tool modals, wizard, menus, orientations) with accessibility and ergonomics considered."
+      }
     }
   },
   "onboarding": {
@@ -103,6 +118,10 @@
     "appbar": {
       "profile_badge": "Destination flag emoji when available",
       "profile_name": "Centered and rendered in Shadows Into Light"
+    },
+    "layout": {
+      "density_knobs": "Tune `_gap`, `_tileHeightRatio`, `_minRowsPhone`, `_minRowsTablet` in `dashboard_board.dart` for board feel.",
+      "tablet_support": "Planned as a dedicated spike + implementation sprint; do not partially implement tablet layout hacks during mobile feature work."
     }
   },
   "slices": [
@@ -368,15 +387,132 @@
         "Update docs/ai/WORKING_WITH_CHATGPT.md with hard rules for null-safety, constructor drift, and import/type verification.",
         "Regenerate NEXT_CHAT_HANDOFF and NEXT_CHAT_PROMPT so the next implementation chat starts from the stable baseline but includes the aspirational mock and acceptance criteria."
       ]
+    },
+    {
+      "id": "slice_14",
+      "date": "2025-12-29",
+      "title": "Dashboard grid: add-slots and tool picker",
+      "summary": [
+        "Keep Places Hero as the first, anchored grid tile (it still scrolls with the dashboard).",
+        "Render \"+\" placeholders for unoccupied grid cells so the layout reads as extendable.",
+        "Tapping any \"+\" opens a lightweight tool picker; selecting a tool opens the existing tool modal."
+      ],
+      "files_modified": [
+        "app/unitana/lib/features/dashboard/widgets/dashboard_board.dart",
+        "docs/ai/context_db.json"
+      ],
+      "notes": {
+        "grid_behavior": [
+          "The board pads to a minimum row count (phone vs wide layouts) so a few empty \"+\" slots are always visible.",
+          "Empty cells are computed from placed tile spans (including hero), then rendered as add tiles."
+        ],
+        "tool_picker": [
+          "Tool picker lists ToolDefinitions.all (currently: Distance, Baking, Liquids, Area).",
+          "Selection forwards into ToolModalBottomSheet.show() using the active reality's unit preference."
+        ]
+      }
+    },
+    {
+      "id": "slice_15",
+      "date": "2025-12-29",
+      "title": "Dashboard grid: compile stabilization + green tests",
+      "summary": [
+        "Resolved a chain of compile failures introduced while iterating on the dense grid + placeholder slots implementation.",
+        "Aligned internal placement helpers with current model types (tile span, placed cells, and lens/tool metadata).",
+        "Reached a green state: `flutter test` passes; `flutter analyze` reports only informational lints."
+      ],
+      "files_modified": [
+        "app/unitana/lib/features/dashboard/widgets/dashboard_board.dart",
+        "docs/ai/context_db.json"
+      ],
+      "notes": {
+        "final_state": [
+          "Analyzer infos remaining: `use_build_context_synchronously` in the tool-picker open flow; `withOpacity` deprecation warnings.",
+          "These are explicitly deferred; do not treat as build breakers."
+        ],
+        "why_it_broke": [
+          "During the refactor, several helper names/types drifted (e.g., placement helper fields like `cells`, `rowSpan`, `colSpan`, and lens IDs as nullable vs non-nullable).",
+          "Switch exhaustiveness checks flagged new enum values until placeholder handling was made explicit."
+        ],
+        "followups": [
+          "Make the picker insertion real (persist chosen tool into the board layout) instead of immediately launching the tool modal.",
+          "Consider extracting `_ToolPickerSheet` into its own file for testability and reuse (optional refactor)."
+        ]
+      }
+    },
+    {
+      "id": "slice_16",
+      "date": "2025-12-30",
+      "title": "Dashboard grid: restore missing layout constants",
+      "summary": [
+        "Fixed a compile/test breaker caused by referencing removed layout constants in `DashboardBoard` (`_gap`, `_tileHeightRatio`, `_minRowsPhone`, `_minRowsTablet`).",
+        "Centralized the constants as top-level tuning knobs to avoid future drift and make density changes straightforward."
+      ],
+      "files_modified": [
+        "app/unitana/lib/features/dashboard/widgets/dashboard_board.dart",
+        "docs/ai/context_db.json"
+      ],
+      "notes": {
+        "why_it_broke": [
+          "During iterative grid refactors, layout constants were referenced from `_DashboardBoardState` but not defined in file scope, so analyzer and tests failed at compile time."
+        ],
+        "verification": [
+          "dart format .",
+          "flutter analyze",
+          "flutter test"
+        ],
+        "followups": [
+          "Treat tablet support as a separate effort; keep breakpoints conservative until tablet UI/UX is scoped."
+        ]
+      }
     }
   ],
   "current_pain_points": [
     "Small-tile layout constraints on small iPhones (about 147x147).",
     "Avoiding fragile copy that triggers overflows.",
     "Avoiding null assertions on theme extensions.",
-    "Keeping flutter analyze clean to reduce churn."
+    "Keeping flutter analyze clean to reduce churn.",
+    "Small-surface layout overflows (RenderFlex) in dashboard hero/AppBar must be treated as test failures.",
+    "Parent-derived compact flags can disagree with child constraints; prefer LayoutBuilder within fixed-height widgets.",
+    "Dependency constraint drift remains parked for a sustaining engineering slice."
   ],
   "next_backlog": [
+    {
+      "id": "slice_13b_places_hero_v2",
+      "title": "Implement Places Hero v2 on dashboard",
+      "type": "implementation",
+      "status": "planned",
+      "branch": "feat/places-hero-v2",
+      "baseline": {
+        "commit": "f5c6464",
+        "tag": "baseline-2025-12-27"
+      },
+      "owner_roles": [
+        "Product & Strategy Lead",
+        "UI/UX Lead",
+        "Mobile Engineering Lead",
+        "QA & Release Lead",
+        "Senior Technical Writer",
+        "AI Workflow/Prompt Engineer"
+      ],
+      "acceptance_criteria": [
+        "Places Hero replaces Destination/Home tiles and uses a single segmented toggle to swap primary place (Lisbon vs Denver).",
+        "Top-left circular refresh button triggers refresh for all network-backed data used by the hero (weather, currency, etc.) and is debounced.",
+        "Weather icon in hero is slightly larger and inset from the right edge; no 'two dots' artifact on Denver segment; Denver label is right-aligned.",
+        "Tool tiles (Height, Baking, Liquids, Area) open a shared bottom sheet modal with inputs on top and a last-10 history log at bottom; most recent item is larger/bold; tapping history reloads.",
+        "flutter analyze and flutter test pass; widget tests cover toggle, refresh, modal, and history behavior."
+      ],
+      "notes": [
+        "Prefer parallel widget approach initially; avoid changing existing public widget constructors until integration is proven.",
+        "Avoid introducing new domain types unless explicitly planned and wired through imports.",
+        "Keep Dracula theme tokens consistent across hero, tiles, and modal."
+      ],
+      "deliverables": [
+        "Patch zip with full revised files and list of added/removed files",
+        "Updated widget/regression tests for the new dashboard layout",
+        "Updated docs/ai/NEXT_CHAT_PROMPT.md and handoff as needed"
+      ]
+    },
     {
       "id": "slice_13",
       "title": "Dashboard redesign design spec (new chat)",
@@ -393,7 +529,7 @@
       "deliverables": [
         "Two alternative layouts for a profile-first dashboard (Places tile + tools)",
         "Chosen layout with breakpoint rules (2/3/4 columns), copy hierarchy, accessibility notes",
-        "Implementation plan split into 2–4 small slices with acceptance criteria and verification commands",
+        "Implementation plan split into 2\u20134 small slices with acceptance criteria and verification commands",
         "Identify doc/context updates needed during implementation"
       ],
       "notes": [
@@ -416,6 +552,336 @@
         "Add new slice entries as part of each patch note.",
         "Add design token references and key widget keys as they stabilize.",
         "Keep a short \"known gotchas\" list with links to fixes."
+      ]
+    },
+    "Roadmap (approved): Mobile-complete \u2192 Polish \u2192 Onboarding v2 \u2192 Tablet",
+    "Finish core mobile tool functionality first (working, not fully polished).",
+    "Run a focused UI/UX polish sprint: visual coherence, interaction refinement, and performance/cleanup, plus AI-process retro improvements.",
+    "Spike: Onboarding wizard v2 design to match the finished dashboard aesthetic (believable sample values, add an education slide for calculator tools, explain dashboard editing, default first-4 widgets).",
+    "Execute: Onboarding wizard v2 updates.",
+    "Spike: Tablet experience scope (layouts, orientations, dashboard grid, tool modals, menus, onboarding).",
+    "Execute: Tablet support."
+  ],
+  "last_updated": "2025-12-30",
+  "patch_tracking": {
+    "policy": {
+      "require_context_db_update_per_patch": true,
+      "require_patch_log_entry_per_patch": true,
+      "patch_log_location": "docs/ai/context_db.json -> patch_tracking.log",
+      "patch_bundle_requirements": [
+        "Include all changed files",
+        "Include updated docs/ai/context_db.json",
+        "If UI changes: add/update a screenshot or doc in docs/ (or note why not)",
+        "If tests updated: ensure flutter test passes locally"
+      ],
+      "key_stability_rule": "If widget keys are used in tests, keep keys stable across refactors; never duplicate a key on multiple widgets."
+    },
+    "log": [
+      {
+        "patch_id": "2025-12-28c",
+        "date": "2025-12-28",
+        "artifact": "unitana_patch_compile_fix_dashboard_menu_and_unitsystem_2025-12-28c.zip",
+        "summary": "compile fix dashboard menu and unitsystem",
+        "source": "assistant_patch_zip"
+      },
+      {
+        "patch_id": "2025-12-28",
+        "date": "2025-12-28",
+        "artifact": "unitana_patch_dashboard_live_data_fix3_2025-12-28.zip",
+        "summary": "dashboard live data fix3",
+        "source": "assistant_patch_zip"
+      },
+      {
+        "patch_id": "2025-12-28",
+        "date": "2025-12-28",
+        "artifact": "unitana_patch_dashboard_overflow_and_test_fix_2025-12-28.zip",
+        "summary": "dashboard overflow and test fix",
+        "source": "assistant_patch_zip"
+      },
+      {
+        "patch_id": "2025-12-28",
+        "date": "2025-12-28",
+        "artifact": "unitana_patch_dashboard_smoke_right_overflow_fix_2025-12-28.zip",
+        "summary": "dashboard smoke right overflow fix",
+        "source": "assistant_patch_zip"
+      },
+      {
+        "patch_id": "2025-12-28",
+        "date": "2025-12-28",
+        "artifact": "unitana_patch_dashboard_smoke_test_fix_2025-12-28.zip",
+        "summary": "dashboard smoke test fix",
+        "source": "assistant_patch_zip"
+      },
+      {
+        "patch_id": "2025-12-28",
+        "date": "2025-12-28",
+        "artifact": "unitana_patch_dashboard_smoke_test_update_2025-12-28.zip",
+        "summary": "dashboard smoke test update",
+        "source": "assistant_patch_zip"
+      },
+      {
+        "patch_id": "2025-12-29e",
+        "date": "2025-12-29",
+        "artifact": "unitana_patch_docs_consolidation_ai_tooling_2025-12-29e.zip",
+        "summary": "docs consolidation ai tooling",
+        "source": "assistant_patch_zip"
+      },
+      {
+        "patch_id": "2025-12-28",
+        "date": "2025-12-28",
+        "artifact": "unitana_patch_docs_slice13b_prompt_capture_2025-12-28.zip",
+        "summary": "docs slice13b prompt capture",
+        "source": "assistant_patch_zip"
+      },
+      {
+        "patch_id": "2025-12-28a",
+        "date": "2025-12-28",
+        "artifact": "unitana_patch_incremental_ui_polish_2025-12-28a.zip",
+        "summary": "incremental ui polish",
+        "source": "assistant_patch_zip"
+      },
+      {
+        "patch_id": "2025-12-28",
+        "date": "2025-12-28",
+        "artifact": "unitana_patch_overflow_fixes_2025-12-28.zip",
+        "summary": "overflow fixes",
+        "source": "assistant_patch_zip"
+      },
+      {
+        "patch_id": "2025-12-28",
+        "date": "2025-12-28",
+        "artifact": "unitana_patch_places_hero_v2_2025-12-28.zip",
+        "summary": "places hero v2",
+        "source": "assistant_patch_zip"
+      },
+      {
+        "patch_id": "2025-12-28",
+        "date": "2025-12-28",
+        "artifact": "unitana_patch_places_hero_v2_fix2_2025-12-28.zip",
+        "summary": "places hero v2 fix2",
+        "source": "assistant_patch_zip"
+      },
+      {
+        "patch_id": "2025-12-28",
+        "date": "2025-12-28",
+        "artifact": "unitana_patch_places_hero_v2_fix_2025-12-28.zip",
+        "summary": "places hero v2 fix",
+        "source": "assistant_patch_zip"
+      },
+      {
+        "patch_id": "2025-12-28d",
+        "date": "2025-12-28",
+        "artifact": "unitana_patch_restore_dashboard_v2_keyfix_2025-12-28d.zip",
+        "summary": "restore dashboard v2 keyfix",
+        "source": "assistant_patch_zip"
+      },
+      {
+        "patch_id": "2025-12-29",
+        "date": "2025-12-29",
+        "artifact": "unitana_patch_stability_plus_postmortem_and_next_prompt_2025-12-29.zip",
+        "summary": "stability plus postmortem and next prompt",
+        "source": "assistant_patch_zip"
+      },
+      {
+        "patch_id": "2025-12-28",
+        "date": "2025-12-28",
+        "artifact": "unitana_patch_three_files_compile_fix_2025-12-28.zip",
+        "summary": "three files compile fix",
+        "source": "assistant_patch_zip"
+      },
+      {
+        "patch_id": "2025-12-28b",
+        "date": "2025-12-28",
+        "artifact": "unitana_patch_weather_icon_wind_polish_2025-12-28b.zip",
+        "summary": "weather icon wind polish",
+        "source": "assistant_patch_zip"
+      },
+      {
+        "patch_id": "2025-12-29f",
+        "date": "2025-12-29",
+        "source": "chatgpt",
+        "artifact": "unitana_patch_fix_dashboard_board_modal_2025-12-29.zip",
+        "summary": "Dashboard board + tool modal wiring: align tool tiles with canonical tool registry, ensure modal bottom sheet supports calculator + history panel layout, and tighten dashboard board placement behavior for default tools."
+      },
+      {
+        "patch_id": "2025-12-29g",
+        "date": "2025-12-29",
+        "source": "chatgpt",
+        "artifact": "unitana_patch_fix_dashboard_board_item_2025-12-29.zip",
+        "summary": "Dashboard board item model fix: introduce explicit item ids, item kind mapping, and tile span metadata; update board code to use these primitives and map tool ids to tool definitions consistently."
+      },
+      {
+        "patch_id": "2025-12-29h",
+        "date": "2025-12-29",
+        "source": "chatgpt",
+        "artifact": "unitana_patch_fix_tests_pumpandsettle_2025-12-29.zip",
+        "summary": "Test stability: replace pumpAndSettle usage in dashboard widget tests with bounded pumping to avoid animation/timer hangs; keep intent assertions the same."
+      },
+      {
+        "patch_id": "2025-12-29i",
+        "date": "2025-12-29",
+        "source": "chatgpt",
+        "artifact": "lint_cleanup_dashboard_smoke_import_2025-12-29",
+        "summary": "Lint cleanup: remove redundant flutter/material import from dashboard_smoke_test to silence unused_import warning."
+      },
+      {
+        "patch_id": "2025-12-29j",
+        "date": "2025-12-29",
+        "source": "chatgpt",
+        "artifact": "unitana_patch_dashboard_grid_add_slots_2025-12-29j.zip",
+        "summary": "Dashboard grid UX: keep Places Hero as the anchored first tile (still scrollable), render \"+\" placeholders for empty grid cells, and add an in-grid tool picker that opens existing tool modals."
+      },
+      {
+        "patch_id": "2025-12-29k",
+        "date": "2025-12-29",
+        "source": "chatgpt",
+        "artifact": "unitana_patch_fix_dashboard_grid_compile_2025-12-29k.zip",
+        "summary": "Fix dashboard grid compilation after adding empty slots and dense placement (switch exhaustiveness, type alignment, and null-safety touchups)."
+      },
+      {
+        "patch_id": "2025-12-29l",
+        "date": "2025-12-29",
+        "source": "chatgpt",
+        "artifact": "unitana_patch_fix_dashboard_board_placeholders_compile_2025-12-29l.zip",
+        "summary": "Stabilize placeholder rendering and tool picker wiring; remove/avoid model mismatches introduced during the grid refactor."
+      },
+      {
+        "patch_id": "2025-12-29m",
+        "date": "2025-12-29",
+        "source": "chatgpt",
+        "artifact": "unitana_patch_fix_dashboard_board_align_models_2025-12-29m.zip",
+        "summary": "Align DashboardBoard placement helpers with current models; resolve missing type/enum and helper method mismatches."
+      },
+      {
+        "patch_id": "2025-12-29n",
+        "date": "2025-12-29",
+        "source": "chatgpt",
+        "artifact": "unitana_patch_fix_dashboard_board_compile_2025-12-29n.zip",
+        "summary": "Iterative compile fixes for dashboard_board.dart (placement helper fields, lens selection defaults, and null-safety for lens IDs)."
+      },
+      {
+        "patch_id": "2025-12-29o",
+        "date": "2025-12-29",
+        "source": "chatgpt",
+        "artifact": "unitana_patch_fix_dashboard_board_compile_2025-12-29o.zip",
+        "summary": "Finalize placement helper API alignment (rowSpan/colSpan naming) so tests compile and run."
+      },
+      {
+        "patch_id": "2025-12-29p",
+        "date": "2025-12-29",
+        "source": "chatgpt",
+        "artifact": "unitana_patch_fix_dashboard_board_compile_2025-12-29p.zip",
+        "summary": "Green build: flutter test passes; only analyzer info warnings remain (use_build_context_synchronously, withOpacity deprecation)."
+      },
+      {
+        "patch_id": "2025-12-30f",
+        "date": "2025-12-30",
+        "artifact": "unitana_patch_fix_longpress_remove_test_visibility_2025-12-30f.zip",
+        "summary": "Stabilize dashboard long-press remove test by ensuring tile is visible and long-pressing an inner label to avoid hit-test warnings in scrollable grid.",
+        "source": "assistant_patch_zip"
+      },
+      {
+        "patch_id": "2025-12-30g",
+        "date": "2025-12-30",
+        "artifact": "unitana_patch_dashboard_edit_mode_scaffold_2025-12-30g.zip",
+        "summary": "Add dashboard widget edit mode scaffold: menu entry + long-press enters edit mode, Done/Cancel commit or revert via layout draft buffering, inline remove badges with confirmation, and reset/restart now clears persisted dashboard layout.",
+        "source": "assistant_patch_zip"
+      },
+      {
+        "patch_id": "2025-12-30i",
+        "date": "2025-12-30",
+        "artifact": "unitana_patch_app_icon_and_tile_overflow_fix_2025-12-30.zip",
+        "summary": "Set Unitana app icon from unitana_logo.png across Android/iOS/macOS/web; tighten UnitanaTile layout for micro tiles to prevent RenderFlex overflow on small phones.",
+        "source": "chatgpt"
+      },
+      {
+        "patch_id": "2025-12-30j",
+        "date": "2025-12-30",
+        "title": "Fix small-surface overflows + wrap-up docs",
+        "summary": "Fix AppBar leading overflow by constraining width; remove unused import and redundant null assertion; replace deprecated withOpacity usage; make Places Hero left block choose compact layout based on its own constraints (LayoutBuilder); add retro, lessons, and next chat prompt/handoff docs.",
+        "artifact": "unitana_patch_wrapup_layout_overflow_and_ai_docs_2025-12-30.zip",
+        "changed_files": [
+          "app/unitana/lib/features/dashboard/dashboard_screen.dart",
+          "app/unitana/lib/features/dashboard/widgets/places_hero_v2.dart",
+          "docs/ai/context_db.json",
+          "docs/ai/WORKING_WITH_CHATGPT.md",
+          "docs/ai/RETRO_2025-12-30.md",
+          "docs/ai/CHAT_LESSONS_2025-12-30.json",
+          "docs/ai/NEXT_CHAT_PROMPT.md",
+          "docs/ai/NEXT_CHAT_PROMPT_2025-12-30.md",
+          "docs/ai/NEXT_CHAT_HANDOFF_2025-12-30.md"
+        ]
+      },
+      {
+        "patch_id": "2025-12-30k",
+        "date": "2025-12-30",
+        "title": "Fix refresh button wiring + VisualDensity compile break",
+        "summary": "Restore compile and tests by wiring dashboard AppBar refresh button to _RefreshButton(onTap) and DashboardLiveDataController.isRefreshing; implement _onRefreshAll to call liveData.refreshAll; replace invalid VisualDensity.effectiveCompact with VisualDensity.compact in PlacesHeroV2.",
+        "artifact": "unitana_patch_fix_refresh_and_visual_density_2025-12-30k.zip",
+        "changed_files": [
+          "app/unitana/lib/features/dashboard/dashboard_screen.dart",
+          "app/unitana/lib/features/dashboard/widgets/places_hero_v2.dart",
+          "docs/ai/context_db.json"
+        ]
+      }
+    ]
+  },
+  "docs_taxonomy": {
+    "docs_root": "docs/",
+    "ui_assets": {
+      "preferred_folders": [
+        "docs/wireframes",
+        "docs/design",
+        "docs/screenshots"
+      ],
+      "naming": "YYYY-MM-DD_slug_platform_context_vNN.ext (example: 2025-12-29_dashboard_places-hero_ios_v2.png)",
+      "rules": [
+        "Avoid dumping screenshots in root; file by intent (wireframe/design/screenshot).",
+        "Prefer one screenshot per change, but only when it clarifies behavior.",
+        "When consolidating, preserve original filenames in git history via move/rename rather than copy."
+      ]
+    },
+    "postmortems": {
+      "folder": "docs/postmortems/",
+      "naming": "YYYY-MM-DD_short-title.md",
+      "rules": [
+        "Keep one incident per file.",
+        "Cross-link to patch_id(s) in patch_tracking.log."
+      ]
+    }
+  },
+  "patch_history": [
+    {
+      "id": "patch-2025-12-30h-dashboard-edit-mode-constants-fix",
+      "date": "2025-12-30",
+      "title": "Fix DashboardBoard edit-mode scaffold compile errors",
+      "summary": [
+        "Define dashboard layout constants (_gap, _tileHeightRatio, _minRowsPhone, _minRowsTablet) at library scope so _DashboardBoardState can reference them.",
+        "Remove now-redundant static consts from DashboardBoard to avoid confusion and keep a single source of truth."
+      ],
+      "files_changed": [
+        "app/unitana/lib/features/dashboard/widgets/dashboard_board.dart",
+        "docs/ai/context_db.json"
+      ],
+      "notes": [
+        "This patch is a pure build fix; no behavioral change intended beyond restoring compilation."
+      ]
+    },
+    {
+      "id": "patch-2025-12-30i-app-icon-and-tile-overflow-fix",
+      "date": "2025-12-30",
+      "title": "App icon + micro-tile overflow fix",
+      "summary": [
+        "Generated launcher icons from assets/brand/unitana_logo.png for Android (mipmap densities), iOS AppIcon, macOS AppIcon, and web icons.",
+        "Updated UnitanaTile to handle micro tiles (very short heights) by tightening padding/spacing and hiding secondary/footer lines to prevent RenderFlex overflow exceptions in widget tests."
+      ],
+      "files_changed": [
+        "app/unitana/lib/features/dashboard/widgets/unitana_tile.dart",
+        "app/unitana/android/app/src/main/res/mipmap-*/ic_launcher.png",
+        "app/unitana/ios/Runner/Assets.xcassets/AppIcon.appiconset/*.png",
+        "app/unitana/macos/Runner/Assets.xcassets/AppIcon.appiconset/*.png",
+        "app/unitana/web/favicon.png",
+        "app/unitana/web/icons/Icon-*.png"
       ]
     }
   ]

@@ -96,6 +96,9 @@ For any dense “card” UI:
 
 Before sending a patch upstream:
 
+- [ ] docs/ai/context_db.json updated (include a patch_tracking.log entry for this patch)
+- [ ] patch zip includes all changed files *and* the updated context_db.json
+- [ ] widget Keys used by tests remain stable and unique (never duplicate a Key)
 - [ ] `flutter analyze` is clean
 - [ ] `flutter test` passes
 - [ ] no unused private fields left behind (unless intentionally staged)
@@ -150,3 +153,18 @@ Notes:
 
 - `Key('some_id')` and `ValueKey('some_id')` compare equal, but `ValueKey` is clearer and avoids confusion about constructors.
 - Keep keys stable even when copy changes. Tests should survive UI copy tuning.
+
+
+## Lessons learned: constraint truth and compact behavior
+
+### Don’t assume parent constraints match child constraints
+If a widget receives a `compact` boolean from its parent, it may still end up laid out in a tighter space due to internal paddings, header rows, or sibling layouts. When a layout must be safe for small surfaces, compute **effective compactness** from *actual* constraints using `LayoutBuilder` inside the widget, then degrade gracefully.
+
+Practical rule:
+- if `constraints.maxHeight` or `constraints.maxWidth` is under your known safe threshold, force compact mode regardless of what the parent asked for.
+
+### AppBar leading: avoid `Row` unless you need horizontal layout
+`Row` gives children unbounded width, which makes text measure at its full intrinsic width and can cause overflow inside the leading slot. If you only need a vertical stack, use a `SizedBox(width: double.infinity, child: Column(...))` so children receive a real max width and ellipsize correctly.
+
+### Fixed-height areas need “optional” secondary text
+The AppBar and small tiles are fixed-height by design. Any secondary label (for example “Updated 8:35 AM”) must be optional, single-line, and able to disappear when the layout is tight.
