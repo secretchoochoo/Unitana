@@ -1,0 +1,50 @@
+{
+  "date": "2025-12-31",
+  "title": "Hero widget completeness: remove internal refresh; always show wind + currency",
+  "themes": [
+    "hero tile information density",
+    "single refresh entry point",
+    "compact layouts should still teach",
+    "graceful placeholders"
+  ],
+  "lessons": [
+    {
+      "id": "hero-001",
+      "problem": "The Places Hero compact layout omitted wind and currency, leaving the hero feeling half-empty in common phone layouts.",
+      "decision": "Render wind and currency in the compact layout, using two compact rows with ellipsis and sane fallbacks when data is missing.",
+      "why": "The hero is the primary learning surface; key context (weather and money) should not disappear just because the layout is compact.",
+      "implementation": [
+        "Update app/unitana/lib/features/dashboard/widgets/places_hero_v2.dart compact branch to include wind and currency rows beneath the temperature row.",
+        "Use placeholders when place/weather or secondary place data is not available so the hero never looks empty."
+      ],
+      "gotchas": [
+        "Keep each line to 1 row with TextOverflow.ellipsis to avoid layout overflow on narrow widths.",
+        "Prefer small icons and bodySmall styles for compact metadata rows."
+      ]
+    },
+    {
+      "id": "hero-002",
+      "problem": "Refresh existed both at the dashboard level and inside the Places Hero, creating duplicate entry points and consuming space that mattered in compact layouts.",
+      "decision": "Remove the in-hero refresh controls and rely on the dashboard refresh button for global data updates.",
+      "why": "One refresh concept keeps mental models simple and preserves hero space for the learning content.",
+      "implementation": [
+        "Remove the Places Hero refresh IconButton and overflow menu entries.",
+        "Re-check spacing after removal to ensure wind/currency visibility on compact layouts."
+      ]
+    },
+    {
+      "id": "hero-003",
+      "problem": "A Places Hero currency helper call drifted from the underlying helper signature and controller model, introducing build failures (undefined named parameters/getters).",
+      "decision": "Keep the hero currency renderer scoped to the current live-data contract (EUR→USD), and treat additional currency pairs as placeholders until live data supports them.",
+      "why": "The hero must compile and render reliably; expanding supported conversions should be driven by a single source of truth in the live-data model.",
+      "implementation": [
+        "Remove eurToGbp/eurToCad arguments and references from app/unitana/lib/features/dashboard/widgets/places_hero_v2.dart.",
+        "Make eurToUsd null-safe (fallback default) so the hero can still render placeholder currency lines while live data is loading."
+      ],
+      "gotchas": [
+        "If we add more rates, add them to DashboardLiveDataController and the canonical data model first, then update any UI helpers.",
+        "Keep placeholders short and single-line to avoid compact layout overflows."
+      ]
+    }
+  ]
+}

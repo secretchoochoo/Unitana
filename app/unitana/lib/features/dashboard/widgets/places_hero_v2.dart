@@ -105,6 +105,8 @@ class PlacesHeroV2 extends StatelessWidget {
                       child: _RightSecondaryBlock(
                         place: secondary,
                         zone: secondaryZone,
+                        otherZone: primaryZone,
+                        use24Hour: secondary?.use24h ?? false,
                         deltaHours: delta,
                         weather: secondaryWeather,
                         compact: isCompact,
@@ -236,7 +238,32 @@ class _SegmentButton extends StatelessWidget {
   }
 }
 
-enum _HeroMenuAction { refreshAll }
+class _ScaleDownText extends StatelessWidget {
+  const _ScaleDownText(
+    this.text, {
+    required this.style,
+    this.alignment = Alignment.centerLeft,
+  });
+
+  final String text;
+  final TextStyle? style;
+  final Alignment alignment;
+
+  @override
+  Widget build(BuildContext context) {
+    return FittedBox(
+      fit: BoxFit.scaleDown,
+      alignment: alignment,
+      child: Text(
+        text,
+        style: style,
+        maxLines: 1,
+        softWrap: false,
+        overflow: TextOverflow.visible,
+      ),
+    );
+  }
+}
 
 class _LeftPrimaryBlock extends StatelessWidget {
   final Place? place;
@@ -291,70 +318,46 @@ class _LeftPrimaryBlock extends StatelessWidget {
               ? ''
               : _formatTemp(secondaryPlace!, secondaryWeather!);
 
+          final windLines = (place != null && weather != null)
+              ? _windLines(place!, weather!)
+              : ('Wind unavailable', '');
+
+          final currencyLines = (place != null && secondaryPlace != null)
+              ? _currencyLines(
+                  primary: place!,
+                  secondary: secondaryPlace!,
+                  eurToUsd: liveData.eurToUsd,
+                )
+              : ('Currency unavailable', '');
+
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  IconButton(
-                    key: const ValueKey('places_hero_refresh_all'),
-                    icon: const Icon(Icons.refresh_rounded),
-                    onPressed: () {
-                      liveData.refreshAll(places: places);
-                    },
-                    iconSize: 18,
-                    tooltip: 'Refresh all',
-                    visualDensity: VisualDensity.compact,
-                    constraints: const BoxConstraints(
-                      minWidth: 34,
-                      minHeight: 34,
-                    ),
-                  ),
-                  const SizedBox(width: 6),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text(
+                        _ScaleDownText(
                           headline,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
                           style: Theme.of(context).textTheme.titleMedium
                               ?.copyWith(fontWeight: FontWeight.w800),
                         ),
                         const SizedBox(height: 2),
-                        Text(
+                        _ScaleDownText(
                           timeText,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
                           style: Theme.of(context).textTheme.labelMedium
                               ?.copyWith(
                                 color: muted,
                                 fontWeight: FontWeight.w500,
                               ),
+                          alignment: Alignment.centerLeft,
                         ),
                       ],
                     ),
-                  ),
-                  PopupMenuButton<_HeroMenuAction>(
-                    key: const ValueKey('places_hero_overflow_menu'),
-                    tooltip: 'More',
-                    icon: const Icon(Icons.more_vert_rounded, size: 18),
-                    onSelected: (action) {
-                      switch (action) {
-                        case _HeroMenuAction.refreshAll:
-                          liveData.refreshAll(places: places);
-                          break;
-                      }
-                    },
-                    itemBuilder: (context) => const [
-                      PopupMenuItem(
-                        value: _HeroMenuAction.refreshAll,
-                        child: Text('Refresh all'),
-                      ),
-                    ],
                   ),
                 ],
               ),
@@ -401,6 +404,76 @@ class _LeftPrimaryBlock extends StatelessWidget {
                   ),
                 ],
               ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Icon(
+                    Icons.air_rounded,
+                    size: 16,
+                    color: cs.onSurface.withAlpha(190),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _ScaleDownText(
+                          windLines.$1,
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(
+                                color: cs.onSurface.withAlpha(220),
+                                fontWeight: FontWeight.w600,
+                              ),
+                        ),
+                        if (windLines.$2.isNotEmpty)
+                          _ScaleDownText(
+                            windLines.$2,
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(
+                                  color: cs.onSurface.withAlpha(150),
+                                  fontWeight: FontWeight.w500,
+                                ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Icon(
+                    Icons.currency_exchange_rounded,
+                    size: 16,
+                    color: cs.onSurface.withAlpha(190),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _ScaleDownText(
+                          currencyLines.$1,
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(
+                                color: cs.onSurface.withAlpha(220),
+                                fontWeight: FontWeight.w600,
+                              ),
+                        ),
+                        if (currencyLines.$2.isNotEmpty)
+                          _ScaleDownText(
+                            currencyLines.$2,
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(
+                                  color: cs.onSurface.withAlpha(150),
+                                  fontWeight: FontWeight.w500,
+                                ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ],
           );
         }
@@ -409,9 +482,9 @@ class _LeftPrimaryBlock extends StatelessWidget {
             ? ''
             : _formatTemp(secondaryPlace!, secondaryWeather!);
 
-        final windLines = (place == null || weather == null)
-            ? null
-            : _windLines(place!, weather!);
+        final windLines = place == null
+            ? ('Wind unavailable', '')
+            : _windLines(place!, weather);
 
         final currencyLines = _currencyLines(
           primary: place,
@@ -453,45 +526,40 @@ class _LeftPrimaryBlock extends StatelessWidget {
                 ),
               ),
             const SizedBox(height: 10),
-            if (windLines != null)
-              Row(
-                children: [
-                  Icon(
-                    Icons.air_rounded,
-                    size: 18,
-                    color: cs.onSurface.withAlpha(190),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          windLines.$1,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: Theme.of(context).textTheme.bodyLarge
-                              ?.copyWith(
-                                color: cs.onSurface.withAlpha(200),
-                                fontWeight: FontWeight.w600,
-                              ),
+            Row(
+              children: [
+                Icon(
+                  Icons.air_rounded,
+                  size: 18,
+                  color: cs.onSurface.withAlpha(190),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _ScaleDownText(
+                        windLines.$1,
+                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                          color: cs.onSurface.withAlpha(200),
+                          fontWeight: FontWeight.w600,
                         ),
-                        const SizedBox(height: 2),
-                        Text(
-                          windLines.$2,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: Theme.of(context).textTheme.bodyMedium
-                              ?.copyWith(
-                                color: cs.onSurface.withAlpha(170),
-                                fontWeight: FontWeight.w500,
-                              ),
+                        alignment: Alignment.centerLeft,
+                      ),
+                      const SizedBox(height: 2),
+                      _ScaleDownText(
+                        windLines.$2,
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: cs.onSurface.withAlpha(170),
+                          fontWeight: FontWeight.w500,
                         ),
-                      ],
-                    ),
+                        alignment: Alignment.centerLeft,
+                      ),
+                    ],
                   ),
-                ],
-              ),
+                ),
+              ],
+            ),
             const SizedBox(height: 8),
             Row(
               children: [
@@ -505,19 +573,21 @@ class _LeftPrimaryBlock extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
+                      _ScaleDownText(
                         currencyLines.$1,
                         style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                           color: cs.onSurface.withAlpha(200),
                           fontWeight: FontWeight.w600,
                         ),
+                        alignment: Alignment.centerLeft,
                       ),
                       const SizedBox(height: 2),
-                      Text(
+                      _ScaleDownText(
                         currencyLines.$2,
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           color: cs.onSurface.withAlpha(170),
                         ),
+                        alignment: Alignment.centerLeft,
                       ),
                     ],
                   ),
@@ -532,106 +602,96 @@ class _LeftPrimaryBlock extends StatelessWidget {
 }
 
 class _RightSecondaryBlock extends StatelessWidget {
-  final Place? place;
-  final ZoneTime? zone;
-  final int? deltaHours;
-  final WeatherSnapshot? weather;
-  final bool compact;
-
   const _RightSecondaryBlock({
     required this.place,
     required this.zone,
-    required this.deltaHours,
+    required this.otherZone,
     required this.weather,
-    this.compact = false,
+    required this.deltaHours,
+    required this.compact,
+    required this.use24Hour,
   });
+
+  final Place? place;
+  final ZoneTime? zone;
+  final ZoneTime? otherZone;
+  final WeatherSnapshot? weather;
+  final int? deltaHours;
+  final bool compact;
+  final bool use24Hour;
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final muted = cs.onSurface.withAlpha(170);
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final textTheme = theme.textTheme;
 
-    final timeText = (place == null || zone == null)
-        ? '--'
-        : '${TimezoneUtils.formatClock(zone!, use24h: place!.use24h)} '
-              '${zone!.abbreviation} · ${TimezoneUtils.formatShortDate(zone!)} '
-              '${deltaHours == null ? '' : TimezoneUtils.formatDeltaLabel(deltaHours!)}';
+    final headerStyle = textTheme.titleMedium?.copyWith(
+      fontWeight: FontWeight.w700,
+    );
 
-    final tempText = (place == null || weather == null)
-        ? ''
-        : _formatTemp(place!, weather!);
+    final muted = cs.onSurface.withAlpha(150);
+    final lineStyle = textTheme.bodySmall?.copyWith(color: muted);
 
-    if (compact) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            alignment: Alignment.centerRight,
-            child: Text(
-              timeText.trim(),
-              textAlign: TextAlign.right,
-              maxLines: 1,
-              softWrap: false,
-              overflow: TextOverflow.ellipsis,
-              style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                color: muted,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
-          const SizedBox(height: 6),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              if (weather != null)
-                _PartlyCloudyIcon(size: 28, muted: cs.onSurface.withAlpha(200)),
-              if (weather != null) const SizedBox(width: 6),
-              Flexible(
-                child: Text(
-                  tempText,
-                  overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.w800,
-                    height: 1.0,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      );
+    final p = place;
+    final headerLabel = (p == null)
+        ? '-'
+        : (p.cityName.isNotEmpty ? p.cityName : p.name);
+
+    final String timeLabel;
+    final String dateDeltaLabel;
+    if (zone == null) {
+      timeLabel = '-';
+      dateDeltaLabel = '-';
+    } else {
+      final clock = TimezoneUtils.formatClock(zone!, use24h: use24Hour);
+      timeLabel = '$clock ${zone!.abbreviation}';
+
+      final date = TimezoneUtils.formatShortDate(zone!);
+      if (deltaHours == null) {
+        dateDeltaLabel = date;
+      } else {
+        final delta = TimezoneUtils.formatDeltaLabel(deltaHours!);
+        dateDeltaLabel = '$date $delta';
+      }
     }
+
+    final iconSize = compact ? 52.0 : 68.0;
+    final Widget? iconWidget = weather == null
+        ? null
+        : _PartlyCloudyIcon(size: iconSize, muted: cs.onSurface.withAlpha(200));
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.end,
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(
-          timeText.trim(),
-          textAlign: TextAlign.right,
-          style: Theme.of(context).textTheme.titleSmall?.copyWith(
-            color: muted,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-        const SizedBox(height: 12),
-        if (tempText.isNotEmpty)
-          Text(
-            tempText,
-            textAlign: TextAlign.right,
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-              color: muted,
-              fontWeight: FontWeight.w600,
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            _ScaleDownText(
+              headerLabel,
+              style: headerStyle,
+              alignment: Alignment.centerRight,
             ),
-          ),
-        const SizedBox(height: 14),
-        Align(
-          alignment: Alignment.centerRight,
-          child: _PartlyCloudyIcon(
-            size: 40,
-            muted: cs.onSurface.withAlpha(190),
-          ),
+            const SizedBox(height: 4),
+            _ScaleDownText(
+              timeLabel,
+              style: lineStyle,
+              alignment: Alignment.centerRight,
+            ),
+            const SizedBox(height: 2),
+            _ScaleDownText(
+              dateDeltaLabel,
+              style: lineStyle,
+              alignment: Alignment.centerRight,
+            ),
+          ],
         ),
+        if (iconWidget != null)
+          Padding(
+            padding: EdgeInsets.only(right: compact ? 6 : 12),
+            child: iconWidget,
+          ),
       ],
     );
   }
@@ -692,8 +752,15 @@ String _formatTemp(Place place, WeatherSnapshot w) {
 /// needing a BuildContext.
 double _kmhToMph(num kmh) => kmh.toDouble() * 0.621371;
 
-(String, String) _windLines(Place place, WeatherSnapshot w) {
+(String, String) _windLines(Place place, WeatherSnapshot? w) {
   final metricActive = place.unitSystem == 'metric';
+
+  // If we do not have live weather, still show a stable, non-empty format.
+  if (w == null) {
+    const kmhLine = 'Wind - km/h, gust - km/h';
+    const mphLine = 'Wind - mph, gust - mph';
+    return metricActive ? (kmhLine, mphLine) : (mphLine, kmhLine);
+  }
 
   final windKmh = w.windKmh.round();
   final gustKmh = w.gustKmh.round();

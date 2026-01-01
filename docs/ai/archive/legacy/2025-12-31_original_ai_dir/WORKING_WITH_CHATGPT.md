@@ -2,6 +2,15 @@
 
 This project is intentionally developed with AI in the loop. The goal is speed without turning the codebase into a brittle Jenga tower.
 
+## Where Unitana keeps AI context
+
+- **Primary memory (source of truth)**: `docs/ai/context_db.json`
+- **Daily lessons learned**: `docs/ai/CHAT_LESSONS_YYYY-MM-DD.json`
+- **Handoff + continuation**: `docs/ai/NEXT_CHAT_HANDOFF_YYYY-MM-DD.md` and `docs/ai/NEXT_CHAT_PROMPT.md`
+- **Design + roadmap notes**: files under `docs/ai/` with date-stamped names (keep one “current” per topic; archive superseded variants)
+
+If a doc exists outside `docs/ai/`, treat it as temporary until it is either moved into `docs/ai/` or deleted.
+
 ## The rules that prevent compile churn
 
 1. **Only change one thing per patch.**

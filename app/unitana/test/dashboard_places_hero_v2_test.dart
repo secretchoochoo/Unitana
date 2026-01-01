@@ -52,7 +52,9 @@ void main() {
       await pumpStable(tester);
 
       expect(find.byKey(const ValueKey('places_hero_v2')), findsOneWidget);
-      expect(find.text('Distance'), findsOneWidget);
+      // Default tiles on a fresh profile are currently: Height, Baking,
+      // Liquids, Area. Distance is an enabled tool, but not a default tile.
+      expect(find.text('Height'), findsOneWidget);
       expect(find.text('Baking'), findsOneWidget);
       expect(find.text('Liquids'), findsOneWidget);
       expect(find.text('Area'), findsOneWidget);
@@ -100,10 +102,11 @@ void main() {
       await pumpStable(tester);
 
       // Inline result and first history entry.
-      // Baking is a lens on the canonical Liquids tool, so result/history keys use the canonical toolId.
-      expect(find.byKey(const ValueKey('tool_result_liquids')), findsOneWidget);
+      // Even if tools share a canonical conversion engine, user-facing tools
+      // have distinct IDs and history streams.
+      expect(find.byKey(const ValueKey('tool_result_baking')), findsOneWidget);
       expect(
-        find.byKey(const ValueKey('tool_history_liquids_0')),
+        find.byKey(const ValueKey('tool_history_baking_0')),
         findsOneWidget,
       );
 
@@ -111,20 +114,11 @@ void main() {
       await tester.drag(find.byType(BottomSheet), const Offset(0, 600));
       await pumpStable(tester);
 
-      // Liquids shares the same canonical history stream as Baking (both are liquids).
+      // Liquids is a separate user-facing tool with its own history.
       await tester.tap(find.text('Liquids'));
       await pumpStable(tester);
 
-      expect(
-        find.byKey(const ValueKey('tool_history_liquids_0')),
-        findsOneWidget,
-      );
-      // Multiple widgets may include the substring (chips, inputs, result). Assert the history row contains it.
-      final historyRow = find.byKey(const ValueKey('tool_history_liquids_0'));
-      expect(
-        find.descendant(of: historyRow, matching: find.textContaining('cup')),
-        findsAtLeastNWidgets(1),
-      );
+      expect(find.text('No history yet'), findsOneWidget);
     },
   );
 }

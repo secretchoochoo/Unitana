@@ -10,6 +10,7 @@ import '../models/dashboard_layout_controller.dart';
 import '../models/dashboard_session_controller.dart';
 import '../models/tool_definitions.dart';
 import '../models/activity_lenses.dart';
+import '../models/tool_registry.dart';
 import 'places_hero_v2.dart';
 import 'tool_modal_bottom_sheet.dart';
 import 'unitana_tile.dart';
@@ -21,22 +22,6 @@ const int _minRowsPhone = 6;
 const int _minRowsTablet = 5;
 const double _gap = 12.0;
 const double _tileHeightRatio = 0.78;
-
-String _lensNameForId(String? id) {
-  // Avoid hard-coding a specific “default” lens constant; fall back to the
-  // first available lens to keep this widget resilient to lens set changes.
-  if (ActivityLenses.all.isEmpty) return 'Tools';
-
-  final normalized = id?.trim();
-  if (normalized == null || normalized.isEmpty) return 'Tools';
-
-  return ActivityLenses.all
-      .firstWhere(
-        (l) => l.id == normalized,
-        orElse: () => ActivityLenses.all.first,
-      )
-      .name;
-}
 
 class DashboardBoard extends StatefulWidget {
   final UnitanaAppState state;
@@ -118,12 +103,13 @@ class _DashboardBoardState extends State<DashboardBoard> {
 
     final cols = widget.availableWidth >= 520 ? 3 : 2;
 
-    final toolItems = ToolDefinitions.all
+    final toolItems = ToolDefinitions.defaultTiles
         .map(
           (t) => DashboardBoardItem(
             id: t.id,
-            kind: _kindForToolId(t.id),
+            kind: DashboardItemKind.tool,
             span: DashboardTileSpan.oneByOne,
+            toolId: t.id,
           ),
         )
         .toList();
@@ -195,6 +181,10 @@ class _DashboardBoardState extends State<DashboardBoard> {
     Place? home,
     Place? dest,
   ) {
+    final activePlace = widget.session.reality == DashboardReality.home
+        ? home
+        : dest;
+
     switch (item.kind) {
       case DashboardItemKind.placesHero:
         return PlacesHeroV2(
@@ -204,46 +194,59 @@ class _DashboardBoardState extends State<DashboardBoard> {
           session: widget.session,
           liveData: widget.liveData,
         );
-      case DashboardItemKind.toolHeight:
-        return _toolTile(
-          context,
-          item,
-          ToolDefinitions.height,
-          activePlace: widget.session.reality == DashboardReality.home
-              ? home
-              : dest,
-        );
-      case DashboardItemKind.toolBaking:
-        return _toolTile(
-          context,
-          item,
-          ToolDefinitions.baking,
-          activePlace: widget.session.reality == DashboardReality.home
-              ? home
-              : dest,
-        );
-      case DashboardItemKind.toolLiquids:
-        return _toolTile(
-          context,
-          item,
-          ToolDefinitions.liquids,
-          activePlace: widget.session.reality == DashboardReality.home
-              ? home
-              : dest,
-        );
-      case DashboardItemKind.toolArea:
-        return _toolTile(
-          context,
-          item,
-          ToolDefinitions.area,
-          activePlace: widget.session.reality == DashboardReality.home
-              ? home
-              : dest,
-        );
+      case DashboardItemKind.tool ||
+          DashboardItemKind.toolHeight ||
+          DashboardItemKind.toolBaking ||
+          DashboardItemKind.toolLiquids ||
+          DashboardItemKind.toolArea:
+        final toolId = item.toolId ?? _legacyToolIdForKind(item.kind);
+        final tool = toolId == null ? null : ToolDefinitions.byId(toolId);
+        if (tool == null) {
+          return _missingToolTile(context, item, toolId ?? 'unknown');
+        }
+        return _toolTile(context, item, tool, activePlace: activePlace);
       case DashboardItemKind.emptySlot:
         // Empty slots are rendered separately as “+” placeholders.
         return const SizedBox.shrink();
     }
+  }
+
+  String? _legacyToolIdForKind(DashboardItemKind kind) {
+    return switch (kind) {
+      DashboardItemKind.toolHeight => 'height',
+      DashboardItemKind.toolBaking => 'baking',
+      DashboardItemKind.toolLiquids => 'liquids',
+      DashboardItemKind.toolArea => 'area',
+      _ => null,
+    };
+  }
+
+  Widget _missingToolTile(
+    BuildContext context,
+    DashboardBoardItem item,
+    String toolId,
+  ) {
+    final scheme = Theme.of(context).colorScheme;
+    return KeyedSubtree(
+      key: ValueKey('dashboard_item_${item.id}'),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: scheme.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: scheme.outlineVariant),
+        ),
+        child: Center(
+          child: Text(
+            'Missing tool: $toolId',
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(color: scheme.onSurfaceVariant),
+            textAlign: TextAlign.center,
+          ),
+        ),
+      ),
+    );
   }
 
   Widget _toolTile(
@@ -252,7 +255,7 @@ class _DashboardBoardState extends State<DashboardBoard> {
     ToolDefinition tool, {
     required Place? activePlace,
   }) {
-    final latest = widget.session.latestFor(tool.canonicalToolId);
+    final latest = widget.session.latestFor(tool.id);
     final labels = _pickToolLabels(
       tool: tool,
       latest: latest,
@@ -447,6 +450,11 @@ class _DashboardBoardState extends State<DashboardBoard> {
     switch (item.kind) {
       case DashboardItemKind.placesHero:
         return 'Hero';
+      case DashboardItemKind.tool:
+        final tool = item.toolId == null
+            ? null
+            : ToolDefinitions.byId(item.toolId!);
+        return tool?.title ?? 'Tool';
       case DashboardItemKind.toolHeight:
         return ToolDefinitions.height.title;
       case DashboardItemKind.toolBaking:
@@ -499,7 +507,7 @@ class _DashboardBoardState extends State<DashboardBoard> {
       useSafeArea: true,
       showDragHandle: true,
       backgroundColor: Theme.of(context).colorScheme.surface,
-      builder: (ctx) => const ToolPickerSheet(),
+      builder: (ctx) => ToolPickerSheet(session: widget.session),
     );
     if (picked == null) return;
 
@@ -544,23 +552,11 @@ class _DashboardBoardState extends State<DashboardBoard> {
       'baking' => l.contains('ml'),
       'liquids' => l.contains('ml'),
       'area' => l.contains('m²') || l.contains('m2'),
+      'distance' => l.contains('km'),
+      'speed' => l.contains('km'),
+      'temperature' => l.contains('°c') || l.contains('c'),
       _ => false,
     };
-  }
-
-  static DashboardItemKind _kindForToolId(String id) {
-    switch (id) {
-      case 'height':
-        return DashboardItemKind.toolHeight;
-      case 'baking':
-        return DashboardItemKind.toolBaking;
-      case 'liquids':
-        return DashboardItemKind.toolLiquids;
-      case 'area':
-        return DashboardItemKind.toolArea;
-      default:
-        return DashboardItemKind.toolHeight;
-    }
   }
 
   static Place? _pickHome(List<Place> places) {
@@ -719,28 +715,267 @@ class _AddToolTile extends StatelessWidget {
   }
 }
 
-class ToolPickerSheet extends StatelessWidget {
-  const ToolPickerSheet({super.key});
+class ToolPickerSheet extends StatefulWidget {
+  final DashboardSessionController? session;
+
+  const ToolPickerSheet({super.key, this.session});
+
+  @override
+  State<ToolPickerSheet> createState() => _ToolPickerSheetState();
+}
+
+class _ToolPickerSheetState extends State<ToolPickerSheet> {
+  String? _expandedLensId;
+  String _query = '';
+  late final TextEditingController _searchController;
+
+  DashboardSessionController? get _session => widget.session;
+
+  @override
+  void initState() {
+    super.initState();
+    _searchController = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  ToolDefinition? _mapToExistingToolDefinition({
+    required ToolRegistryTool tool,
+    required String lensId,
+  }) {
+    // Prefer exact tool-id matches (velocity path).
+    final direct = ToolDefinitions.byId(tool.toolId);
+    if (direct != null) return direct;
+
+    // Existing app currently exposes separate Baking/Liquids entry points.
+    // Keep this lens-driven mapping until we introduce distinct registry
+    // tool IDs for each entry point.
+    if (tool.toolId == 'liquid_volume') {
+      return lensId == ActivityLensId.foodCooking
+          ? ToolDefinitions.baking
+          : ToolDefinitions.liquids;
+    }
+
+    return null;
+  }
+
+  bool _matchesQuery(ToolRegistryTool tool) {
+    final q = _query.trim().toLowerCase();
+    if (q.isEmpty) return true;
+    return tool.label.toLowerCase().contains(q);
+  }
+
+  Widget _sectionHeader(BuildContext context, String label) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 6),
+      child: Text(
+        label,
+        style: theme.textTheme.labelLarge?.copyWith(
+          color: scheme.onSurfaceVariant,
+          letterSpacing: 0.4,
+        ),
+      ),
+    );
+  }
+
+  List<Widget> _buildToolRows(
+    BuildContext context, {
+    required String lensId,
+    required List<ToolRegistryTool> tools,
+  }) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+
+    final visible = tools.where(_matchesQuery).toList(growable: false);
+    if (visible.isEmpty) {
+      return <Widget>[
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 6, 16, 12),
+          child: Text(
+            _query.trim().isEmpty ? 'No tools yet.' : 'No matching tools.',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: scheme.onSurfaceVariant,
+            ),
+          ),
+        ),
+      ];
+    }
+
+    return <Widget>[
+      for (final t in visible)
+        ListTile(
+          key: Key('toolpicker_tool_${t.toolId}'),
+          enabled: t.isEnabled,
+          leading: Icon(t.icon),
+          title: Text(t.label),
+          trailing: t.isEnabled
+              ? const Icon(Icons.chevron_right_rounded)
+              : Text(
+                  'Soon',
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    color: scheme.onSurfaceVariant,
+                  ),
+                ),
+          onTap: !t.isEnabled
+              ? null
+              : () {
+                  final mapped = _mapToExistingToolDefinition(
+                    tool: t,
+                    lensId: lensId,
+                  );
+                  if (mapped == null) return;
+                  Navigator.of(context).pop(mapped);
+                },
+        ),
+    ];
+  }
+
+  List<Widget> _buildQuickToolsChildren(BuildContext context) {
+    final recentIds = _session?.recentToolIds(max: 6) ?? const <String>[];
+    final recents = <ToolRegistryTool>[];
+    for (final id in recentIds) {
+      final t = ToolRegistry.byId[id];
+      if (t != null) recents.add(t);
+    }
+
+    final odd = <ToolRegistryTool>[];
+    for (final id in ToolRegistry.quickOddButUseful) {
+      final t = ToolRegistry.byId[id];
+      if (t != null) odd.add(t);
+    }
+
+    final anyMatches =
+        recents.any(_matchesQuery) || odd.any(_matchesQuery) || _query.isEmpty;
+
+    return <Widget>[
+      _sectionHeader(context, 'Recents'),
+      if (recents.where(_matchesQuery).isEmpty)
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+          child: Text(
+            _query.trim().isEmpty
+                ? 'No recent tools yet.'
+                : 'No matching tools.',
+          ),
+        )
+      else
+        ..._buildToolRows(
+          context,
+          lensId: ActivityLensId.quickTools,
+          tools: recents,
+        ),
+      _sectionHeader(context, 'Odd but useful'),
+      ..._buildToolRows(context, lensId: ActivityLensId.quickTools, tools: odd),
+      if (!anyMatches)
+        const Padding(
+          padding: EdgeInsets.fromLTRB(16, 0, 16, 12),
+          child: Text('No matching tools.'),
+        ),
+      const SizedBox(height: 8),
+    ];
+  }
+
+  Widget _lensHeader(BuildContext context, ActivityLens lens) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final expanded = _expandedLensId == lens.id;
+
+    return ListTile(
+      key: ValueKey('toolpicker_lens_${lens.id}'),
+      leading: Icon(lens.icon),
+      title: Text(lens.name),
+      subtitle: Text(lens.descriptor),
+      trailing: Icon(
+        expanded ? Icons.expand_less_rounded : Icons.expand_more_rounded,
+        color: scheme.onSurfaceVariant,
+      ),
+      onTap: () {
+        setState(() {
+          _expandedLensId = expanded ? null : lens.id;
+        });
+      },
+      dense: false,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+      titleTextStyle: theme.textTheme.titleMedium,
+      subtitleTextStyle: theme.textTheme.bodySmall?.copyWith(
+        color: scheme.onSurfaceVariant,
+      ),
+    );
+  }
+
+  Widget _recentShortcut(BuildContext context) {
+    final ids = _session?.recentToolIds(max: 1) ?? const <String>[];
+    if (ids.isEmpty) return const SizedBox.shrink();
+
+    final tool = ToolRegistry.byId[ids.first];
+    if (tool == null || !tool.isEnabled) return const SizedBox.shrink();
+
+    // Recents are global entry points; prefer direct toolId mapping.
+    final mapped = _mapToExistingToolDefinition(tool: tool, lensId: '');
+    if (mapped == null) return const SizedBox.shrink();
+
+    return ListTile(
+      key: const ValueKey('toolpicker_recent'),
+      leading: const Icon(Icons.history_rounded),
+      title: const Text('Most recent'),
+      subtitle: Text(tool.label),
+      trailing: const Icon(Icons.chevron_right_rounded),
+      onTap: () => Navigator.of(context).pop(mapped),
+    );
+  }
+
+  Widget _searchField(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+      child: TextField(
+        key: const ValueKey('toolpicker_search'),
+        controller: _searchController,
+        textInputAction: TextInputAction.search,
+        decoration: const InputDecoration(
+          prefixIcon: Icon(Icons.search_rounded),
+          hintText: 'Search tools',
+          isDense: true,
+        ),
+        onChanged: (v) {
+          setState(() {
+            _query = v;
+          });
+        },
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    final tools = ToolDefinitions.all;
     final theme = Theme.of(context);
 
     return ListView(
       padding: const EdgeInsets.symmetric(vertical: 12),
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
           child: Text('Choose a tool', style: theme.textTheme.titleMedium),
         ),
-        for (final tool in tools)
-          ListTile(
-            leading: Icon(tool.icon),
-            title: Text(tool.title),
-            subtitle: Text(_lensNameForId(tool.lensId)),
-            onTap: () => Navigator.of(context).pop(tool),
-          ),
+        _recentShortcut(context),
+        _searchField(context),
+        for (final lens in ActivityLenses.all) ...[
+          _lensHeader(context, lens),
+          if (_expandedLensId == lens.id)
+            ...(lens.id == ActivityLensId.quickTools
+                ? _buildQuickToolsChildren(context)
+                : _buildToolRows(
+                    context,
+                    lensId: lens.id,
+                    tools: ToolRegistry.toolsForLens(lens.id),
+                  )),
+          const Divider(height: 1),
+        ],
         const SizedBox(height: 8),
       ],
     );

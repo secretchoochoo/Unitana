@@ -8,21 +8,29 @@ class ActivityLensId {
   const ActivityLensId._();
 
   static const String travelEssentials = 'travel_essentials';
-  static const String foodAndCooking = 'food_and_cooking';
-  static const String healthAndFitness = 'health_and_fitness';
-  static const String homeAndDiy = 'home_and_diy';
-  static const String money = 'money';
-  static const String weatherAndTime = 'weather_and_time';
-  static const String favorites = 'favorites';
+  static const String foodCooking = 'food_cooking';
+  static const String healthFitness = 'health_fitness';
+  static const String homeDiy = 'home_diy';
+  static const String weatherTime = 'weather_time';
+  static const String moneyShopping = 'money_shopping';
+  static const String quickTools = 'quick_tools';
+
+  /// Back-compat aliases (internal only).
+  static const String foodAndCooking = foodCooking;
+  static const String healthAndFitness = healthFitness;
+  static const String homeAndDiy = homeDiy;
+  static const String money = moneyShopping;
+  static const String weatherAndTime = weatherTime;
+  static const String favorites = quickTools;
 
   static const List<String> all = <String>[
     travelEssentials,
-    foodAndCooking,
-    healthAndFitness,
-    homeAndDiy,
-    money,
-    weatherAndTime,
-    favorites,
+    foodCooking,
+    healthFitness,
+    homeDiy,
+    weatherTime,
+    moneyShopping,
+    quickTools,
   ];
 }
 
@@ -51,55 +59,55 @@ class ActivityLenses {
     icon: Icons.flight_takeoff_rounded,
   );
 
-  static const ActivityLens foodAndCooking = ActivityLens(
-    id: ActivityLensId.foodAndCooking,
+  static const ActivityLens foodCooking = ActivityLens(
+    id: ActivityLensId.foodCooking,
     name: 'Food and Cooking',
     descriptor: 'Kitchen conversions and presets',
     icon: Icons.restaurant_rounded,
   );
 
-  static const ActivityLens healthAndFitness = ActivityLens(
-    id: ActivityLensId.healthAndFitness,
+  static const ActivityLens healthFitness = ActivityLens(
+    id: ActivityLensId.healthFitness,
     name: 'Health and Fitness',
     descriptor: 'Training and body metrics',
-    icon: Icons.directions_run_rounded,
+    icon: Icons.fitness_center_rounded,
   );
 
-  static const ActivityLens homeAndDiy = ActivityLens(
-    id: ActivityLensId.homeAndDiy,
+  static const ActivityLens homeDiy = ActivityLens(
+    id: ActivityLensId.homeDiy,
     name: 'Home and DIY',
     descriptor: 'Projects, space, and measurements',
     icon: Icons.handyman_rounded,
   );
 
-  static const ActivityLens money = ActivityLens(
-    id: ActivityLensId.money,
-    name: 'Money',
+  static const ActivityLens weatherTime = ActivityLens(
+    id: ActivityLensId.weatherTime,
+    name: 'Weather and Time',
+    descriptor: 'Conditions, clocks, and wind',
+    icon: Icons.schedule_rounded,
+  );
+
+  static const ActivityLens moneyShopping = ActivityLens(
+    id: ActivityLensId.moneyShopping,
+    name: 'Money and Shopping',
     descriptor: 'Currency and price comparisons',
     icon: Icons.payments_rounded,
   );
 
-  static const ActivityLens weatherAndTime = ActivityLens(
-    id: ActivityLensId.weatherAndTime,
-    name: 'Weather and Time',
-    descriptor: 'Conditions, clocks, and wind',
-    icon: Icons.cloud_queue_rounded,
-  );
-
-  static const ActivityLens favorites = ActivityLens(
-    id: ActivityLensId.favorites,
-    name: 'Favorites',
-    descriptor: 'Pinned tools you use most',
+  static const ActivityLens quickTools = ActivityLens(
+    id: ActivityLensId.quickTools,
+    name: 'Quick Tools',
+    descriptor: 'Favorites, recents, and tables',
     icon: Icons.star_rounded,
   );
 
   static const List<ActivityLens> all = <ActivityLens>[
     travelEssentials,
-    foodAndCooking,
-    healthAndFitness,
-    homeAndDiy,
-    money,
-    weatherAndTime,
-    favorites,
+    foodCooking,
+    healthFitness,
+    homeDiy,
+    weatherTime,
+    moneyShopping,
+    quickTools,
   ];
 }

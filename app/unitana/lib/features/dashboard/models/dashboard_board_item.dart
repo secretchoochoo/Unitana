@@ -47,6 +47,11 @@ class DashboardAnchor {
 
 enum DashboardItemKind {
   placesHero,
+
+  /// Generic tool tile keyed by [DashboardBoardItem.toolId].
+  tool,
+
+  // Legacy tool kinds kept for backward-compatible persistence.
   toolHeight,
   toolBaking,
   toolLiquids,
@@ -59,6 +64,12 @@ class DashboardBoardItem {
   final String id;
   final DashboardItemKind kind;
   final DashboardTileSpan span;
+
+  /// Tool identifier for [DashboardItemKind.tool] tiles.
+  ///
+  /// This value is persisted and used for Keys, lookup, and future engine
+  /// routing. Legacy tool kinds are migrated to this field on load.
+  final String? toolId;
 
   /// If present, the board will attempt to place this item at the anchored slot
   /// before running the dense packing algorithm.
@@ -73,6 +84,7 @@ class DashboardBoardItem {
     required this.id,
     required this.kind,
     required this.span,
+    this.toolId,
     this.anchor,
     this.userAdded = false,
   });

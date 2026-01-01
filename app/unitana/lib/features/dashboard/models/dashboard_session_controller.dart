@@ -60,4 +60,22 @@ class DashboardSessionController extends ChangeNotifier {
     }
     notifyListeners();
   }
+
+  /// Tool ids ordered by most-recent use.
+  ///
+  /// This powers the Quick Tools "Recents" surface.
+  List<String> recentToolIds({int max = 6}) {
+    final entries = _history.entries
+        .where((e) => e.value.isNotEmpty)
+        .map((e) => (toolId: e.key, ts: e.value.first.timestamp))
+        .toList(growable: false);
+
+    entries.sort((a, b) => b.ts.compareTo(a.ts));
+    final out = <String>[];
+    for (final e in entries) {
+      if (out.length >= max) break;
+      out.add(e.toolId);
+    }
+    return out;
+  }
 }

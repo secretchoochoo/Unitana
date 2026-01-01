@@ -86,7 +86,38 @@ void main() {
     await tester.pumpAndSettle(const Duration(milliseconds: 250));
 
     // Pick the Area tool from the picker.
-    await tester.tap(find.widgetWithText(ListTile, 'Area'));
+    // ToolPickerSheet is two-level (lenses -> tools). Expand Home and DIY,
+    // then scroll to the Area tool row.
+    final homeDiyLens = find.byKey(const ValueKey('toolpicker_lens_home_diy'));
+    expect(homeDiyLens, findsOneWidget);
+
+    // ToolPickerSheet is presented in a modal bottom sheet. There are multiple
+    // scrollables in the app (dashboard grid, bottom sheet list, etc.), so we
+    // must scope scrollUntilVisible() to the bottom sheet's scrollable to avoid
+    // "Too many elements" errors.
+    final sheetScrollable = find
+        .descendant(
+          of: find.byType(BottomSheet),
+          matching: find.byType(Scrollable),
+        )
+        .first;
+
+    // Ensure the lens header is on-screen before tapping.
+    await tester.scrollUntilVisible(
+      homeDiyLens,
+      200,
+      scrollable: sheetScrollable,
+    );
+    await tester.pumpAndSettle(const Duration(milliseconds: 150));
+
+    // The lens header itself is tappable.
+    await tester.tap(homeDiyLens);
+    await tester.pumpAndSettle(const Duration(milliseconds: 250));
+
+    final areaTool = find.byKey(const ValueKey('toolpicker_tool_area'));
+    await tester.scrollUntilVisible(areaTool, 200, scrollable: sheetScrollable);
+    await tester.pumpAndSettle(const Duration(milliseconds: 150));
+    await tester.tap(areaTool);
     await tester.pumpAndSettle(const Duration(milliseconds: 250));
 
     // Now there should be two Area tiles (default + inserted).
@@ -120,7 +151,29 @@ void main() {
     await tester.tap(addSlot.first);
     await tester.pumpAndSettle(const Duration(milliseconds: 250));
 
-    await tester.tap(find.widgetWithText(ListTile, 'Area'));
+    final homeDiyLens = find.byKey(const ValueKey('toolpicker_lens_home_diy'));
+    expect(homeDiyLens, findsOneWidget);
+
+    final sheetScrollable = find
+        .descendant(
+          of: find.byType(BottomSheet),
+          matching: find.byType(Scrollable),
+        )
+        .first;
+
+    await tester.scrollUntilVisible(
+      homeDiyLens,
+      200,
+      scrollable: sheetScrollable,
+    );
+    await tester.pumpAndSettle(const Duration(milliseconds: 150));
+    await tester.tap(homeDiyLens);
+    await tester.pumpAndSettle(const Duration(milliseconds: 250));
+
+    final areaTool = find.byKey(const ValueKey('toolpicker_tool_area'));
+    await tester.scrollUntilVisible(areaTool, 200, scrollable: sheetScrollable);
+    await tester.pumpAndSettle(const Duration(milliseconds: 150));
+    await tester.tap(areaTool);
     await tester.pumpAndSettle(const Duration(milliseconds: 250));
 
     expect(find.text('Area'), findsNWidgets(2));

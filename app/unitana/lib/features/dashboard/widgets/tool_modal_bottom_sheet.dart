@@ -67,7 +67,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
       preferMetric: widget.preferMetric,
     );
 
-    final latest = widget.session.latestFor(widget.tool.canonicalToolId);
+    final latest = widget.session.latestFor(widget.tool.id);
     if (latest != null) {
       _resultLine = '${latest.inputLabel}  →  ${latest.outputLabel}';
     }
@@ -90,11 +90,20 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
       case 'length':
         // cm <-> ft/in
         return preferMetric;
+      case 'distance':
+        // km <-> mi
+        return preferMetric;
+      case 'speed':
+        // km/h <-> mph
+        return preferMetric;
       case 'liquids':
         // cups/oz <-> ml (metric prefers ml input)
         return !preferMetric;
       case 'area':
         // m² <-> ft²
+        return preferMetric;
+      case 'temperature':
+        // °C <-> °F
         return preferMetric;
       default:
         return true;
@@ -103,6 +112,12 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
 
   String get _fromUnit {
     switch (widget.tool.id) {
+      case 'distance':
+        return _forward ? 'km' : 'mi';
+      case 'speed':
+        return _forward ? 'km/h' : 'mph';
+      case 'temperature':
+        return _forward ? '°C' : '°F';
       case 'height':
         return _forward ? 'cm' : 'ft/in';
       case 'baking':
@@ -118,6 +133,12 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
 
   String get _toUnit {
     switch (widget.tool.id) {
+      case 'distance':
+        return _forward ? 'mi' : 'km';
+      case 'speed':
+        return _forward ? 'mph' : 'km/h';
+      case 'temperature':
+        return _forward ? '°F' : '°C';
       case 'height':
         return _forward ? 'ft/in' : 'cm';
       case 'baking':
@@ -150,7 +171,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
     }
 
     final record = ConversionRecord(
-      toolId: widget.tool.canonicalToolId,
+      toolId: widget.tool.id,
       lensId: widget.tool.lensId,
       inputLabel: '$input $_fromUnit',
       outputLabel: result,
@@ -169,6 +190,12 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
     const suffixes = <String>[
       'cm',
       'ft/in',
+      'km',
+      'mi',
+      'km/h',
+      'mph',
+      '°c',
+      '°f',
       'ml',
       'cup',
       'oz',
@@ -193,7 +220,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
       animation: widget.session,
       builder: (context, _) {
         final viewInsets = MediaQuery.of(context).viewInsets;
-        final history = widget.session.historyFor(widget.tool.canonicalToolId);
+        final history = widget.session.historyFor(widget.tool.id);
 
         return Padding(
           padding: EdgeInsets.only(bottom: viewInsets.bottom),
@@ -259,7 +286,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     child: _ResultCard(
-                      toolId: widget.tool.canonicalToolId,
+                      toolId: widget.tool.id,
                       lensId: widget.tool.lensId,
                       line: _resultLine,
                     ),
@@ -294,7 +321,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
 
                               return ListTile(
                                 key: ValueKey(
-                                  'tool_history_${widget.tool.canonicalToolId}_$index',
+                                  'tool_history_${widget.tool.id}_$index',
                                 ),
                                 title: Text(
                                   '${r.inputLabel}  →  ${r.outputLabel}',

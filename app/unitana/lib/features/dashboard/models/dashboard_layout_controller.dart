@@ -95,16 +95,15 @@ class DashboardLayoutController extends ChangeNotifier {
   }
 
   Future<void> addTool(ToolDefinition tool, {DashboardAnchor? anchor}) async {
-    final kind = _kindForTool(tool);
-
     // Keep ids unique and stable across sessions.
     final id = '${tool.id}_${DateTime.now().millisecondsSinceEpoch}';
 
     _items.add(
       DashboardBoardItem(
         id: id,
-        kind: kind,
+        kind: DashboardItemKind.tool,
         span: DashboardTileSpan.oneByOne,
+        toolId: tool.id,
         anchor: anchor,
         userAdded: true,
       ),
@@ -121,8 +120,9 @@ class DashboardLayoutController extends ChangeNotifier {
     final existing = _items[idx];
     _items[idx] = DashboardBoardItem(
       id: existing.id,
-      kind: _kindForTool(tool),
+      kind: DashboardItemKind.tool,
       span: existing.span,
+      toolId: tool.id,
       anchor: existing.anchor,
       userAdded: true,
     );
@@ -143,18 +143,18 @@ class DashboardLayoutController extends ChangeNotifier {
     await prefs.setString(_prefsKey, payload);
   }
 
-  DashboardItemKind _kindForTool(ToolDefinition tool) {
-    switch (tool.id) {
-      case 'height':
-        return DashboardItemKind.toolHeight;
-      case 'baking':
-        return DashboardItemKind.toolBaking;
-      case 'liquids':
-        return DashboardItemKind.toolLiquids;
-      case 'area':
-        return DashboardItemKind.toolArea;
+  String? _toolIdForLegacyKind(DashboardItemKind kind) {
+    switch (kind) {
+      case DashboardItemKind.toolHeight:
+        return 'height';
+      case DashboardItemKind.toolBaking:
+        return 'baking';
+      case DashboardItemKind.toolLiquids:
+        return 'liquids';
+      case DashboardItemKind.toolArea:
+        return 'area';
       default:
-        return DashboardItemKind.toolHeight;
+        return null;
     }
   }
 
@@ -162,6 +162,7 @@ class DashboardLayoutController extends ChangeNotifier {
     return <String, dynamic>{
       'id': item.id,
       'kind': item.kind.name,
+      'toolId': item.toolId,
       'colSpan': item.span.colSpan,
       'rowSpan': item.span.rowSpan,
       'anchorIndex': item.anchor?.index,
@@ -182,10 +183,19 @@ class DashboardLayoutController extends ChangeNotifier {
     if (colSpan is! int) return null;
     if (rowSpan is! int) return null;
 
-    final kind = DashboardItemKind.values.firstWhere(
+    final decodedKind = DashboardItemKind.values.firstWhere(
       (k) => k.name == kindRaw,
       orElse: () => DashboardItemKind.toolHeight,
     );
+
+    // Prefer explicit tool id (new schema). Fall back to legacy kind mapping.
+    final toolIdRaw = entry['toolId'];
+    final toolId = toolIdRaw is String
+        ? toolIdRaw
+        : _toolIdForLegacyKind(decodedKind);
+
+    // Normalize tool tiles to the generic kind going forward.
+    final kind = toolId != null ? DashboardItemKind.tool : decodedKind;
 
     final anchorIndex = entry['anchorIndex'];
 
@@ -198,6 +208,7 @@ class DashboardLayoutController extends ChangeNotifier {
       id: id,
       kind: kind,
       span: DashboardTileSpan(colSpan: colSpan, rowSpan: rowSpan),
+      toolId: toolId,
       anchor: anchorIndex is int ? DashboardAnchor(index: anchorIndex) : null,
       userAdded: userAdded,
     );

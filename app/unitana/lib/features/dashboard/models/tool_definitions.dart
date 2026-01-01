@@ -7,11 +7,14 @@ enum ToolId { height, baking, liquids, area }
 
 @immutable
 class ToolDefinition {
-  /// Engine identifier used by conversion logic.
+  /// User-facing tool identifier.
   final String id;
 
-  /// Canonical tool identifier used for shared history and persistence.
-  /// Example: both 'baking' and 'liquids' can share CanonicalToolId.liquids.
+  /// Canonical conversion engine identifier used by conversion logic.
+  ///
+  /// Multiple user-facing tools can share a conversion engine (e.g. baking and
+  /// travel liquids). Tool history and layout persistence should always be
+  /// keyed by [id], not by this canonical engine id.
   final String canonicalToolId;
 
   /// Optional activity lens tag for UI presets + log labeling.
@@ -37,9 +40,9 @@ class ToolDefinitions {
   static const height = ToolDefinition(
     id: 'height',
     canonicalToolId: CanonicalToolId.length,
-    lensId: ActivityLensId.travelEssentials,
-    title: 'Distance',
-    icon: Icons.accessibility_new_rounded,
+    lensId: ActivityLensId.healthFitness,
+    title: 'Height',
+    icon: Icons.height,
     defaultPrimary: '178 cm',
     defaultSecondary: "5' 10\"",
   );
@@ -47,7 +50,7 @@ class ToolDefinitions {
   static const baking = ToolDefinition(
     id: 'baking',
     canonicalToolId: CanonicalToolId.liquids,
-    lensId: ActivityLensId.foodAndCooking,
+    lensId: ActivityLensId.foodCooking,
     title: 'Baking',
     icon: Icons.local_cafe_rounded,
     defaultPrimary: '1 cup',
@@ -67,14 +70,69 @@ class ToolDefinitions {
   static const area = ToolDefinition(
     id: 'area',
     canonicalToolId: CanonicalToolId.area,
-    lensId: ActivityLensId.homeAndDiy,
+    lensId: ActivityLensId.homeDiy,
     title: 'Area',
     icon: Icons.crop_square_rounded,
     defaultPrimary: '12 m²',
     defaultSecondary: '129 ft²',
   );
 
-  static const all = <ToolDefinition>[height, baking, liquids, area];
+  static const distance = ToolDefinition(
+    id: 'distance',
+    canonicalToolId: CanonicalToolId.distance,
+    lensId: ActivityLensId.travelEssentials,
+    title: 'Distance',
+    icon: Icons.straighten_rounded,
+    defaultPrimary: '5 km',
+    defaultSecondary: '3.1 mi',
+  );
+
+  static const speed = ToolDefinition(
+    id: 'speed',
+    canonicalToolId: CanonicalToolId.speed,
+    lensId: ActivityLensId.travelEssentials,
+    title: 'Speed',
+    icon: Icons.speed_rounded,
+    defaultPrimary: '100 km/h',
+    defaultSecondary: '62 mph',
+  );
+
+  static const temperature = ToolDefinition(
+    id: 'temperature',
+    canonicalToolId: CanonicalToolId.temperature,
+    lensId: ActivityLensId.travelEssentials,
+    title: 'Temperature',
+    icon: Icons.device_thermostat_rounded,
+    defaultPrimary: '20°C',
+    defaultSecondary: '68°F',
+  );
+
+  /// Default dashboard tiles shown on a fresh install.
+  static const defaultTiles = <ToolDefinition>[height, baking, liquids, area];
+
+  /// Full registry of enabled tool definitions (selection in the picker and
+  /// user-added tiles).
+  static const registry = <ToolDefinition>[
+    height,
+    baking,
+    liquids,
+    area,
+    distance,
+    speed,
+    temperature,
+  ];
+
+  static const Map<String, ToolDefinition> _byId = {
+    'height': height,
+    'baking': baking,
+    'liquids': liquids,
+    'area': area,
+    'distance': distance,
+    'speed': speed,
+    'temperature': temperature,
+  };
+
+  static ToolDefinition? byId(String toolId) => _byId[toolId];
 }
 
 class ToolConverters {
@@ -85,12 +143,18 @@ class ToolConverters {
     required String input,
   }) {
     switch (toolId) {
+      case CanonicalToolId.distance:
+        return _convertDistance(forward: forward, input: input);
+      case CanonicalToolId.speed:
+        return _convertSpeed(forward: forward, input: input);
+      case CanonicalToolId.temperature:
+        return _convertTemperature(forward: forward, input: input);
       case CanonicalToolId.length:
         return _convertLength(forward: forward, input: input);
       case CanonicalToolId.liquids:
         // Liquids is a canonical engine. The lens controls which preset pairing
         // we present: cooking uses cups <-> ml; travel uses fl oz <-> ml.
-        if (lensId == ActivityLensId.foodAndCooking) {
+        if (lensId == ActivityLensId.foodCooking) {
           return _convertBaking(forward: forward, input: input);
         }
         return _convertLiquids(forward: forward, input: input);
@@ -99,6 +163,47 @@ class ToolConverters {
       default:
         return null;
     }
+  }
+
+  static String? _convertDistance({
+    required bool forward,
+    required String input,
+  }) {
+    final value = double.tryParse(input.trim());
+    if (value == null) return null;
+    const miPerKm = 0.621371;
+    if (forward) {
+      final mi = value * miPerKm;
+      return '${_fmt(mi)} mi';
+    }
+    final km = value / miPerKm;
+    return '${_fmt(km)} km';
+  }
+
+  static String? _convertSpeed({required bool forward, required String input}) {
+    final value = double.tryParse(input.trim());
+    if (value == null) return null;
+    const mphPerKmh = 0.621371;
+    if (forward) {
+      final mph = value * mphPerKmh;
+      return '${_fmt(mph)} mph';
+    }
+    final kmh = value / mphPerKmh;
+    return '${_fmt(kmh)} km/h';
+  }
+
+  static String? _convertTemperature({
+    required bool forward,
+    required String input,
+  }) {
+    final value = double.tryParse(input.trim());
+    if (value == null) return null;
+    if (forward) {
+      final f = value * 9 / 5 + 32;
+      return '${_fmt(f)}°F';
+    }
+    final c = (value - 32) * 5 / 9;
+    return '${_fmt(c)}°C';
   }
 
   static String? _convertBaking({
