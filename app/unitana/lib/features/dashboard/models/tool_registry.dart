@@ -45,6 +45,7 @@ class ToolRegistry {
     ActivityLensId.homeDiy,
     ActivityLensId.weatherTime,
     ActivityLensId.moneyShopping,
+    ActivityLensId.oddUseful,
     ActivityLensId.quickTools,
   ];
 
@@ -123,6 +124,7 @@ class ToolRegistry {
       toolId: 'weight',
       label: 'Weight',
       icon: Icons.monitor_weight_rounded,
+      isEnabled: true,
       lenses: <String>[ActivityLensId.foodCooking],
     ),
     ToolRegistryTool(
@@ -143,6 +145,7 @@ class ToolRegistry {
       toolId: 'body_weight',
       label: 'Body weight',
       icon: Icons.monitor_weight_rounded,
+      isEnabled: true,
       lenses: <String>[ActivityLensId.healthFitness],
     ),
     ToolRegistryTool(
@@ -243,25 +246,25 @@ class ToolRegistry {
       toolId: 'shoe_sizes',
       label: 'Shoe sizes',
       icon: Icons.directions_walk_rounded,
-      lenses: <String>[ActivityLensId.quickTools],
+      lenses: <String>[ActivityLensId.quickTools, ActivityLensId.oddUseful],
     ),
     ToolRegistryTool(
       toolId: 'clothing_sizes',
       label: 'Clothing sizes',
       icon: Icons.checkroom_rounded,
-      lenses: <String>[ActivityLensId.quickTools],
+      lenses: <String>[ActivityLensId.quickTools, ActivityLensId.oddUseful],
     ),
     ToolRegistryTool(
       toolId: 'paper_sizes',
       label: 'Paper sizes',
       icon: Icons.description_rounded,
-      lenses: <String>[ActivityLensId.quickTools],
+      lenses: <String>[ActivityLensId.quickTools, ActivityLensId.oddUseful],
     ),
     ToolRegistryTool(
       toolId: 'timezone_lookup',
       label: 'Time zones lookup',
       icon: Icons.travel_explore_rounded,
-      lenses: <String>[ActivityLensId.quickTools],
+      lenses: <String>[ActivityLensId.quickTools, ActivityLensId.oddUseful],
     ),
   ];
 

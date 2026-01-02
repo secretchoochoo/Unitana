@@ -3,12 +3,16 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../app/app_state.dart';
 import '../../data/city_repository.dart';
+import '../../models/place.dart';
+import '../../common/feedback/unitana_toast.dart';
 import '../first_run/first_run_screen.dart';
 import 'models/dashboard_live_data.dart';
 import 'models/dashboard_layout_controller.dart';
 import 'models/dashboard_session_controller.dart';
+import 'models/dashboard_exceptions.dart';
 import 'models/tool_definitions.dart';
 import 'widgets/dashboard_board.dart';
+import 'widgets/tool_modal_bottom_sheet.dart';
 
 class DashboardScreen extends StatefulWidget {
   final UnitanaAppState state;
@@ -46,12 +50,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
     super.dispose();
   }
 
-  Future<void> _resetAndRestart(BuildContext context) async {
+  Future<void> _resetAndRestart() async {
     await state.resetAll();
     CityRepository.instance.resetCache();
     await _layout.clear();
 
-    if (!context.mounted) return;
+    if (!mounted) return;
 
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(builder: (_) => FirstRunScreen(state: state)),
@@ -59,51 +63,130 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Future<void> _onRefreshAll(BuildContext context) async {
-    if (_liveData.isRefreshing) return;
-    final places = state.places;
-    if (places.isEmpty) return;
+  Future<void> _resetDashboardDefaults() async {
+    final confirmed = await showModalBottomSheet<bool>(
+      context: context,
+      showDragHandle: true,
+      useSafeArea: true,
+      builder: (sheetContext) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Reset Dashboard Defaults',
+                  style: Theme.of(sheetContext).textTheme.titleLarge,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'This removes any widgets you\'ve added and restores the default dashboard layout.',
+                  style: Theme.of(sheetContext).textTheme.bodyMedium,
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.of(sheetContext).pop(false),
+                        child: const Text('Cancel'),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: FilledButton(
+                        onPressed: () => Navigator.of(sheetContext).pop(true),
+                        child: const Text('Reset'),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
 
-    await _liveData.refreshAll(places: places);
+    if (confirmed != true) return;
 
-    // Guard the specific BuildContext since this method accepts one.
-    if (!context.mounted) return;
-    final err = _liveData.lastError;
-    if (err != null) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Refresh failed.')));
-    }
+    await _layout.resetDashboardDefaults();
+    if (!mounted) return;
+
+    setState(() {
+      _isEditingWidgets = false;
+      _focusTileId = null;
+    });
+
+    UnitanaToast.showSuccess(
+      context,
+      'Dashboard reset to defaults.',
+      key: const ValueKey('toast_dashboard_reset_defaults'),
+    );
   }
 
-  Future<void> _openToolPickerAndAdd(BuildContext context) async {
+  bool _preferMetricForReality() {
+    // Align tool defaults with the currently selected "reality" in Places Hero.
+    Place? home;
+    Place? destination;
+
+    for (final p in state.places) {
+      if (home == null && p.type == PlaceType.living) home = p;
+      if (destination == null && p.type != PlaceType.living) destination = p;
+    }
+
+    final primary = _session.reality == DashboardReality.home
+        ? home
+        : destination;
+    final unitSystem = (primary?.unitSystem ?? 'metric').toLowerCase();
+    return unitSystem == 'metric';
+  }
+
+  Future<void> _openToolPickerAndRun(BuildContext context) async {
     final picked = await showModalBottomSheet<ToolDefinition>(
       context: context,
       useSafeArea: true,
       showDragHandle: true,
       backgroundColor: Theme.of(context).colorScheme.surface,
-      builder: (ctx) => const ToolPickerSheet(),
+      builder: (ctx) => ToolPickerSheet(session: _session),
     );
+
     if (picked == null) return;
     if (!context.mounted) return;
 
-    await _layout.addTool(picked);
-
-    if (!context.mounted) return;
-    ScaffoldMessenger.of(
+    await ToolModalBottomSheet.show(
       context,
-    ).showSnackBar(SnackBar(content: Text('Added ${picked.title}')));
+      tool: picked,
+      session: _session,
+      preferMetric: _preferMetricForReality(),
+      canAddWidget: true,
+      onAddWidget: () async {
+        if (_dashboardHasToolId(picked.id)) {
+          throw DuplicateDashboardWidgetException(
+            toolId: picked.id,
+            title: picked.title,
+          );
+        }
+        await _layout.addTool(picked);
+      },
+    );
+  }
+
+  bool _dashboardHasToolId(String toolId) {
+    // Includes the default, always-present tiles and user-added tiles.
+    if (ToolDefinitions.defaultTiles.any((t) => t.id == toolId)) return true;
+    return _layout.items.any((i) => i.toolId == toolId);
   }
 
   void _comingSoon(BuildContext context, String label) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text('$label: coming soon')));
+    UnitanaToast.showInfo(context, '$label: coming soon');
   }
 
   void _openToolPickerFromMenu() {
     if (!mounted) return;
-    _openToolPickerAndAdd(context);
+    _openToolPickerAndRun(context);
   }
 
   void _enterEditWidgets({String? focusTileId}) {
@@ -134,9 +217,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       _focusTileId = null;
     });
     if (!mounted) return;
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Dashboard updated.')));
+    UnitanaToast.showSuccess(context, 'Dashboard updated');
   }
 
   @override
@@ -148,11 +229,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return AnimatedBuilder(
       animation: Listenable.merge([_session, _liveData, _layout]),
       builder: (context, _) {
-        final refreshedAt = _liveData.lastRefreshedAt;
-        final refreshedLabel = refreshedAt == null
-            ? null
-            : 'Updated ${TimeOfDay.fromDateTime(refreshedAt).format(context)}';
-
         return Scaffold(
           appBar: AppBar(
             centerTitle: true,
@@ -162,12 +238,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
             leading: Padding(
               padding: const EdgeInsets.only(left: 12),
               child: Tooltip(
-                message: refreshedLabel == null
-                    ? 'Refresh'
-                    : 'Refresh. $refreshedLabel',
-                child: _RefreshButton(
-                  isRefreshing: _liveData.isRefreshing,
-                  onTap: () => _onRefreshAll(context),
+                message: 'Tools',
+                child: _ToolsButton(
+                  key: const Key('dashboard_tools_button'),
+                  onTap: _openToolPickerFromMenu,
                 ),
               ),
             ),
@@ -212,14 +286,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               ListTile(
-                                leading: const Icon(Icons.grid_view_rounded),
-                                title: const Text('Tools'),
-                                onTap: () {
-                                  Navigator.of(sheetContext).pop();
-                                  Future.microtask(_openToolPickerFromMenu);
-                                },
-                              ),
-                              ListTile(
                                 leading: const Icon(Icons.edit),
                                 title: const Text('Edit widgets'),
                                 onTap: () {
@@ -255,11 +321,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 },
                               ),
                               ListTile(
+                                key: const ValueKey(
+                                  'dashboard_menu_reset_defaults',
+                                ),
+                                leading: const Icon(Icons.restore),
+                                title: const Text('Reset Dashboard Defaults'),
+                                onTap: () {
+                                  Navigator.of(sheetContext).pop();
+                                  Future.microtask(_resetDashboardDefaults);
+                                },
+                              ),
+                              ListTile(
                                 leading: const Icon(Icons.restart_alt),
                                 title: const Text('Reset and restart'),
                                 onTap: () {
                                   Navigator.of(sheetContext).pop();
-                                  _resetAndRestart(context);
+                                  _resetAndRestart();
                                 },
                               ),
                               const SizedBox(height: 8),
@@ -309,11 +386,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 }
 
-class _RefreshButton extends StatelessWidget {
-  final bool isRefreshing;
+class _ToolsButton extends StatelessWidget {
   final VoidCallback onTap;
 
-  const _RefreshButton({required this.isRefreshing, required this.onTap});
+  const _ToolsButton({super.key, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -331,13 +407,9 @@ class _RefreshButton extends StatelessWidget {
           border: Border.all(color: cs.outlineVariant.withAlpha(179), width: 1),
         ),
         alignment: Alignment.center,
-        child: AnimatedRotation(
-          turns: isRefreshing ? 1.0 : 0.0,
-          duration: const Duration(milliseconds: 500),
-          child: Icon(
-            Icons.refresh_rounded,
-            color: cs.onSurface.withAlpha(210),
-          ),
+        child: Icon(
+          Icons.grid_view_rounded,
+          color: cs.onSurface.withAlpha(210),
         ),
       ),
     );

@@ -16,33 +16,46 @@ class ToolLensMap {
       CanonicalToolId.weather,
       CanonicalToolId.liquids,
     ],
-    ActivityLensId.foodAndCooking: <String>[
+    ActivityLensId.foodCooking: <String>[
       CanonicalToolId.liquids,
       CanonicalToolId.weight,
       CanonicalToolId.temperature,
     ],
-    ActivityLensId.healthAndFitness: <String>[
+    ActivityLensId.healthFitness: <String>[
       CanonicalToolId.weight,
       CanonicalToolId.length,
       CanonicalToolId.distance,
       CanonicalToolId.speed,
       CanonicalToolId.liquids,
     ],
-    ActivityLensId.homeAndDiy: <String>[
+    ActivityLensId.homeDiy: <String>[
       CanonicalToolId.length,
       CanonicalToolId.area,
       CanonicalToolId.distance,
       CanonicalToolId.weight,
       CanonicalToolId.liquids,
     ],
-    ActivityLensId.money: <String>[CanonicalToolId.currency],
-    ActivityLensId.weatherAndTime: <String>[
+    ActivityLensId.moneyShopping: <String>[CanonicalToolId.currency],
+    ActivityLensId.weatherTime: <String>[
       CanonicalToolId.weather,
       CanonicalToolId.time,
       CanonicalToolId.speed,
     ],
-    // Favorites is user-defined; mapping is intentionally empty.
-    ActivityLensId.favorites: <String>[],
+
+    ActivityLensId.oddUseful: <String>[
+      CanonicalToolId.currency,
+      CanonicalToolId.time,
+      CanonicalToolId.distance,
+    ],
+
+    // Quick Tools is a "fast entry" lens. Until its dedicated lookup tools
+    // (shoe sizes, paper sizes, etc.) ship, it still needs a stable mapping
+    // so tests and discovery remain consistent.
+    ActivityLensId.quickTools: <String>[
+      CanonicalToolId.time,
+      CanonicalToolId.currency,
+      CanonicalToolId.distance,
+    ],
   };
 
   /// Returns all lens IDs that include the given tool.

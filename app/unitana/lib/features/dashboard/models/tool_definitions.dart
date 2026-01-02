@@ -107,6 +107,26 @@ class ToolDefinitions {
     defaultSecondary: '68°F',
   );
 
+  static const weight = ToolDefinition(
+    id: 'weight',
+    canonicalToolId: CanonicalToolId.weight,
+    lensId: ActivityLensId.foodCooking,
+    title: 'Weight',
+    icon: Icons.monitor_weight_rounded,
+    defaultPrimary: '1 kg',
+    defaultSecondary: '2.2 lb',
+  );
+
+  static const bodyWeight = ToolDefinition(
+    id: 'body_weight',
+    canonicalToolId: CanonicalToolId.weight,
+    lensId: ActivityLensId.healthFitness,
+    title: 'Body weight',
+    icon: Icons.monitor_weight_rounded,
+    defaultPrimary: '70 kg',
+    defaultSecondary: '154 lb',
+  );
+
   /// Default dashboard tiles shown on a fresh install.
   static const defaultTiles = <ToolDefinition>[height, baking, liquids, area];
 
@@ -120,6 +140,8 @@ class ToolDefinitions {
     distance,
     speed,
     temperature,
+    weight,
+    bodyWeight,
   ];
 
   static const Map<String, ToolDefinition> _byId = {
@@ -130,6 +152,8 @@ class ToolDefinitions {
     'distance': distance,
     'speed': speed,
     'temperature': temperature,
+    'weight': weight,
+    'body_weight': bodyWeight,
   };
 
   static ToolDefinition? byId(String toolId) => _byId[toolId];
@@ -160,9 +184,26 @@ class ToolConverters {
         return _convertLiquids(forward: forward, input: input);
       case CanonicalToolId.area:
         return _convertArea(forward: forward, input: input);
+      case CanonicalToolId.weight:
+        return _convertWeight(forward: forward, input: input);
       default:
         return null;
     }
+  }
+
+  static String? _convertWeight({
+    required bool forward,
+    required String input,
+  }) {
+    final value = double.tryParse(input.trim());
+    if (value == null) return null;
+    const lbPerKg = 2.2046226218;
+    if (forward) {
+      final lb = value * lbPerKg;
+      return '${_fmt(lb)} lb';
+    }
+    final kg = value / lbPerKg;
+    return '${_fmt(kg)} kg';
   }
 
   static String? _convertDistance({

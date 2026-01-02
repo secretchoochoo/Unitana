@@ -23,12 +23,22 @@ class WeatherSnapshot {
   });
 }
 
+@immutable
+class SunTimesSnapshot {
+  final DateTime sunriseUtc;
+  final DateTime sunsetUtc;
+
+  const SunTimesSnapshot({required this.sunriseUtc, required this.sunsetUtc});
+}
+
 /// Small live-data controller for the dashboard hero.
 ///
-/// This slice wires the refresh behavior and stabilizes UI state. Real network
+/// This slice wires refresh behavior and stabilizes UI state. Real network
 /// implementations can replace the internal generators later.
 class DashboardLiveDataController extends ChangeNotifier {
   final Map<String, WeatherSnapshot> _weatherByPlaceId = {};
+  final Map<String, SunTimesSnapshot> _sunByPlaceId = {};
+
   double _eurToUsd = 1.10;
   bool _isRefreshing = false;
   Object? _lastError;
@@ -46,14 +56,26 @@ class DashboardLiveDataController extends ChangeNotifier {
     return _weatherByPlaceId[place.id];
   }
 
+  SunTimesSnapshot? sunFor(Place? place) {
+    if (place == null) return null;
+    return _sunByPlaceId[place.id];
+  }
+
   void ensureSeeded(List<Place> places) {
     var changed = false;
+    final nowUtc = DateTime.now().toUtc();
+
     for (final p in places) {
       if (!_weatherByPlaceId.containsKey(p.id)) {
         _weatherByPlaceId[p.id] = _seedWeather(p);
         changed = true;
       }
+      if (!_sunByPlaceId.containsKey(p.id)) {
+        _sunByPlaceId[p.id] = _seedSunTimes(p, nowUtc);
+        changed = true;
+      }
     }
+
     if (changed) {
       _lastRefreshedAt ??= DateTime.now();
       // Avoid notifying during widget build; schedule after this frame.
@@ -78,6 +100,7 @@ class DashboardLiveDataController extends ChangeNotifier {
 
         for (final p in places) {
           _weatherByPlaceId[p.id] = _refreshWeather(p);
+          // Sun times stay stable in this mock layer.
         }
 
         _lastRefreshedAt = DateTime.now();
@@ -127,6 +150,29 @@ class DashboardLiveDataController extends ChangeNotifier {
       windKmh: wind,
       gustKmh: wind + 4.0,
       condition: WeatherCondition.partlyCloudy,
+    );
+  }
+
+  SunTimesSnapshot _seedSunTimes(Place p, DateTime nowUtc) {
+    // Anchor to the current UTC date for stable display.
+    final day = DateTime.utc(nowUtc.year, nowUtc.month, nowUtc.day);
+
+    // Canonical demo values that match the design mock.
+    if (p.cityName.toLowerCase() == 'lisbon') {
+      return SunTimesSnapshot(
+        sunriseUtc: DateTime.utc(day.year, day.month, day.day, 7, 52),
+        sunsetUtc: DateTime.utc(day.year, day.month, day.day, 17, 29),
+      );
+    }
+
+    // Deterministic but plausible window for other places.
+    final seed = p.id.hashCode ^ (p.cityName.hashCode << 1);
+    final sunriseMinutes = 360 + (seed.abs() % 150); // 06:00 to 08:29
+    final sunsetMinutes = 990 + (seed.abs() % 120); // 16:30 to 18:29
+
+    return SunTimesSnapshot(
+      sunriseUtc: day.add(Duration(minutes: sunriseMinutes)),
+      sunsetUtc: day.add(Duration(minutes: sunsetMinutes)),
     );
   }
 

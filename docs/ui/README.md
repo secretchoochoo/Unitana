@@ -2,6 +2,11 @@
 
 This folder is the single home for UI artifacts: simulator screenshots, markup images, and mockups.
 
+## Specs
+
+- Places Hero V2: `PLACES_HERO_V2_SPEC.md`
+- Dashboard: `DASHBOARD_SPEC.md`
+
 ## Folder map
 
 - `docs/ui/screenshots/raw/` – unedited simulator screenshots

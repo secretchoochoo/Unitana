@@ -1,34 +1,26 @@
 import 'package:flutter/material.dart';
 
+import 'dracula_palette.dart';
+
 /// App-wide theming. We use a Dracula-inspired dark palette everywhere and
 /// intentionally do not expose a light mode toggle.
 class UnitanaTheme {
   static ThemeData dark() {
-    const background = Color(0xFF282A36);
-    const currentLine = Color(0xFF44475A);
-    const foreground = Color(0xFFF8F8F2);
-    const comment = Color(0xFF6272A4);
-
-    const purple = Color(0xFFBD93F9);
-    const cyan = Color(0xFF8BE9FD);
-    const green = Color(0xFF50FA7B);
-    const red = Color(0xFFFF5555);
-
     final scheme = const ColorScheme.dark(
-      primary: purple,
+      primary: DraculaPalette.purple,
       onPrimary: Color(0xFF1B1D26),
-      secondary: cyan,
+      secondary: DraculaPalette.cyan,
       onSecondary: Color(0xFF1B1D26),
-      tertiary: green,
+      tertiary: DraculaPalette.green,
       onTertiary: Color(0xFF1B1D26),
-      error: red,
+      error: DraculaPalette.red,
       onError: Color(0xFF1B1D26),
-      surface: background,
-      onSurface: foreground,
-      surfaceContainerHighest: currentLine,
-      onSurfaceVariant: foreground,
-      outline: comment,
-      outlineVariant: comment,
+      surface: DraculaPalette.background,
+      onSurface: DraculaPalette.foreground,
+      surfaceContainerHighest: DraculaPalette.currentLine,
+      onSurfaceVariant: DraculaPalette.foreground,
+      outline: DraculaPalette.comment,
+      outlineVariant: DraculaPalette.comment,
     );
 
     final base = ThemeData(
@@ -40,14 +32,14 @@ class UnitanaTheme {
 
     return base.copyWith(
       appBarTheme: const AppBarTheme(
-        backgroundColor: background,
-        foregroundColor: foreground,
+        backgroundColor: DraculaPalette.background,
+        foregroundColor: DraculaPalette.foreground,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         centerTitle: false,
       ),
       cardTheme: const CardThemeData(
-        color: currentLine,
+        color: DraculaPalette.currentLine,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         margin: EdgeInsets.zero,
@@ -55,15 +47,15 @@ class UnitanaTheme {
           borderRadius: BorderRadius.all(Radius.circular(20)),
         ),
       ),
-      dividerColor: comment.withAlpha(128),
+      dividerColor: DraculaPalette.comment.withAlpha(128),
       textTheme: base.textTheme.apply(
-        bodyColor: foreground,
-        displayColor: foreground,
+        bodyColor: DraculaPalette.foreground,
+        displayColor: DraculaPalette.foreground,
       ),
-      iconTheme: const IconThemeData(color: foreground),
+      iconTheme: const IconThemeData(color: DraculaPalette.foreground),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
-          backgroundColor: purple,
+          backgroundColor: DraculaPalette.purple,
           foregroundColor: const Color(0xFF1B1D26),
           padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
           shape: const StadiumBorder(),
@@ -72,20 +64,20 @@ class UnitanaTheme {
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
-          foregroundColor: foreground,
-          side: BorderSide(color: comment.withAlpha(204)),
+          foregroundColor: DraculaPalette.foreground,
+          side: BorderSide(color: DraculaPalette.comment.withAlpha(204)),
           padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
           shape: const StadiumBorder(),
         ),
       ),
       snackBarTheme: const SnackBarThemeData(
-        backgroundColor: currentLine,
-        contentTextStyle: TextStyle(color: foreground),
+        backgroundColor: DraculaPalette.currentLine,
+        contentTextStyle: TextStyle(color: DraculaPalette.foreground),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: currentLine,
-        hintStyle: TextStyle(color: foreground.withAlpha(166)),
+        fillColor: DraculaPalette.currentLine,
+        hintStyle: TextStyle(color: DraculaPalette.foreground.withAlpha(166)),
         border: const OutlineInputBorder(
           borderRadius: BorderRadius.all(Radius.circular(18)),
           borderSide: BorderSide(color: Colors.transparent),
@@ -96,13 +88,13 @@ class UnitanaTheme {
         ),
         focusedBorder: const OutlineInputBorder(
           borderRadius: BorderRadius.all(Radius.circular(18)),
-          borderSide: BorderSide(color: cyan),
+          borderSide: BorderSide(color: DraculaPalette.cyan),
         ),
       ),
       chipTheme: base.chipTheme.copyWith(
-        backgroundColor: currentLine,
-        labelStyle: const TextStyle(color: foreground),
-        side: BorderSide(color: comment.withAlpha(153)),
+        backgroundColor: DraculaPalette.currentLine,
+        labelStyle: const TextStyle(color: DraculaPalette.foreground),
+        side: BorderSide(color: DraculaPalette.comment.withAlpha(153)),
         shape: const StadiumBorder(),
       ),
       extensions: const <ThemeExtension<dynamic>>[UnitanaThemeTokens()],

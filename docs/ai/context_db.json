@@ -2,8 +2,12 @@
   "backlog": [],
   "current_state": {
     "notes": [
-      "PlacesHeroV2 compile and tests passing after last hotfix.",
-      "iOS app icon visibility remains a backlog item."
+      "Build green through Slice O7m (Reset Dashboard Defaults + hardened hidden-default persistence).",
+      "ToolPicker is opened from the top-left tools icon; Quick Tools lens removed; Most Recent + Search remain.",
+      "Default tiles are removable and persist; restoring a removed default via picker restores it without duplicates.",
+      "Dashboard tiles inherit per-tool tint and per-lens accent mapping.",
+      "Places Hero V2: clocks first; header format locked; sun pill present; wind and gust split; text scales down (no ellipsis).",
+      "iOS app icon visibility remains backlog only."
     ],
     "status": "green"
   },
@@ -26,38 +30,28 @@
     "Keep docs/ai small and canonical: avoid duplicate prompts and parallel copies.",
     "Prefer updating existing canonical files over creating new variants."
   ],
-  "last_updated": "2025-12-31",
+  "last_updated": "2026-01-02",
   "patch_log": [
     {
-      "id": "patch_2025-12-31_sliceH_hotfix_tests_scroll_scope",
       "date": "2025-12-31",
-      "slice": "H",
-      "title": "Tests: scope ToolPicker scrollUntilVisible to bottom sheet scrollable",
-      "summary": [
-        "Updated dashboard tool insertion/removal widget tests to pass an explicit scrollable Finder to scrollUntilVisible().",
-        "Scoped scrolling to the modal BottomSheet's Scrollable to avoid 'Too many elements' errors when multiple scrollables exist (dashboard grid + bottom sheet list)."
-      ],
       "files_changed": [
         "app/unitana/test/dashboard_tool_insertion_persistence_test.dart",
         "docs/ai/context_db.json"
       ],
+      "id": "patch_2025-12-31_sliceH_hotfix_tests_scroll_scope",
       "notes": {
         "reason": "ToolPickerSheet now includes additional top content (most recent + search), and the app surface contains multiple scrollables during modal tests.",
         "risk": "Low; test-only behavior change."
-      }
+      },
+      "slice": "H",
+      "summary": [
+        "Updated dashboard tool insertion/removal widget tests to pass an explicit scrollable Finder to scrollUntilVisible().",
+        "Scoped scrolling to the modal BottomSheet's Scrollable to avoid 'Too many elements' errors when multiple scrollables exist (dashboard grid + bottom sheet list)."
+      ],
+      "title": "Tests: scope ToolPicker scrollUntilVisible to bottom sheet scrollable"
     },
     {
-      "id": "patch_2025-12-31_sliceC_toolpicker_2level",
       "date": "2025-12-31",
-      "slice": "C",
-      "title": "ToolPickerSheet: two-level hierarchy (Activity Lenses -> Tools)",
-      "summary": [
-        "Implemented a collapsible, two-level ToolPickerSheet that lists Activity Lenses first and tools within each lens (ordered per spec).",
-        "Added stable keys: lens headers use toolpicker_lens_<lensId>, tool rows use toolpicker_tool_<toolId>.",
-        "Introduced ToolRegistry (dedup-first) to encode the canonical lens/tool inventory and ordering, including Quick Tools sections (Favorites placeholder, Recents from session, Odd-but-useful static list).",
-        "Aligned Activity Lens IDs to the canonical spec (with backwards-compatible aliases) and updated the Height tile labeling.",
-        "Updated widget tests to expand the Home and DIY lens before selecting Area from the picker."
-      ],
       "files_changed": [
         "app/unitana/lib/features/dashboard/models/activity_lenses.dart",
         "app/unitana/lib/features/dashboard/models/tool_registry.dart",
@@ -68,21 +62,23 @@
         "app/unitana/test/dashboard_tool_insertion_persistence_test.dart",
         "docs/ai/context_db.json"
       ],
+      "id": "patch_2025-12-31_sliceC_toolpicker_2level",
       "notes": [
         "Slice B (Places Hero polish) remains complete; Slice D (AI docs workflow) is now reflected via this patch log entry.",
         "iOS icon visibility remains backlog-only per constraints."
-      ]
+      ],
+      "slice": "C",
+      "summary": [
+        "Implemented a collapsible, two-level ToolPickerSheet that lists Activity Lenses first and tools within each lens (ordered per spec).",
+        "Added stable keys: lens headers use toolpicker_lens_<lensId>, tool rows use toolpicker_tool_<toolId>.",
+        "Introduced ToolRegistry (dedup-first) to encode the canonical lens/tool inventory and ordering, including Quick Tools sections (Favorites placeholder, Recents from session, Odd-but-useful static list).",
+        "Aligned Activity Lens IDs to the canonical spec (with backwards-compatible aliases) and updated the Height tile labeling.",
+        "Updated widget tests to expand the Home and DIY lens before selecting Area from the picker."
+      ],
+      "title": "ToolPickerSheet: two-level hierarchy (Activity Lenses -> Tools)"
     },
     {
-      "id": "patch_2025-12-31_sliceF_G_bundle1",
       "date": "2025-12-31",
-      "title": "Dashboard tool tiles: toolId-based persistence + Bundle 1 tools",
-      "summary": [
-        "Introduced generic tool tiles keyed by toolId (DashboardItemKind.tool) and added migration from legacy tool kinds.",
-        "Enabled Bundle 1 tools (Distance, Speed, Temperature) end-to-end: tool registry -> picker -> tile -> modal -> history.",
-        "Tool picker now prefers direct ToolDefinition lookup by toolId, reducing future work to adding definitions.",
-        "Conversion history is now keyed by ToolDefinition.id (separate histories per user-facing tool), while canonicalToolId remains the conversion engine key."
-      ],
       "files_changed": [
         "app/unitana/lib/features/dashboard/models/dashboard_board_item.dart",
         "app/unitana/lib/features/dashboard/models/dashboard_layout_controller.dart",
@@ -91,80 +87,741 @@
         "app/unitana/lib/features/dashboard/widgets/dashboard_board.dart",
         "app/unitana/lib/features/dashboard/widgets/tool_modal_bottom_sheet.dart",
         "docs/ai/handoff/CURRENT_HANDOFF.md"
-      ]
+      ],
+      "id": "patch_2025-12-31_sliceF_G_bundle1",
+      "summary": [
+        "Introduced generic tool tiles keyed by toolId (DashboardItemKind.tool) and added migration from legacy tool kinds.",
+        "Enabled Bundle 1 tools (Distance, Speed, Temperature) end-to-end: tool registry -> picker -> tile -> modal -> history.",
+        "Tool picker now prefers direct ToolDefinition lookup by toolId, reducing future work to adding definitions.",
+        "Conversion history is now keyed by ToolDefinition.id (separate histories per user-facing tool), while canonicalToolId remains the conversion engine key."
+      ],
+      "title": "Dashboard tool tiles: toolId-based persistence + Bundle 1 tools"
     },
     {
-      "id": "patch_2025-12-31_sliceF_G_hotfix_tests",
       "date": "2025-12-31",
-      "title": "Test fix: tool modal result/history keys use user-facing tool IDs",
+      "files_changed": [
+        "app/unitana/test/dashboard_places_hero_v2_test.dart",
+        "docs/ai/context_db.json"
+      ],
+      "id": "patch_2025-12-31_sliceF_G_hotfix_tests",
       "summary": [
         "Updated Places Hero V2 widget test expectations to align with toolId-owned result/history keys (baking vs liquids).",
         "Confirmed Liquids and Baking maintain distinct user-facing histories even when sharing a canonical conversion engine."
       ],
+      "title": "Test fix: tool modal result/history keys use user-facing tool IDs"
+    },
+    {
+      "date": "2025-12-31",
       "files_changed": [
         "app/unitana/test/dashboard_places_hero_v2_test.dart",
         "docs/ai/context_db.json"
-      ]
-    },
-    {
+      ],
       "id": "patch_2025-12-31_testfix_placeshero_default_tiles",
-      "date": "2025-12-31",
-      "title": "Test fix: Places Hero V2 default tile assertions (Height/Baking/Liquids/Area)",
       "summary": [
         "Updated Places Hero V2 widget test to assert the current default dashboard tiles (Height, Baking, Liquids, Area) rather than Distance.",
         "Distance remains an enabled tool in the registry but is not part of ToolDefinitions.defaultTiles."
       ],
-      "files_changed": [
-        "app/unitana/test/dashboard_places_hero_v2_test.dart",
-        "docs/ai/context_db.json"
-      ]
+      "title": "Test fix: Places Hero V2 default tile assertions (Height/Baking/Liquids/Area)"
     },
     {
-      "id": "patch_2025-12-31_sliceH_toolpicker_search_accordion",
       "date": "2025-12-31",
-      "title": "Tool picker UX: search, recent shortcut, and single-expanded lens",
-      "summary": [
-        "Removed the Favorites section from Quick Tools (no pinned/star workflow).",
-        "Added a most-recent tool shortcut at the top of the picker plus a search field that filters tool rows.",
-        "Changed lens sections to a single-expanded accordion: expanding one lens collapses the others.",
-        "Kept stable keys for lens headers and tool rows to preserve persistence and tests."
-      ],
       "files_changed": [
         "app/unitana/lib/features/dashboard/widgets/dashboard_board.dart",
         "app/unitana/test/dashboard_tool_insertion_persistence_test.dart",
         "docs/ai/context_db.json",
         "docs/ai/handoff/CURRENT_HANDOFF.md",
         "docs/ai/prompts/NEXT_CHAT_PROMPT.md"
-      ]
+      ],
+      "id": "patch_2025-12-31_sliceH_toolpicker_search_accordion",
+      "summary": [
+        "Removed the Favorites section from Quick Tools (no pinned/star workflow).",
+        "Added a most-recent tool shortcut at the top of the picker plus a search field that filters tool rows.",
+        "Changed lens sections to a single-expanded accordion: expanding one lens collapses the others.",
+        "Kept stable keys for lens headers and tool rows to preserve persistence and tests."
+      ],
+      "title": "Tool picker UX: search, recent shortcut, and single-expanded lens"
     },
     {
-      "id": "patch_2025-12-31_sliceH_hotfix_toolpicker_tests",
       "date": "2025-12-31",
+      "files_changed": [
+        "app/unitana/test/dashboard_tool_insertion_persistence_test.dart"
+      ],
+      "id": "patch_2025-12-31_sliceH_hotfix_toolpicker_tests",
+      "notes": {
+        "reason": "ToolPicker lens headers and tool rows may be off-screen in tests after adding search + most-recent section and accordion behavior.",
+        "risk": "Low; test-only change."
+      },
       "slice": "H-hotfix",
       "summary": [
         "Fixed dashboard tool insertion/removal widget tests for the Slice H ToolPicker accordion by scrolling lens headers and tool rows into view before tapping.",
         "Replaced ensureVisible() on tool rows (which requires an already-built element) with scrollUntilVisible() to handle lazily-built list items."
-      ],
-      "files_changed": [
-        "app/unitana/test/dashboard_tool_insertion_persistence_test.dart"
-      ],
-      "notes": {
-        "reason": "ToolPicker lens headers and tool rows may be off-screen in tests after adding search + most-recent section and accordion behavior.",
-        "risk": "Low; test-only change."
-      }
+      ]
     },
     {
-      "id": "patch_2025-12-31_sliceH_hotfix_tests_scroll_scope",
       "date": "2025-12-31",
-      "slice": "H-hotfix",
-      "title": "Tests: scope ToolPicker scrollUntilVisible to bottom sheet scrollable",
+      "files_changed": [
+        "app/unitana/lib/theme/dracula_palette.dart",
+        "app/unitana/lib/theme/app_theme.dart",
+        "app/unitana/lib/features/dashboard/models/lens_accents.dart",
+        "app/unitana/lib/features/dashboard/widgets/dashboard_board.dart",
+        "docs/ai/context_db.json",
+        "docs/ai/handoff/CURRENT_HANDOFF.md",
+        "docs/ai/prompts/NEXT_CHAT_PROMPT.md"
+      ],
+      "id": "patch_2025-12-31_sliceI_lens_accent_colors",
+      "slice": "I",
       "summary": [
-        "Updated dashboard tool insertion/removal widget tests to pass an explicit scrollable Finder scoped to the modal bottom sheet.",
-        "Prevents scrollUntilVisible() from failing when multiple Scrollables exist in the widget tree (dashboard grid + bottom sheet list)."
+        "Introduced canonical DraculaPalette constants and LensAccents mapping (lensId -> accent).",
+        "Tinted ToolPicker lens headers and tool row icons by lens accent for clearer hierarchy without changing text contrast.",
+        "Refactored app theme to reference DraculaPalette constants (single source of truth for palette hex values)."
+      ],
+      "title": "Lens accent colors: Dracula palette tinting for ToolPicker icons"
+    },
+    {
+      "date": "2025-12-31",
+      "files_changed": [
+        "app/unitana/lib/features/dashboard/models/numeric_input_policy.dart",
+        "app/unitana/lib/features/dashboard/widgets/tool_modal_bottom_sheet.dart",
+        "app/unitana/lib/features/dashboard/widgets/unitana_tile.dart",
+        "docs/ai/context_db.json",
+        "docs/ai/handoff/CURRENT_HANDOFF.md",
+        "docs/ai/prompts/NEXT_CHAT_PROMPT.md"
+      ],
+      "id": "patch_2025-12-31_sliceJ_numeric_limits_overflow",
+      "slice": "J",
+      "summary": [
+        "Added a shared NumericInputPolicy and NumericTextInputFormatter for tool calculator fields.",
+        "Applied per-tool digit policies (tightened for height, temperature, and area) and allowed freeform ft/in inputs for Height in imperial direction.",
+        "Updated dashboard tiles to scale down primary/secondary values instead of truncating with ellipsis."
+      ],
+      "title": "Numeric input limits and scale-down value rendering to prevent overflow"
+    },
+    {
+      "date": "2025-12-31",
+      "files_changed": [
+        "app/unitana/lib/features/dashboard/widgets/tool_modal_bottom_sheet.dart",
+        "docs/ai/context_db.json"
+      ],
+      "id": "patch_2025-12-31_sliceJ_hotfix_remove_unused_freeformInput",
+      "slice": "J",
+      "summary": [
+        "Removed an unused private getter in ToolModalBottomSheet after consolidating freeform-input behavior under _requiresFreeformInput."
+      ],
+      "title": "Hotfix: remove unused freeformInput helper to keep analyze clean"
+    },
+    {
+      "date": "2025-12-31",
+      "files_changed": [
+        "app/unitana/lib/features/dashboard/widgets/dashboard_board.dart",
+        "app/unitana/lib/features/dashboard/models/tool_registry.dart",
+        "app/unitana/lib/features/dashboard/models/tool_definitions.dart",
+        "docs/ai/context_db.json",
+        "docs/ai/handoff/CURRENT_HANDOFF.md",
+        "docs/ai/prompts/NEXT_CHAT_PROMPT.md"
+      ],
+      "id": "patch_2025-12-31_sliceK_tool_search_results_weight_tools",
+      "notes": [
+        "Search results use keys toolpicker_search_tool_<toolId> to avoid collisions with tool rows.",
+        "Weight conversion is kg <-> lb; separate user-facing tool IDs share the canonical weight engine per the dedup-first rule."
+      ],
+      "slice": "K",
+      "summary": [
+        "ToolPicker search now surfaces an immediate Results section and auto-expands the first matching lens when typing.",
+        "Enabled Weight (Food) and Body weight (Health) tools end-to-end (ToolRegistry isEnabled + ToolDefinitions + converters)."
+      ],
+      "title": "ToolPicker search results + enable Weight tools"
+    },
+    {
+      "date": "2025-12-31",
+      "files_changed": [
+        "app/unitana/lib/features/dashboard/models/activity_lenses.dart",
+        "docs/ai/context_db.json",
+        "docs/ai/handoff/CURRENT_HANDOFF.md",
+        "docs/ai/prompts/NEXT_CHAT_PROMPT.md"
+      ],
+      "id": "patch_2025-12-31_sliceK_hotfix_activity_lenses_by_id",
+      "notes": [
+        "Fixes compile/analyze failure: ActivityLenses.byId referenced from dashboard_board.dart search results subtitle."
+      ],
+      "slice": "K",
+      "summary": [
+        "Adds ActivityLenses.byId(String) so ToolPicker search results can render the primary lens name without introducing new dependencies."
+      ],
+      "title": "Hotfix: add ActivityLenses.byId lookup"
+    },
+    {
+      "date": "2025-12-31",
+      "files_changed": [
+        "app/unitana/lib/features/dashboard/models/tool_definitions.dart",
+        "app/unitana/lib/features/dashboard/widgets/tool_modal_bottom_sheet.dart",
+        "app/unitana/lib/features/dashboard/widgets/dashboard_board.dart",
+        "docs/ai/context_db.json",
+        "docs/ai/handoff/CURRENT_HANDOFF.md",
+        "docs/ai/prompts/NEXT_CHAT_PROMPT.md"
+      ],
+      "id": "patch_2025-12-31_sliceL_weight_modal_units",
+      "notes": [
+        "Addresses UX inconsistency discovered after enabling Weight tools in Slice K."
+      ],
+      "slice": "L",
+      "summary": [
+        "Fixed Weight tool modal labeling and unit toggling to match existing tool patterns (e.g., Temperature shows C \u2192 F or F \u2192 C).",
+        "Corrected Weight conversion display so inputs/outputs clearly indicate kg \u2194 lb; removed ambiguous \"what/lbs\" presentation.",
+        "Ensured Weight tool tile subtitle uses the correct unit pair string and stays consistent with other tiles."
+      ],
+      "title": "Weight tool: consistent unit labels + modal header clarity"
+    },
+    {
+      "date": "2026-01-01",
+      "files_changed": [
+        "app/unitana/lib/features/dashboard/widgets/dashboard_board.dart",
+        "app/unitana/lib/features/dashboard/widgets/tool_modal_bottom_sheet.dart",
+        "app/unitana/lib/features/dashboard/dashboard_screen.dart",
+        "app/unitana/lib/features/dashboard/models/dashboard_layout_controller.dart",
+        "app/unitana/test/dashboard_tool_insertion_persistence_test.dart",
+        "docs/ai/context_db.json",
+        "docs/ai/handoff/CURRENT_HANDOFF.md",
+        "docs/ai/prompts/NEXT_CHAT_PROMPT.md"
+      ],
+      "id": "patch_2026-01-01_sliceM_tools_run_and_add_widget",
+      "notes": [
+        "Slice M included a hotfix chain to restore stability; final state is green."
+      ],
+      "slice": "M",
+      "summary": [
+        "Changed ToolPicker behavior so selecting a tool runs it immediately (opens its modal) rather than implicitly adding a dashboard tile.",
+        "Added an explicit \"+ Add Widget\" action in tool modals for users who want to pin the tool to the dashboard.",
+        "Updated dashboard/controller wiring so adding a widget uses the canonical toolId registry and preserves stable keys and persistence."
+      ],
+      "title": "Tools menu: run tools without adding; explicit Add Widget flow"
+    },
+    {
+      "date": "2026-01-01",
+      "files_changed": [
+        "app/unitana/lib/features/dashboard/models/activity_lenses.dart",
+        "app/unitana/lib/features/dashboard/models/tool_registry.dart",
+        "app/unitana/lib/features/dashboard/models/lens_accents.dart",
+        "app/unitana/test/tool_lens_map_test.dart",
+        "docs/ai/context_db.json",
+        "docs/ai/handoff/CURRENT_HANDOFF.md",
+        "docs/ai/prompts/NEXT_CHAT_PROMPT.md"
+      ],
+      "id": "patch_2026-01-01_sliceN_odd_but_useful_top_level_lens",
+      "notes": [
+        "Follow-up requested: choose an accent clearly distinct from Home and DIY if any contrast concerns appear."
+      ],
+      "slice": "N",
+      "summary": [
+        "Promoted \"Odd But Useful\" to a first-class Activity Lens with its own stable lensId and Dracula accent color.",
+        "Kept dedup-first rule: tools remain single toolIds; lens membership is an entry-point context only.",
+        "Updated ToolRegistry/ActivityLenses mapping and tests to include the new lens."
+      ],
+      "title": "Odd But Useful: promoted to top-level lens"
+    },
+    {
+      "date": "2026-01-01",
+      "files_changed": [
+        "app/unitana/lib/features/dashboard/widgets/tool_modal_bottom_sheet.dart",
+        "app/unitana/lib/features/dashboard/dashboard_screen.dart",
+        "app/unitana/test/add_widget_confirmation_test.dart",
+        "docs/ai/context_db.json"
+      ],
+      "id": "patch_2026-01-01_sliceO1_add_widget_confirmation_visible",
+      "notes": {
+        "risk": "Low; changes are localized to tool modal UI and one callback.",
+        "ux": "Confirmation is rendered inside the tool bottom sheet so it remains visible even when the modal is open."
+      },
+      "slice": "O1",
+      "summary": [
+        "Replaced the modal-obscured Add Widget SnackBar with an in-modal confirmation row that stays visible while the bottom sheet is open.",
+        "Auto-dismisses the confirmation after a short delay and keeps stable keys for UI tests.",
+        "Removed the redundant dashboard-level SnackBar from the Add Widget callback to avoid hidden or double notifications."
+      ],
+      "title": "Tool modal: visible confirmation for Add Widget"
+    },
+    {
+      "date": "2026-01-01",
+      "files_changed": [
+        "app/unitana/lib/features/dashboard/widgets/tool_modal_bottom_sheet.dart",
+        "app/unitana/lib/features/dashboard/widgets/dashboard_board.dart",
+        "app/unitana/test/add_widget_confirmation_test.dart",
+        "docs/ai/context_db.json"
+      ],
+      "id": "patch_2026-01-01_sliceO1b_add_widget_confirmation_banner",
+      "notes": {
+        "risk": "Low; only affects confirmation UI and adds small timers that cancel on dispose.",
+        "ux": "MaterialBanner renders at the top of the root Scaffold, so it remains visible while bottom sheets are open."
+      },
+      "slice": "O1",
+      "summary": [
+        "Added a top-of-screen MaterialBanner confirmation (auto-dismiss) when a widget is added, ensuring the feedback stays visible even while a bottom sheet is open.",
+        "Kept the in-modal confirmation row, providing redundant visibility in case the user scrolls or misses one cue.",
+        "Converted the dashboard tool-add confirmation from a bottom SnackBar to the same banner pattern to avoid modal occlusion."
+      ],
+      "title": "Add Widget confirmation: visible banner fallback"
+    },
+    {
+      "date": "2026-01-01",
+      "details": [
+        "Removed Add Widget top MaterialBanner that could be obscured by the modal; keep a visible in-modal notice.",
+        "Introduced UnitanaToast overlay (root overlay) for consistent transient confirmations/errors.",
+        "Migrated dashboard confirmations (add tool, replace/remove tile, refresh/update) to UnitanaToast.",
+        "Converted invalid modal input feedback to inline notice (no hidden SnackBars)."
       ],
       "files_changed": [
+        "app/unitana/lib/common/feedback/unitana_toast.dart",
+        "app/unitana/lib/common/widgets/unitana_notice_card.dart",
+        "app/unitana/lib/features/dashboard/widgets/tool_modal_bottom_sheet.dart",
+        "app/unitana/lib/features/dashboard/widgets/dashboard_board.dart",
+        "app/unitana/lib/features/dashboard/dashboard_screen.dart",
+        "app/unitana/test/add_widget_confirmation_test.dart"
+      ],
+      "id": "patch_2026-01-01_slice_O1c_toast_notifications",
+      "summary": "Replace hidden scaffold banners/snackbars with consistent toast + inline modal notices"
+    },
+    {
+      "date": "2026-01-01",
+      "files_changed": [
+        "app/unitana/lib/common/widgets/unitana_notice_card.dart",
+        "app/unitana/lib/common/feedback/unitana_toast.dart",
+        "app/unitana/lib/features/dashboard/widgets/tool_modal_bottom_sheet.dart",
+        "app/unitana/lib/features/dashboard/widgets/dashboard_board.dart",
+        "app/unitana/lib/features/dashboard/dashboard_screen.dart",
+        "app/unitana/test/add_widget_confirmation_test.dart",
+        "docs/ai/context_db.json",
+        "docs/ai/handoff/CURRENT_HANDOFF.md"
+      ],
+      "id": "patch_2026-01-01_sliceO1c_unified_confirmations_toast_notice",
+      "notes": {
+        "follow_up": "O1c1 hotfix corrects a NoticeCard import path and removes an analyzer warning in UnitanaToast.",
+        "ux": "Modals show inline notice; screens use the same toast surface for transient confirmations."
+      },
+      "slice": "O1",
+      "summary": [
+        "Replaced modal-hidden SnackBar confirmations with an in-modal UnitanaNoticeCard that stays visible while the bottom sheet is open.",
+        "Introduced UnitanaToast (root overlay) for consistent transient confirmations across the app, using Dracula-friendly surfaces and contrast-first typography.",
+        "Updated dashboard confirmations to use the same feedback pattern for cohesive messaging."
+      ],
+      "title": "Confirmations: unify UX with toast + in-modal notice"
+    },
+    {
+      "date": "2026-01-01",
+      "files_changed": [
+        "app/unitana/lib/features/dashboard/widgets/tool_modal_bottom_sheet.dart",
+        "app/unitana/lib/common/feedback/unitana_toast.dart",
+        "docs/ai/context_db.json",
+        "docs/ai/handoff/CURRENT_HANDOFF.md"
+      ],
+      "id": "patch_2026-01-01_sliceO1c1_fix_notice_import_and_toast_overlay",
+      "notes": {
+        "qa": "Run flutter analyze and flutter test; confirm Add Widget notice is visible without collapsing the sheet.",
+        "risk": "Low; import path + overlay lookup only."
+      },
+      "slice": "O1",
+      "summary": [
+        "Fixed ToolModalBottomSheet to import UnitanaNoticeCard from the correct common path (avoids lib/features/common/... lookup).",
+        "Switched UnitanaToast overlay lookup to Overlay.maybeOf(...) to resolve unnecessary_null_comparison and keep safe early-return behavior.",
+        "Restores flutter analyze cleanliness and unblocks flutter test compilation."
+      ],
+      "title": "Fix O1c: correct notice import + toast overlay warning"
+    },
+    {
+      "date": "2026-01-01",
+      "files_changed": [
+        "app/unitana/lib/common/feedback/unitana_toast.dart",
+        "docs/ai/context_db.json",
+        "docs/ai/handoff/CURRENT_HANDOFF.md"
+      ],
+      "id": "patch_2026-01-01_sliceO1c2_toast_offset_below_appbar",
+      "notes": {
+        "qa": "Re-run dashboard_tool_insertion_persistence_test; Dashboard edit Done should be tappable while a toast is visible.",
+        "ux": "Toast remains at the top of the screen but sits below the AppBar; tap-to-dismiss preserved."
+      },
+      "slice": "O1",
+      "summary": [
+        "Moved UnitanaToast positioning below the toolbar (kToolbarHeight + padding) so confirmations don't obstruct AppBar actions like Dashboard edit Done/Cancel.",
+        "Prevents test flakiness where overlay hit-testing could miss AppBar taps while a toast is visible."
+      ],
+      "title": "Fix O1c: toast no longer blocks AppBar actions"
+    },
+    {
+      "date": "2026-01-01",
+      "files_changed": [
+        "app/unitana/lib/features/dashboard/widgets/unitana_tile.dart",
+        "app/unitana/lib/features/dashboard/widgets/dashboard_board.dart",
+        "app/unitana/test/dashboard_tile_icon_accent_test.dart",
+        "docs/ai/context_db.json",
+        "docs/ai/handoff/CURRENT_HANDOFF.md"
+      ],
+      "id": "patch_2026-01-01_sliceO2_dashboard_tiles_inherit_icon_accent",
+      "notes": {
+        "risk": "Low; change is additive (optional param) and localized to dashboard tile rendering.",
+        "ux": "Tiles now visually match picker iconography and lens accent system; Odd But Useful lens uses its distinct accent automatically."
+      },
+      "slice": "O2",
+      "summary": [
+        "Updated dashboard tiles to color their leading icon and footer cue using the owning tool\u2019s Activity Lens accent (Dracula palette tints), eliminating the legacy global purple accent.",
+        "Added an optional accentColor override to UnitanaTile, allowing per-tool coloring while keeping existing defaults when no override is provided.",
+        "Added a widget test asserting the Height tile uses the Health & Fitness lens accent for both icon and footer cue (covers Odd But Useful mapping via the same path)."
+      ],
+      "title": "Dashboard tiles: inherit tool icon + lens accent"
+    },
+    {
+      "date": "2026-01-01",
+      "files_changed": [
+        "app/unitana/lib/features/dashboard/dashboard_screen.dart",
+        "app/unitana/test/add_widget_confirmation_test.dart",
+        "docs/ai/context_db.json",
+        "docs/ai/handoff/CURRENT_HANDOFF.md"
+      ],
+      "id": "patch_2026-01-01_sliceO3_dashboard_tools_button_remove_refresh",
+      "notes": {
+        "qa": "Run flutter analyze and flutter test; verify top-left button opens Tools picker and no refresh action is exposed on dashboard.",
+        "risk": "Low; localized dashboard AppBar change + test update.",
+        "ux": "Tools is a higher-frequency action than manual refresh; this reduces top-level UI competition and improves discoverability."
+      },
+      "slice": "O3",
+      "summary": [
+        "Replaced the dashboard AppBar leading refresh control with a Tools button (4-box icon) that opens the ToolPickerSheet.",
+        "Removed dashboard-level manual refresh wiring; keep live-data refresh as roadmap work and per-tool refresh for live data.",
+        "Added a widget test asserting the Tools button opens the ToolPickerSheet."
+      ],
+      "title": "Dashboard: replace refresh button with Tools launcher; remove manual refresh"
+    },
+    {
+      "changes": [
+        "Quick Tools lens is no longer included in the ToolPickerSheet accordion; discovery flows rely on Most Recent + Search + top-level lenses.",
+        "ActivityLensId.quickTools remains as a stable constant for backwards compatibility, but is excluded from canonical lens ordering.",
+        "Added widget test to ensure Quick Tools lens is absent while search continues to function."
+      ],
+      "date": "2026-01-01",
+      "files": [
+        "app/unitana/lib/features/dashboard/models/activity_lenses.dart",
+        "app/unitana/lib/features/dashboard/widgets/dashboard_board.dart",
+        "app/unitana/test/toolpicker_quick_tools_removed_test.dart",
+        "docs/ai/context_db.json",
+        "docs/ai/handoff/CURRENT_HANDOFF.md"
+      ],
+      "id": "patch_2026-01-01_slice_O4_remove_quick_tools_lens",
+      "notes": [
+        "No public widget API changes; stable IDs preserved."
+      ],
+      "slice": "O4",
+      "title": "Remove Quick Tools lens from picker accordion"
+    },
+    {
+      "changes": [
+        "Dashboard now blocks adding a widget when that tool already exists on the dashboard (includes default tiles and user-added tiles).",
+        "Duplicate attempts show consistent error feedback (UnitanaToast for dashboard picker; UnitanaNoticeCard error inside tool modals).",
+        "Updated persistence tests to add a non-default tool and verify duplicates are prevented."
+      ],
+      "date": "2026-01-01",
+      "files": [
+        "app/unitana/lib/features/dashboard/dashboard_screen.dart",
+        "app/unitana/lib/features/dashboard/widgets/dashboard_board.dart",
+        "app/unitana/lib/features/dashboard/widgets/tool_modal_bottom_sheet.dart",
+        "app/unitana/lib/features/dashboard/models/dashboard_exceptions.dart",
         "app/unitana/test/dashboard_tool_insertion_persistence_test.dart",
+        "docs/ai/context_db.json",
+        "docs/ai/handoff/CURRENT_HANDOFF.md"
+      ],
+      "id": "patch_2026-01-01_slice_O5_prevent_duplicate_widgets",
+      "notes": [
+        "No public widget API changes; stable IDs preserved.",
+        "Replacement flow also prevents selecting a tool already present elsewhere on the dashboard."
+      ],
+      "slice": "O5",
+      "title": "Prevent duplicate dashboard widgets"
+    },
+    {
+      "changes": [
+        "Default dashboard tiles (Height, Baking, Liquids, Area, etc.) can be removed in edit mode using the same affordances as user-added tiles.",
+        "Removing a default tile persists via a hidden-default list; adding that tool again restores the default tile instead of creating a duplicate.",
+        "Added widget test coverage for removing a default tile and restoring it via picker search."
+      ],
+      "date": "2026-01-01",
+      "files": [
+        "app/unitana/lib/features/dashboard/widgets/dashboard_board.dart",
+        "app/unitana/test/dashboard_tool_insertion_persistence_test.dart",
+        "docs/ai/context_db.json",
+        "docs/ai/handoff/CURRENT_HANDOFF.md"
+      ],
+      "id": "patch_2026-01-01_slice_O6_remove_default_tiles",
+      "notes": [
+        "No public widget API churn; stable tool IDs remain the persistence keys.",
+        "Hidden default tracking is designed so future changes to the default set can be applied by recomputing ToolDefinitions.defaultTiles while preserving user intent (hidden vs visible)."
+      ],
+      "slice": "O6",
+      "title": "Allow removing default dashboard tiles"
+    },
+    {
+      "areas": [
+        "dashboard",
+        "persistence",
+        "tests"
+      ],
+      "constraints_respected": [
+        "no public widget API churn",
+        "stable IDs/keys",
+        "dracula palette restrained"
+      ],
+      "date": "2026-01-01",
+      "id": "patch_2026-01-01_slice_O6b_hidden_default_key_compat",
+      "slice": "O6b",
+      "summary": "Write hidden-default state to dashboard_hidden_defaults_v1 while continuing to read/write the legacy key to preserve existing installs and keep tests stable.",
+      "test_status": "flutter analyze clean; flutter test passing (expected after patch)",
+      "title": "Hidden default tile persistence key compatibility"
+    },
+    {
+      "areas": [
+        "dashboard",
+        "persistence",
+        "ui",
+        "tests"
+      ],
+      "constraints_respected": [
+        "no public widget API churn",
+        "stable IDs/keys",
+        "dracula palette restrained"
+      ],
+      "date": "2026-01-01",
+      "id": "patch_2026-01-01_slice_O7_reset_dashboard_defaults",
+      "slice": "O7",
+      "summary": "Add a dashboard menu action that restores the current default tile set derived from ToolDefinitions.defaultTiles by clearing user-added tiles, layout edits, and the hidden-default state so removed defaults return.",
+      "test_status": "flutter analyze clean; flutter test passing (expected after patch)",
+      "title": "Reset Dashboard Defaults menu action"
+    },
+    {
+      "areas": [
+        "dashboard",
+        "places_hero",
+        "menu",
+        "tests",
+        "persistence"
+      ],
+      "constraints_respected": [
+        "no public widget API churn",
+        "stable IDs/keys",
+        "dracula palette restrained"
+      ],
+      "date": "2026-01-01",
+      "id": "patch_2026-01-01_slice_O7h_hotfix_layout_reset_and_hero_header",
+      "slice": "O7h",
+      "summary": "Fix Reset Dashboard Defaults implementation issues (controller API + test seeding) and remove the redundant \u201cTools\u201d entry from the top-right menu now that a dedicated tools button exists. Restore the Places Hero V2 clock header to the two-line centered format using bullets, and center the \u201cSunrise / Sunset\u201d header within its pill.",
+      "test_status": "flutter analyze clean; flutter test passing (expected after patch)",
+      "title": "Hotfix: Reset defaults wiring + hero header formatting"
+    },
+    {
+      "date": "2026-01-01",
+      "files_changed": [
+        "unitana/app/unitana/lib/features/dashboard/dashboard_screen.dart",
+        "unitana/app/unitana/lib/features/dashboard/models/dashboard_layout_controller.dart",
+        "unitana/app/unitana/lib/features/dashboard/widgets/places_hero_v2.dart",
+        "unitana/app/unitana/test/dashboard_reset_defaults_test.dart"
+      ],
+      "id": "patch_2026-01-01_slice_O7h_hotfix_reset_defaults_and_hero_header",
+      "slice": "O7h",
+      "summary": "Addresses regressions from the O7 reset-defaults slice by ensuring the DashboardLayoutController exposes resetDashboardDefaults(), fixing the widget test to seed layout JSON using the current schema, and removing the redundant \u201cTools\u201d option from the top-right (...) menu since a dedicated Tools button now exists. Also restores the PlacesHeroV2 time header to the two-line centered format: \u201cLisbon \u2022 Denver +7h\u201d and \u201c01:03 WET \u2022 6:03 PM MST (Fri 2 Jan)\u201d, and centers the \u201cSunrise / Sunset\u201d title within its pill.",
+      "title": "Hotfix: Reset defaults + hero time header"
+    },
+    {
+      "date": "2026-01-01",
+      "files_changed": [
+        "lib/features/dashboard/models/dashboard_layout_controller.dart"
+      ],
+      "id": "patch_2026-01-01_slice_O7i_hotfix_hidden_defaults_reset_race",
+      "notes": {
+        "reason": "Widget tests showed hidden-default prefs sometimes remained after reset due to async load/reset ordering.",
+        "risk": "Low; load becomes no-op if reset occurs during its async window."
+      },
+      "slice": "O7",
+      "summary": [
+        "Added an epoch token to DashboardLayoutController to invalidate in-flight load() when clear/reset runs.",
+        "Reset Dashboard Defaults now reliably clears hidden-default state in memory and SharedPreferences, preventing stale state from reappearing in tests or after rapid UI actions."
+      ],
+      "tests": [
+        "test/dashboard_reset_defaults_test.dart"
+      ],
+      "title": "Hotfix: invalidate in-flight load during reset so hidden-default prefs fully clear"
+    },
+    {
+      "date": "2026-01-01",
+      "files_changed": [
+        "app/unitana/lib/features/dashboard/models/dashboard_layout_controller.dart",
         "docs/ai/context_db.json"
+      ],
+      "id": "patch_2026-01-01_sliceO7_hotfix_store_hidden_defaults",
+      "slice": "O7",
+      "summary": [
+        "Added missing private helper _storeHiddenDefaults in DashboardLayoutController.",
+        "Ensures legacy StringList hidden-default prefs are migrated to canonical JSON-string storage without analyzer/test failures."
+      ],
+      "title": "Hotfix: define _storeHiddenDefaults to complete hidden-default migration"
+    },
+    {
+      "date": "2026-01-01",
+      "files_changed": [
+        "docs/ui/PLACES_HERO_V2_SPEC.md",
+        "docs/ui/DASHBOARD_SPEC.md",
+        "docs/ui/README.md",
+        "docs/ai/handoff/CURRENT_HANDOFF.md",
+        "docs/ai/prompts/NEXT_CHAT_PROMPT.md",
+        "docs/ai/context_db.json"
+      ],
+      "id": "patch_2026-01-01_sliceP0_design_spec_stabilization",
+      "slice": "P0",
+      "summary": [
+        "Added canonical UI specs for Places Hero V2 and dashboard behavior to reduce regressions.",
+        "Documented locked clock header format, sun pill rules, wind/gust formatting, and the reserved marquee slot constraints.",
+        "Updated canonical handoff and next-chat prompt to make the documentation slice the immediate next step."
+      ],
+      "title": "Docs: stabilize Places Hero V2 and dashboard specs"
+    },
+    {
+      "date": "2026-01-01",
+      "files_changed": [
+        "app/unitana/lib/features/dashboard/widgets/places_hero_v2.dart",
+        "app/unitana/test/dashboard_places_hero_v2_test.dart",
+        "docs/ai/context_db.json",
+        "docs/ai/handoff/CURRENT_HANDOFF.md",
+        "docs/ai/prompts/NEXT_CHAT_PROMPT.md",
+        "docs/ai/prompts/NEXT_CHAT_PROMPT_SENIOR_REVIEW.md",
+        "docs/ui/PLACES_HERO_V2_SPEC.md"
+      ],
+      "id": "patch_2026-01-01_sliceO7n_hero_label_emphasis",
+      "slice": "O7n",
+      "summary": [
+        "Sunrise/Sunset pill title now centers within the pill width (scale-down preserved).",
+        "Emphasized key row labels for scanability: Wind, Gust, Sunrise, Sunset, and Rate (higher contrast + heavier weight).",
+        "Updated widget tests to tolerate RichText rows and updated the Places Hero V2 spec to match."
+      ],
+      "title": "Places Hero V2: emphasize labels and center sun title"
+    },
+    {
+      "id": "patch_2026-01-01_sliceO7o_analyzer_clean_places_hero",
+      "date": "2026-01-01",
+      "slice": "O7o",
+      "title": "Places Hero V2: analyzer cleanup (no behavior change)",
+      "summary": [
+        "Removed unused private widget parameters that triggered analyzer warnings.",
+        "Renamed local helper closures to satisfy lint rules (no leading underscores for locals).",
+        "Kept existing keys and text output stable to avoid test and persistence regressions."
+      ],
+      "files_changed": [
+        "app/unitana/lib/features/dashboard/widgets/places_hero_v2.dart",
+        "docs/ai/context_db.json"
+      ]
+    },
+    {
+      "id": "patch_2026-01-01_sliceR1_tile_footer_convert_cta",
+      "date": "2026-01-01",
+      "slice": "R1",
+      "title": "Dashboard tiles: Convert CTA + conversion icon",
+      "summary": [
+        "Replaced the dashboard tile footer copy from \u201cTap to convert\u201d to \u201cConvert\u201d.",
+        "Swapped the footer dot indicator for a conversion icon (swap_horiz) and centered the CTA row.",
+        "Updated widget tests to assert the new footer text and icon tinting behavior."
+      ],
+      "files_changed": [
+        "app/unitana/lib/features/dashboard/widgets/dashboard_board.dart",
+        "app/unitana/lib/features/dashboard/widgets/unitana_tile.dart",
+        "app/unitana/test/dashboard_smoke_test.dart",
+        "app/unitana/test/dashboard_tile_icon_accent_test.dart",
+        "docs/ai/context_db.json",
+        "docs/ai/handoff/CURRENT_HANDOFF.md"
+      ]
+    },
+    {
+      "id": "O11j",
+      "date": "2026-01-02",
+      "title": "Hero Alive marquee restored + overflow hardening",
+      "summary": [
+        "Reintroduced hero marquee slot with paint-only 'Alive' pixel scene using CustomPaint.",
+        "Animation is semantics-safe (repaint-driven) and test-safe (disabled under FLUTTER_TEST).",
+        "Hardened Places Hero V2 left/right rail vertical spacing and added scale-down guard to prevent RenderFlex overflows on small devices.",
+        "Tile footer Convert CTA is centered again, now smaller and wrapped in a subtle pill outline."
+      ],
+      "files": [
+        "unitana/app/unitana/lib/features/dashboard/widgets/hero_alive_marquee.dart",
+        "unitana/app/unitana/lib/features/dashboard/widgets/places_hero_v2.dart",
+        "unitana/app/unitana/lib/features/dashboard/widgets/unitana_tile.dart",
+        "unitana/docs/ai/context_db.json",
+        "unitana/docs/ai/handoff/CURRENT_HANDOFF.md"
+      ]
+    },
+    {
+      "id": "O11k",
+      "date": "2026-01-02",
+      "title": "Hero marquee restored, overflow eliminated, tile CTA compacted",
+      "summary": [
+        "Restored the fixed-size hero marquee slot and reintroduced a test-safe, paint-only animated pixel scene.",
+        "Made Places Hero V2 resilient on small phones by compressing left-block spacing and allowing the sunrise/sunset pill to scale down within the right rail.",
+        "Reduced Convert CTA height and typography to prevent tile footer overflows while keeping the centered pill affordance."
+      ],
+      "files_changed": [
+        "lib/features/dashboard/widgets/hero_alive_marquee.dart",
+        "lib/features/dashboard/widgets/places_hero_v2.dart",
+        "lib/features/dashboard/widgets/unitana_tile.dart",
+        "docs/ai/context_db.json"
+      ],
+      "notes": [
+        "Hero marquee keys: hero_marquee_slot (container) and hero_alive_paint (CustomPaint).",
+        "Animation is disabled under widget tests (FLUTTER_TEST) so pumpAndSettle can settle."
+      ]
+    },
+    {
+      "id": "O11k1",
+      "date": "2026-01-02",
+      "title": "Fix hero marquee compile error and harden test-safe animation gating",
+      "summary": [
+        "Imported kIsWeb from flutter/foundation to fix a compile-time undefined identifier in the hero marquee painter.",
+        "Replaced FLUTTER_TEST-only detection with a binding-based runtime check and gated animation on disableAnimations + TickerMode."
+      ],
+      "files_changed": [
+        "lib/features/dashboard/widgets/hero_alive_marquee.dart",
+        "docs/ai/context_db.json",
+        "docs/ai/handoff/CURRENT_HANDOFF.md"
+      ],
+      "notes": [
+        "Animation will not auto-repeat under widget tests; CustomPaint renders a deterministic still frame in tests."
+      ]
+    },
+    {
+      "id": "O11k2",
+      "date": "2026-01-02",
+      "title": "Remove kIsWeb dependency from HeroAliveMarquee painter",
+      "summary": [
+        "Removed platform-gating (kIsWeb) from the Alive marquee painter to avoid compile failures when foundation import is missing or duplicated.",
+        "Stars now render unconditionally; the widget remains test-safe via existing animation gating."
+      ],
+      "files_changed": [
+        "lib/features/dashboard/widgets/hero_alive_marquee.dart",
+        "docs/ai/context_db.json",
+        "docs/ai/handoff/CURRENT_HANDOFF.md"
+      ],
+      "notes": [
+        "This is a compile-safety hardening patch; no persistence keys or public APIs changed."
+      ]
+    },
+    {
+      "id": "O11k3",
+      "date": "2026-01-02",
+      "title": "Fix remaining small-device overflows and ensure Alive marquee paints at full width",
+      "summary": [
+        "Reworked Places Hero V2 left rail to use flexible vertical distribution (wind/gust vs currency/rate) to eliminate tiny RenderFlex overflows and improve vertical rhythm.",
+        "Ensured HeroAliveMarquee CustomPaint expands to fill the marquee slot so the pixel scene is always visible and animates in runtime.",
+        "Reworked UnitanaTile internal layout to be height-safe by using an Expanded middle region and keeping the Convert pill from causing micro overflows."
+      ],
+      "files_changed": [
+        "lib/features/dashboard/widgets/places_hero_v2.dart",
+        "lib/features/dashboard/widgets/hero_alive_marquee.dart",
+        "lib/features/dashboard/widgets/unitana_tile.dart",
+        "docs/ai/context_db.json",
+        "docs/ai/handoff/CURRENT_HANDOFF.md"
+      ],
+      "notes": [
+        "No public widget API changes.",
+        "No persistence keys changed; existing stable keys remain intact."
       ]
     }
   ],

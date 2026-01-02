@@ -52,6 +52,28 @@ void main() {
       await pumpStable(tester);
 
       expect(find.byKey(const ValueKey('places_hero_v2')), findsOneWidget);
+
+      // Sun pill exists and contains sunrise/sunset rows.
+      expect(find.byKey(const ValueKey('hero_sun_pill')), findsOneWidget);
+      expect(find.byKey(const ValueKey('hero_sunrise_row')), findsOneWidget);
+      expect(find.byKey(const ValueKey('hero_sunset_row')), findsOneWidget);
+
+      // Marquee slot exists and is test-safe (still frame).
+      expect(find.byKey(const ValueKey('hero_marquee_slot')), findsOneWidget);
+      expect(find.byKey(const ValueKey('hero_alive_paint')), findsOneWidget);
+
+      final sunrise = tester.widget<RichText>(
+        find.byKey(const ValueKey('hero_sunrise_row')),
+      );
+      final sunset = tester.widget<RichText>(
+        find.byKey(const ValueKey('hero_sunset_row')),
+      );
+      final sunriseText = (sunrise.text as TextSpan).toPlainText();
+      final sunsetText = (sunset.text as TextSpan).toPlainText();
+      expect(sunriseText, contains('Sunrise'));
+      expect(sunriseText, contains('•'));
+      expect(sunsetText, contains('Sunset'));
+      expect(sunsetText, contains('•'));
       // Default tiles on a fresh profile are currently: Height, Baking,
       // Liquids, Area. Distance is an enabled tool, but not a default tile.
       expect(find.text('Height'), findsOneWidget);

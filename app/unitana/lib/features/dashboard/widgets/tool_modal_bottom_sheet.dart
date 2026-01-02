@@ -1,6 +1,13 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+
+import '../../../common/widgets/unitana_notice_card.dart';
 
 import '../models/dashboard_session_controller.dart';
+import '../models/dashboard_exceptions.dart';
+import '../models/numeric_input_policy.dart';
 import '../models/tool_definitions.dart';
 
 /// Bottom sheet calculator for tool tiles.
@@ -16,12 +23,16 @@ class ToolModalBottomSheet extends StatefulWidget {
   /// This sets the default conversion direction so the input matches the
   /// currently-dominant system.
   final bool preferMetric;
+  final bool canAddWidget;
+  final Future<void> Function()? onAddWidget;
 
   const ToolModalBottomSheet({
     super.key,
     required this.tool,
     required this.session,
     required this.preferMetric,
+    this.canAddWidget = false,
+    this.onAddWidget,
   });
 
   static Future<void> show(
@@ -29,6 +40,8 @@ class ToolModalBottomSheet extends StatefulWidget {
     required ToolDefinition tool,
     required DashboardSessionController session,
     required bool preferMetric,
+    bool canAddWidget = false,
+    Future<void> Function()? onAddWidget,
   }) {
     return showModalBottomSheet<void>(
       context: context,
@@ -38,6 +51,8 @@ class ToolModalBottomSheet extends StatefulWidget {
         tool: tool,
         session: session,
         preferMetric: preferMetric,
+        canAddWidget: canAddWidget,
+        onAddWidget: onAddWidget,
       ),
     );
   }
@@ -48,6 +63,9 @@ class ToolModalBottomSheet extends StatefulWidget {
 
 class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
   final TextEditingController _controller = TextEditingController();
+  Timer? _noticeTimer;
+  String? _noticeText;
+  UnitanaNoticeKind _noticeKind = UnitanaNoticeKind.success;
 
   /// Direction flag used by ToolConverters.
   /// - height: forward => cm -> ft/in
@@ -75,8 +93,24 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
 
   @override
   void dispose() {
+    _noticeTimer?.cancel();
     _controller.dispose();
     super.dispose();
+  }
+
+  void _showNotice(String text, UnitanaNoticeKind kind) {
+    _noticeTimer?.cancel();
+    setState(() {
+      _noticeText = text;
+      _noticeKind = kind;
+    });
+
+    _noticeTimer = Timer(const Duration(seconds: 2), () {
+      if (!mounted) return;
+      setState(() {
+        _noticeText = null;
+      });
+    });
   }
 
   bool _defaultForwardFor({
@@ -105,6 +139,9 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
       case 'temperature':
         // °C <-> °F
         return preferMetric;
+      case 'weight':
+        // kg <-> lb
+        return preferMetric;
       default:
         return true;
     }
@@ -126,6 +163,9 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
         return _forward ? 'oz' : 'ml';
       case 'area':
         return _forward ? 'm²' : 'ft²';
+      case 'weight':
+      case 'body_weight':
+        return _forward ? 'kg' : 'lb';
       default:
         return '';
     }
@@ -147,6 +187,9 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
         return _forward ? 'ml' : 'oz';
       case 'area':
         return _forward ? 'ft²' : 'm²';
+      case 'weight':
+      case 'body_weight':
+        return _forward ? 'lb' : 'kg';
       default:
         return '';
     }
@@ -164,9 +207,10 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
     );
 
     if (result == null) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Invalid input')));
+      _showNotice(
+        'Invalid input, please enter a number',
+        UnitanaNoticeKind.error,
+      );
       return;
     }
 
@@ -184,6 +228,11 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
     setState(() {
       _resultLine = '${record.inputLabel}  →  ${record.outputLabel}';
     });
+  }
+
+  bool get _requiresFreeformInput {
+    // Height in the imperial direction accepts inputs like 5'10".
+    return widget.tool.id == 'height' && !_forward;
   }
 
   String _stripKnownUnitSuffix(String label) {
@@ -221,6 +270,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
       builder: (context, _) {
         final viewInsets = MediaQuery.of(context).viewInsets;
         final history = widget.session.historyFor(widget.tool.id);
+        final numericPolicy = ToolNumericPolicies.forToolId(widget.tool.id);
 
         return Padding(
           padding: EdgeInsets.only(bottom: viewInsets.bottom),
@@ -242,6 +292,34 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                             style: Theme.of(context).textTheme.titleLarge,
                           ),
                         ),
+                        if (widget.canAddWidget && widget.onAddWidget != null)
+                          TextButton.icon(
+                            key: ValueKey('tool_add_widget_${widget.tool.id}'),
+                            onPressed: () async {
+                              try {
+                                await widget.onAddWidget!.call();
+                                if (!mounted) return;
+                                _showNotice(
+                                  'Added ${widget.tool.title} to dashboard',
+                                  UnitanaNoticeKind.success,
+                                );
+                              } on DuplicateDashboardWidgetException catch (_) {
+                                if (!mounted) return;
+                                _showNotice(
+                                  '${widget.tool.title} is already on your dashboard.',
+                                  UnitanaNoticeKind.error,
+                                );
+                              } catch (_) {
+                                if (!mounted) return;
+                                _showNotice(
+                                  'Could not add ${widget.tool.title} to dashboard.',
+                                  UnitanaNoticeKind.error,
+                                );
+                              }
+                            },
+                            icon: const Icon(Icons.add_rounded),
+                            label: const Text('Add Widget'),
+                          ),
                         IconButton(
                           tooltip: 'Swap',
                           onPressed: () => setState(() => _forward = !_forward),
@@ -249,6 +327,25 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                         ),
                       ],
                     ),
+                  ),
+
+                  AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 180),
+                    switchInCurve: Curves.easeOut,
+                    switchOutCurve: Curves.easeIn,
+                    child: _noticeText == null
+                        ? const SizedBox.shrink()
+                        : Padding(
+                            padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                            child: UnitanaNoticeCard(
+                              kind: _noticeKind,
+
+                              key: ValueKey(
+                                'tool_add_widget_notice_${widget.tool.id}',
+                              ),
+                              text: _noticeText!,
+                            ),
+                          ),
                   ),
 
                   // Calculator (top half)
@@ -260,10 +357,19 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                           child: TextField(
                             key: ValueKey('tool_input_${widget.tool.id}'),
                             controller: _controller,
-                            keyboardType: const TextInputType.numberWithOptions(
-                              decimal: true,
-                              signed: false,
-                            ),
+                            keyboardType: _requiresFreeformInput
+                                ? TextInputType.text
+                                : TextInputType.numberWithOptions(
+                                    decimal: numericPolicy.allowDecimal,
+                                    signed: numericPolicy.allowNegative,
+                                  ),
+                            inputFormatters: _requiresFreeformInput
+                                ? const <TextInputFormatter>[]
+                                : <TextInputFormatter>[
+                                    NumericTextInputFormatter(
+                                      policy: numericPolicy,
+                                    ),
+                                  ],
                             decoration: InputDecoration(
                               labelText: 'Enter value',
                               helperText: '$_fromUnit → $_toUnit',

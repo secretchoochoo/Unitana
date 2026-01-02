@@ -15,10 +15,35 @@ import 'tool_definitions.dart';
 class DashboardLayoutController extends ChangeNotifier {
   static const String _prefsKey = 'dashboard_layout_v1';
 
+  // Tracks which default tiles (ToolDefinitions.defaultTiles) the user has
+  // removed from the dashboard.
+  //
+  // Stored separately from [_prefsKey] to avoid churn/migrations of the main
+  // layout schema.
+  //
+  // Canonical key (used by tests and current slices):
+  static const String _prefsHiddenDefaultsKey = 'dashboard_hidden_defaults_v1';
+
+  // Legacy key used by an earlier hotfix; we keep reading/writing it for
+  // backwards compatibility so existing users don't lose state.
+  static const String _prefsHiddenDefaultsLegacyKey =
+      'dashboard_hidden_default_tools_v1';
+
+  // Older tests/builds used this key name; we remove it during resets to avoid
+  // stale hidden-default state.
+  static const String _prefsHiddenDefaultsAltLegacyKey = 'hidden_defaults_v1';
+
   final List<DashboardBoardItem> _items = <DashboardBoardItem>[];
   final List<DashboardBoardItem> _draftBaseline = <DashboardBoardItem>[];
+
+  final Set<String> _hiddenDefaultToolIds = <String>{};
+  final Set<String> _draftHiddenDefaultBaseline = <String>{};
   bool _isEditing = false;
   bool _loaded = false;
+
+  // Monotonic token used to invalidate in-flight async work (notably [load])
+  // when destructive operations like [clear] run.
+  int _epoch = 0;
 
   bool get isLoaded => _loaded;
 
@@ -26,6 +51,9 @@ class DashboardLayoutController extends ChangeNotifier {
 
   List<DashboardBoardItem> get items =>
       List<DashboardBoardItem>.unmodifiable(_items);
+
+  bool isDefaultToolHidden(String toolId) =>
+      _hiddenDefaultToolIds.contains(toolId);
 
   /// Starts an edit session.
   ///
@@ -36,6 +64,9 @@ class DashboardLayoutController extends ChangeNotifier {
     _draftBaseline
       ..clear()
       ..addAll(_items);
+    _draftHiddenDefaultBaseline
+      ..clear()
+      ..addAll(_hiddenDefaultToolIds);
     _isEditing = true;
     notifyListeners();
   }
@@ -46,6 +77,12 @@ class DashboardLayoutController extends ChangeNotifier {
       ..clear()
       ..addAll(_draftBaseline);
     _draftBaseline.clear();
+
+    _hiddenDefaultToolIds
+      ..clear()
+      ..addAll(_draftHiddenDefaultBaseline);
+    _draftHiddenDefaultBaseline.clear();
+
     _isEditing = false;
     notifyListeners();
   }
@@ -53,17 +90,41 @@ class DashboardLayoutController extends ChangeNotifier {
   Future<void> commitEdit() async {
     if (!_isEditing) return;
     _draftBaseline.clear();
+    _draftHiddenDefaultBaseline.clear();
     _isEditing = false;
     notifyListeners();
     await _persist();
   }
 
   Future<void> load() async {
+    final epochAtStart = _epoch;
     final prefs = await SharedPreferences.getInstance();
+
+    // If the controller was cleared while we were awaiting prefs, abort.
+    if (epochAtStart != _epoch) return;
     final raw = prefs.getString(_prefsKey);
+
+    // Hidden defaults: canonical is a JSON string list, but older builds may have stored a StringList.
+    final hiddenValue =
+        prefs.get(_prefsHiddenDefaultsKey) ??
+        prefs.get(_prefsHiddenDefaultsLegacyKey);
+
+    String? hiddenRaw;
+    List<String>? hiddenList;
+
+    if (hiddenValue is String) {
+      hiddenRaw = hiddenValue;
+    } else if (hiddenValue is List) {
+      hiddenList = hiddenValue.whereType<String>().toList();
+    }
+
+    // If a destructive operation ran since we started, drop the load.
+    if (epochAtStart != _epoch) return;
 
     _items.clear();
     _draftBaseline.clear();
+    _hiddenDefaultToolIds.clear();
+    _draftHiddenDefaultBaseline.clear();
     _isEditing = false;
 
     if (raw != null && raw.trim().isNotEmpty) {
@@ -80,18 +141,105 @@ class DashboardLayoutController extends ChangeNotifier {
       }
     }
 
+    final hiddenSet = <String>{};
+
+    if (hiddenList != null) {
+      for (final entry in hiddenList) {
+        if (entry.trim().isNotEmpty) hiddenSet.add(entry);
+      }
+    } else if (hiddenRaw != null && hiddenRaw.trim().isNotEmpty) {
+      try {
+        final decoded = jsonDecode(hiddenRaw);
+        if (decoded is List) {
+          for (final entry in decoded) {
+            if (entry is String && entry.trim().isNotEmpty) {
+              hiddenSet.add(entry);
+            }
+          }
+        }
+      } catch (_) {
+        // Ignore corrupt prefs.
+      }
+    }
+
+    _hiddenDefaultToolIds.addAll(hiddenSet);
+
+    // Migrate legacy StringList to the canonical JSON string format.
+    if (hiddenList != null) {
+      await _storeHiddenDefaults(prefs, _hiddenDefaultToolIds);
+    }
+
     _loaded = true;
     notifyListeners();
   }
 
-  Future<void> clear() async {
-    _items.clear();
-    _draftBaseline.clear();
-    _isEditing = false;
-    notifyListeners();
+  /// Persists the "hidden default tiles" set in the canonical JSON-string format.
+  ///
+  /// We also mirror to legacy keys for backwards compatibility.
+  Future<void> _storeHiddenDefaults(
+    SharedPreferences prefs,
+    Set<String> hiddenToolIds,
+  ) async {
+    // Ensure we can safely change stored types (e.g., StringList -> String).
+    await prefs.remove(_prefsHiddenDefaultsKey);
+    await prefs.remove(_prefsHiddenDefaultsLegacyKey);
+    await prefs.remove(_prefsHiddenDefaultsAltLegacyKey);
 
+    if (hiddenToolIds.isEmpty) return;
+
+    final payload = jsonEncode(hiddenToolIds.toList(growable: false)..sort());
+    await prefs.setString(_prefsHiddenDefaultsKey, payload);
+    await prefs.setString(_prefsHiddenDefaultsLegacyKey, payload);
+    await prefs.setString(_prefsHiddenDefaultsAltLegacyKey, payload);
+  }
+
+  Future<void> clear() async {
+    // Invalidate any in-flight load.
+    _epoch++;
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_prefsKey);
+
+    // Clear hidden-default state across all known keys (canonical + legacy).
+    await prefs.remove(_prefsHiddenDefaultsKey);
+    await prefs.remove(_prefsHiddenDefaultsLegacyKey);
+    await prefs.remove(_prefsHiddenDefaultsAltLegacyKey);
+
+    // Defensive: if any older build wrote a slightly different legacy key,
+    // remove it too (no harm if absent).
+    await prefs.remove('dashboard_hidden_default_tools_v1');
+
+    _items.clear();
+    _draftBaseline.clear();
+    _hiddenDefaultToolIds.clear();
+    _draftHiddenDefaultBaseline.clear();
+    _isEditing = false;
+    notifyListeners();
+  }
+
+  /// Restores the dashboard to the current default configuration.
+  ///
+  /// This:
+  /// - Removes all user-added tiles and any layout edits.
+  /// - Clears the "hidden default tiles" state so removed defaults return.
+  ///
+  /// Default tiles are derived from [ToolDefinitions.defaultTiles], so the
+  /// resulting dashboard can evolve over time as defaults change.
+  Future<void> resetDashboardDefaults() async {
+    await clear();
+  }
+
+  Future<void> hideDefaultTool(String toolId) async {
+    if (_hiddenDefaultToolIds.add(toolId)) {
+      notifyListeners();
+      if (!_isEditing) await _persist();
+    }
+  }
+
+  Future<void> unhideDefaultTool(String toolId) async {
+    if (_hiddenDefaultToolIds.remove(toolId)) {
+      notifyListeners();
+      if (!_isEditing) await _persist();
+    }
   }
 
   Future<void> addTool(ToolDefinition tool, {DashboardAnchor? anchor}) async {
@@ -141,6 +289,22 @@ class DashboardLayoutController extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     final payload = jsonEncode(_items.map(_toJson).toList(growable: false));
     await prefs.setString(_prefsKey, payload);
+
+    // Persist hidden-default state only when non-empty. If empty, remove the
+    // keys so Reset Dashboard Defaults can truly clear the state.
+    if (_hiddenDefaultToolIds.isEmpty) {
+      await prefs.remove(_prefsHiddenDefaultsKey);
+      await prefs.remove(_prefsHiddenDefaultsLegacyKey);
+      await prefs.remove(_prefsHiddenDefaultsAltLegacyKey);
+    } else {
+      final hiddenPayload = jsonEncode(
+        _hiddenDefaultToolIds.toList(growable: false)..sort(),
+      );
+      // Write canonical + legacy keys for compatibility.
+      await prefs.setString(_prefsHiddenDefaultsKey, hiddenPayload);
+      await prefs.setString(_prefsHiddenDefaultsLegacyKey, hiddenPayload);
+      await prefs.setString(_prefsHiddenDefaultsAltLegacyKey, hiddenPayload);
+    }
   }
 
   String? _toolIdForLegacyKind(DashboardItemKind kind) {

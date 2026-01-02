@@ -1,9 +1,11 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
 import '../../../app/app_state.dart';
 import '../../../models/place.dart';
+import '../../../common/feedback/unitana_toast.dart';
 import '../models/dashboard_board_item.dart';
 import '../models/dashboard_live_data.dart';
 import '../models/dashboard_layout_controller.dart';
@@ -11,6 +13,7 @@ import '../models/dashboard_session_controller.dart';
 import '../models/tool_definitions.dart';
 import '../models/activity_lenses.dart';
 import '../models/tool_registry.dart';
+import '../models/lens_accents.dart';
 import 'places_hero_v2.dart';
 import 'tool_modal_bottom_sheet.dart';
 import 'unitana_tile.dart';
@@ -54,6 +57,26 @@ class _DashboardBoardState extends State<DashboardBoard> {
   String? _lastFocusId;
   bool _pendingShowActions = false;
 
+  bool _dashboardHasToolId(String toolId, {String? ignoreItemId}) {
+    // Includes visible default tiles and user-added tiles.
+    if (ToolDefinitions.defaultTiles.any(
+      (t) => t.id == toolId && !widget.layout.isDefaultToolHidden(t.id),
+    )) {
+      return true;
+    }
+    return widget.layout.items.any(
+      (i) =>
+          i.toolId == toolId && (ignoreItemId == null || i.id != ignoreItemId),
+    );
+  }
+
+  bool _isDefaultToolTile(DashboardBoardItem item) {
+    final toolId = item.toolId;
+    if (item.kind != DashboardItemKind.tool || toolId == null) return false;
+    if (item.userAdded) return false;
+    return ToolDefinitions.defaultTiles.any((t) => t.id == toolId);
+  }
+
   @override
   void initState() {
     super.initState();
@@ -71,6 +94,19 @@ class _DashboardBoardState extends State<DashboardBoard> {
   void _syncFocus(String? id) {
     _lastFocusId = id;
     _pendingShowActions = id != null && id.trim().isNotEmpty;
+  }
+
+  void _showTransientBanner(String text, {String? bannerKey}) {
+    UnitanaToast.showSuccess(
+      context,
+      text,
+      key: bannerKey == null ? null : ValueKey(bannerKey),
+    );
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
   }
 
   @override
@@ -104,6 +140,7 @@ class _DashboardBoardState extends State<DashboardBoard> {
     final cols = widget.availableWidth >= 520 ? 3 : 2;
 
     final toolItems = ToolDefinitions.defaultTiles
+        .where((t) => !widget.layout.isDefaultToolHidden(t.id))
         .map(
           (t) => DashboardBoardItem(
             id: t.id,
@@ -265,14 +302,20 @@ class _DashboardBoardState extends State<DashboardBoard> {
     final primary = labels.$1;
     final secondary = labels.$2;
 
+    final isDefaultTile = _isDefaultToolTile(item);
+    final canEdit = item.userAdded || isDefaultTile;
+
     final tile = UnitanaTile(
       title: tool.title,
       // UnitanaTile expects an IconData, not an Icon widget.
       leadingIcon: tool.icon,
+      accentColor: tool.lensId == null
+          ? null
+          : LensAccents.iconTintFor(tool.lensId!),
       primary: primary,
       secondary: secondary,
-      footer: widget.isEditing ? 'Edit mode' : 'Tap to convert',
-      onLongPress: item.userAdded
+      footer: widget.isEditing ? 'Edit mode' : 'Convert',
+      onLongPress: canEdit
           ? () {
               if (!widget.isEditing) {
                 // Enter edit mode without triggering a second actions sheet.
@@ -293,7 +336,7 @@ class _DashboardBoardState extends State<DashboardBoard> {
             },
     );
 
-    if (!widget.isEditing || !item.userAdded) {
+    if (!widget.isEditing || !canEdit) {
       return KeyedSubtree(
         key: ValueKey('dashboard_item_${item.id}'),
         child: tile,
@@ -312,7 +355,11 @@ class _DashboardBoardState extends State<DashboardBoard> {
               final ok = await _confirmRemoveTile(context, tool.title);
               if (!ok) return;
               if (!context.mounted) return;
-              await widget.layout.removeItem(item.id);
+              if (isDefaultTile) {
+                await widget.layout.hideDefaultTool(tool.id);
+              } else {
+                await widget.layout.removeItem(item.id);
+              }
             },
           ),
         ),
@@ -423,25 +470,53 @@ class _DashboardBoardState extends State<DashboardBoard> {
           isScrollControlled: true,
           useSafeArea: true,
           showDragHandle: true,
-          builder: (_) => const ToolPickerSheet(),
+          builder: (_) => ToolPickerSheet(session: widget.session),
         );
         if (picked == null) return;
         if (!context.mounted) return;
-        await widget.layout.replaceItem(item.id, picked);
+        // Prevent duplicate tiles for the same tool.
+        // Allow replacing the tile with the same tool (no-op).
+        final currentToolId = item.toolId ?? _legacyToolIdForKind(item.kind);
+        if (currentToolId != picked.id &&
+            _dashboardHasToolId(picked.id, ignoreItemId: item.id)) {
+          UnitanaToast.showError(
+            context,
+            '${picked.title} is already on your dashboard.',
+            key: ValueKey('toast_duplicate_tool_${picked.id}'),
+          );
+          return;
+        }
+        final isDefaultTile = _isDefaultToolTile(item);
+        if (isDefaultTile) {
+          // Default tiles are not stored in the user layout list; hide the default and add a new user tile.
+          final currentId = item.toolId ?? _legacyToolIdForKind(item.kind);
+          if (currentId != null) {
+            await widget.layout.hideDefaultTool(currentId);
+          }
+          await widget.layout.addTool(picked);
+        } else {
+          await widget.layout.replaceItem(item.id, picked);
+        }
         if (!context.mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Tile replaced with ${picked.title}.')),
+        UnitanaToast.showSuccess(
+          context,
+          'Tile replaced with ${picked.title}.',
         );
         return;
       case _TileEditAction.remove:
         final ok = await _confirmRemoveTile(context, _titleForItem(item));
         if (!ok) return;
         if (!context.mounted) return;
-        await widget.layout.removeItem(item.id);
+        if (_isDefaultToolTile(item)) {
+          final toolId = item.toolId ?? _legacyToolIdForKind(item.kind);
+          if (toolId != null) {
+            await widget.layout.hideDefaultTool(toolId);
+          }
+        } else {
+          await widget.layout.removeItem(item.id);
+        }
         if (!context.mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Tile removed from dashboard.')),
-        );
+        UnitanaToast.showSuccess(context, 'Tile removed from dashboard.');
         return;
     }
   }
@@ -513,12 +588,36 @@ class _DashboardBoardState extends State<DashboardBoard> {
 
     if (!context.mounted) return;
 
+    if (_dashboardHasToolId(picked.id)) {
+      UnitanaToast.showError(
+        context,
+        '${picked.title} is already on your dashboard.',
+        key: ValueKey('toast_duplicate_tool_${picked.id}'),
+      );
+      return;
+    }
+
+    final isDefault = ToolDefinitions.defaultTiles.any(
+      (t) => t.id == picked.id,
+    );
+
+    if (isDefault && widget.layout.isDefaultToolHidden(picked.id)) {
+      await widget.layout.unhideDefaultTool(picked.id);
+      if (!context.mounted) return;
+      _showTransientBanner(
+        'Restored ${picked.title} on dashboard',
+        bannerKey: 'dashboard_restore_tool_${picked.id}',
+      );
+      return;
+    }
+
     await widget.layout.addTool(picked, anchor: anchor);
 
     if (!context.mounted) return;
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text('Added ${picked.title}')));
+    _showTransientBanner(
+      'Added ${picked.title} to dashboard',
+      bannerKey: 'dashboard_add_tool_${picked.id}',
+    );
   }
 
   (String, String) _pickToolLabels({
@@ -769,6 +868,97 @@ class _ToolPickerSheetState extends State<ToolPickerSheet> {
     return tool.label.toLowerCase().contains(q);
   }
 
+  List<ToolRegistryTool> _searchResults() {
+    final q = _query.trim();
+    if (q.isEmpty) return const <ToolRegistryTool>[];
+
+    final matches = ToolRegistry.all.where(_matchesQuery).toList();
+    // Keep results deterministic and readable.
+    matches.sort((a, b) => a.label.compareTo(b.label));
+    return matches;
+  }
+
+  Widget _searchResultsSection(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+
+    final results = _searchResults();
+    if (results.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+        child: Text(
+          'No matching tools.',
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: scheme.onSurfaceVariant,
+          ),
+        ),
+      );
+    }
+
+    const maxResults = 12;
+    final visible = results.take(maxResults).toList(growable: false);
+    final remaining = results.length - visible.length;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _sectionHeader(context, 'Results'),
+        for (final t in visible)
+          ListTile(
+            key: Key('toolpicker_search_tool_${t.toolId}'),
+            enabled: t.isEnabled,
+            leading: Icon(
+              t.icon,
+              color: LensAccents.iconTintFor(
+                t.lenses.isEmpty
+                    ? ActivityLensId.travelEssentials
+                    : t.lenses.first,
+              ),
+            ),
+            title: Text(t.label),
+            subtitle: t.lenses.isEmpty
+                ? null
+                : Text(
+                    ActivityLenses.byId(t.lenses.first)?.name ?? '',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: scheme.onSurfaceVariant,
+                    ),
+                  ),
+            trailing: t.isEnabled
+                ? const Icon(Icons.chevron_right_rounded)
+                : Text(
+                    'Soon',
+                    style: theme.textTheme.labelMedium?.copyWith(
+                      color: scheme.onSurfaceVariant,
+                    ),
+                  ),
+            onTap: !t.isEnabled
+                ? null
+                : () {
+                    final lensId = t.lenses.isEmpty ? '' : t.lenses.first;
+                    final mapped = _mapToExistingToolDefinition(
+                      tool: t,
+                      lensId: lensId,
+                    );
+                    if (mapped == null) return;
+                    Navigator.of(context).pop(mapped);
+                  },
+          ),
+        if (remaining > 0)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+            child: Text(
+              '+$remaining more',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: scheme.onSurfaceVariant,
+              ),
+            ),
+          ),
+        const Divider(height: 1),
+      ],
+    );
+  }
+
   Widget _sectionHeader(BuildContext context, String label) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
@@ -791,6 +981,7 @@ class _ToolPickerSheetState extends State<ToolPickerSheet> {
   }) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
+    final accent = LensAccents.iconTintFor(lensId);
 
     final visible = tools.where(_matchesQuery).toList(growable: false);
     if (visible.isEmpty) {
@@ -812,7 +1003,7 @@ class _ToolPickerSheetState extends State<ToolPickerSheet> {
         ListTile(
           key: Key('toolpicker_tool_${t.toolId}'),
           enabled: t.isEnabled,
-          leading: Icon(t.icon),
+          leading: Icon(t.icon, color: accent),
           title: Text(t.label),
           trailing: t.isEnabled
               ? const Icon(Icons.chevron_right_rounded)
@@ -836,51 +1027,6 @@ class _ToolPickerSheetState extends State<ToolPickerSheet> {
     ];
   }
 
-  List<Widget> _buildQuickToolsChildren(BuildContext context) {
-    final recentIds = _session?.recentToolIds(max: 6) ?? const <String>[];
-    final recents = <ToolRegistryTool>[];
-    for (final id in recentIds) {
-      final t = ToolRegistry.byId[id];
-      if (t != null) recents.add(t);
-    }
-
-    final odd = <ToolRegistryTool>[];
-    for (final id in ToolRegistry.quickOddButUseful) {
-      final t = ToolRegistry.byId[id];
-      if (t != null) odd.add(t);
-    }
-
-    final anyMatches =
-        recents.any(_matchesQuery) || odd.any(_matchesQuery) || _query.isEmpty;
-
-    return <Widget>[
-      _sectionHeader(context, 'Recents'),
-      if (recents.where(_matchesQuery).isEmpty)
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-          child: Text(
-            _query.trim().isEmpty
-                ? 'No recent tools yet.'
-                : 'No matching tools.',
-          ),
-        )
-      else
-        ..._buildToolRows(
-          context,
-          lensId: ActivityLensId.quickTools,
-          tools: recents,
-        ),
-      _sectionHeader(context, 'Odd but useful'),
-      ..._buildToolRows(context, lensId: ActivityLensId.quickTools, tools: odd),
-      if (!anyMatches)
-        const Padding(
-          padding: EdgeInsets.fromLTRB(16, 0, 16, 12),
-          child: Text('No matching tools.'),
-        ),
-      const SizedBox(height: 8),
-    ];
-  }
-
   Widget _lensHeader(BuildContext context, ActivityLens lens) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
@@ -888,7 +1034,7 @@ class _ToolPickerSheetState extends State<ToolPickerSheet> {
 
     return ListTile(
       key: ValueKey('toolpicker_lens_${lens.id}'),
-      leading: Icon(lens.icon),
+      leading: Icon(lens.icon, color: LensAccents.iconTintFor(lens.id)),
       title: Text(lens.name),
       subtitle: Text(lens.descriptor),
       trailing: Icon(
@@ -945,6 +1091,18 @@ class _ToolPickerSheetState extends State<ToolPickerSheet> {
         onChanged: (v) {
           setState(() {
             _query = v;
+
+            // If the user starts searching with everything collapsed, expand the
+            // first lens that has a match so the hierarchy also responds.
+            if (_expandedLensId == null && _query.trim().isNotEmpty) {
+              for (final lens in ActivityLenses.all) {
+                final tools = ToolRegistry.toolsForLens(lens.id);
+                if (tools.any(_matchesQuery)) {
+                  _expandedLensId = lens.id;
+                  break;
+                }
+              }
+            }
           });
         },
       ),
@@ -964,16 +1122,15 @@ class _ToolPickerSheetState extends State<ToolPickerSheet> {
         ),
         _recentShortcut(context),
         _searchField(context),
+        if (_query.trim().isNotEmpty) _searchResultsSection(context),
         for (final lens in ActivityLenses.all) ...[
           _lensHeader(context, lens),
           if (_expandedLensId == lens.id)
-            ...(lens.id == ActivityLensId.quickTools
-                ? _buildQuickToolsChildren(context)
-                : _buildToolRows(
-                    context,
-                    lensId: lens.id,
-                    tools: ToolRegistry.toolsForLens(lens.id),
-                  )),
+            ..._buildToolRows(
+              context,
+              lensId: lens.id,
+              tools: ToolRegistry.toolsForLens(lens.id),
+            ),
           const Divider(height: 1),
         ],
         const SizedBox(height: 8),
