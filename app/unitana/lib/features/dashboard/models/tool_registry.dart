@@ -78,9 +78,10 @@ class ToolRegistry {
       lenses: <String>[ActivityLensId.travelEssentials],
     ),
     ToolRegistryTool(
-      toolId: 'time_format',
-      label: 'Time format',
+      toolId: 'time',
+      label: 'Time',
       icon: Icons.schedule_rounded,
+      isEnabled: true,
       lenses: <String>[
         ActivityLensId.travelEssentials,
         ActivityLensId.weatherTime,
@@ -88,7 +89,7 @@ class ToolRegistry {
     ),
     ToolRegistryTool(
       toolId: 'jet_lag_delta',
-      label: 'Jet lag delta',
+      label: 'Jet Lag Delta',
       icon: Icons.airline_seat_recline_normal,
       lenses: <String>[ActivityLensId.travelEssentials],
       presetsByLens: <String, Map<String, Object?>>{
@@ -99,7 +100,7 @@ class ToolRegistry {
     ),
     ToolRegistryTool(
       toolId: 'data_storage',
-      label: 'Data storage',
+      label: 'Data Storage',
       icon: Icons.sd_storage_rounded,
       lenses: <String>[ActivityLensId.travelEssentials],
     ),
@@ -114,7 +115,7 @@ class ToolRegistry {
     // Food and Cooking
     ToolRegistryTool(
       toolId: 'liquid_volume',
-      label: 'Liquid volume',
+      label: 'Liquid Volume',
       icon: Icons.science_rounded,
       lenses: <String>[ActivityLensId.foodCooking],
       // Enabled via existing baking/liquids tooling; picker maps to those.
@@ -129,13 +130,13 @@ class ToolRegistry {
     ),
     ToolRegistryTool(
       toolId: 'oven_temperature',
-      label: 'Oven temperature',
+      label: 'Oven Temperature',
       icon: Icons.bakery_dining_rounded,
       lenses: <String>[ActivityLensId.foodCooking],
     ),
     ToolRegistryTool(
       toolId: 'cups_grams_estimates',
-      label: 'Cups ↔ grams estimates',
+      label: 'Cups ↔ Grams Estimates',
       icon: Icons.restaurant_menu_rounded,
       lenses: <String>[ActivityLensId.foodCooking],
     ),
@@ -143,7 +144,7 @@ class ToolRegistry {
     // Health and Fitness
     ToolRegistryTool(
       toolId: 'body_weight',
-      label: 'Body weight',
+      label: 'Body Weight',
       icon: Icons.monitor_weight_rounded,
       isEnabled: true,
       lenses: <String>[ActivityLensId.healthFitness],
@@ -169,7 +170,7 @@ class ToolRegistry {
     ),
     ToolRegistryTool(
       toolId: 'energy',
-      label: 'Calories / energy',
+      label: 'Calories / Energy',
       icon: Icons.local_fire_department_rounded,
       lenses: <String>[ActivityLensId.healthFitness],
     ),
@@ -204,13 +205,13 @@ class ToolRegistry {
     // Weather and Time
     ToolRegistryTool(
       toolId: 'weather_summary',
-      label: 'Weather summary',
+      label: 'Weather Summary',
       icon: Icons.cloud_rounded,
       lenses: <String>[ActivityLensId.weatherTime],
     ),
     ToolRegistryTool(
       toolId: 'world_clock_delta',
-      label: 'World clock delta',
+      label: 'World Clock Delta',
       icon: Icons.public_rounded,
       lenses: <String>[ActivityLensId.weatherTime],
     ),
@@ -218,25 +219,26 @@ class ToolRegistry {
     // Money and Shopping
     ToolRegistryTool(
       toolId: 'currency_convert',
-      label: 'Currency quick convert',
-      icon: Icons.swap_horiz_rounded,
+      label: 'Currency',
+      icon: Icons.currency_exchange_rounded,
+      isEnabled: true,
       lenses: <String>[ActivityLensId.moneyShopping],
     ),
     ToolRegistryTool(
       toolId: 'tip_helper',
-      label: 'Tip helper',
+      label: 'Tip Helper',
       icon: Icons.percent_rounded,
       lenses: <String>[ActivityLensId.moneyShopping],
     ),
     ToolRegistryTool(
       toolId: 'tax_vat_helper',
-      label: 'Sales tax / VAT helper',
+      label: 'Sales Tax / VAT Helper',
       icon: Icons.calculate_rounded,
       lenses: <String>[ActivityLensId.moneyShopping],
     ),
     ToolRegistryTool(
       toolId: 'unit_price_helper',
-      label: 'Unit price helper',
+      label: 'Unit Price Helper',
       icon: Icons.local_offer_rounded,
       lenses: <String>[ActivityLensId.moneyShopping],
     ),
@@ -244,25 +246,25 @@ class ToolRegistry {
     // Quick Tools
     ToolRegistryTool(
       toolId: 'shoe_sizes',
-      label: 'Shoe sizes',
+      label: 'Shoe Sizes',
       icon: Icons.directions_walk_rounded,
       lenses: <String>[ActivityLensId.quickTools, ActivityLensId.oddUseful],
     ),
     ToolRegistryTool(
       toolId: 'clothing_sizes',
-      label: 'Clothing sizes',
+      label: 'Clothing Sizes',
       icon: Icons.checkroom_rounded,
       lenses: <String>[ActivityLensId.quickTools, ActivityLensId.oddUseful],
     ),
     ToolRegistryTool(
       toolId: 'paper_sizes',
-      label: 'Paper sizes',
+      label: 'Paper Sizes',
       icon: Icons.description_rounded,
       lenses: <String>[ActivityLensId.quickTools, ActivityLensId.oddUseful],
     ),
     ToolRegistryTool(
       toolId: 'timezone_lookup',
-      label: 'Time zones lookup',
+      label: 'Time Zones Lookup',
       icon: Icons.travel_explore_rounded,
       lenses: <String>[ActivityLensId.quickTools, ActivityLensId.oddUseful],
     ),
@@ -279,7 +281,7 @@ class ToolRegistry {
         ActivityLensId.travelEssentials: <String>[
           'distance',
           'speed',
-          'time_format',
+          'time',
           'jet_lag_delta',
           'data_storage',
           'temperature',
@@ -308,7 +310,7 @@ class ToolRegistry {
         ActivityLensId.weatherTime: <String>[
           'weather_summary',
           'world_clock_delta',
-          'time_format',
+          'time',
         ],
         ActivityLensId.moneyShopping: <String>[
           'currency_convert',

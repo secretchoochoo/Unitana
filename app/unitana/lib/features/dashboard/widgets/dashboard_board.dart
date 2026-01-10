@@ -241,7 +241,18 @@ class _DashboardBoardState extends State<DashboardBoard> {
         if (tool == null) {
           return _missingToolTile(context, item, toolId ?? 'unknown');
         }
-        return _toolTile(context, item, tool, activePlace: activePlace);
+        final secondaryPlace = widget.session.reality == DashboardReality.home
+            ? dest
+            : home;
+        return _toolTile(
+          context,
+          item,
+          tool,
+          activePlace: activePlace,
+          secondaryPlace: secondaryPlace,
+          homePlace: home,
+          destinationPlace: dest,
+        );
       case DashboardItemKind.emptySlot:
         // Empty slots are rendered separately as “+” placeholders.
         return const SizedBox.shrink();
@@ -291,13 +302,64 @@ class _DashboardBoardState extends State<DashboardBoard> {
     DashboardBoardItem item,
     ToolDefinition tool, {
     required Place? activePlace,
+    required Place? secondaryPlace,
+    required Place? homePlace,
+    required Place? destinationPlace,
   }) {
     final latest = widget.session.latestFor(tool.id);
-    final labels = _pickToolLabels(
-      tool: tool,
-      latest: latest,
-      activePlace: activePlace,
-    );
+
+    // Dashboard tiles should always reflect the currently selected reality.
+    // Currency is special: even before a user runs the tool, the preview should
+    // show a real (or demo) conversion for the active place vs the other place.
+    (String, String) currencyPreviewLabels({
+      required Place? from,
+      required Place? to,
+      required double eurToUsd,
+    }) {
+      // Default to EUR→USD with a stable demo base.
+      final base = 10.0;
+      final safeRate = eurToUsd <= 0 ? 1.10 : eurToUsd;
+
+      String currencyFor(Place? p) {
+        final code = (p?.countryCode ?? '').toUpperCase();
+        if (code == 'US') return 'USD';
+        // MVP scope: default non-US to EUR.
+        return 'EUR';
+      }
+
+      String symbolFor(String c) => c == 'USD' ? r'$' : '€';
+
+      final fromCur = currencyFor(from);
+      final toCur = currencyFor(to);
+
+      double convert(double value) {
+        if (fromCur == 'EUR' && toCur == 'USD') return value * safeRate;
+        if (fromCur == 'USD' && toCur == 'EUR') return value / safeRate;
+        // Fallback for same-currency or future currencies.
+        return value;
+      }
+
+      final out = convert(base);
+      final primary = '${symbolFor(fromCur)}${base.toStringAsFixed(2)}';
+      final secondary = '${symbolFor(toCur)}${out.toStringAsFixed(2)}';
+      return (primary, secondary);
+    }
+
+    final isCurrency = tool.id == 'currency_convert';
+    final bool currencyLabelsLookBroken =
+        isCurrency &&
+        latest != null &&
+        (latest.outputLabel.contains('{') ||
+            latest.outputLabel.contains('eurToUsd') ||
+            latest.outputLabel.contains('toStringAsFixed'));
+
+    final labels = (isCurrency && (latest == null || currencyLabelsLookBroken))
+        ? currencyPreviewLabels(
+            from: activePlace,
+            to: secondaryPlace,
+            eurToUsd: widget.liveData.eurToUsd,
+          )
+        : _pickToolLabels(tool: tool, latest: latest, activePlace: activePlace);
     final preferMetric = (activePlace?.unitSystem ?? 'metric') == 'metric';
     final primary = labels.$1;
     final secondary = labels.$2;
@@ -306,7 +368,7 @@ class _DashboardBoardState extends State<DashboardBoard> {
     final canEdit = item.userAdded || isDefaultTile;
 
     final tile = UnitanaTile(
-      title: tool.title,
+      title: ToolDefinitions.widgetTitleFor(tool),
       // UnitanaTile expects an IconData, not an Icon widget.
       leadingIcon: tool.icon,
       accentColor: tool.lensId == null
@@ -332,6 +394,9 @@ class _DashboardBoardState extends State<DashboardBoard> {
                 tool: tool,
                 session: widget.session,
                 preferMetric: preferMetric,
+                eurToUsd: widget.liveData.eurToUsd,
+                home: homePlace,
+                destination: destinationPlace,
               );
             },
     );
@@ -629,6 +694,26 @@ class _DashboardBoardState extends State<DashboardBoard> {
     var a = latest?.inputLabel ?? tool.defaultPrimary;
     var b = latest?.outputLabel ?? tool.defaultSecondary;
 
+    // Currency is place-aware (EUR ↔ USD MVP) and should follow the selected
+    // reality (Home vs Destination), not the unit-system heuristic.
+    //
+    // Until Place carries explicit currency codes, we map by country:
+    // - US => USD-first
+    // - otherwise => EUR-first
+    if (tool.id == 'currency_convert') {
+      final cc = (activePlace?.countryCode ?? '').toUpperCase();
+      final wantsUsdFirst = cc == 'US';
+
+      bool hasUsd(String v) => v.contains(r'$');
+      bool hasEur(String v) => v.contains('€');
+
+      if (wantsUsdFirst) {
+        if (hasEur(a) && hasUsd(b)) return (b, a);
+      } else {
+        if (hasUsd(a) && hasEur(b)) return (b, a);
+      }
+    }
+
     final preferMetric = (activePlace?.unitSystem ?? 'metric') == 'metric';
     final aIsMetric = _isMetricLabel(tool.id, a);
     final bIsMetric = _isMetricLabel(tool.id, b);
@@ -849,6 +934,11 @@ class _ToolPickerSheetState extends State<ToolPickerSheet> {
     // Prefer exact tool-id matches (velocity path).
     final direct = ToolDefinitions.byId(tool.toolId);
     if (direct != null) return direct;
+
+    // Currency is enabled in the registry but is a newer ToolDefinition.
+    if (tool.toolId == 'currency_convert') {
+      return ToolDefinitions.currencyConvert;
+    }
 
     // Existing app currently exposes separate Baking/Liquids entry points.
     // Keep this lens-driven mapping until we introduce distinct registry

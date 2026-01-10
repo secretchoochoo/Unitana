@@ -20,6 +20,11 @@ class ToolDefinition {
   /// Optional activity lens tag for UI presets + log labeling.
   final String? lensId;
 
+  /// Menu + picker display title.
+  ///
+  /// Policy: keep this in Title Case ("Body Weight", "Prime School", etc.).
+  /// If a shorter label is needed for dashboard tiles, use
+  /// [ToolDefinitions.widgetTitleFor] (shortnames are tile-only).
   final String title;
   final IconData icon;
   final String defaultPrimary;
@@ -37,6 +42,21 @@ class ToolDefinition {
 }
 
 class ToolDefinitions {
+  /// Short display titles used only on dashboard tiles.
+  ///
+  /// Policy:
+  /// - Tools menu and picker always use [ToolDefinition.title] (full Title Case).
+  /// - Tiles may use shortnames to avoid truncation on small devices.
+  /// - Keep shortnames recognizable and compact; prefer common abbreviations.
+  static const Map<String, String> _widgetShortTitles = {
+    'temperature': 'Temp',
+    'body_weight': 'Body Wt',
+  };
+
+  static String widgetTitleFor(ToolDefinition tool) {
+    return _widgetShortTitles[tool.id] ?? tool.title;
+  }
+
   static const height = ToolDefinition(
     id: 'height',
     canonicalToolId: CanonicalToolId.length,
@@ -107,6 +127,26 @@ class ToolDefinitions {
     defaultSecondary: '68°F',
   );
 
+  static const time = ToolDefinition(
+    id: 'time',
+    canonicalToolId: CanonicalToolId.time,
+    lensId: ActivityLensId.travelEssentials,
+    title: 'Time',
+    icon: Icons.schedule_rounded,
+    defaultPrimary: '18:30',
+    defaultSecondary: '6:30 PM',
+  );
+
+  static const currencyConvert = ToolDefinition(
+    id: 'currency_convert',
+    canonicalToolId: CanonicalToolId.currency,
+    lensId: ActivityLensId.moneyShopping,
+    title: 'Currency',
+    icon: Icons.currency_exchange_rounded,
+    defaultPrimary: '€10.00',
+    defaultSecondary: '\$11.00',
+  );
+
   static const weight = ToolDefinition(
     id: 'weight',
     canonicalToolId: CanonicalToolId.weight,
@@ -121,7 +161,7 @@ class ToolDefinitions {
     id: 'body_weight',
     canonicalToolId: CanonicalToolId.weight,
     lensId: ActivityLensId.healthFitness,
-    title: 'Body weight',
+    title: 'Body Weight',
     icon: Icons.monitor_weight_rounded,
     defaultPrimary: '70 kg',
     defaultSecondary: '154 lb',
@@ -140,6 +180,8 @@ class ToolDefinitions {
     distance,
     speed,
     temperature,
+    time,
+    currencyConvert,
     weight,
     bodyWeight,
   ];
@@ -152,6 +194,8 @@ class ToolDefinitions {
     'distance': distance,
     'speed': speed,
     'temperature': temperature,
+    'time': time,
+    'currency_convert': currencyConvert,
     'weight': weight,
     'body_weight': bodyWeight,
   };
@@ -186,9 +230,103 @@ class ToolConverters {
         return _convertArea(forward: forward, input: input);
       case CanonicalToolId.weight:
         return _convertWeight(forward: forward, input: input);
+      case CanonicalToolId.time:
+        return _convertTime(forward: forward, input: input);
       default:
         return null;
     }
+  }
+
+  /// Converts between 24h and 12h time representations.
+  ///
+  /// `forward == true` means 24h -> 12h.
+  /// `forward == false` means 12h -> 24h.
+  ///
+  /// Supported inputs:
+  /// - 24h: `18:30`, `1830`, `6:05` (treated as 06:05)
+  /// - 12h: `6:30 PM`, `6pm`, `12:00 am`
+  ///
+  /// Notes:
+  /// - For 12h -> 24h, AM/PM is required; otherwise we return null.
+  static String? _convertTime({required bool forward, required String input}) {
+    var raw = input.trim();
+    if (raw.isEmpty) return null;
+
+    final lower = raw.toLowerCase();
+    if (lower == 'noon') {
+      return forward ? '12 PM' : '12:00';
+    }
+    if (lower == 'midnight') {
+      return forward ? '12 AM' : '00:00';
+    }
+
+    final hasAm = lower.contains('am');
+    final hasPm = lower.contains('pm');
+    final hasMeridiem = hasAm || hasPm;
+
+    // Remove meridiem markers and other non-digit separators we tolerate.
+    raw = lower
+        .replaceAll('am', '')
+        .replaceAll('pm', '')
+        .replaceAll('.', '')
+        .replaceAll(' ', '')
+        .trim();
+
+    int hour;
+    int minute;
+
+    if (raw.contains(':')) {
+      final parts = raw.split(':');
+      if (parts.length != 2) return null;
+      hour = int.tryParse(parts[0]) ?? -1;
+      minute = int.tryParse(parts[1]) ?? -1;
+    } else {
+      final digits = raw.replaceAll(RegExp(r'[^0-9]'), '');
+      if (digits.isEmpty) return null;
+      if (digits.length == 4) {
+        hour = int.tryParse(digits.substring(0, 2)) ?? -1;
+        minute = int.tryParse(digits.substring(2, 4)) ?? -1;
+      } else if (digits.length == 3) {
+        hour = int.tryParse(digits.substring(0, 1)) ?? -1;
+        minute = int.tryParse(digits.substring(1, 3)) ?? -1;
+      } else {
+        hour = int.tryParse(digits) ?? -1;
+        minute = 0;
+      }
+    }
+
+    if (minute < 0 || minute > 59) return null;
+
+    if (forward) {
+      // 24h -> 12h
+      // If user supplied AM/PM, we'll still accept it as a hint, but treat the
+      // numeric hour as the source of truth.
+      if (hour < 0 || hour > 23) {
+        // Sometimes users type 12h in the 24h direction; accept 1..12 if AM/PM exists.
+        if (!hasMeridiem || hour < 1 || hour > 12) return null;
+        var h = hour % 12;
+        if (hasPm) h += 12;
+        hour = h;
+      }
+
+      final suffix = hour < 12 ? 'AM' : 'PM';
+      var hour12 = hour % 12;
+      if (hour12 == 0) hour12 = 12;
+      if (minute == 0) {
+        return '$hour12 $suffix';
+      }
+      final mm = minute.toString().padLeft(2, '0');
+      return '$hour12:$mm $suffix';
+    }
+
+    // 12h -> 24h
+    if (!hasMeridiem) return null;
+    if (hour < 1 || hour > 12) return null;
+    var h24 = hour % 12;
+    if (hasPm) h24 += 12;
+    final hh = h24.toString().padLeft(2, '0');
+    final mm = minute.toString().padLeft(2, '0');
+    return '$hh:$mm';
   }
 
   static String? _convertWeight({

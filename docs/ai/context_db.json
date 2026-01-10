@@ -1,17 +1,42 @@
 {
-  "backlog": [],
+  "backlog": [
+    {
+      "id": "radio_lofi_playback",
+      "title": "Radio: license-free lo-fi playback (default OFF)",
+      "summary": "Optional ambient lo-fi playback feature. Default OFF; when OFF, do not start any network/audio session/background work.",
+      "notes": [
+        "Later: onboarding wizard mention + Settings toggle.",
+        "Default OFF is non-negotiable for MVP; zero background work when OFF."
+      ]
+    }
+  ],
   "current_state": {
     "notes": [
-      "Build green through Slice O7m (Reset Dashboard Defaults + hardened hidden-default persistence).",
+      "Build green through Slice O12g3 (WeatherAPI wiring + SceneKey binding in progress; marquee label is live).",
       "ToolPicker is opened from the top-left tools icon; Quick Tools lens removed; Most Recent + Search remain.",
       "Default tiles are removable and persist; restoring a removed default via picker restores it without duplicates.",
       "Dashboard tiles inherit per-tool tint and per-lens accent mapping.",
       "Places Hero V2: clocks first; header format locked; sun pill present; wind and gust split; text scales down (no ellipsis).",
-      "iOS app icon visibility remains backlog only."
+      "iOS app icon visibility remains backlog only.",
+      "Weather MVP decision: WeatherAPI.com provider; map condition codes -> SceneKey catalog (docs/ai/reference/SCENEKEY_CATALOG.md).",
+      "Next slice: O12g4 live SceneKey mapping/binding (WeatherAPI code -> SceneKey -> marquee), then continue O12f family scene redesign."
     ],
     "status": "green"
   },
-  "decisions": [],
+  "decisions": [
+    {
+      "date": "2026-01-02",
+      "topic": "Weather provider MVP",
+      "decision": "Use WeatherAPI.com for MVP weather provider; map WeatherAPI condition codes to provider-agnostic SceneKeys.",
+      "rationale": "WeatherAPI provides a clear condition-code list and predictable pricing; we can keep requests low via caching and on-demand refresh."
+    },
+    {
+      "date": "2026-01-02",
+      "topic": "Hero weather visuals",
+      "decision": "Adopt a SceneKey catalog with day/night variation driven by the hero location toggle (sun/moon time-based).",
+      "rationale": "Separates art from provider logic, keeps tests deterministic, and ensures consistent visuals across future providers."
+    }
+  ],
   "design_system": {
     "notes": [
       "Audit text styles across pages for contrast and hierarchy."
@@ -30,7 +55,7 @@
     "Keep docs/ai small and canonical: avoid duplicate prompts and parallel copies.",
     "Prefer updating existing canonical files over creating new variants."
   ],
-  "last_updated": "2026-01-02",
+  "last_updated": "2026-01-09",
   "patch_log": [
     {
       "date": "2025-12-31",
@@ -265,8 +290,8 @@
       ],
       "slice": "L",
       "summary": [
-        "Fixed Weight tool modal labeling and unit toggling to match existing tool patterns (e.g., Temperature shows C \u2192 F or F \u2192 C).",
-        "Corrected Weight conversion display so inputs/outputs clearly indicate kg \u2194 lb; removed ambiguous \"what/lbs\" presentation.",
+        "Fixed Weight tool modal labeling and unit toggling to match existing tool patterns (e.g., Temperature shows C → F or F → C).",
+        "Corrected Weight conversion display so inputs/outputs clearly indicate kg ↔ lb; removed ambiguous \"what/lbs\" presentation.",
         "Ensured Weight tool tile subtitle uses the correct unit pair string and stays consistent with other tiles."
       ],
       "title": "Weight tool: consistent unit labels + modal header clarity"
@@ -460,7 +485,7 @@
       },
       "slice": "O2",
       "summary": [
-        "Updated dashboard tiles to color their leading icon and footer cue using the owning tool\u2019s Activity Lens accent (Dracula palette tints), eliminating the legacy global purple accent.",
+        "Updated dashboard tiles to color their leading icon and footer cue using the owning tool’s Activity Lens accent (Dracula palette tints), eliminating the legacy global purple accent.",
         "Added an optional accentColor override to UnitanaTile, allowing per-tool coloring while keeping existing defaults when no override is provided.",
         "Added a widget test asserting the Height tile uses the Health & Fitness lens accent for both icon and footer cue (covers Odd But Useful mapping via the same path)."
       ],
@@ -607,7 +632,7 @@
       "date": "2026-01-01",
       "id": "patch_2026-01-01_slice_O7h_hotfix_layout_reset_and_hero_header",
       "slice": "O7h",
-      "summary": "Fix Reset Dashboard Defaults implementation issues (controller API + test seeding) and remove the redundant \u201cTools\u201d entry from the top-right menu now that a dedicated tools button exists. Restore the Places Hero V2 clock header to the two-line centered format using bullets, and center the \u201cSunrise / Sunset\u201d header within its pill.",
+      "summary": "Fix Reset Dashboard Defaults implementation issues (controller API + test seeding) and remove the redundant “Tools” entry from the top-right menu now that a dedicated tools button exists. Restore the Places Hero V2 clock header to the two-line centered format using bullets, and center the “Sunrise / Sunset” header within its pill.",
       "test_status": "flutter analyze clean; flutter test passing (expected after patch)",
       "title": "Hotfix: Reset defaults wiring + hero header formatting"
     },
@@ -621,7 +646,7 @@
       ],
       "id": "patch_2026-01-01_slice_O7h_hotfix_reset_defaults_and_hero_header",
       "slice": "O7h",
-      "summary": "Addresses regressions from the O7 reset-defaults slice by ensuring the DashboardLayoutController exposes resetDashboardDefaults(), fixing the widget test to seed layout JSON using the current schema, and removing the redundant \u201cTools\u201d option from the top-right (...) menu since a dedicated Tools button now exists. Also restores the PlacesHeroV2 time header to the two-line centered format: \u201cLisbon \u2022 Denver +7h\u201d and \u201c01:03 WET \u2022 6:03 PM MST (Fri 2 Jan)\u201d, and centers the \u201cSunrise / Sunset\u201d title within its pill.",
+      "summary": "Addresses regressions from the O7 reset-defaults slice by ensuring the DashboardLayoutController exposes resetDashboardDefaults(), fixing the widget test to seed layout JSON using the current schema, and removing the redundant “Tools” option from the top-right (...) menu since a dedicated Tools button now exists. Also restores the PlacesHeroV2 time header to the two-line centered format: “Lisbon • Denver +7h” and “01:03 WET • 6:03 PM MST (Fri 2 Jan)”, and centers the “Sunrise / Sunset” title within its pill.",
       "title": "Hotfix: Reset defaults + hero time header"
     },
     {
@@ -718,7 +743,7 @@
       "slice": "R1",
       "title": "Dashboard tiles: Convert CTA + conversion icon",
       "summary": [
-        "Replaced the dashboard tile footer copy from \u201cTap to convert\u201d to \u201cConvert\u201d.",
+        "Replaced the dashboard tile footer copy from “Tap to convert” to “Convert”.",
         "Swapped the footer dot indicator for a conversion icon (swap_horiz) and centered the CTA row.",
         "Updated widget tests to assert the new footer text and icon tinting behavior."
       ],
@@ -732,97 +757,290 @@
       ]
     },
     {
-      "id": "O11j",
+      "id": "O12d2a-docs-weatherapi-scenekey-catalog",
       "date": "2026-01-02",
-      "title": "Hero Alive marquee restored + overflow hardening",
       "summary": [
-        "Reintroduced hero marquee slot with paint-only 'Alive' pixel scene using CustomPaint.",
-        "Animation is semantics-safe (repaint-driven) and test-safe (disabled under FLUTTER_TEST).",
-        "Hardened Places Hero V2 left/right rail vertical spacing and added scale-down guard to prevent RenderFlex overflows on small devices.",
-        "Tile footer Convert CTA is centered again, now smaller and wrapped in a subtle pill outline."
+        "Documented SceneKey catalog for hero marquee weather scenes, including full WeatherAPI code mapping and revised SMOKE_WILDFIRE concept.",
+        "Updated CURRENT_HANDOFF with shipped slice summary, WeatherAPI MVP decision, SceneKey policy, and next-slice breakdown (O12e/O12f/O12g).",
+        "Updated senior review next-chat prompt to enforce smaller slices and focus the next slice on Developer Tools Weather overflow hardening."
       ],
       "files": [
-        "unitana/app/unitana/lib/features/dashboard/widgets/hero_alive_marquee.dart",
-        "unitana/app/unitana/lib/features/dashboard/widgets/places_hero_v2.dart",
-        "unitana/app/unitana/lib/features/dashboard/widgets/unitana_tile.dart",
-        "unitana/docs/ai/context_db.json",
-        "unitana/docs/ai/handoff/CURRENT_HANDOFF.md"
-      ]
-    },
-    {
-      "id": "O11k",
-      "date": "2026-01-02",
-      "title": "Hero marquee restored, overflow eliminated, tile CTA compacted",
-      "summary": [
-        "Restored the fixed-size hero marquee slot and reintroduced a test-safe, paint-only animated pixel scene.",
-        "Made Places Hero V2 resilient on small phones by compressing left-block spacing and allowing the sunrise/sunset pill to scale down within the right rail.",
-        "Reduced Convert CTA height and typography to prevent tile footer overflows while keeping the centered pill affordance."
-      ],
-      "files_changed": [
-        "lib/features/dashboard/widgets/hero_alive_marquee.dart",
-        "lib/features/dashboard/widgets/places_hero_v2.dart",
-        "lib/features/dashboard/widgets/unitana_tile.dart",
+        "docs/ai/reference/SCENEKEY_CATALOG.md",
+        "docs/ai/handoff/CURRENT_HANDOFF.md",
+        "docs/ai/prompts/NEXT_CHAT_PROMPT_SENIOR_REVIEW.md",
         "docs/ai/context_db.json"
-      ],
-      "notes": [
-        "Hero marquee keys: hero_marquee_slot (container) and hero_alive_paint (CustomPaint).",
-        "Animation is disabled under widget tests (FLUTTER_TEST) so pumpAndSettle can settle."
       ]
     },
     {
-      "id": "O11k1",
-      "date": "2026-01-02",
-      "title": "Fix hero marquee compile error and harden test-safe animation gating",
+      "id": "patch_2026-01-03_docs_handoff_refresh_senior_transition",
+      "date": "2026-01-03",
+      "slice": "DOCS",
+      "title": "Handoff refresh + senior transition prompt (post O12g3 stabilization)",
       "summary": [
-        "Imported kIsWeb from flutter/foundation to fix a compile-time undefined identifier in the hero marquee painter.",
-        "Replaced FLUTTER_TEST-only detection with a binding-based runtime check and gated animation on disableAnimations + TickerMode."
+        "Refreshed CURRENT_HANDOFF to reflect O12e–O12g3 outcomes, current priorities, risks, and lessons learned.",
+        "Set next slice definition for O12g4 (WeatherAPI condition.code -> SceneKey -> marquee selection, DevTools override precedence).",
+        "Prepared senior-team transition prompt for next chat to reduce scope thrash and enforce one-slice execution."
       ],
       "files_changed": [
-        "lib/features/dashboard/widgets/hero_alive_marquee.dart",
-        "docs/ai/context_db.json",
-        "docs/ai/handoff/CURRENT_HANDOFF.md"
-      ],
-      "notes": [
-        "Animation will not auto-repeat under widget tests; CustomPaint renders a deterministic still frame in tests."
+        "docs/ai/handoff/CURRENT_HANDOFF.md",
+        "docs/ai/prompts/NEXT_CHAT_PROMPT_SENIOR_REVIEW.md",
+        "docs/ai/context_db.json"
       ]
     },
     {
-      "id": "O11k2",
-      "date": "2026-01-02",
-      "title": "Remove kIsWeb dependency from HeroAliveMarquee painter",
+      "id": "patch_2026-01-05_o12j10_tool_modal_terminal_typography",
+      "date": "2026-01-05",
+      "slice": "O12j10",
+      "title": "Tool modal terminal polish (monospace prompt, remove $ prefix, timestamp styling)",
       "summary": [
-        "Removed platform-gating (kIsWeb) from the Alive marquee painter to avoid compile failures when foundation import is missing or duplicated.",
-        "Stars now render unconditionally; the widget remains test-safe via existing animation gating."
+        "Strengthened Dracula-terminal feel in tool modals: consistent monospace typography, prompt glyph styling, and improved readability.",
+        "Removed all \"$\" prompt prefixes to avoid currency confusion; standardized prompt to \"❯\".",
+        "Improved microcopy and affordances: dynamic \"Enter Value\" -> \"Edit Value\" when input present; timestamp rendered as lighter italic meta text."
       ],
       "files_changed": [
-        "lib/features/dashboard/widgets/hero_alive_marquee.dart",
-        "docs/ai/context_db.json",
-        "docs/ai/handoff/CURRENT_HANDOFF.md"
-      ],
-      "notes": [
-        "This is a compile-safety hardening patch; no persistence keys or public APIs changed."
+        "lib/features/dashboard/widgets/tool_modal_bottom_sheet.dart"
       ]
     },
     {
-      "id": "O11k3",
-      "date": "2026-01-02",
-      "title": "Fix remaining small-device overflows and ensure Alive marquee paints at full width",
+      "id": "patch_2026-01-08_o12k07g_time_tool_test_toolpicker_selection",
+      "date": "2026-01-08",
+      "slice": "O12k07g",
+      "title": "Time modal test: robust ToolPicker selection + direction-aware input",
       "summary": [
-        "Reworked Places Hero V2 left rail to use flexible vertical distribution (wind/gust vs currency/rate) to eliminate tiny RenderFlex overflows and improve vertical rhythm.",
-        "Ensured HeroAliveMarquee CustomPaint expands to fill the marquee slot so the pixel scene is always visible and animates in runtime.",
-        "Reworked UnitanaTile internal layout to be height-safe by using an Expanded middle region and keeping the Convert pill from causing micro overflows."
+        "Fixes brittle test coupling to the exact 'Time' label by selecting the first enabled ToolPicker search result whose title contains 'time' (case-insensitive).",
+        "Derives toolId from modal keys (tool_input_*) and chooses 12h vs 24h input based on the modal '<from> → <to>' direction label.",
+        "Validates conversion output shape plus history tap-to-copy and long-press-to-edit behaviors without relying on list ordering."
       ],
       "files_changed": [
-        "lib/features/dashboard/widgets/places_hero_v2.dart",
-        "lib/features/dashboard/widgets/hero_alive_marquee.dart",
-        "lib/features/dashboard/widgets/unitana_tile.dart",
+        "test/time_tool_modal_interaction_test.dart"
+      ]
+    },
+    {
+      "id": "patch_2026-01-09_o12k13d_header_button_equal_size_and_platform_icon_audit",
+      "date": "2026-01-09",
+      "slice": "O12k13d",
+      "title": "Dashboard header: equal-size mirrored buttons + platform icon audit doc",
+      "summary": [
+        "Makes the top-left Tools and top-right Menu buttons true mirrors by using a shared header icon button widget with identical size, border, and edge insets.",
+        "Adds a lightweight cross-platform launcher icon audit checklist under docs/ai/reference to reduce platform-specific icon regressions."
+      ],
+      "files_changed": [
+        "app/unitana/lib/features/dashboard/dashboard_screen.dart",
+        "docs/ai/reference/PLATFORM_ICON_AUDIT.md"
+      ]
+    },
+    {
+      "id": "patch_2026-01-09_o12k13e_fix_duplicate_devtools_clock_override",
+      "date": "2026-01-09",
+      "slice": "O12k13e",
+      "title": "Fix duplicate DevTools clock override symbols (debugClockOffset)",
+      "summary": [
+        "Fixes analyzer/test failures caused by duplicate definitions of debugClockOffset and setDebugClockOffset in dashboard_live_data.dart.",
+        "Clarifies clock override comment as a simulator-only offset (not NTP, not backend sync, not timezone reconfiguration)."
+      ],
+      "files_changed": [
+        "app/unitana/lib/features/dashboard/models/dashboard_live_data.dart",
+        "docs/ai/context_db.json",
+        "docs/ai/handoff/CURRENT_HANDOFF.md"
+      ]
+    },
+    {
+      "id": "patch_2026-01-09_o12k13f_stabilize_time_tool_modal_test",
+      "date": "2026-01-09",
+      "slice": "O12k13f",
+      "title": "Stabilize time tool modal widget test",
+      "summary": [
+        "Updates time_tool_modal_interaction_test.dart to prefer ToolPicker search (toolpicker_search + toolpicker_search_tool_time) instead of relying on lens headers ordering/presence.",
+        "Adds fallback paths (direct row, lens expansion, scroll) with a clearer failure message if the ToolPicker contract keys are missing."
+      ],
+      "files_changed": [
+        "app/unitana/test/time_tool_modal_interaction_test.dart",
+        "docs/ai/context_db.json",
+        "docs/ai/handoff/CURRENT_HANDOFF.md"
+      ]
+    },
+    {
+      "id": "patch_2026-01-09_o12k13g_add_devtools_clock_override_ui",
+      "date": "2026-01-09",
+      "slice": "O12k13g",
+      "title": "Add DevTools clock override UI (keys + sheet)",
+      "summary": [
+        "Adds a Clock Override entry to the Developer Tools sheet (key: devtools_clock_menu) and a dedicated sheet with an enable toggle + offset slider.",
+        "Wires the UI to DashboardLiveDataController.setDebugClockOffset so Places Hero time displays can be adjusted for simulator testing without NTP or backend sync."
+      ],
+      "files_changed": [
+        "app/unitana/lib/features/dashboard/dashboard_screen.dart",
+        "docs/ai/context_db.json",
+        "docs/ai/handoff/CURRENT_HANDOFF.md"
+      ]
+    },
+    {
+      "date": "2026-01-09",
+      "id": "patch_2026-01-09_O12k13h_sev1_recovery_dashboard_parse_header_mirror",
+      "slice": "O12k13h",
+      "title": "Sev 1 recovery: DashboardScreen parse fix + mirrored header button size guard",
+      "summary": [
+        "Fixed a broken/mismatched bracket/brace sequence in DashboardScreen AppBar menu bottom sheet, restoring clean parsing/formatting.",
+        "Confirmed Tools (top-left) and Menu (top-right) header buttons remain true mirrors by keeping sizing centralized in _HeaderIconButton.",
+        "Added a widget test that asserts dashboard_tools_button and dashboard_menu_button render at identical sizes."
+      ],
+      "files_changed": [
+        "app/unitana/lib/features/dashboard/dashboard_screen.dart",
+        "app/unitana/test/dashboard_header_button_mirror_test.dart",
         "docs/ai/context_db.json",
         "docs/ai/handoff/CURRENT_HANDOFF.md"
       ],
-      "notes": [
-        "No public widget API changes.",
-        "No persistence keys changed; existing stable keys remain intact."
-      ]
+      "notes": {
+        "root_cause": "Incomplete edit in the AppBar menu bottom sheet block (mismatched closure/brackets) caused dart format/analyze/test to fail at parse time.",
+        "guards": [
+          "Size equality widget test keyed to dashboard_tools_button and dashboard_menu_button.",
+          "Header button sizing centralized via _HeaderIconButton size/radius constants to prevent drift when icons change."
+        ],
+        "risk": "Low; localized UI block repair + additive test + docs update."
+      }
+    },
+    {
+      "date": "2026-01-09",
+      "id": "patch_2026-01-09_O12k13h1_header_button_exact_mirror_size",
+      "slice": "O12k13h1",
+      "title": "Hotfix: make header Tools/Menu buttons resolve to identical RenderBox size",
+      "summary": [
+        "Diagnosed failing mirror-size widget test: AppBar's leading slot constraints were forcing the Tools button subtree to resolve at 56x56 while Menu remained 44x44.",
+        "Updated _HeaderIconButton's centralized size/radius to 56/28 (matching AppBar toolbar height) so both dashboard_tools_button and dashboard_menu_button report the same size.",
+        "Kept changes localized (no key churn, no modal/ToolPicker changes); this aligns with the 'exact container equality' requirement."
+      ],
+      "files_changed": [
+        "app/unitana/lib/features/dashboard/dashboard_screen.dart",
+        "docs/ai/context_db.json",
+        "docs/ai/handoff/CURRENT_HANDOFF.md"
+      ],
+      "notes": {
+        "root_cause": "The mirror-size test was correct, but the left button was resolving under tighter AppBar leading constraints; the right button was not. The resulting RenderBox sizes differed (56 vs 44) despite shared widget code.",
+        "guards": [
+          "dashboard_header_button_mirror_test continues to assert equality using stable keys.",
+          "Header button sizing remains centralized in _HeaderIconButton to prevent drift."
+        ],
+        "risk": "Low; only constants updated to match AppBar constraints."
+      }
+    },
+    {
+      "date": "2026-01-09",
+      "id": "patch_2026-01-09_O12k13j_currency_modal_place_context",
+      "slice": "O12k13j",
+      "title": "Fix: Currency modal receives home/destination context from dashboard tiles",
+      "summary": [
+        "Dashboard tile taps now pass eurToUsd and home/destination Place context into ToolModalBottomSheet, ensuring Currency defaults and unit labels match the selected reality for non-US/EU home/destination pairs.",
+        "Kept the change localized to DashboardBoard tile onTap, with no key churn and no ToolPicker behavior changes.",
+        "Added a widget test that inverts the default assumption (EU home, US destination) and asserts the Currency modal unit line swaps correctly when toggling realities."
+      ],
+      "files_changed": [
+        "app/unitana/lib/features/dashboard/widgets/dashboard_board.dart",
+        "app/unitana/test/dashboard_currency_modal_context_test.dart",
+        "docs/ai/context_db.json",
+        "docs/ai/handoff/CURRENT_HANDOFF.md"
+      ],
+      "notes": {
+        "root_cause": "DashboardBoard opened ToolModalBottomSheet from tile taps without passing home/destination context, so Currency inference fell back to a hardcoded USD/EUR pair. This broke correctness when Home was non-US or Destination was non-EU.",
+        "guards": [
+          "dashboard_currency_modal_context_test asserts the Currency modal unit line reflects actual home/destination currencies and swaps with the reality toggle.",
+          "Currency inference continues to use device-clock-driven reality; timezones remain display-only."
+        ],
+        "risk": "Low; parameters are only added at the tile invocation site and are ignored by non-Currency tools."
+      }
+    },
+    {
+      "date": "2026-01-09",
+      "id": "patch_2026-01-09_O12k13j1_currency_modal_test_dismiss",
+      "slice": "O12k13j1",
+      "title": "Test fix: Dismiss tool modal via ModalBarrier (bottom sheet), not Cupertino back",
+      "summary": [
+        "Fixed a widget test failure where tester.pageBack() expected a CupertinoNavigationBarBackButton, but tool modals are presented via showModalBottomSheet.",
+        "Updated dashboard_currency_modal_context_test to dismiss the modal by tapping the ModalBarrier, keeping the assertion focused on currency directionality rather than navigation affordances.",
+        "No production UI or logic changes; keys and tool behavior remain unchanged."
+      ],
+      "files_changed": [
+        "app/unitana/test/dashboard_currency_modal_context_test.dart",
+        "docs/ai/context_db.json",
+        "docs/ai/handoff/CURRENT_HANDOFF.md"
+      ],
+      "notes": {
+        "root_cause": "The Currency modal test used tester.pageBack(), which relies on finding a CupertinoNavigationBarBackButton. Tool modals use showModalBottomSheet and do not include that back button.",
+        "guards": [
+          "dashboard_currency_modal_context_test now dismisses the bottom sheet using ModalBarrier tap, matching the app's actual presentation model."
+        ],
+        "risk": "Very low; test-only change and docs update."
+      }
+    },
+    {
+      "date": "2026-01-09",
+      "id": "patch_2026-01-09_O12k13j2_currency_modal_test_dismiss_reliable",
+      "slice": "O12k13j2",
+      "title": "Test fix: dismiss bottom sheet reliably (tapAt safe barrier region) + disable runtime font fetching",
+      "summary": [
+        "Fixed flaky/failing dismissal in dashboard_currency_modal_context_test where tapping ModalBarrier's center could land on the bottom sheet instead of the scrim, leaving the modal open and blocking subsequent taps.",
+        "Updated dismissToolModal() to tap a safe top-left coordinate (outside the sheet) with warnIfMissed:false, retrying once if the barrier remains.",
+        "Aligned with existing modal interaction tests by disabling GoogleFonts runtime fetching to avoid HttpClient warnings and reduce test noise."
+      ],
+      "files_changed": [
+        "app/unitana/test/dashboard_currency_modal_context_test.dart",
+        "docs/ai/context_db.json",
+        "docs/ai/handoff/CURRENT_HANDOFF.md"
+      ],
+      "notes": {
+        "root_cause": "A ModalBarrier finder can represent the whole scrim, but tester.tap(barrier.first) uses the widget center, which may be covered by the bottom sheet; the hit test then targets sheet content rather than the scrim, so dismissal does not occur.",
+        "guards": [
+          "dashboard_currency_modal_context_test now dismisses via tapAt(10,10) which is consistently outside the bottom sheet.",
+          "GoogleFonts runtime fetching is disabled in-test, matching other interaction tests."
+        ],
+        "risk": "Very low; test-only change and docs update."
+      }
+    },
+    {
+      "date": "2026-01-09",
+      "id": "patch_2026-01-09_O12k13j3_currency_modal_test_flutter_compat",
+      "slice": "O12k13j3",
+      "title": "Test fix: remove unsupported tapAt warnIfMissed param; dismiss via barrier top-left",
+      "summary": [
+        "Fixed build break on older Flutter where WidgetTester.tapAt() does not support warnIfMissed named parameter.",
+        "Updated dashboard_currency_modal_context_test dismiss helper to tap a safe point derived from ModalBarrier top-left (fallback to a fixed point), with a single retry if the barrier remains."
+      ],
+      "files_changed": [
+        "app/unitana/test/dashboard_currency_modal_context_test.dart",
+        "docs/ai/context_db.json",
+        "docs/ai/handoff/CURRENT_HANDOFF.md"
+      ],
+      "notes": {
+        "root_cause": "The warnIfMissed parameter was added in newer Flutter; current repo toolchain does not include it, causing analyze/test compilation failure.",
+        "guards": [
+          "Modal dismissal remains deterministic by avoiding center-of-barrier taps that can hit-test into the bottom sheet.",
+          "Test stays key-based and place-aware (EUR/USD inversion) to catch context regressions."
+        ],
+        "risk": "Very low; test-only change plus docs."
+      }
+    },
+    {
+      "date": "2026-01-09",
+      "id": "patch_2026-01-09_O12k13j3_currency_modal_test_flutter_compat",
+      "slice": "O12k13j3",
+      "title": "Test fix: remove unsupported tapAt warnIfMissed param; dismiss via barrier top-left",
+      "summary": [
+        "Fixed a build/analyze failure where WidgetTester.tapAt() was called with an unsupported named parameter (warnIfMissed) in this repo's Flutter/Dart version.",
+        "Kept the dismissal strategy stable by tapping the ModalBarrier top-left (safe scrim region) when present, with a fallback safe tap point and a single retry.",
+        "No production code changes; test-only plus canonical docs updates."
+      ],
+      "files_changed": [
+        "app/unitana/test/dashboard_currency_modal_context_test.dart",
+        "docs/ai/context_db.json",
+        "docs/ai/handoff/CURRENT_HANDOFF.md"
+      ],
+      "notes": {
+        "root_cause": "warnIfMissed is not a valid named parameter for WidgetTester.tapAt() in the pinned Flutter SDK; compilation failed before tests could run.",
+        "guards": [
+          "dashboard_currency_modal_context_test now uses a Flutter-version-compatible tapAt() call.",
+          "Modal dismissal targets the scrim (barrier top-left) so it is not occluded by the bottom sheet."
+        ],
+        "risk": "Very low; test-only change and docs update."
+      }
     }
   ],
   "project": {

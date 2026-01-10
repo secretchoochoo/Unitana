@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import 'hero_alive_marquee.dart';
 
@@ -37,21 +38,45 @@ class PlacesHeroV2 extends StatelessWidget {
     ];
     liveData.ensureSeeded(allPlaces);
 
+    final nowUtc = liveData.nowUtc;
+
     final primaryWeather = liveData.weatherFor(primary);
     final secondaryWeather = liveData.weatherFor(secondary);
 
     final primaryZone = primary == null
         ? null
-        : TimezoneUtils.nowInZone(primary.timeZoneId);
+        : TimezoneUtils.nowInZone(primary.timeZoneId, nowUtc: nowUtc);
     final secondaryZone = secondary == null
         ? null
-        : TimezoneUtils.nowInZone(secondary.timeZoneId);
+        : TimezoneUtils.nowInZone(secondary.timeZoneId, nowUtc: nowUtc);
 
     final delta = (primaryZone != null && secondaryZone != null)
         ? TimezoneUtils.deltaHours(primaryZone, secondaryZone)
         : null;
 
     final primarySun = liveData.sunFor(primary);
+
+    final debugOverride = liveData.debugWeatherOverride;
+    final bool? forcedIsNight =
+        (debugOverride is WeatherDebugOverrideWeatherApi)
+        ? debugOverride.isNight
+        : (debugOverride is WeatherDebugOverrideCoarse)
+        ? debugOverride.isNightOverride
+        : null;
+
+    bool isNightFromSun() {
+      final sun = primarySun;
+      if (sun != null) {
+        return nowUtc.isBefore(sun.sunriseUtc) || nowUtc.isAfter(sun.sunsetUtc);
+      }
+      final local = primaryZone;
+      if (local != null) {
+        return local.local.hour < 6 || local.local.hour >= 18;
+      }
+      return false;
+    }
+
+    final bool isNight = forcedIsNight ?? isNightFromSun();
 
     final cs = Theme.of(context).colorScheme;
     final layout = Theme.of(context).extension<UnitanaLayoutTokens>();
@@ -119,6 +144,9 @@ class PlacesHeroV2 extends StatelessWidget {
                             width: sideWidth,
                             child: _RightSunRail(
                               sun: primarySun,
+                              sceneKey: primaryWeather?.sceneKey,
+                              conditionLabel: primaryWeather?.conditionText,
+                              isNight: isNight,
                               primaryTzId: primary?.timeZoneId,
                               secondaryTzId: secondary?.timeZoneId,
                               compact: isCompact,
@@ -240,13 +268,15 @@ class _SegmentButton extends StatelessWidget {
           textAlign: alignment == Alignment.centerRight
               ? TextAlign.right
               : TextAlign.left,
-          style:
-              (compact
-                      ? Theme.of(context).textTheme.titleSmall
-                      : Theme.of(context).textTheme.titleMedium)
-                  ?.copyWith(
-                    fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
-                  ),
+          style: GoogleFonts.robotoSlab(
+            textStyle:
+                (compact
+                        ? Theme.of(context).textTheme.titleSmall
+                        : Theme.of(context).textTheme.titleMedium)
+                    ?.copyWith(
+                      fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
+                    ),
+          ),
         ),
       ),
     );
@@ -257,12 +287,14 @@ class _ScaleDownText extends StatelessWidget {
   const _ScaleDownText(
     this.text, {
     required this.style,
+    this.textKey,
     this.alignment = Alignment.centerLeft,
     this.textAlign = TextAlign.left,
   });
 
   final String text;
   final TextStyle? style;
+  final Key? textKey;
   final Alignment alignment;
   final TextAlign textAlign;
 
@@ -273,6 +305,7 @@ class _ScaleDownText extends StatelessWidget {
       alignment: alignment,
       child: Text(
         text,
+        key: textKey,
         textAlign: textAlign,
         style: style,
         maxLines: 1,
@@ -284,19 +317,26 @@ class _ScaleDownText extends StatelessWidget {
 }
 
 class _ScaleDownRichText extends StatelessWidget {
-  const _ScaleDownRichText({required this.span, this.textKey});
+  const _ScaleDownRichText({
+    required this.span,
+    this.textKey,
+    this.alignment = Alignment.centerLeft,
+    this.textAlign = TextAlign.left,
+  });
 
   final InlineSpan span;
   final Key? textKey;
+  final Alignment alignment;
+  final TextAlign textAlign;
 
   @override
   Widget build(BuildContext context) {
     return FittedBox(
       fit: BoxFit.scaleDown,
-      alignment: Alignment.centerLeft,
+      alignment: alignment,
       child: RichText(
         key: textKey,
-        textAlign: TextAlign.left,
+        textAlign: textAlign,
         maxLines: 1,
         softWrap: false,
         overflow: TextOverflow.visible,
@@ -331,7 +371,7 @@ class _ClocksHeaderBlock extends StatelessWidget {
     final primaryName = _placeLabel(primaryPlace);
     final secondaryName = _placeLabel(secondaryPlace);
 
-    String headerLine = 'No place selected';
+    InlineSpan headerSpan;
     String detailLine = '--';
 
     if (primaryPlace != null && primaryZone != null) {
@@ -348,18 +388,14 @@ class _ClocksHeaderBlock extends StatelessWidget {
           use24h: secondaryPlace!.use24h,
         );
 
-        headerLine =
-            '$primaryName • $secondaryName ${TimezoneUtils.formatDeltaLabel(deltaHours!)}';
-
         detailLine =
             '$primaryClock ${primaryZone!.abbreviation} • $secondaryClock ${secondaryZone!.abbreviation} (${_formatWeekdayDate(primaryZone!)})';
       } else {
-        headerLine = primaryName;
         detailLine = '$primaryClock ${primaryZone!.abbreviation}';
       }
     }
 
-    final contextStyle =
+    final baseContextStyle =
         (compact
                 ? Theme.of(context).textTheme.titleSmall
                 : Theme.of(context).textTheme.titleLarge)
@@ -367,6 +403,28 @@ class _ClocksHeaderBlock extends StatelessWidget {
               color: cs.onSurface.withAlpha(230),
               fontWeight: FontWeight.w800,
             );
+
+    final cityStyle = GoogleFonts.robotoSlab(textStyle: baseContextStyle);
+
+    headerSpan = TextSpan(text: 'No place selected', style: baseContextStyle);
+
+    if (primaryPlace != null && primaryZone != null) {
+      if (secondaryPlace != null &&
+          secondaryZone != null &&
+          deltaHours != null) {
+        final deltaLabel = TimezoneUtils.formatDeltaLabel(deltaHours!);
+        headerSpan = TextSpan(
+          children: [
+            TextSpan(text: primaryName, style: cityStyle),
+            TextSpan(text: ' • ', style: baseContextStyle),
+            TextSpan(text: secondaryName, style: cityStyle),
+            TextSpan(text: ' $deltaLabel', style: baseContextStyle),
+          ],
+        );
+      } else {
+        headerSpan = TextSpan(text: primaryName, style: cityStyle);
+      }
+    }
 
     final timeStyle =
         (compact
@@ -377,9 +435,9 @@ class _ClocksHeaderBlock extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        _ScaleDownText(
-          headerLine,
-          style: contextStyle,
+        _ScaleDownRichText(
+          textKey: const ValueKey('places_hero_clock_header'),
+          span: headerSpan,
           alignment: Alignment.center,
           textAlign: TextAlign.center,
         ),
@@ -387,6 +445,7 @@ class _ClocksHeaderBlock extends StatelessWidget {
         _ScaleDownText(
           detailLine,
           style: timeStyle,
+          textKey: const ValueKey('places_hero_clock_detail'),
           alignment: Alignment.center,
           textAlign: TextAlign.center,
         ),
@@ -607,6 +666,46 @@ class _LeftPrimaryBlock extends StatelessWidget {
 
         // Bounded height: use flexible distribution to avoid tiny overflows
         // and keep wind/money blocks visually separated.
+        // In very tight heights (small phones / landscape), the inner blocks
+        // can overflow because Column children are unconstrained. In that case
+        // we constrain each block and allow it to scale down as a whole.
+        if (smallH) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              tempRow(),
+              SizedBox(height: gapAfterTemp),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Align(
+                        alignment: Alignment.topLeft,
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.topLeft,
+                          child: windBlock(gap: innerGap),
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      child: Align(
+                        alignment: Alignment.bottomLeft,
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.bottomLeft,
+                          child: moneyBlock(gap: innerGap),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          );
+        }
+
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -631,12 +730,18 @@ class _LeftPrimaryBlock extends StatelessWidget {
 
 class _RightSunRail extends StatelessWidget {
   final SunTimesSnapshot? sun;
+  final SceneKey? sceneKey;
+  final String? conditionLabel;
+  final bool isNight;
   final String? primaryTzId;
   final String? secondaryTzId;
   final bool compact;
 
   const _RightSunRail({
     required this.sun,
+    required this.sceneKey,
+    required this.conditionLabel,
+    required this.isNight,
     required this.primaryTzId,
     required this.secondaryTzId,
     required this.compact,
@@ -666,7 +771,12 @@ class _RightSunRail extends StatelessWidget {
             ),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(radius),
-              child: HeroAliveMarquee(compact: compact),
+              child: HeroAliveMarquee(
+                compact: compact,
+                isNight: isNight,
+                sceneKey: sceneKey,
+                conditionLabel: conditionLabel,
+              ),
             ),
           ),
         ),

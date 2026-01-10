@@ -1,68 +1,85 @@
 # Current handoff (canonical)
 
 ## Status
-- Build: green (through Slice R1). Run `dart format .`, `flutter analyze`, `flutter test` before merging.
-- ToolPicker: opened from the top-left tools icon; Quick Tools lens removed; Most Recent + Search remain.
-- Dashboard: default tiles removable and persistent; restoring removed defaults works without duplicates.
-- Dashboard tiles: inherit per-tool tint and per-lens accent mapping.
-- Places Hero V2: stable (clocks first; no weather icon block; sun pill present; wind and gust split). Specs are canonical in docs/ui/PLACES_HERO_V2_SPEC.md.
-- iOS app icon visibility: backlog only.
+- Platform icon audit: `docs/ai/reference/PLATFORM_ICON_AUDIT.md`.
+- DevTools clock override: fixed duplicate symbols for `debugClockOffset` / `setDebugClockOffset` (O12k13e) and added a Clock Override UI in the DevTools sheet (O12k13g).
+- Widget test stability: Time tool modal interaction test now uses ToolPicker search-first path (O12k13f).
+- Build: green (through Slice O12k13j3). Always run: `dart format .`, `flutter analyze`, `flutter test` before merging.
+- Sev 1 recovery (O12k13h): fixed a DashboardScreen parse break from an incomplete AppBar menu bottom sheet edit; added a size-mirror widget test for the header Tools/Menu buttons.
+- Hotfix (O12k13h1): resolved a mirror-size test failure caused by AppBar leading-slot constraints (Tools was resolving to 56x56 while Menu was 44x44) by centralizing header button size/radius to 56/28.
+- Test hotfix (O12k13j1): dashboard currency modal context regression test now dismisses the tool modal via ModalBarrier tap (bottom sheet) instead of expecting a Cupertino back button.
+- Test hotfix (O12k13j3): removed unsupported `warnIfMissed` parameter from `WidgetTester.tapAt()` for Flutter SDK compatibility; dismissal now taps ModalBarrier top-left.
+- Theme direction: Dracula palette + terminal vibes, but readability and stability come first.
+- Time policy: device clock is source of truth; timezone conversion is display only.
+- Scene system: SceneKey catalog is provider-agnostic; providers map condition codes -> SceneKey.
+- Hero toggle contract: the selected city drives hero weather, marquee scene, and currency. Day/night visuals follow the selected city time, except when a DevTools override explicitly forces day or night.
 
-## Shipped slices (high level)
+## Current checkpoint
+- Dashboard + Places Hero V2 are stable.
+- Tool modals are functional and visually close to final.
+- Terminal-inspired history/results exist (monospace, prompt glyph, muted metadata).
+- `$` prompt glyph is removed everywhere (currency ambiguity avoided).
+- Roboto Slab is used for headings/titles (wizard, dashboard, tool modals) with bold on key labels.
+- Weather backend clients exist (WeatherAPI + Open-Meteo), but network fetching is disabled by default (deferred until tool surface completion).
 
-- Slice P0: canonical UI specs added for Places Hero V2 and the dashboard (docs/ui/PLACES_HERO_V2_SPEC.md, docs/ui/DASHBOARD_SPEC.md).
-- Slice C: ToolPicker two-level hierarchy (Activity Lenses -> Tools) with stable keys.
-- Slice H: ToolPicker UX (search, most-recent shortcut, single-expanded accordion), Favorites removed.
-- Slice I: Lens accent colors (Dracula palette tinting for lens headers + tool row icons).
-- Slice M: tools menu can run tools without adding widgets; widgets are added via explicit “+ Add Widget” affordance.
-- Slice O4: Quick Tools lens removed from picker accordion.
-- Slice O1: Add Widget confirmation is visible while bottom sheets are open (in-modal notice).
-- Slice O2: per-tool icon + lens accent coloring on dashboard tiles (removes legacy global purple accent).
-- Slice O6: default dashboard tiles can be removed in edit mode; removals persist and can be restored via the picker.
-- Slice O7: “Reset Dashboard Defaults” menu action restores defaults from ToolDefinitions.defaultTiles and clears customizations.
-- Slice O7 hotfix series: reset wiring hardened, hidden-default persistence migration tolerates legacy types, and redundant menu entries removed.
-- Slice O7n: Places Hero V2 polish, Sunrise / Sunset title centered within the pill; labels Wind, Gust, Sunrise, Sunset, and Rate are emphasized (white + bold) for readability.
-- Slice O7o: Places Hero V2 analyzer cleanup only (removed lint warnings; no behavior change).
-- Slice R1: Tile footer CTA updated to `Convert` and uses a conversion icon (swap_horiz) tinted to the tool accent.
- - Slice O11: Hero marquee slot restored with paint-only “Alive” pixel scene (CustomPaint) that animates in runtime and renders a deterministic still frame in widget tests.
+## What shipped recently (since last handoff refresh)
+- O12k13j3: Test-only hotfix, removed unsupported `warnIfMissed` parameter from `WidgetTester.tapAt()` for Flutter SDK compatibility; kept modal dismissal stable by tapping ModalBarrier top-left.
+- O12k13j1: Test-only hotfix, dismiss tool modals via ModalBarrier (showModalBottomSheet) rather than tester.pageBack().
+- O12k13j: Currency modal now receives home/destination place context when launched from dashboard tiles; added a regression test that validates correct EUR/USD directionality when home is non-US.
+- O12k13h1: Hotfix, aligned header button RenderBox sizing under AppBar constraints (56x56) so Tools/Menu are true mirrors by measurement and aesthetics.
+- O12k13h: Sev 1 recovery, fixed DashboardScreen parse break + added test guard for mirrored header button sizing.
+- O12j11: Introduced DevTools weather override typing regression (compile/analyze failures).
+- O12j11a: Hotfix for DevTools weather override rendering and selection (handles `WeatherDebugOverride` variants cleanly).
+- O12j11b: Typography consistency pass (Roboto Slab for key headers/titles; tool modal header sizing and alignment).
+- O12k01a: Currency tool MVP enabled (ToolPicker + dashboard), place-aware direction inference (home vs destination), EUR ↔ USD via live/demo rate.
 
-## Immediate next work (priority order)
+## Weather (deferred)
+- Live weather is intentionally deprioritized until tool surface completion is done.
+- Open-Meteo (JSON, no secret in non-commercial mode) is the preferred target for a keyless dev path; commercial usage requires a paid host + apikey.
+- WeatherAPI remains supported as an alternative provider.
+- Network fetching is opt-in only (default off) via dart-defines: `WEATHER_NETWORK_ENABLED=true` and `WEATHER_PROVIDER=openmeteo|weatherapi`.
+- SceneKey remains the stable abstraction; provider mapping belongs in the model layer, never in UI.
 
-### O12: Pixel weather scenes (condition-based) (NEXT)
-Goal: scenes per condition (Sunny, Partly Cloudy, Rain, Snow, Mix, etc.), API-ready mapping.
+## Developer Tools: Weather override (verification workflow)
+- DevTools supports a coarse weather override for forcing hero scenes during development.
+- The underlying override model is now polymorphic (`WeatherDebugOverride`), so UI must handle:
+  - null (default)
+  - coarse condition override
+  - provider-style override (future)
 
-- Define `WeatherKind` + mapping layer (stubbed initially).
-- Implement a small set first (Sunny, Cloudy, Rain, Snow) plus placeholders for rare types.
+## Developer Tools: Clock override (verification workflow)
+- DevTools now includes a Clock Override sheet for simulator testing (no NTP, no backend sync).
+- Entry point: Developer Tools sheet → Clock Override (key: `devtools_clock_menu`).
+- Controls:
+  - Enable toggle (key: `devtools_clock_enabled`) toggles whether an offset is applied.
+  - Slider (key: `devtools_clock_offset_slider`) adjusts UTC offset in the range ±12 hours.
+- Places Hero uses `DashboardLiveDataController.nowUtc`, so the marquee time labels and day/night behavior follow the offset immediately.
 
-### R2: Tool modal header icon tint uses tool accent
-Goal: modal cohesion with picker and tiles; add a tint widget test.
+## Non-negotiables (contract)
+- Repo must stay green: `dart format .` then `flutter analyze` then `flutter test`.
+- No public widget API churn unless strictly necessary.
+- One toolId per tool; lenses are presentation/presets only.
+- Stable keys everywhere (persistence + widget tests).
+- Places Hero V2 layout rules are locked during weather work (paint-only changes are allowed).
+- Deliver patches as “changed files only” bundles zipped, paths preserved.
+- Canonical docs:
+  - Update `docs/ai/context_db.json.patch_log` for every change.
+  - Update this file when priorities/constraints change.
 
-### R3: Tool modal layout v2 with terminal surfaces
-Goal: Input/Result/History share a single “terminal” surface component; stable structure keys; responsive.
+## Current priorities (ordered)
+### P0: Fix + keep repo green
+1) Treat `dart format .`, `flutter analyze`, `flutter test` as merge gates.
+2) Keep stable keys and avoid public widget API churn.
 
-### Tool expansion bundle (Weather/Time + Money/Shopping)
-Goal: end-to-end tools, one toolId each, history logs, consistent units.
+### P1: Phase A, tool surface completion (frontend-first)
+3) Build remaining core decoder-ring tools (Time, plus any planned primitives).
+   - Currency MVP is now enabled (EUR ↔ USD).
+4) Keep modal structure, history behavior, and typography consistent across tools.
 
-## Policy: Device clock only (no server time sync)
-- All time displays should derive from the device clock (DateTime.now / system time).
-- Apply timezone conversion for presentation only.
-- Do not add NTP or server-time sync.
+### P2: Phase B, UX polish + consistency
+5) Swap icon placement review (right-aligned vs inline).
+6) Convert button alignment across tools.
+7) Arrow (→) styling consistency using Dracula palette accents.
 
-## Guardrails
-- Avoid creating scripts to shuffle docs.
-- Prefer small diffs with clear patch log entries in `docs/ai/context_db.json`.
-- Deliver patches as “changed files only” bundles, zipped, preserving paths.
-
-
-### O11j Notes
-- Added hero marquee keys: hero_marquee_slot (container), hero_alive_paint (CustomPaint).
-- Alive animation runs via CustomPaint repaint; it is disabled under widget tests using FLUTTER_TEST env, so pumpAndSettle will not hang.
-
-
-- **O11k** (2026-01-02): Restored hero marquee slot with test-safe paint-only animation; hardened Places Hero V2 layout to eliminate small-phone overflows; shrank tile Convert pill to prevent tile overflows.
-
-- **O11k1** (2026-01-02): Fixed HeroAliveMarquee compile failure by importing kIsWeb and hardened animation gating (tests + disableAnimations + TickerMode).
-
-- **O11k2** (2026-01-02): Removed kIsWeb usage from the hero marquee painter (compile-safe without foundation import); stars render unconditionally to avoid platform-gating logic.
-
-- **O11k3** (2026-01-02): Fixed remaining small-device overflows in Places Hero V2 (left rail now uses flexible vertical distribution); ensured Alive marquee paints at full width; reworked UnitanaTile layout to be height-safe (prevents micro overflows from the Convert pill).
+### P3: Phase C, Weather wiring (later)
+8) Weather backend wiring (Open-Meteo preferred, WeatherAPI optional), mapping, and scene binding after tool surface is largely complete.

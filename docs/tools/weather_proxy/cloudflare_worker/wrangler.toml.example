@@ -1,0 +1,9 @@
+name = "unitana-weather-proxy"
+main = "worker.js"
+compatibility_date = "2026-01-04"
+
+# If wrangler requests it, set your account_id here.
+# account_id = "<YOUR_ACCOUNT_ID>"
+
+# Optional: route a custom domain.
+# routes = [{ pattern = "weather.example.com/*", zone_name = "example.com" }]

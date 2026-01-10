@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../../../theme/theme_extensions.dart';
 
@@ -159,8 +160,8 @@ class UnitanaTile extends StatelessWidget {
                 alignment: Alignment.center,
                 child: Container(
                   padding: EdgeInsets.symmetric(
-                    horizontal: isMicro ? 10 : (isCompact ? 11 : 12),
-                    vertical: isMicro ? 2 : (isCompact ? 3 : 4),
+                    horizontal: isMicro ? 8 : (isCompact ? 9 : 10),
+                    vertical: isMicro ? 1.5 : (isCompact ? 2.0 : 3.0),
                   ),
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(999),
@@ -175,21 +176,22 @@ class UnitanaTile extends StatelessWidget {
                     children: [
                       Icon(
                         Icons.swap_horiz,
-                        size: isMicro ? 11 : (isCompact ? 12 : 13),
+                        size: isMicro ? 10 : (isCompact ? 11 : 12),
                         color: dotAccent,
                       ),
-                      SizedBox(width: isMicro ? 5 : 7),
+                      SizedBox(width: isMicro ? 4 : (isCompact ? 5 : 6)),
                       Text(
                         safeFooter,
                         maxLines: 1,
                         overflow: TextOverflow.visible,
                         softWrap: false,
-                        style: (isCompact ? text.labelSmall : text.labelMedium)
-                            ?.copyWith(
-                              color: scheme.onSurfaceVariant,
-                              fontWeight: FontWeight.w600,
-                              letterSpacing: 0.15,
-                            ),
+                        style: text.labelSmall?.copyWith(
+                          color: scheme.onSurfaceVariant,
+                          fontWeight: FontWeight.w600,
+                          fontSize: isMicro ? 10.0 : (isCompact ? 11.0 : 11.5),
+                          height: 1.0,
+                          letterSpacing: 0.10,
+                        ),
                       ),
                     ],
                   ),
@@ -203,39 +205,56 @@ class UnitanaTile extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  children: [
-                    Container(
-                      height: iconBox,
-                      width: iconBox,
-                      decoration: BoxDecoration(
-                        color: scheme.surfaceContainerHighest,
-                        borderRadius: BorderRadius.circular(iconRadius),
-                      ),
-                      child: Center(
-                        child: Icon(
-                          leadingIcon ?? Icons.dashboard_customize_outlined,
-                          color: iconAccent,
-                          size: iconSize,
+                SizedBox(
+                  height: iconBox,
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: Container(
+                          height: iconBox,
+                          width: iconBox,
+                          decoration: BoxDecoration(
+                            color: scheme.surfaceContainerHighest,
+                            borderRadius: BorderRadius.circular(iconRadius),
+                          ),
+                          child: Center(
+                            child: Icon(
+                              leadingIcon ?? Icons.dashboard_customize_outlined,
+                              color: iconAccent,
+                              size: iconSize,
+                            ),
+                          ),
                         ),
                       ),
-                    ),
-                    SizedBox(width: hGap),
-                    Expanded(
-                      child: Text(
-                        safeTitle,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        softWrap: false,
-                        style: (isCompact ? text.titleSmall : text.titleMedium)
-                            ?.copyWith(
-                              color: scheme.onSurface,
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: 0.2,
+                      Padding(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: iconBox + hGap,
+                        ),
+                        child: Center(
+                          child: Text(
+                            safeTitle,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            softWrap: false,
+                            textAlign: TextAlign.center,
+                            style: GoogleFonts.robotoSlab(
+                              textStyle:
+                                  (isCompact
+                                          ? text.titleSmall
+                                          : text.titleMedium)
+                                      ?.copyWith(
+                                        color: scheme.onSurface,
+                                        fontWeight: FontWeight.w700,
+                                        letterSpacing: 0.2,
+                                      ),
                             ),
+                          ),
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
                 SizedBox(height: vGap),
                 if (constraints.hasBoundedHeight)
@@ -249,10 +268,10 @@ class UnitanaTile extends StatelessWidget {
                         // sub-pixel RenderFlex overflows that show up on small
                         // devices and in widget tests.
                         final footerCap = hasFooter
-                            ? (isMicro ? 18.0 : (isCompact ? 22.0 : 26.0))
+                            ? (isMicro ? 16.0 : (isCompact ? 19.0 : 22.0))
                             : 0.0;
                         final footerH = hasFooter
-                            ? math.min(footerCap, bodyH * 0.34)
+                            ? math.min(footerCap, bodyH * 0.30)
                             : 0.0;
                         final mainH = math.max(0.0, bodyH - footerH);
 
@@ -267,23 +286,33 @@ class UnitanaTile extends StatelessWidget {
                           children: [
                             SizedBox(
                               height: mainH,
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Flexible(
-                                    fit: FlexFit.tight,
-                                    flex: hasSecondary ? 3 : 1,
-                                    child: Center(child: buildPrimary()),
-                                  ),
-                                  if (hasSecondary) ...[
-                                    SizedBox(height: effectiveMidGap),
+                              child: Padding(
+                                // Nudge the secondary line up a hair so the
+                                // footer pill has a little more breathing
+                                // room on compact tiles.
+                                padding: EdgeInsets.only(
+                                  bottom: isMicro
+                                      ? 1.0
+                                      : (isCompact ? 2.0 : 3.0),
+                                ),
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
                                     Flexible(
                                       fit: FlexFit.tight,
-                                      flex: 2,
-                                      child: Center(child: buildSecondary()),
+                                      flex: hasSecondary ? 3 : 1,
+                                      child: Center(child: buildPrimary()),
                                     ),
+                                    if (hasSecondary) ...[
+                                      SizedBox(height: effectiveMidGap),
+                                      Flexible(
+                                        fit: FlexFit.tight,
+                                        flex: 2,
+                                        child: Center(child: buildSecondary()),
+                                      ),
+                                    ],
                                   ],
-                                ],
+                                ),
                               ),
                             ),
                             if (hasFooter)

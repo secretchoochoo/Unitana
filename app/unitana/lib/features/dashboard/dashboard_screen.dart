@@ -14,6 +14,11 @@ import 'models/tool_definitions.dart';
 import 'widgets/dashboard_board.dart';
 import 'widgets/tool_modal_bottom_sheet.dart';
 
+/// Developer-only time-of-day override for weather scene previews.
+///
+/// Kept file-private because this is not part of the public widget API.
+enum _DevWeatherTimeOfDay { auto, sun, night }
+
 class DashboardScreen extends StatefulWidget {
   final UnitanaAppState state;
 
@@ -60,6 +65,417 @@ class _DashboardScreenState extends State<DashboardScreen> {
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(builder: (_) => FirstRunScreen(state: state)),
       (route) => false,
+    );
+  }
+
+  String _weatherLabel(WeatherCondition condition) {
+    switch (condition) {
+      case WeatherCondition.clear:
+        return 'Clear';
+      case WeatherCondition.partlyCloudy:
+        return 'Partly Cloudy';
+      case WeatherCondition.cloudy:
+        return 'Cloudy';
+      case WeatherCondition.overcast:
+        return 'Overcast';
+      case WeatherCondition.drizzle:
+        return 'Drizzle';
+      case WeatherCondition.rain:
+        return 'Rain';
+      case WeatherCondition.thunderstorm:
+        return 'Thunderstorm';
+      case WeatherCondition.snow:
+        return 'Snow';
+      case WeatherCondition.sleet:
+        return 'Sleet';
+      case WeatherCondition.hail:
+        return 'Hail';
+      case WeatherCondition.fog:
+        return 'Fog';
+      case WeatherCondition.mist:
+        return 'Mist';
+      case WeatherCondition.haze:
+        return 'Haze';
+      case WeatherCondition.smoke:
+        return 'Smoke';
+      case WeatherCondition.dust:
+        return 'Dust';
+      case WeatherCondition.sand:
+        return 'Sand';
+      case WeatherCondition.ash:
+        return 'Ash';
+      case WeatherCondition.squall:
+        return 'Squall';
+      case WeatherCondition.tornado:
+        return 'Tornado';
+      case WeatherCondition.windy:
+        return 'Windy';
+    }
+  }
+
+  void _openWeatherOverrideSheet() {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      showDragHandle: true,
+      builder: (sheetContext) {
+        final currentOverride = _liveData.debugWeatherOverride;
+        final WeatherCondition? initialCondition =
+            currentOverride is WeatherDebugOverrideCoarse
+            ? currentOverride.condition
+            : null;
+        final bool? initialIsNightOverride =
+            currentOverride is WeatherDebugOverrideCoarse
+            ? currentOverride.isNightOverride
+            : null;
+
+        _DevWeatherTimeOfDay initialTimeOfDay() {
+          if (initialIsNightOverride == true) return _DevWeatherTimeOfDay.night;
+          if (initialIsNightOverride == false) return _DevWeatherTimeOfDay.sun;
+          return _DevWeatherTimeOfDay.auto;
+        }
+
+        final options = WeatherCondition.values.toList()
+          ..sort((a, b) => _weatherLabel(a).compareTo(_weatherLabel(b)));
+
+        WeatherCondition? selectedCondition = initialCondition;
+        _DevWeatherTimeOfDay selectedTimeOfDay = initialTimeOfDay();
+
+        return StatefulBuilder(
+          builder: (context, setState) {
+            bool? toNightOverride(_DevWeatherTimeOfDay v) {
+              switch (v) {
+                case _DevWeatherTimeOfDay.auto:
+                  return null;
+                case _DevWeatherTimeOfDay.sun:
+                  return false;
+                case _DevWeatherTimeOfDay.night:
+                  return true;
+              }
+            }
+
+            void applyOverride() {
+              final c = selectedCondition;
+              if (c == null) {
+                _liveData.setDebugWeatherOverride(null);
+                return;
+              }
+              _liveData.setDebugWeatherOverride(
+                WeatherDebugOverrideCoarse(
+                  c,
+                  isNightOverride: toNightOverride(selectedTimeOfDay),
+                ),
+              );
+            }
+
+            Widget choiceTile({
+              required Key key,
+              required String title,
+              required WeatherCondition? value,
+            }) {
+              final selected = value == selectedCondition;
+              return ListTile(
+                key: key,
+                leading: Icon(
+                  selected
+                      ? Icons.radio_button_checked_outlined
+                      : Icons.radio_button_unchecked_outlined,
+                ),
+                title: Text(title),
+                onTap: () {
+                  if (value == null) {
+                    setState(() {
+                      selectedCondition = null;
+                      selectedTimeOfDay = _DevWeatherTimeOfDay.auto;
+                    });
+                    _liveData.setDebugWeatherOverride(null);
+                    Navigator.of(sheetContext).pop();
+                    return;
+                  }
+
+                  setState(() {
+                    selectedCondition = value;
+                  });
+                  applyOverride();
+                  Navigator.of(sheetContext).pop();
+                },
+              );
+            }
+
+            return DraggableScrollableSheet(
+              expand: false,
+              initialChildSize: 0.85,
+              minChildSize: 0.4,
+              maxChildSize: 0.95,
+              builder: (context, scrollController) {
+                return ListView(
+                  controller: scrollController,
+                  padding: const EdgeInsets.only(bottom: 8),
+                  children: [
+                    ListTile(
+                      key: const ValueKey('devtools_weather_title'),
+                      leading: const Icon(Icons.wb_sunny_outlined),
+                      title: const Text('Weather'),
+                      subtitle: const Text(
+                        'Force hero weather scenes during development',
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
+                      child: SegmentedButton<_DevWeatherTimeOfDay>(
+                        key: const ValueKey('devtools_weather_time_of_day'),
+                        segments: const [
+                          ButtonSegment(
+                            value: _DevWeatherTimeOfDay.auto,
+                            label: Text('Auto'),
+                          ),
+                          ButtonSegment(
+                            value: _DevWeatherTimeOfDay.sun,
+                            label: Text('Sun'),
+                          ),
+                          ButtonSegment(
+                            value: _DevWeatherTimeOfDay.night,
+                            label: Text('Night'),
+                          ),
+                        ],
+                        selected: {selectedTimeOfDay},
+                        onSelectionChanged: (selection) {
+                          final next = selection.isEmpty
+                              ? _DevWeatherTimeOfDay.auto
+                              : selection.first;
+                          setState(() {
+                            selectedTimeOfDay = next;
+                          });
+                          applyOverride();
+                        },
+                      ),
+                    ),
+                    choiceTile(
+                      key: const ValueKey('devtools_weather_default'),
+                      title: 'Default (follow live weather)',
+                      value: null,
+                    ),
+                    for (final option in options)
+                      choiceTile(
+                        key: ValueKey('devtools_weather_${option.name}'),
+                        title: _weatherLabel(option),
+                        value: option,
+                      ),
+                  ],
+                );
+              },
+            );
+          },
+        );
+      },
+    );
+  }
+
+  String _clockOverrideSubtitle(Duration? offset) {
+    if (offset == null) return 'Device clock (no offset)';
+    final totalMinutes = offset.inMinutes;
+    final sign = totalMinutes >= 0 ? '+' : '-';
+    final absMinutes = totalMinutes.abs();
+    final hours = absMinutes ~/ 60;
+    final minutes = absMinutes % 60;
+    if (minutes == 0) return 'Offset: $sign${hours}h';
+    final padded = minutes.toString().padLeft(2, '0');
+    return 'Offset: $sign${hours}h ${padded}m';
+  }
+
+  void _openClockOverrideSheet() {
+    showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      useSafeArea: true,
+      builder: (sheetContext) {
+        // Default offset value if enabling for the first time.
+        final initial = _liveData.debugClockOffset ?? Duration.zero;
+
+        // Store offset as minutes so the slider stays stable.
+        double minutesValue = initial.inMinutes.toDouble();
+        bool enabled = _liveData.debugClockOffset != null;
+
+        void apply() {
+          if (!enabled) {
+            _liveData.setDebugClockOffset(null);
+            return;
+          }
+          final next = Duration(minutes: minutesValue.round());
+          _liveData.setDebugClockOffset(next);
+        }
+
+        return StatefulBuilder(
+          builder: (context, setState) {
+            final subtitle = _clockOverrideSubtitle(
+              enabled ? Duration(minutes: minutesValue.round()) : null,
+            );
+
+            return SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.schedule),
+                        const SizedBox(width: 10),
+                        Text(
+                          'Clock Override',
+                          style: Theme.of(context).textTheme.titleLarge,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      subtitle,
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
+                    const SizedBox(height: 16),
+                    SwitchListTile(
+                      key: const ValueKey('devtools_clock_enabled'),
+                      contentPadding: EdgeInsets.zero,
+                      title: const Text('Enable clock offset'),
+                      subtitle: const Text(
+                        'Applies a temporary UTC offset for simulator testing and screenshots.',
+                      ),
+                      value: enabled,
+                      onChanged: (value) {
+                        setState(() {
+                          enabled = value;
+                        });
+                        apply();
+                      },
+                    ),
+                    const SizedBox(height: 8),
+                    Opacity(
+                      opacity: enabled ? 1.0 : 0.45,
+                      child: IgnorePointer(
+                        ignoring: !enabled,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Offset (hours)',
+                              style: Theme.of(context).textTheme.labelLarge,
+                            ),
+                            Slider(
+                              key: const ValueKey(
+                                'devtools_clock_offset_slider',
+                              ),
+                              value: minutesValue,
+                              min: -12 * 60.0,
+                              max: 12 * 60.0,
+                              divisions: 48,
+                              label:
+                                  '${(minutesValue / 60).toStringAsFixed(1)}h',
+                              onChanged: (next) {
+                                setState(() {
+                                  minutesValue = next;
+                                });
+                              },
+                              onChangeEnd: (_) => apply(),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: TextButton(
+                        onPressed: () {
+                          Navigator.of(sheetContext).pop();
+                        },
+                        child: const Text('Done'),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _openDeveloperToolsSheet() {
+    showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      useSafeArea: true,
+      builder: (sheetContext) {
+        final weatherOverride = _liveData.debugWeatherOverride;
+        final String weatherSubtitle;
+        if (weatherOverride == null) {
+          weatherSubtitle = 'Default (live weather)';
+        } else if (weatherOverride is WeatherDebugOverrideCoarse) {
+          final suffix = weatherOverride.isNightOverride == null
+              ? ''
+              : (weatherOverride.isNightOverride! ? ' (night)' : ' (sun)');
+          weatherSubtitle =
+              'Forced: ${_weatherLabel(weatherOverride.condition)}$suffix';
+        } else {
+          final api = weatherOverride as WeatherDebugOverrideWeatherApi;
+          final nightSuffix = api.isNight ? ' (night)' : '';
+          weatherSubtitle = 'Forced: ${api.text} (#${api.code})$nightSuffix';
+        }
+
+        final clockSubtitle = _clockOverrideSubtitle(
+          _liveData.debugClockOffset,
+        );
+
+        return SafeArea(
+          child: ListView(
+            shrinkWrap: true,
+            padding: const EdgeInsets.only(bottom: 8),
+            children: [
+              ListTile(
+                leading: const Icon(Icons.developer_mode),
+                title: const Text('Developer Tools'),
+                subtitle: const Text('Temporary tools for development and QA'),
+              ),
+              ListTile(
+                key: const ValueKey('devtools_reset_restart'),
+                leading: const Icon(Icons.restart_alt),
+                title: const Text('Reset and Restart'),
+                subtitle: const Text('Restore defaults and clear cached data'),
+                onTap: () {
+                  Navigator.of(sheetContext).pop();
+                  _resetAndRestart();
+                },
+              ),
+              ListTile(
+                key: const ValueKey('devtools_weather_menu'),
+                leading: const Icon(Icons.wb_sunny_outlined),
+                title: const Text('Weather'),
+                subtitle: Text(weatherSubtitle),
+                onTap: () {
+                  Navigator.of(sheetContext).pop();
+                  _openWeatherOverrideSheet();
+                },
+              ),
+              ListTile(
+                key: const ValueKey('devtools_clock_menu'),
+                leading: const Icon(Icons.schedule),
+                title: const Text('Clock Override'),
+                subtitle: Text(clockSubtitle),
+                onTap: () {
+                  Navigator.of(sheetContext).pop();
+                  _openClockOverrideSheet();
+                },
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -127,8 +543,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  bool _preferMetricForReality() {
-    // Align tool defaults with the currently selected "reality" in Places Hero.
+  (Place?, Place?) _resolveHomeDestination() {
     Place? home;
     Place? destination;
 
@@ -136,6 +551,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
       if (home == null && p.type == PlaceType.living) home = p;
       if (destination == null && p.type != PlaceType.living) destination = p;
     }
+
+    return (home, destination);
+  }
+
+  bool _preferMetricForReality() {
+    // Align tool defaults with the currently selected "reality" in Places Hero.
+    final (home, destination) = _resolveHomeDestination();
 
     final primary = _session.reality == DashboardReality.home
         ? home
@@ -156,11 +578,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
     if (picked == null) return;
     if (!context.mounted) return;
 
+    final (home, destination) = _resolveHomeDestination();
+
     await ToolModalBottomSheet.show(
       context,
       tool: picked,
       session: _session,
       preferMetric: _preferMetricForReality(),
+      eurToUsd: _liveData.eurToUsd,
+      home: home,
+      destination: destination,
       canAddWidget: true,
       onAddWidget: () async {
         if (_dashboardHasToolId(picked.id)) {
@@ -236,13 +663,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
             // under the icon here because it causes overflows on small phones.
             leadingWidth: 72,
             leading: Padding(
-              padding: const EdgeInsets.only(left: 12),
-              child: Tooltip(
-                message: 'Tools',
-                child: _ToolsButton(
-                  key: const Key('dashboard_tools_button'),
-                  onTap: _openToolPickerFromMenu,
-                ),
+              padding: const EdgeInsets.only(left: 16),
+              child: _HeaderIconButton(
+                key: const Key('dashboard_tools_button'),
+                tooltip: 'Tools',
+                icon: Icons.handyman_rounded,
+                onTap: _openToolPickerFromMenu,
               ),
             ),
             title: FittedBox(
@@ -254,9 +680,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 overflow: TextOverflow.ellipsis,
                 softWrap: false,
                 textAlign: TextAlign.center,
-                style: GoogleFonts.shadowsIntoLight(
-                  textStyle: Theme.of(context).textTheme.titleLarge,
-                ).copyWith(fontSize: 30, height: 1.0),
+                style:
+                    GoogleFonts.robotoSlab(
+                      textStyle: Theme.of(context).textTheme.titleLarge,
+                    ).copyWith(
+                      fontSize: 28,
+                      height: 1.0,
+                      fontWeight: FontWeight.w800,
+                    ),
               ),
             ),
             actions: [
@@ -274,78 +705,90 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   onPressed: _exitEditWidgetsDone,
                 ),
               ] else
-                IconButton(
-                  icon: const Icon(Icons.more_horiz),
-                  onPressed: () {
-                    showModalBottomSheet<void>(
-                      context: context,
-                      showDragHandle: true,
-                      builder: (sheetContext) {
-                        return SafeArea(
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              ListTile(
-                                leading: const Icon(Icons.edit),
-                                title: const Text('Edit widgets'),
-                                onTap: () {
-                                  Navigator.of(sheetContext).pop();
-                                  Future.microtask(() {
-                                    if (!mounted) return;
-                                    _enterEditWidgets();
-                                  });
-                                },
-                              ),
-                              ListTile(
-                                leading: const Icon(Icons.switch_account),
-                                title: const Text('Switch profile'),
-                                onTap: () {
-                                  Navigator.of(sheetContext).pop();
-                                  _comingSoon(context, 'Switch profile');
-                                },
-                              ),
-                              ListTile(
-                                leading: const Icon(Icons.person_add_alt_1),
-                                title: const Text('Add profile'),
-                                onTap: () {
-                                  Navigator.of(sheetContext).pop();
-                                  _comingSoon(context, 'Add profile');
-                                },
-                              ),
-                              ListTile(
-                                leading: const Icon(Icons.settings),
-                                title: const Text('Settings'),
-                                onTap: () {
-                                  Navigator.of(sheetContext).pop();
-                                  _comingSoon(context, 'Settings');
-                                },
-                              ),
-                              ListTile(
-                                key: const ValueKey(
-                                  'dashboard_menu_reset_defaults',
+                Padding(
+                  padding: const EdgeInsets.only(right: 16),
+                  child: _HeaderIconButton(
+                    key: const Key('dashboard_menu_button'),
+                    tooltip: 'Menu',
+                    icon: Icons.menu_rounded,
+                    onTap: () {
+                      showModalBottomSheet<void>(
+                        context: context,
+                        showDragHandle: true,
+                        builder: (sheetContext) {
+                          // Bottom sheets are particularly prone to small-phone
+                          // overflows when built as a natural-height Column.
+                          // Use a scrollable list so the sheet can adapt to
+                          // tight viewports without RenderFlex overflow.
+                          return SafeArea(
+                            child: ListView(
+                              shrinkWrap: true,
+                              padding: const EdgeInsets.only(bottom: 8),
+                              children: [
+                                ListTile(
+                                  leading: const Icon(Icons.edit),
+                                  title: const Text('Edit widgets'),
+                                  onTap: () {
+                                    Navigator.of(sheetContext).pop();
+                                    Future.microtask(() {
+                                      if (!mounted) return;
+                                      _enterEditWidgets();
+                                    });
+                                  },
                                 ),
-                                leading: const Icon(Icons.restore),
-                                title: const Text('Reset Dashboard Defaults'),
-                                onTap: () {
-                                  Navigator.of(sheetContext).pop();
-                                  Future.microtask(_resetDashboardDefaults);
-                                },
-                              ),
-                              ListTile(
-                                leading: const Icon(Icons.restart_alt),
-                                title: const Text('Reset and restart'),
-                                onTap: () {
-                                  Navigator.of(sheetContext).pop();
-                                  _resetAndRestart();
-                                },
-                              ),
-                              const SizedBox(height: 8),
-                            ],
-                          ),
-                        );
-                      },
-                    );
-                  },
+                                ListTile(
+                                  leading: const Icon(Icons.switch_account),
+                                  title: const Text('Switch profile'),
+                                  onTap: () {
+                                    Navigator.of(sheetContext).pop();
+                                    _comingSoon(context, 'Switch profile');
+                                  },
+                                ),
+                                ListTile(
+                                  leading: const Icon(Icons.person_add_alt_1),
+                                  title: const Text('Add profile'),
+                                  onTap: () {
+                                    Navigator.of(sheetContext).pop();
+                                    _comingSoon(context, 'Add profile');
+                                  },
+                                ),
+                                ListTile(
+                                  leading: const Icon(Icons.settings),
+                                  title: const Text('Settings'),
+                                  onTap: () {
+                                    Navigator.of(sheetContext).pop();
+                                    _comingSoon(context, 'Settings');
+                                  },
+                                ),
+                                ListTile(
+                                  key: const ValueKey(
+                                    'dashboard_menu_reset_defaults',
+                                  ),
+                                  leading: const Icon(Icons.restore),
+                                  title: const Text('Reset Dashboard Defaults'),
+                                  onTap: () {
+                                    Navigator.of(sheetContext).pop();
+                                    Future.microtask(_resetDashboardDefaults);
+                                  },
+                                ),
+                                ListTile(
+                                  key: const ValueKey(
+                                    'dashboard_menu_developer_tools',
+                                  ),
+                                  leading: const Icon(Icons.developer_mode),
+                                  title: const Text('Developer Tools'),
+                                  onTap: () {
+                                    Navigator.of(sheetContext).pop();
+                                    Future.microtask(_openDeveloperToolsSheet);
+                                  },
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      );
+                    },
+                  ),
                 ),
             ],
           ),
@@ -386,30 +829,46 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 }
 
-class _ToolsButton extends StatelessWidget {
+class _HeaderIconButton extends StatelessWidget {
+  final String tooltip;
+  final IconData icon;
   final VoidCallback onTap;
 
-  const _ToolsButton({super.key, required this.onTap});
+  const _HeaderIconButton({
+    super.key,
+    required this.tooltip,
+    required this.icon,
+    required this.onTap,
+  });
+
+  // AppBar's toolbar height is typically 56. Using the same square size here
+  // ensures the leading and actions slots resolve to identical tap targets and
+  // avoids constraint-driven size drift between the left and right buttons.
+  static const double _size = 56;
+  static const double _radius = 28;
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
 
-    return InkWell(
-      borderRadius: BorderRadius.circular(20),
-      onTap: onTap,
-      child: Container(
-        width: 40,
-        height: 40,
-        decoration: BoxDecoration(
-          color: cs.surfaceContainerHighest.withAlpha(89),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: cs.outlineVariant.withAlpha(179), width: 1),
-        ),
-        alignment: Alignment.center,
-        child: Icon(
-          Icons.grid_view_rounded,
-          color: cs.onSurface.withAlpha(210),
+    return Tooltip(
+      message: tooltip,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(_radius),
+        onTap: onTap,
+        child: Container(
+          width: _size,
+          height: _size,
+          decoration: BoxDecoration(
+            color: cs.surfaceContainerHighest.withAlpha(89),
+            borderRadius: BorderRadius.circular(_radius),
+            border: Border.all(
+              color: cs.outlineVariant.withAlpha(179),
+              width: 1,
+            ),
+          ),
+          alignment: Alignment.center,
+          child: Icon(icon, color: cs.onSurface.withAlpha(210)),
         ),
       ),
     );

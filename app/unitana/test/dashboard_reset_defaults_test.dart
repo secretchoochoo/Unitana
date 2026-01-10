@@ -88,7 +88,7 @@ void main() {
       expect(find.text('Distance'), findsAtLeastNWidgets(1));
 
       // Open the dashboard menu.
-      await tester.tap(find.byIcon(Icons.more_horiz));
+      await tester.tap(find.byKey(const Key('dashboard_menu_button')));
       await tester.pumpAndSettle(const Duration(milliseconds: 200));
 
       // Trigger reset.

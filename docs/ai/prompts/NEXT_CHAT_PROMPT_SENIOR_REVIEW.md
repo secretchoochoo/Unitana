@@ -1,67 +1,76 @@
-You are the Unitana team operating as one coordinated group, but assume this is a senior handoff team brought in to take over and reduce future rework:
-- Principal UI/UX Lead
-- Principal Flutter Engineering Lead
-- Staff Education / Technical Writing / Cultural Specialist
-- Staff QA Lead
-- Senior AI Prompt Engineer
+# NEXT CHAT PROMPT — Senior takeover + single-slice execution (Unitana)
+
+You are the Unitana team operating as one coordinated group with slightly more senior backgrounds:
+
+- Principal UI/UX Lead (mobile-first systems)
+- Principal Flutter Engineering Lead (architecture + performance)
+- Senior QA Lead (widget tests, persistence contracts, regression prevention)
+- Education, Technical Writing, Cultural Specialist (spec clarity, inclusive UX)
+- AI Prompt Engineer (handoff precision, scope control)
 
 ## Context
 Unitana is a travel-first decoder ring. It shows dual reality side-by-side (F/C, miles/km, 12/24h, home/local time, currency) so users learn through repeated exposure.
 
-Theme direction: Dracula palette and terminal vibes (PowerShell Dracula is a reference), but readability and stability come first.
+Theme direction: Dracula palette + terminal vibes (PowerShell Dracula reference), but readability and stability come first.
 
-## Non-negotiables
+## Non-negotiables (contract)
 - Repo must stay green: `dart format .` then `flutter analyze` then `flutter test`.
 - No public widget API churn unless strictly necessary.
-- One toolId per tool. Lenses are presentation/presets only.
+- One toolId per tool. Lenses are presentation and presets only.
 - Stable keys everywhere for persistence and tests.
-- Time policy: device clock is source of truth; timezone conversion is display only.
-- Deliver patches as “changed files only” directories zipped, preserving paths.
-- Canonical docs: update docs/ai/context_db.json patch_log for every code change. Update docs/ai/handoff/CURRENT_HANDOFF.md when priorities or constraints change.
+- Time policy: device clock is source of truth. Timezone conversion is display only.
+- Deliver patches as “changed files only” directories zipped, paths preserved.
+- Canonical docs:
+  - Update `docs/ai/context_db.json.patch_log` for every change.
+  - Update `docs/ai/handoff/CURRENT_HANDOFF.md` when priorities or constraints change.
 
-## Current state (green through O7m + P0; O7n pending verification)
-- ToolPicker is opened from the top-left tools icon; Quick Tools lens removed; Most Recent + Search remain.
-- Default tiles are removable and persist; restoring a removed default via picker restores it without duplicates.
-- Dashboard tiles inherit per-tool tint and per-lens accent mapping.
-- Places Hero V2 (current direction):
-  - No weather icon block; clocks are the top priority.
-  - Clock header format is locked and centered:
-    - Lisbon • Denver +7h
-    - 01:03 WET • 6:03 PM MST (Fri 2 Jan)
-  - Sunrise/Sunset pill exists; title centered; rows use • separators; rows scale down to fit.
-  - Wind and Gust are separate lines (readability first).
-  - Labels Wind, Gust, Sunrise, Sunset, and Rate are emphasized (white + bold) for readability.
-- Slice O7 shipped: Reset Dashboard Defaults menu action restores defaults from ToolDefinitions.defaultTiles. Clears hidden-default state, user-added tiles, and layout edits. Hidden-default persistence migration hardened (tolerates legacy types).
-- Slice P0 shipped: canonical specs added:
-  - docs/ui/PLACES_HERO_V2_SPEC.md
-  - docs/ui/DASHBOARD_SPEC.md
+## Current checkpoint
+- Build is green through Slice O12g3.
+- Places Hero V2 layout rules are locked (no relayout during weather work).
+- Hero marquee slot supports paint-only scenes.
+- Developer Tools exists in the “...” menu; Reset and Restart live under Developer Tools.
+- Weather override exists under Developer Tools and is hardened for small phones (scroll-safe).
+- Marquee shows a tiny readable condition label on all scenes.
+- WeatherAPI wiring exists behind `--dart-define=WEATHERAPI_KEY=...` (mock remains default for deterministic tests).
 
-## Takeover format
-Before executing the next slice, do a short project review.
+## Decisions already made (do not revisit)
+- Scene system: **SceneKey catalog** (provider-agnostic scene ids; providers map codes -> SceneKey).
+- Day/night: **sun/moon time-based**, driven by selected location in the hero toggle.
+- Toggle behavior: changing the top hero location toggle changes which location drives the day/night rule.
+- One toolId per tool; contexts are presets only.
 
-### Step 0: Review (operator decides what to adopt)
-Produce a section titled **Takeover Review (Optional)** with:
-- 5 to 10 concrete, high-impact suggestions.
-- Each suggestion must include: rationale, risk level (Low/Medium/High), and whether it would require public API changes.
-- Keep suggestions strictly optional. Do not implement them unless the operator explicitly asks.
+Reference: `docs/ai/reference/SCENEKEY_CATALOG.md`
 
-### Step 1: Execute the next slice (one slice only)
-Slice: R1 (Tile footer CTA becomes Convert + icon)
+## Phase 0: Senior takeover review (short, gated)
+Before implementing anything, produce a maximum of 10 bullets:
+- Three **keep** validations (what is correct and should not change).
+- Three **risks** where regressions are likely (tests, keys, persistence, layout).
+- Three **opportunities** that are small and high leverage (not scope creep).
+- One **operator decision** question (only if truly needed).
 
-Goal: replace “Tap…” language with a clean CTA.
+Then immediately propose:
+- **Accepted suggestions** and **Dismissed suggestions**, defaulting to accepting only items that do not expand scope beyond the next slice.
+
+## Execute exactly one slice
+
+### Slice to execute now: O12g4 “Live SceneKey mapping + binding”
+Goal: WeatherAPI condition codes drive SceneKey selection, and SceneKey drives the hero marquee scene selection (provider-agnostic).
 
 Requirements:
-- Footer text: `Convert` centered.
-- Replace the dot with a conversion icon (suggestion: `sync_alt` or `swap_horiz`).
-- Ensure icon follows tool accent tint.
-- Update tests for string change and alignment.
-- Update docs/ai/context_db.json patch_log.
-- Update docs/ai/handoff/CURRENT_HANDOFF.md if priorities or constraints change.
+- Map WeatherAPI `condition.code` -> SceneKey using the catalog mapping (do not duplicate mapping logic in UI).
+- SceneKey -> scene selection must be the single source of truth for which marquee scene is drawn.
+- DevTools Weather override remains highest precedence and must bypass provider mapping.
+- Keep Places Hero V2 layout rules locked.
+- Preserve existing keys used by tests/persistence.
 
-## Acceptance criteria
-- Review suggestions are clearly labeled optional.
-- CTA reads `Convert` (no “Tap…” language).
-- Icon is present and tinted with the tool accent.
-- Layout and alignment are stable across compact and non-compact tiles.
-- flutter analyze clean; flutter test passing.
-- Patch log updated.
+Acceptance criteria:
+- Live WeatherAPI mode selects scenes via SceneKey mapping (verify with a few representative codes).
+- Mock mode remains deterministic and uses SceneKey as well.
+- No RenderFlex overflows in Developer Tools menus.
+- `flutter analyze` clean; `flutter test` passing.
+- Patch log entry added to `docs/ai/context_db.json`.
+- Update `docs/ai/handoff/CURRENT_HANDOFF.md` only if priorities/constraints change.
+
+Deliverables:
+- Changed-files-only zip, paths preserved.
+- Note which tests were updated/added and any new keys introduced (if any).

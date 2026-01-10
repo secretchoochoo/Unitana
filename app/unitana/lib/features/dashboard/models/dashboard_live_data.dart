@@ -4,22 +4,433 @@ import 'dart:math' as math;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/scheduler.dart';
 
+import '../../../data/city_repository.dart';
+import '../../../data/weather_api_client.dart';
+import '../../../data/open_meteo_client.dart';
 import '../../../models/place.dart';
 
-enum WeatherCondition { partlyCloudy }
+enum WeatherCondition {
+  clear,
+  partlyCloudy,
+  cloudy,
+  overcast,
+  drizzle,
+  rain,
+  thunderstorm,
+  snow,
+  sleet,
+  hail,
+  fog,
+  mist,
+  haze,
+  smoke,
+  dust,
+  sand,
+  ash,
+  squall,
+  tornado,
+  windy,
+}
+
+/// Provider-agnostic stable identifier for hero marquee scenes.
+///
+/// These keys are defined in docs/ai/reference/SCENEKEY_CATALOG.md and are
+/// intended to remain stable even as weather providers change.
+enum SceneKey {
+  clear,
+  partlyCloudy,
+  cloudy,
+  overcast,
+  mist,
+  fog,
+  drizzle,
+  freezingDrizzle,
+  rainLight,
+  rainModerate,
+  rainHeavy,
+  freezingRain,
+  sleet,
+  snowLight,
+  snowModerate,
+  snowHeavy,
+  blowingSnow,
+  blizzard,
+  icePellets,
+  thunderRain,
+  thunderSnow,
+  hazeDust,
+  smokeWildfire,
+  ashfall,
+  windy,
+  tornado,
+  squall,
+}
+
+/// Maps WeatherAPI `condition.code` values into Unitana's stable [SceneKey] catalog.
+///
+/// Derived from docs/ai/reference/SCENEKEY_CATALOG.md (WeatherAPI MVP section).
+/// Provider mapping lives here (model layer), not in the UI.
+class WeatherApiSceneKeyMapper {
+  const WeatherApiSceneKeyMapper._();
+
+  static SceneKey fromWeatherApi({required int code, required String text}) {
+    switch (code) {
+      case 1000:
+        return SceneKey.clear;
+      case 1003:
+        return SceneKey.partlyCloudy;
+      case 1006:
+        return SceneKey.cloudy;
+      case 1009:
+        return SceneKey.overcast;
+
+      case 1030:
+        return SceneKey.mist;
+      case 1135:
+      case 1147:
+        return SceneKey.fog;
+
+      case 1150:
+      case 1153:
+        return SceneKey.drizzle;
+      case 1168:
+      case 1171:
+        return SceneKey.freezingDrizzle;
+
+      case 1063:
+      case 1180:
+      case 1183:
+      case 1240:
+        return SceneKey.rainLight;
+      case 1186:
+      case 1189:
+      case 1243:
+        return SceneKey.rainModerate;
+      case 1192:
+      case 1195:
+      case 1246:
+        return SceneKey.rainHeavy;
+      case 1198:
+      case 1201:
+        return SceneKey.freezingRain;
+
+      case 1069:
+      case 1204:
+      case 1207:
+      case 1249:
+      case 1252:
+        return SceneKey.sleet;
+
+      case 1066:
+      case 1210:
+      case 1213:
+      case 1255:
+        return SceneKey.snowLight;
+      case 1216:
+      case 1219:
+      case 1258:
+        return SceneKey.snowModerate;
+      case 1222:
+      case 1225:
+        return SceneKey.snowHeavy;
+
+      case 1114:
+        return SceneKey.blowingSnow;
+      case 1117:
+        return SceneKey.blizzard;
+
+      case 1237:
+      case 1261:
+      case 1264:
+        return SceneKey.icePellets;
+
+      case 1087:
+      case 1273:
+      case 1276:
+        return SceneKey.thunderRain;
+      case 1279:
+      case 1282:
+        return SceneKey.thunderSnow;
+    }
+
+    // Fallback heuristics (text is provider-managed, but useful for "unknown code").
+    final t = text.toLowerCase();
+    if (t.contains('thunder')) {
+      return SceneKey.thunderRain;
+    }
+    if (t.contains('blizzard')) {
+      return SceneKey.blizzard;
+    }
+    if (t.contains('blowing snow')) {
+      return SceneKey.blowingSnow;
+    }
+    if (t.contains('snow')) {
+      return SceneKey.snowModerate;
+    }
+    if (t.contains('sleet')) {
+      return SceneKey.sleet;
+    }
+    if (t.contains('freezing drizzle')) {
+      return SceneKey.freezingDrizzle;
+    }
+    if (t.contains('freezing rain')) {
+      return SceneKey.freezingRain;
+    }
+    if (t.contains('ice pellets') ||
+        t.contains('pellets') ||
+        t.contains('hail')) {
+      return SceneKey.icePellets;
+    }
+    if (t.contains('drizzle')) {
+      return SceneKey.drizzle;
+    }
+    if (t.contains('heavy rain')) {
+      return SceneKey.rainHeavy;
+    }
+    if (t.contains('rain') || t.contains('shower')) {
+      return SceneKey.rainModerate;
+    }
+    if (t.contains('fog')) {
+      return SceneKey.fog;
+    }
+    if (t.contains('mist')) {
+      return SceneKey.mist;
+    }
+    if (t.contains('overcast')) {
+      return SceneKey.overcast;
+    }
+    if (t.contains('cloud')) {
+      return SceneKey.cloudy;
+    }
+    if (t.contains('sunny') || t.contains('clear')) {
+      return SceneKey.clear;
+    }
+
+    return SceneKey.partlyCloudy;
+  }
+}
+
+/// Maps coarse internal dev override selections into a stable [SceneKey].
+
+sealed class WeatherDebugOverride {
+  const WeatherDebugOverride();
+}
+
+class WeatherDebugOverrideCoarse extends WeatherDebugOverride {
+  const WeatherDebugOverrideCoarse(this.condition, {this.isNightOverride});
+
+  final WeatherCondition condition;
+
+  /// When null, hero uses sunrise/sunset (or time heuristic) to decide night.
+  /// When set, this forces the hero into day (false) or night (true) visuals.
+  final bool? isNightOverride;
+}
+
+class WeatherDebugOverrideWeatherApi extends WeatherDebugOverride {
+  const WeatherDebugOverrideWeatherApi({
+    required this.code,
+    required this.isNight,
+    required this.text,
+  });
+
+  final int code;
+  final bool isNight;
+  final String text;
+}
+
+/// Maps Open-Meteo `weather_code` (WMO) values into Unitana's stable [SceneKey] catalog.
+///
+/// Open-Meteo uses WMO weather interpretation codes. We map them into the same
+/// scene taxonomy used for WeatherAPI so the UI remains provider-agnostic.
+class OpenMeteoSceneKeyMapper {
+  const OpenMeteoSceneKeyMapper._();
+
+  static SceneKey fromWmoCode(int code) {
+    switch (code) {
+      case 0:
+        return SceneKey.clear;
+      case 1:
+      case 2:
+        return SceneKey.partlyCloudy;
+      case 3:
+        return SceneKey.overcast;
+
+      case 45:
+      case 48:
+        return SceneKey.fog;
+
+      case 51:
+      case 53:
+      case 55:
+        return SceneKey.drizzle;
+      case 56:
+      case 57:
+        return SceneKey.freezingDrizzle;
+
+      case 61:
+        return SceneKey.rainLight;
+      case 63:
+        return SceneKey.rainModerate;
+      case 65:
+        return SceneKey.rainHeavy;
+
+      case 66:
+      case 67:
+        return SceneKey.freezingRain;
+
+      case 71:
+      case 77:
+        return SceneKey.snowLight;
+      case 73:
+        return SceneKey.snowModerate;
+      case 75:
+        return SceneKey.snowHeavy;
+
+      case 80:
+        return SceneKey.rainLight;
+      case 81:
+        return SceneKey.rainModerate;
+      case 82:
+        return SceneKey.rainHeavy;
+
+      case 85:
+      case 86:
+        return SceneKey.snowModerate;
+
+      case 95:
+      case 96:
+      case 99:
+        return SceneKey.thunderRain;
+
+      default:
+        // Unknown or unsupported codes fall back to overcast.
+        return SceneKey.overcast;
+    }
+  }
+
+  static String labelFor(int code) {
+    switch (code) {
+      case 0:
+        return 'Clear';
+      case 1:
+        return 'Mainly clear';
+      case 2:
+        return 'Partly cloudy';
+      case 3:
+        return 'Overcast';
+      case 45:
+      case 48:
+        return 'Fog';
+      case 51:
+      case 53:
+      case 55:
+        return 'Drizzle';
+      case 56:
+      case 57:
+        return 'Freezing drizzle';
+      case 61:
+        return 'Light rain';
+      case 63:
+        return 'Rain';
+      case 65:
+        return 'Heavy rain';
+      case 66:
+      case 67:
+        return 'Freezing rain';
+      case 71:
+        return 'Light snow';
+      case 73:
+        return 'Snow';
+      case 75:
+        return 'Heavy snow';
+      case 77:
+        return 'Snow grains';
+      case 80:
+      case 81:
+      case 82:
+        return 'Rain showers';
+      case 85:
+      case 86:
+        return 'Snow showers';
+      case 95:
+      case 96:
+      case 99:
+        return 'Thunderstorm';
+      default:
+        return 'Weather';
+    }
+  }
+}
+
+class WeatherConditionSceneKeyMapper {
+  const WeatherConditionSceneKeyMapper._();
+
+  static SceneKey fromWeatherCondition(WeatherCondition c) {
+    switch (c) {
+      case WeatherCondition.clear:
+        return SceneKey.clear;
+      case WeatherCondition.partlyCloudy:
+        return SceneKey.partlyCloudy;
+      case WeatherCondition.cloudy:
+        return SceneKey.cloudy;
+      case WeatherCondition.overcast:
+        return SceneKey.overcast;
+      case WeatherCondition.mist:
+        return SceneKey.mist;
+      case WeatherCondition.fog:
+        return SceneKey.fog;
+      case WeatherCondition.drizzle:
+        return SceneKey.drizzle;
+      case WeatherCondition.rain:
+        return SceneKey.rainModerate;
+      case WeatherCondition.thunderstorm:
+        return SceneKey.thunderRain;
+      case WeatherCondition.snow:
+        return SceneKey.snowModerate;
+      case WeatherCondition.sleet:
+        return SceneKey.sleet;
+      case WeatherCondition.hail:
+        return SceneKey.icePellets;
+      case WeatherCondition.haze:
+      case WeatherCondition.dust:
+      case WeatherCondition.sand:
+        return SceneKey.hazeDust;
+      case WeatherCondition.smoke:
+        return SceneKey.smokeWildfire;
+      case WeatherCondition.ash:
+        return SceneKey.ashfall;
+      case WeatherCondition.windy:
+        return SceneKey.windy;
+      case WeatherCondition.tornado:
+        return SceneKey.tornado;
+      case WeatherCondition.squall:
+        return SceneKey.squall;
+    }
+  }
+}
 
 @immutable
 class WeatherSnapshot {
   final double temperatureC;
   final double windKmh;
   final double gustKmh;
-  final WeatherCondition condition;
+  final SceneKey sceneKey;
+
+  /// Provider-supplied condition text (e.g., "Light rain").
+  ///
+  /// Used for explicit user-facing labels in the hero marquee.
+  final String conditionText;
+
+  /// Provider code when available (WeatherAPI condition.code). Optional.
+  final int? conditionCode;
 
   const WeatherSnapshot({
     required this.temperatureC,
     required this.windKmh,
     required this.gustKmh,
-    required this.condition,
+    required this.sceneKey,
+    required this.conditionText,
+    this.conditionCode,
   });
 }
 
@@ -38,6 +449,10 @@ class SunTimesSnapshot {
 class DashboardLiveDataController extends ChangeNotifier {
   final Map<String, WeatherSnapshot> _weatherByPlaceId = {};
   final Map<String, SunTimesSnapshot> _sunByPlaceId = {};
+  WeatherDebugOverride? _debugWeatherOverride;
+  Duration? _debugClockOffset;
+
+  double? _debugEurToUsd;
 
   double _eurToUsd = 1.10;
   bool _isRefreshing = false;
@@ -46,24 +461,236 @@ class DashboardLiveDataController extends ChangeNotifier {
 
   Timer? _debounce;
 
+  final CityRepository _cityRepository;
+  final WeatherApiClient _weatherApi;
+  final OpenMeteoClient _openMeteo;
+
+  DashboardLiveDataController({
+    CityRepository? cityRepository,
+    WeatherApiClient? weatherApiClient,
+    OpenMeteoClient? openMeteoClient,
+  }) : _cityRepository = cityRepository ?? CityRepository.instance,
+       _weatherApi = weatherApiClient ?? WeatherApiClient.fromEnvironment(),
+       _openMeteo = openMeteoClient ?? OpenMeteoClient();
+
   bool get isRefreshing => _isRefreshing;
   Object? get lastError => _lastError;
   DateTime? get lastRefreshedAt => _lastRefreshedAt;
-  double get eurToUsd => _eurToUsd;
+  double get eurToUsd => _debugEurToUsd ?? _eurToUsd;
+
+  /// Effective UTC "now" used by the dashboard.
+  ///
+  /// Contract: the device clock remains the source of truth. The optional
+  /// debug offset is only applied when developer tools enable it.
+  DateTime get nowUtc {
+    final utc = DateTime.now().toUtc();
+    final offset = _debugClockOffset;
+    if (offset == null) return utc;
+    return utc.add(offset);
+  }
+
+  /// Weather backend selection.
+  ///
+  /// We keep network weather off by default so tests and demo builds stay hermetic.
+  /// Enable explicitly with:
+  /// - --dart-define=WEATHER_NETWORK_ENABLED=true
+  /// - --dart-define=WEATHER_PROVIDER=openmeteo|weatherapi
+  static const bool _weatherNetworkEnabled = bool.fromEnvironment(
+    'WEATHER_NETWORK_ENABLED',
+    defaultValue: false,
+  );
+  static const String _weatherProvider = String.fromEnvironment(
+    'WEATHER_PROVIDER',
+    defaultValue: 'mock',
+  );
+
+  bool get _useWeatherApi =>
+      _weatherNetworkEnabled &&
+      _weatherProvider.toLowerCase() == 'weatherapi' &&
+      _weatherApi.isConfigured;
+
+  bool get _useOpenMeteo =>
+      _weatherNetworkEnabled && _weatherProvider.toLowerCase() == 'openmeteo';
+
+  /// Developer-only override for the EUR→USD rate used by the hero currency line.
+  ///
+  /// When null, the hero follows live/demo rates.
+  double? get debugEurToUsdOverride => _debugEurToUsd;
+
+  void setDebugEurToUsdOverride(double? value) {
+    final prev = _debugEurToUsd;
+    if (prev == null && value == null) return;
+    if (prev != null && value != null && (prev - value).abs() < 0.0001) return;
+
+    _debugEurToUsd = value;
+    notifyListeners();
+  }
+
+  /// Developer-only override for weather condition visuals.
+  ///
+  /// When set, the dashboard will continue to use live temperature/wind values,
+  /// but will display the selected condition for hero scenes and any condition-
+  /// driven UI.
+  WeatherDebugOverride? get debugWeatherOverride => _debugWeatherOverride;
+
+  /// Developer-only clock override.
+  ///
+  /// Contract: the device clock remains the source of truth.
+  ///
+  /// When non-null, dashboard time-of-day logic uses `DateTime.now().toUtc()`
+  /// plus this offset. This is intentionally a lightweight offset for simulator
+  /// testing and screenshots. It is not NTP, not a backend sync, and not a
+  /// timezone reconfiguration.
+  Duration? get debugClockOffset => _debugClockOffset;
+
+  void setDebugClockOffset(Duration? value) {
+    final prev = _debugClockOffset;
+    if (prev == null && value == null) return;
+    if (prev != null && value != null && prev == value) return;
+    _debugClockOffset = value;
+    notifyListeners();
+  }
+
+  /// Set/clear the weather override used for hero scene debugging.
+  void setDebugWeatherOverride(WeatherDebugOverride? value) {
+    final next = value;
+
+    final prev = _debugWeatherOverride;
+    if (prev == null && next == null) return;
+    if (prev is WeatherDebugOverrideCoarse &&
+        next is WeatherDebugOverrideCoarse &&
+        prev.condition == next.condition &&
+        prev.isNightOverride == next.isNightOverride) {
+      return;
+    }
+
+    _debugWeatherOverride = next;
+    notifyListeners();
+  }
+
+  /// Set the WeatherAPI debug override.
+  ///
+  /// This bypasses provider mapping and is highest precedence for scene choice.
+  void setDebugWeatherApiOverride({
+    required int code,
+    required bool isNight,
+    required String text,
+  }) {
+    final next = WeatherDebugOverrideWeatherApi(
+      code: code,
+      isNight: isNight,
+      text: text,
+    );
+
+    final prev = _debugWeatherOverride;
+    if (prev is WeatherDebugOverrideWeatherApi &&
+        prev.code == code &&
+        prev.isNight == isNight &&
+        prev.text == text) {
+      return;
+    }
+
+    _debugWeatherOverride = next;
+    notifyListeners();
+  }
 
   WeatherSnapshot? weatherFor(Place? place) {
-    if (place == null) return null;
-    return _weatherByPlaceId[place.id];
+    if (place == null) {
+      return null;
+    }
+
+    final snap = _weatherByPlaceId[place.id];
+    if (snap == null) {
+      return null;
+    }
+
+    final override = _debugWeatherOverride;
+    if (override == null) {
+      return snap;
+    }
+
+    if (override is WeatherDebugOverrideCoarse) {
+      return WeatherSnapshot(
+        temperatureC: snap.temperatureC,
+        windKmh: snap.windKmh,
+        gustKmh: snap.gustKmh,
+        sceneKey: WeatherConditionSceneKeyMapper.fromWeatherCondition(
+          override.condition,
+        ),
+        conditionText: _coarseLabelFor(override.condition),
+        conditionCode: snap.conditionCode,
+      );
+    }
+
+    final api = override as WeatherDebugOverrideWeatherApi;
+    return WeatherSnapshot(
+      temperatureC: snap.temperatureC,
+      windKmh: snap.windKmh,
+      gustKmh: snap.gustKmh,
+      sceneKey: WeatherApiSceneKeyMapper.fromWeatherApi(
+        code: api.code,
+        text: api.text,
+      ),
+      conditionText: api.text,
+      conditionCode: api.code,
+    );
+  }
+
+  static String _coarseLabelFor(WeatherCondition c) {
+    switch (c) {
+      case WeatherCondition.clear:
+        return 'Clear';
+      case WeatherCondition.partlyCloudy:
+        return 'Partly cloudy';
+      case WeatherCondition.cloudy:
+        return 'Cloudy';
+      case WeatherCondition.overcast:
+        return 'Overcast';
+      case WeatherCondition.drizzle:
+        return 'Drizzle';
+      case WeatherCondition.rain:
+        return 'Rain';
+      case WeatherCondition.thunderstorm:
+        return 'Thunderstorm';
+      case WeatherCondition.snow:
+        return 'Snow';
+      case WeatherCondition.sleet:
+        return 'Sleet';
+      case WeatherCondition.hail:
+        return 'Hail';
+      case WeatherCondition.fog:
+        return 'Fog';
+      case WeatherCondition.mist:
+        return 'Mist';
+      case WeatherCondition.haze:
+        return 'Haze';
+      case WeatherCondition.smoke:
+        return 'Smoke';
+      case WeatherCondition.dust:
+        return 'Dust';
+      case WeatherCondition.sand:
+        return 'Sand';
+      case WeatherCondition.ash:
+        return 'Ash';
+      case WeatherCondition.squall:
+        return 'Squall';
+      case WeatherCondition.tornado:
+        return 'Tornado';
+      case WeatherCondition.windy:
+        return 'Windy';
+    }
   }
 
   SunTimesSnapshot? sunFor(Place? place) {
-    if (place == null) return null;
+    if (place == null) {
+      return null;
+    }
     return _sunByPlaceId[place.id];
   }
 
   void ensureSeeded(List<Place> places) {
     var changed = false;
-    final nowUtc = DateTime.now().toUtc();
+    final nowUtc = this.nowUtc;
 
     for (final p in places) {
       if (!_weatherByPlaceId.containsKey(p.id)) {
@@ -97,10 +724,127 @@ class DashboardLiveDataController extends ChangeNotifier {
 
         // Simulate a short network latency.
         await Future<void>.delayed(const Duration(milliseconds: 350));
+        if (_useWeatherApi || _useOpenMeteo) {
+          // Load city metadata (lat/lon) once for best-effort query precision.
+          await _cityRepository.load();
 
-        for (final p in places) {
-          _weatherByPlaceId[p.id] = _refreshWeather(p);
-          // Sun times stay stable in this mock layer.
+          for (final p in places) {
+            try {
+              final city = _cityRepository.byPlace(
+                p.cityName,
+                countryCode: p.countryCode,
+              );
+
+              final lat = city?.lat;
+              final lon = city?.lon;
+              final query = (lat != null && lon != null)
+                  ? '$lat,$lon'
+                  : '${p.cityName},${p.countryCode}';
+
+              final override = _debugWeatherOverride;
+
+              if (_useWeatherApi) {
+                final api = await _weatherApi.fetchTodayForecast(query: query);
+
+                final SceneKey sceneKey;
+                final String conditionText;
+                final int conditionCode;
+
+                if (override == null) {
+                  sceneKey = WeatherApiSceneKeyMapper.fromWeatherApi(
+                    code: api.conditionCode,
+                    text: api.conditionText,
+                  );
+                  conditionText = api.conditionText;
+                  conditionCode = api.conditionCode;
+                } else if (override is WeatherDebugOverrideCoarse) {
+                  sceneKey =
+                      WeatherConditionSceneKeyMapper.fromWeatherCondition(
+                        override.condition,
+                      );
+                  conditionText = _coarseLabelFor(override.condition);
+                  conditionCode = api.conditionCode;
+                } else {
+                  final w = override as WeatherDebugOverrideWeatherApi;
+                  sceneKey = WeatherApiSceneKeyMapper.fromWeatherApi(
+                    code: w.code,
+                    text: w.text,
+                  );
+                  conditionText = w.text;
+                  conditionCode = w.code;
+                }
+
+                _weatherByPlaceId[p.id] = WeatherSnapshot(
+                  temperatureC: api.temperatureC,
+                  windKmh: api.windKmh,
+                  gustKmh: api.gustKmh,
+                  sceneKey: sceneKey,
+                  conditionText: conditionText,
+                  conditionCode: conditionCode,
+                );
+
+                _sunByPlaceId[p.id] = SunTimesSnapshot(
+                  sunriseUtc: api.sunriseUtc,
+                  sunsetUtc: api.sunsetUtc,
+                );
+              } else {
+                if (lat == null || lon == null) {
+                  // Without coordinates, Open-Meteo cannot be queried. Keep previous value.
+                  continue;
+                }
+
+                final om = await _openMeteo.fetchTodayForecast(
+                  latitude: lat,
+                  longitude: lon,
+                );
+
+                final effectiveOverride = override is WeatherDebugOverrideCoarse
+                    ? override
+                    : null;
+
+                final SceneKey sceneKey;
+                final String conditionText;
+                final int conditionCode = om.weatherCode;
+
+                if (effectiveOverride == null) {
+                  sceneKey = OpenMeteoSceneKeyMapper.fromWmoCode(
+                    om.weatherCode,
+                  );
+                  conditionText = OpenMeteoSceneKeyMapper.labelFor(
+                    om.weatherCode,
+                  );
+                } else {
+                  sceneKey =
+                      WeatherConditionSceneKeyMapper.fromWeatherCondition(
+                        effectiveOverride.condition,
+                      );
+                  conditionText = _coarseLabelFor(effectiveOverride.condition);
+                }
+
+                _weatherByPlaceId[p.id] = WeatherSnapshot(
+                  temperatureC: om.temperatureC,
+                  windKmh: om.windKmh,
+                  gustKmh: om.gustKmh,
+                  sceneKey: sceneKey,
+                  conditionText: conditionText,
+                  conditionCode: conditionCode,
+                );
+
+                _sunByPlaceId[p.id] = SunTimesSnapshot(
+                  sunriseUtc: om.sunriseUtc,
+                  sunsetUtc: om.sunsetUtc,
+                );
+              }
+            } catch (_) {
+              // Keep the last stable value for this place; refresh continues.
+            }
+          }
+        } else {
+          // Mock mode (no API key): deterministic drift for demo + tests.
+          for (final p in places) {
+            _weatherByPlaceId[p.id] = _refreshWeather(p);
+            // Sun times stay stable in this mock layer.
+          }
         }
 
         _lastRefreshedAt = DateTime.now();
@@ -129,7 +873,8 @@ class DashboardLiveDataController extends ChangeNotifier {
         temperatureC: 20.0,
         windKmh: 7.0,
         gustKmh: 11.0,
-        condition: WeatherCondition.partlyCloudy,
+        sceneKey: SceneKey.partlyCloudy,
+        conditionText: 'Partly cloudy',
       );
     }
     if (p.cityName.toLowerCase() == 'denver') {
@@ -137,7 +882,8 @@ class DashboardLiveDataController extends ChangeNotifier {
         temperatureC: 20.0,
         windKmh: 9.0,
         gustKmh: 14.0,
-        condition: WeatherCondition.partlyCloudy,
+        sceneKey: SceneKey.partlyCloudy,
+        conditionText: 'Partly cloudy',
       );
     }
 
@@ -149,7 +895,8 @@ class DashboardLiveDataController extends ChangeNotifier {
       temperatureC: temp,
       windKmh: wind,
       gustKmh: wind + 4.0,
-      condition: WeatherCondition.partlyCloudy,
+      sceneKey: SceneKey.partlyCloudy,
+      conditionText: 'Partly cloudy',
     );
   }
 
@@ -183,7 +930,9 @@ class DashboardLiveDataController extends ChangeNotifier {
       temperatureC: (current.temperatureC + drift).clamp(-30.0, 45.0),
       windKmh: current.windKmh,
       gustKmh: current.gustKmh,
-      condition: current.condition,
+      sceneKey: current.sceneKey,
+      conditionText: current.conditionText,
+      conditionCode: current.conditionCode,
     );
   }
 }

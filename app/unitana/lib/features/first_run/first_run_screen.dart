@@ -74,39 +74,37 @@ class _FirstRunScreenState extends State<FirstRunScreen> {
   TextStyle _scriptHeaderStyle(BuildContext context) {
     final tt = Theme.of(context).textTheme;
     final cs = Theme.of(context).colorScheme;
-    return GoogleFonts.shadowsIntoLight(
+    return GoogleFonts.robotoSlab(
       textStyle: tt.headlineMedium,
+      fontWeight: FontWeight.w800,
     ).copyWith(fontSize: 34, height: 1.0, color: cs.onSurface);
   }
 
   TextStyle _scriptSectionStyle(BuildContext context) {
     final tt = Theme.of(context).textTheme;
     final cs = Theme.of(context).colorScheme;
-    return GoogleFonts.shadowsIntoLight(
+    return GoogleFonts.robotoSlab(
       textStyle: tt.titleLarge,
+      fontWeight: FontWeight.w800,
     ).copyWith(fontSize: 30, height: 1.0, color: cs.onSurface);
   }
 
   TextStyle _scriptCardTitleStyle(BuildContext context) {
     final tt = Theme.of(context).textTheme;
     final cs = Theme.of(context).colorScheme;
-    return GoogleFonts.shadowsIntoLight(textStyle: tt.titleLarge).copyWith(
-      fontSize: 36,
-      height: 1.0,
-      fontWeight: FontWeight.w700,
-      color: cs.onSurface,
-    );
+    return GoogleFonts.robotoSlab(
+      textStyle: tt.titleLarge,
+      fontWeight: FontWeight.w800,
+    ).copyWith(fontSize: 32, height: 1.0, color: cs.onSurface);
   }
 
   TextStyle _scriptProfileNameStyle(BuildContext context) {
     final tt = Theme.of(context).textTheme;
     final cs = Theme.of(context).colorScheme;
-    return GoogleFonts.shadowsIntoLight(textStyle: tt.titleLarge).copyWith(
-      fontSize: 34,
-      height: 1.0,
-      fontWeight: FontWeight.w700,
-      color: cs.onSurface,
-    );
+    return GoogleFonts.robotoSlab(
+      textStyle: tt.titleLarge,
+      fontWeight: FontWeight.w800,
+    ).copyWith(fontSize: 34, height: 1.0, color: cs.onSurface);
   }
 
   ButtonStyle _segmentedStyle(BuildContext context) {
