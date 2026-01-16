@@ -30,6 +30,32 @@ class TimezoneUtils {
     return ZoneTime(local: local, offsetHours: zone.$1, abbreviation: zone.$2);
   }
 
+  /// Convert a wall-clock local time in the given timezone into UTC.
+  ///
+  /// This is a lightweight helper for demo data and avoids introducing a
+  /// full timezone database. It converges in a couple of iterations for
+  /// whole-hour offsets and DST boundaries.
+  static DateTime localToUtc(String tzId, DateTime local) {
+    var guessUtc = DateTime.utc(
+      local.year,
+      local.month,
+      local.day,
+      local.hour,
+      local.minute,
+      local.second,
+      local.millisecond,
+      local.microsecond,
+    );
+
+    for (var i = 0; i < 2; i++) {
+      final zt = nowInZone(tzId, nowUtc: guessUtc);
+      final error = zt.local.difference(local);
+      if (error.inMinutes == 0) break;
+      guessUtc = guessUtc.subtract(error);
+    }
+    return guessUtc;
+  }
+
   static String formatClock(ZoneTime zt, {required bool use24h}) {
     final dt = zt.local;
     final hh = dt.hour;

@@ -15,6 +15,14 @@ import 'tool_definitions.dart';
 class DashboardLayoutController extends ChangeNotifier {
   static const String _prefsKey = 'dashboard_layout_v1';
 
+  // Persisted anchor overrides for default tool tiles.
+  //
+  // Default tiles are normally ordered by ToolDefinitions.defaultTiles. When a
+  // user drags a default tile in edit mode, we store a slot anchor index so the
+  // new position remains stable across launches.
+  static const String _prefsDefaultToolAnchorsKey =
+      'dashboard_default_tool_anchors_v1';
+
   // Tracks which default tiles (ToolDefinitions.defaultTiles) the user has
   // removed from the dashboard.
   //
@@ -36,6 +44,9 @@ class DashboardLayoutController extends ChangeNotifier {
   final List<DashboardBoardItem> _items = <DashboardBoardItem>[];
   final List<DashboardBoardItem> _draftBaseline = <DashboardBoardItem>[];
 
+  final Map<String, int> _defaultToolAnchors = <String, int>{};
+  final Map<String, int> _draftDefaultToolAnchorsBaseline = <String, int>{};
+
   final Set<String> _hiddenDefaultToolIds = <String>{};
   final Set<String> _draftHiddenDefaultBaseline = <String>{};
   bool _isEditing = false;
@@ -55,6 +66,47 @@ class DashboardLayoutController extends ChangeNotifier {
   bool isDefaultToolHidden(String toolId) =>
       _hiddenDefaultToolIds.contains(toolId);
 
+  int? defaultToolAnchorIndex(String toolId) => _defaultToolAnchors[toolId];
+
+  Future<void> setDefaultToolAnchorIndex(String toolId, int? index) async {
+    final trimmed = toolId.trim();
+    if (trimmed.isEmpty) return;
+    if (index == null) {
+      if (_defaultToolAnchors.remove(trimmed) == null) return;
+      notifyListeners();
+      if (!_isEditing) await _persist();
+      return;
+    }
+    if (_defaultToolAnchors[trimmed] == index) return;
+    _defaultToolAnchors[trimmed] = index;
+    notifyListeners();
+    if (!_isEditing) await _persist();
+  }
+
+  Future<void> setUserItemAnchorIndex(String itemId, int? index) async {
+    final idx = _items.indexWhere((i) => i.id == itemId);
+    if (idx < 0) return;
+    final existing = _items[idx];
+    final nextAnchor = index == null ? null : DashboardAnchor(index: index);
+    if (existing.anchor?.index == nextAnchor?.index) return;
+    _items[idx] = DashboardBoardItem(
+      id: existing.id,
+      kind: existing.kind,
+      span: existing.span,
+      toolId: existing.toolId,
+      anchor: nextAnchor,
+      userAdded: existing.userAdded,
+    );
+    notifyListeners();
+    if (!_isEditing) await _persist();
+  }
+
+  int? userItemAnchorIndex(String itemId) {
+    final idx = _items.indexWhere((i) => i.id == itemId);
+    if (idx < 0) return null;
+    return _items[idx].anchor?.index;
+  }
+
   /// Starts an edit session.
   ///
   /// During an edit session, tile mutations do not persist until [commitEdit]
@@ -64,6 +116,9 @@ class DashboardLayoutController extends ChangeNotifier {
     _draftBaseline
       ..clear()
       ..addAll(_items);
+    _draftDefaultToolAnchorsBaseline
+      ..clear()
+      ..addAll(_defaultToolAnchors);
     _draftHiddenDefaultBaseline
       ..clear()
       ..addAll(_hiddenDefaultToolIds);
@@ -78,6 +133,11 @@ class DashboardLayoutController extends ChangeNotifier {
       ..addAll(_draftBaseline);
     _draftBaseline.clear();
 
+    _defaultToolAnchors
+      ..clear()
+      ..addAll(_draftDefaultToolAnchorsBaseline);
+    _draftDefaultToolAnchorsBaseline.clear();
+
     _hiddenDefaultToolIds
       ..clear()
       ..addAll(_draftHiddenDefaultBaseline);
@@ -90,6 +150,7 @@ class DashboardLayoutController extends ChangeNotifier {
   Future<void> commitEdit() async {
     if (!_isEditing) return;
     _draftBaseline.clear();
+    _draftDefaultToolAnchorsBaseline.clear();
     _draftHiddenDefaultBaseline.clear();
     _isEditing = false;
     notifyListeners();
@@ -103,6 +164,8 @@ class DashboardLayoutController extends ChangeNotifier {
     // If the controller was cleared while we were awaiting prefs, abort.
     if (epochAtStart != _epoch) return;
     final raw = prefs.getString(_prefsKey);
+
+    final defaultAnchorsRaw = prefs.getString(_prefsDefaultToolAnchorsKey);
 
     // Hidden defaults: canonical is a JSON string list, but older builds may have stored a StringList.
     final hiddenValue =
@@ -123,6 +186,8 @@ class DashboardLayoutController extends ChangeNotifier {
 
     _items.clear();
     _draftBaseline.clear();
+    _defaultToolAnchors.clear();
+    _draftDefaultToolAnchorsBaseline.clear();
     _hiddenDefaultToolIds.clear();
     _draftHiddenDefaultBaseline.clear();
     _isEditing = false;
@@ -164,6 +229,24 @@ class DashboardLayoutController extends ChangeNotifier {
 
     _hiddenDefaultToolIds.addAll(hiddenSet);
 
+    if (defaultAnchorsRaw != null && defaultAnchorsRaw.trim().isNotEmpty) {
+      try {
+        final decoded = jsonDecode(defaultAnchorsRaw);
+        if (decoded is Map) {
+          for (final entry in decoded.entries) {
+            final key = entry.key;
+            final val = entry.value;
+            if (key is String && val is int) {
+              final trimmed = key.trim();
+              if (trimmed.isNotEmpty) _defaultToolAnchors[trimmed] = val;
+            }
+          }
+        }
+      } catch (_) {
+        // Ignore corrupt prefs.
+      }
+    }
+
     // Migrate legacy StringList to the canonical JSON string format.
     if (hiddenList != null) {
       await _storeHiddenDefaults(prefs, _hiddenDefaultToolIds);
@@ -199,6 +282,9 @@ class DashboardLayoutController extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_prefsKey);
 
+    // Clear default tool anchors.
+    await prefs.remove(_prefsDefaultToolAnchorsKey);
+
     // Clear hidden-default state across all known keys (canonical + legacy).
     await prefs.remove(_prefsHiddenDefaultsKey);
     await prefs.remove(_prefsHiddenDefaultsLegacyKey);
@@ -210,6 +296,8 @@ class DashboardLayoutController extends ChangeNotifier {
 
     _items.clear();
     _draftBaseline.clear();
+    _defaultToolAnchors.clear();
+    _draftDefaultToolAnchorsBaseline.clear();
     _hiddenDefaultToolIds.clear();
     _draftHiddenDefaultBaseline.clear();
     _isEditing = false;
@@ -289,6 +377,14 @@ class DashboardLayoutController extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     final payload = jsonEncode(_items.map(_toJson).toList(growable: false));
     await prefs.setString(_prefsKey, payload);
+
+    // Persist default tool anchor overrides.
+    if (_defaultToolAnchors.isEmpty) {
+      await prefs.remove(_prefsDefaultToolAnchorsKey);
+    } else {
+      final anchorsPayload = jsonEncode(_defaultToolAnchors);
+      await prefs.setString(_prefsDefaultToolAnchorsKey, anchorsPayload);
+    }
 
     // Persist hidden-default state only when non-empty. If empty, remove the
     // keys so Reset Dashboard Defaults can truly clear the state.

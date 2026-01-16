@@ -4,10 +4,24 @@ import 'dart:math' as math;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/scheduler.dart';
 
+import 'package:shared_preferences/shared_preferences.dart';
+
 import '../../../data/city_repository.dart';
 import '../../../data/weather_api_client.dart';
 import '../../../data/open_meteo_client.dart';
 import '../../../models/place.dart';
+import '../../../utils/timezone_utils.dart';
+
+enum WeatherBackend {
+  /// No network; deterministic demo drift.
+  mock,
+
+  /// Live weather from Open-Meteo (no API key required).
+  openMeteo,
+
+  /// Live weather from WeatherAPI (requires WEATHERAPI_KEY).
+  weatherApi,
+}
 
 enum WeatherCondition {
   clear,
@@ -491,26 +505,133 @@ class DashboardLiveDataController extends ChangeNotifier {
 
   /// Weather backend selection.
   ///
-  /// We keep network weather off by default so tests and demo builds stay hermetic.
-  /// Enable explicitly with:
+  /// Contract: network weather is OFF by default so tests and demo builds stay hermetic.
+  ///
+  /// Historically this was compile-time only (dart-define). We still honor that as a
+  /// default, but Developer Tools can now toggle live weather at runtime (persisted).
+  ///
+  /// Compile-time defaults (optional):
   /// - --dart-define=WEATHER_NETWORK_ENABLED=true
   /// - --dart-define=WEATHER_PROVIDER=openmeteo|weatherapi
-  static const bool _weatherNetworkEnabled = bool.fromEnvironment(
+  ///
+  /// Compile-time hard-disable (optional):
+  /// - --dart-define=WEATHER_NETWORK_ALLOWED=false
+  static const bool _envWeatherNetworkEnabled = bool.fromEnvironment(
     'WEATHER_NETWORK_ENABLED',
     defaultValue: false,
   );
-  static const String _weatherProvider = String.fromEnvironment(
+  static const String _envWeatherProvider = String.fromEnvironment(
     'WEATHER_PROVIDER',
     defaultValue: 'mock',
   );
+  static const bool _weatherNetworkAllowed = bool.fromEnvironment(
+    'WEATHER_NETWORK_ALLOWED',
+    defaultValue: true,
+  );
+
+  static const String _kDevWeatherBackend = 'dev_weather_backend_v1';
+
+  static WeatherBackend _backendFromEnv() {
+    if (!_envWeatherNetworkEnabled) return WeatherBackend.mock;
+    switch (_envWeatherProvider.toLowerCase()) {
+      case 'openmeteo':
+        return WeatherBackend.openMeteo;
+      case 'weatherapi':
+        return WeatherBackend.weatherApi;
+      default:
+        return WeatherBackend.mock;
+    }
+  }
+
+  static String _backendKey(WeatherBackend b) {
+    switch (b) {
+      case WeatherBackend.openMeteo:
+        return 'openmeteo';
+      case WeatherBackend.weatherApi:
+        return 'weatherapi';
+      case WeatherBackend.mock:
+        return 'mock';
+    }
+  }
+
+  WeatherBackend _weatherBackend = _backendFromEnv();
+  bool _devSettingsLoaded = false;
+
+  WeatherBackend get weatherBackend => _weatherBackend;
+
+  /// Whether live network weather is enabled (and allowed) for this build.
+  bool get weatherNetworkEnabled =>
+      _weatherNetworkAllowed && _weatherBackend != WeatherBackend.mock;
+
+  bool get weatherNetworkAllowed => _weatherNetworkAllowed;
+
+  bool get canUseWeatherApi => _weatherApi.isConfigured;
 
   bool get _useWeatherApi =>
-      _weatherNetworkEnabled &&
-      _weatherProvider.toLowerCase() == 'weatherapi' &&
+      weatherNetworkEnabled &&
+      _weatherBackend == WeatherBackend.weatherApi &&
       _weatherApi.isConfigured;
 
   bool get _useOpenMeteo =>
-      _weatherNetworkEnabled && _weatherProvider.toLowerCase() == 'openmeteo';
+      weatherNetworkEnabled && _weatherBackend == WeatherBackend.openMeteo;
+
+  Future<void> loadDevSettings() async {
+    if (_devSettingsLoaded) return;
+    _devSettingsLoaded = true;
+
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(_kDevWeatherBackend);
+    if (raw == null || raw.trim().isEmpty) return;
+
+    final norm = raw.trim().toLowerCase();
+    final WeatherBackend next;
+    if (norm == 'openmeteo' ||
+        norm == 'open_meteo' ||
+        norm == 'open-meteo' ||
+        norm == 'openmeto') {
+      next = WeatherBackend.openMeteo;
+    } else if (norm == 'weatherapi' ||
+        norm == 'weather_api' ||
+        norm == 'weather-api') {
+      next = WeatherBackend.weatherApi;
+    } else {
+      next = WeatherBackend.mock;
+    }
+
+    // If the dev setting asks for WeatherAPI but the build isn't configured,
+    // silently fall back to Open-Meteo (or mock if network is disallowed).
+    if (next == WeatherBackend.weatherApi && !_weatherApi.isConfigured) {
+      _weatherBackend = WeatherBackend.openMeteo;
+    } else {
+      _weatherBackend = next;
+    }
+
+    notifyListeners();
+  }
+
+  Future<void> setWeatherBackend(WeatherBackend backend) async {
+    if (!_weatherNetworkAllowed && backend != WeatherBackend.mock) {
+      _lastError = StateError('Network weather is disallowed for this build');
+      notifyListeners();
+      return;
+    }
+
+    if (backend == WeatherBackend.weatherApi && !_weatherApi.isConfigured) {
+      _lastError = StateError(
+        'WeatherAPI is not configured (missing WEATHERAPI_KEY)',
+      );
+      notifyListeners();
+      return;
+    }
+
+    if (_weatherBackend == backend) return;
+    _weatherBackend = backend;
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_kDevWeatherBackend, _backendKey(backend));
+
+    notifyListeners();
+  }
 
   /// Developer-only override for the EUR→USD rate used by the hero currency line.
   ///
@@ -704,7 +825,12 @@ class DashboardLiveDataController extends ChangeNotifier {
     }
 
     if (changed) {
-      _lastRefreshedAt ??= DateTime.now();
+      // Important: seeding is demo-only. Do not claim "last refreshed" for
+      // network-backed weather, otherwise freshness/TTL logic will incorrectly
+      // treat seeded demo values as live data.
+      if (!weatherNetworkEnabled) {
+        _lastRefreshedAt ??= DateTime.now();
+      }
       // Avoid notifying during widget build; schedule after this frame.
       SchedulerBinding.instance.addPostFrameCallback((_) {
         if (hasListeners) notifyListeners();
@@ -901,25 +1027,50 @@ class DashboardLiveDataController extends ChangeNotifier {
   }
 
   SunTimesSnapshot _seedSunTimes(Place p, DateTime nowUtc) {
-    // Anchor to the current UTC date for stable display.
-    final day = DateTime.utc(nowUtc.year, nowUtc.month, nowUtc.day);
+    // Anchor to the current *local* date for each place so sunrise/sunset display
+    // correctly when switching realities (timezone affects UTC).
+    //
+    // Important: we treat these values as *wall-clock* times for the place,
+    // not device-local times. We use DateTime.utc constructors to avoid the
+    // host device timezone leaking into demo data.
+    final localNow = TimezoneUtils.nowInZone(
+      p.timeZoneId,
+      nowUtc: nowUtc,
+    ).local;
+    final localDay = DateTime.utc(localNow.year, localNow.month, localNow.day);
 
-    // Canonical demo values that match the design mock.
-    if (p.cityName.toLowerCase() == 'lisbon') {
+    DateTime toUtc(DateTime localWallClock) =>
+        TimezoneUtils.localToUtc(p.timeZoneId, localWallClock);
+
+    DateTime wall(int h, int m) =>
+        DateTime.utc(localDay.year, localDay.month, localDay.day, h, m);
+
+    // Canonical demo values that match the design mock (local clock time).
+    final city = p.cityName.toLowerCase();
+    if (city == 'lisbon') {
       return SunTimesSnapshot(
-        sunriseUtc: DateTime.utc(day.year, day.month, day.day, 7, 52),
-        sunsetUtc: DateTime.utc(day.year, day.month, day.day, 17, 29),
+        sunriseUtc: toUtc(wall(7, 52)),
+        sunsetUtc: toUtc(wall(17, 29)),
+      );
+    }
+    if (city == 'denver') {
+      return SunTimesSnapshot(
+        sunriseUtc: toUtc(wall(7, 5)),
+        sunsetUtc: toUtc(wall(17, 5)),
       );
     }
 
-    // Deterministic but plausible window for other places.
+    // Deterministic but plausible window for other places (local clock time).
     final seed = p.id.hashCode ^ (p.cityName.hashCode << 1);
     final sunriseMinutes = 360 + (seed.abs() % 150); // 06:00 to 08:29
     final sunsetMinutes = 990 + (seed.abs() % 120); // 16:30 to 18:29
 
+    final sunriseLocal = localDay.add(Duration(minutes: sunriseMinutes));
+    final sunsetLocal = localDay.add(Duration(minutes: sunsetMinutes));
+
     return SunTimesSnapshot(
-      sunriseUtc: day.add(Duration(minutes: sunriseMinutes)),
-      sunsetUtc: day.add(Duration(minutes: sunsetMinutes)),
+      sunriseUtc: toUtc(sunriseLocal),
+      sunsetUtc: toUtc(sunsetLocal),
     );
   }
 

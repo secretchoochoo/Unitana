@@ -33,14 +33,18 @@ class OpenMeteoTodayForecast {
 }
 
 class OpenMeteoClient {
-  final http.Client _client;
+  http.Client? _client;
 
   /// Host should be `api.open-meteo.com` for free/non-commercial.
   /// For commercial customers, Open-Meteo uses a `customer-` prefixed host.
   final String host;
 
   OpenMeteoClient({http.Client? client, this.host = 'api.open-meteo.com'})
-    : _client = client ?? http.Client();
+    : _client = client;
+
+  // Keep tests hermetic: only allocate a real HTTP client when a fetch is
+  // actually invoked.
+  http.Client get _http => _client ??= http.Client();
 
   Future<OpenMeteoTodayForecast> fetchTodayForecast({
     required double latitude,
@@ -62,7 +66,7 @@ class OpenMeteoClient {
       'wind_speed_unit': 'kmh',
     });
 
-    final resp = await _client.get(
+    final resp = await _http.get(
       uri,
       headers: const {
         // Open-Meteo asks clients to include a descriptive UA.

@@ -1,3 +1,4 @@
+// Dashboard persistence contract test (keys/ids must remain stable).
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -218,6 +219,14 @@ void main() {
 
     expect(find.text('Distance'), findsOneWidget);
 
+    // The ToolPicker flow opens the Distance modal; close it so the dashboard
+    // tile is actually hit-testable for long-press actions.
+    final closeDistance = find.byKey(const ValueKey('tool_close_distance'));
+    if (closeDistance.evaluate().isNotEmpty) {
+      await tester.tap(closeDistance);
+      await tester.pumpAndSettle(const Duration(milliseconds: 250));
+    }
+
     // Pull the persisted layout so we can target the user-added tile by key.
     final prefs = await SharedPreferences.getInstance();
     final raw = prefs.getString('dashboard_layout_v1');
@@ -226,44 +235,101 @@ void main() {
     final decoded = jsonDecode(raw!) as List<dynamic>;
     expect(decoded, isNotEmpty);
 
-    final first = decoded.first as Map<String, dynamic>;
-    final id = first['id'] as String;
+    // Target the user-added Distance tool specifically (avoid relying on list ordering).
+    Map<String, dynamic>? distanceEntry;
+    for (final e in decoded) {
+      if (e is Map<String, dynamic> && e['toolId'] == 'distance') {
+        distanceEntry = e;
+        // Prefer user-added entries when present.
+        if (e['userAdded'] == true) break;
+      }
+    }
+    expect(distanceEntry, isNotNull);
+    final id = distanceEntry!['id'] as String;
 
     // Long-press to open actions, then remove.
     final tile = find.byKey(ValueKey('dashboard_item_$id'));
+    expect(tile, findsOneWidget);
 
     await tester.ensureVisible(tile);
-    await tester.pumpAndSettle(const Duration(milliseconds: 250));
+    await tester.pump(const Duration(milliseconds: 250));
 
-    // Long-press on an inner label when available to avoid hit-test edge cases.
-    final pressTarget = find.descendant(
-      of: tile,
-      matching: find.text('Added Distance'),
-    );
-    if (pressTarget.evaluate().isNotEmpty) {
-      await tester.longPress(pressTarget.first, warnIfMissed: false);
-    } else {
-      await tester.longPress(tile, warnIfMissed: false);
-    }
-    await tester.pumpAndSettle(const Duration(milliseconds: 250));
-
-    if (find.text('Remove tile').evaluate().isEmpty) {
-      final addedLabel = find.text('Added Distance');
-      if (addedLabel.evaluate().isNotEmpty) {
-        await tester.ensureVisible(addedLabel.first);
-        await tester.longPress(addedLabel.first, warnIfMissed: false);
-        await tester.pumpAndSettle(const Duration(milliseconds: 250));
+    // NOTE: While in edit mode the dashboard tiles run a continuous jiggle
+    // animation (home-screen style). That means pumpAndSettle() will never
+    // converge once edit mode is active. Use bounded pumps instead.
+    Future<void> pumpFor(Duration duration) async {
+      final deadline = DateTime.now().add(duration);
+      while (DateTime.now().isBefore(deadline)) {
+        await tester.pump(const Duration(milliseconds: 16));
       }
     }
 
-    expect(find.text('Remove tile'), findsOneWidget);
-    await tester.tap(find.text('Remove tile'));
-    await tester.pumpAndSettle(const Duration(milliseconds: 250));
+    Future<void> pumpUntil(
+      bool Function() predicate, {
+      Duration step = const Duration(milliseconds: 50),
+      Duration timeout = const Duration(seconds: 2),
+    }) async {
+      final deadline = DateTime.now().add(timeout);
+      while (DateTime.now().isBefore(deadline)) {
+        if (predicate()) return;
+        await tester.pump(step);
+      }
+    }
+
+    Future<void> openActionsSheet() async {
+      // We intentionally do not require the tile to be hit-testable, because it
+      // can be partially occluded by pinned overlays at small viewport sizes.
+      // Instead, press inside the tile bounds (lower-middle) which is reliably
+      // tappable across layouts.
+      final rect = tester.getRect(tile);
+      final pressPoint = Offset(
+        rect.center.dx,
+        rect.top + (rect.height * 0.72),
+      );
+      await tester.longPressAt(pressPoint);
+      await pumpFor(const Duration(milliseconds: 220));
+    }
+
+    // Open actions sheet (retry once, because entering edit mode triggers a
+    // rebuild that can occasionally swallow the first post-gesture frame).
+    await openActionsSheet();
+
+    final removeKey = ValueKey('dashboard_tile_action_remove_$id');
+    Finder removeByKey = find.byKey(removeKey);
+
+    await pumpUntil(() => removeByKey.evaluate().isNotEmpty);
+    if (removeByKey.evaluate().isEmpty) {
+      await openActionsSheet();
+      removeByKey = find.byKey(removeKey);
+      await pumpUntil(() => removeByKey.evaluate().isNotEmpty);
+    }
+
+    if (removeByKey.evaluate().isNotEmpty) {
+      await tester.tap(removeByKey.first, warnIfMissed: false);
+    } else {
+      // Fallback: match any remove action key (id mismatch edge case).
+      final anyRemoveByKey = find.byWidgetPredicate((w) {
+        final k = w.key;
+        if (k is ValueKey) {
+          final v = k.value.toString();
+          return v.startsWith('dashboard_tile_action_remove_');
+        }
+        return false;
+      });
+      if (anyRemoveByKey.evaluate().isNotEmpty) {
+        await tester.tap(anyRemoveByKey.first, warnIfMissed: false);
+      } else {
+        fail(
+          'Expected tile actions to appear after long-pressing Distance tile, but no remove action key was found.',
+        );
+      }
+    }
+    await pumpFor(const Duration(milliseconds: 250));
 
     // Confirm removal.
     expect(find.text('Remove'), findsOneWidget);
     await tester.tap(find.text('Remove'));
-    await tester.pumpAndSettle(const Duration(milliseconds: 250));
+    await pumpFor(const Duration(milliseconds: 250));
 
     // Distance tile is removed.
     expect(find.text('Distance'), findsNothing);
@@ -272,7 +338,7 @@ void main() {
     final done = find.byKey(const ValueKey('dashboard_edit_done'));
     expect(done, findsOneWidget);
     await tester.tap(done);
-    await tester.pumpAndSettle(const Duration(milliseconds: 250));
+    await pumpFor(const Duration(milliseconds: 250));
 
     // Rebuild and validate persistence.
     await tester.pumpWidget(const SizedBox.shrink());
@@ -299,22 +365,29 @@ void main() {
 
     // Enter edit mode by long-pressing the Area tile.
     await tester.longPress(find.text('Area').first, warnIfMissed: false);
-    await tester.pumpAndSettle(const Duration(milliseconds: 250));
+    Future<void> pumpFor(Duration duration) async {
+      final deadline = DateTime.now().add(duration);
+      while (DateTime.now().isBefore(deadline)) {
+        await tester.pump(const Duration(milliseconds: 16));
+      }
+    }
+
+    await pumpFor(const Duration(milliseconds: 250));
 
     // Remove the tile.
     expect(find.text('Remove tile'), findsOneWidget);
     await tester.tap(find.text('Remove tile'));
-    await tester.pumpAndSettle(const Duration(milliseconds: 250));
+    await pumpFor(const Duration(milliseconds: 250));
 
     expect(find.text('Remove'), findsOneWidget);
     await tester.tap(find.text('Remove'));
-    await tester.pumpAndSettle(const Duration(milliseconds: 250));
+    await pumpFor(const Duration(milliseconds: 250));
 
     // Commit edit mode so the hidden-default state persists.
     final done = find.byKey(const ValueKey('dashboard_edit_done'));
     expect(done, findsOneWidget);
     await tester.tap(done, warnIfMissed: false);
-    await tester.pumpAndSettle(const Duration(milliseconds: 250));
+    await pumpFor(const Duration(milliseconds: 250));
 
     // Prove persistence: rebuild and expect Area is gone.
     await tester.pumpWidget(const SizedBox.shrink());

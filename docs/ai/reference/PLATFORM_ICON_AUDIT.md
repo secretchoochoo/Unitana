@@ -1,6 +1,22 @@
 # Platform icon audit (release readiness)
 
+## Fast check (recommended)
+Run the icon audit to validate file presence + key references without building:
+
+- From monorepo root:
+  - `./tools/icon_audit.sh`
+  - Full merge gates (includes icon audit): `./tools/verify.sh`
+
+- Or from the Flutter project root (`app/unitana`):
+  - `./tools/icon_audit.sh`
+  - Full merge gates: `./tools/verify.sh`
+
+The monorepo `./tools/*.sh` scripts are thin wrappers that delegate to `app/unitana/tools/*.sh`.
+
+This check is intentionally lightweight. It does **not** build per-platform binaries; it only prevents placeholder icon regressions by ensuring the expected icon files exist and that manifests/plists reference them.
+
 Purpose: prevent “placeholder icon” regressions by validating launcher icons for every target before packaging.
+
 
 ## iOS
 - `ios/Runner/Assets.xcassets/AppIcon.appiconset/Contents.json` exists

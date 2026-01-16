@@ -143,8 +143,11 @@ class _ToastOverlayState extends State<_ToastOverlay> {
               opacity: _visible ? 1 : 0,
               duration: const Duration(milliseconds: 180),
               curve: Curves.easeOut,
-              child: GestureDetector(
-                onTap: _beginDismiss,
+              child: IgnorePointer(
+                // Toasts are passive. They should not block interactions with
+                // the dashboard (for example, long-pressing a tile immediately
+                // after adding it).
+                ignoring: true,
                 child: UnitanaNoticeCard(
                   text: widget.text,
                   kind: widget.kind,

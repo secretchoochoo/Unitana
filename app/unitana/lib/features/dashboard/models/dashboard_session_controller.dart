@@ -1,5 +1,13 @@
 import 'package:flutter/foundation.dart';
 
+/// Session-scoped details pill mode.
+///
+/// Shared between the main Places Hero and the pinned overlay.
+enum HeroDetailsPillMode { sun, wind }
+
+/// Backwards-compatible enum name for pinned overlay callers.
+enum PinnedHeroDetailsMode { sun, wind }
+
 enum DashboardReality { destination, home }
 
 @immutable
@@ -28,6 +36,52 @@ class ConversionRecord {
 /// - selected reality: drives hero + tools
 /// - per-tool conversion history (last 10)
 class DashboardSessionController extends ChangeNotifier {
+  // Places hero details pill mode.
+  //
+  // Session-scoped only: not persisted, so tests remain hermetic.
+  // Default to sunrise/sunset so the first render matches the Hero V2 contract
+  // used by regression tests.
+  HeroDetailsPillMode _heroDetailsPillMode = HeroDetailsPillMode.sun;
+
+  // Pinned hero (compact overlay) details mode.
+  //
+  // Session-scoped only and intentionally independent from the main hero.
+  // The main hero defaults to sunrise/sunset for first-glance context; the
+  // pinned overlay defaults to wind/gust for quick “is it miserable outside?”
+  // checking while scrolling.
+  PinnedHeroDetailsMode _pinnedHeroDetailsMode = PinnedHeroDetailsMode.wind;
+
+  HeroDetailsPillMode get heroDetailsPillMode => _heroDetailsPillMode;
+
+  void setHeroDetailsPillMode(HeroDetailsPillMode value) {
+    if (_heroDetailsPillMode == value) return;
+    _heroDetailsPillMode = value;
+    notifyListeners();
+  }
+
+  void toggleHeroDetailsPillMode() {
+    _heroDetailsPillMode = _heroDetailsPillMode == HeroDetailsPillMode.sun
+        ? HeroDetailsPillMode.wind
+        : HeroDetailsPillMode.sun;
+    notifyListeners();
+  }
+
+  // Pinned overlay details mode (independent from main hero).
+  PinnedHeroDetailsMode get pinnedHeroDetailsMode => _pinnedHeroDetailsMode;
+
+  void setPinnedHeroDetailsMode(PinnedHeroDetailsMode value) {
+    if (_pinnedHeroDetailsMode == value) return;
+    _pinnedHeroDetailsMode = value;
+    notifyListeners();
+  }
+
+  void togglePinnedHeroDetailsMode() {
+    _pinnedHeroDetailsMode = _pinnedHeroDetailsMode == PinnedHeroDetailsMode.sun
+        ? PinnedHeroDetailsMode.wind
+        : PinnedHeroDetailsMode.sun;
+    notifyListeners();
+  }
+
   DashboardReality _reality = DashboardReality.destination;
   final Map<String, List<ConversionRecord>> _history = {};
 

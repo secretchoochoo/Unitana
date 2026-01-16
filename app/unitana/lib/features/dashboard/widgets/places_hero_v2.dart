@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import 'hero_alive_marquee.dart';
+import 'pulse_swap_icon.dart';
 
 import '../../../models/place.dart';
 import '../../../theme/theme_extensions.dart';
@@ -55,6 +56,10 @@ class PlacesHeroV2 extends StatelessWidget {
         : null;
 
     final primarySun = liveData.sunFor(primary);
+
+    final (primaryWindLine, primaryGustLine) = primary == null
+        ? ('Wind --', 'Gust --')
+        : _windLines(primary, primaryWeather);
 
     final debugOverride = liveData.debugWeatherOverride;
     final bool? forcedIsNight =
@@ -143,12 +148,20 @@ class PlacesHeroV2 extends StatelessWidget {
                           SizedBox(
                             width: sideWidth,
                             child: _RightSunRail(
+                              liveData: liveData,
                               sun: primarySun,
                               sceneKey: primaryWeather?.sceneKey,
                               conditionLabel: primaryWeather?.conditionText,
                               isNight: isNight,
                               primaryTzId: primary?.timeZoneId,
                               secondaryTzId: secondary?.timeZoneId,
+                              primaryUse24h: primary?.use24h,
+                              secondaryUse24h: secondary?.use24h,
+                              detailsMode: session.heroDetailsPillMode,
+                              onToggleDetailsMode:
+                                  session.toggleHeroDetailsPillMode,
+                              windLine: primaryWindLine,
+                              gustLine: primaryGustLine,
                               compact: isCompact,
                             ),
                           ),
@@ -729,21 +742,36 @@ class _LeftPrimaryBlock extends StatelessWidget {
 }
 
 class _RightSunRail extends StatelessWidget {
+  final DashboardLiveDataController liveData;
+
   final SunTimesSnapshot? sun;
   final SceneKey? sceneKey;
   final String? conditionLabel;
   final bool isNight;
   final String? primaryTzId;
   final String? secondaryTzId;
+  final bool? primaryUse24h;
+  final bool? secondaryUse24h;
+  final HeroDetailsPillMode detailsMode;
+  final VoidCallback onToggleDetailsMode;
+  final String windLine;
+  final String gustLine;
   final bool compact;
 
   const _RightSunRail({
+    required this.liveData,
     required this.sun,
     required this.sceneKey,
     required this.conditionLabel,
     required this.isNight,
     required this.primaryTzId,
     required this.secondaryTzId,
+    required this.primaryUse24h,
+    required this.secondaryUse24h,
+    required this.detailsMode,
+    required this.onToggleDetailsMode,
+    required this.windLine,
+    required this.gustLine,
     required this.compact,
   });
 
@@ -780,7 +808,7 @@ class _RightSunRail extends StatelessWidget {
             ),
           ),
         ),
-        SizedBox(height: compact ? 8 : 10),
+        SizedBox(height: compact ? 6 : 8),
         Expanded(
           child: LayoutBuilder(
             builder: (context, c) {
@@ -795,6 +823,12 @@ class _RightSunRail extends StatelessWidget {
                       sun: sun,
                       primaryTzId: primaryTzId,
                       secondaryTzId: secondaryTzId,
+                      primaryUse24h: primaryUse24h,
+                      secondaryUse24h: secondaryUse24h,
+                      detailsMode: detailsMode,
+                      onToggleDetailsMode: onToggleDetailsMode,
+                      windLine: windLine,
+                      gustLine: gustLine,
                       compact: compact,
                     ),
                   ),
@@ -808,16 +842,29 @@ class _RightSunRail extends StatelessWidget {
   }
 }
 
+// Shared mini-pill used in both the expanded hero and the pinned overlay.
 class _SunTimesPill extends StatelessWidget {
   final SunTimesSnapshot? sun;
   final String? primaryTzId;
   final String? secondaryTzId;
+  final bool? primaryUse24h;
+  final bool? secondaryUse24h;
+  final HeroDetailsPillMode detailsMode;
+  final VoidCallback onToggleDetailsMode;
+  final String windLine;
+  final String gustLine;
   final bool compact;
 
   const _SunTimesPill({
     required this.sun,
     required this.primaryTzId,
     required this.secondaryTzId,
+    required this.primaryUse24h,
+    required this.secondaryUse24h,
+    required this.detailsMode,
+    required this.onToggleDetailsMode,
+    required this.windLine,
+    required this.gustLine,
     required this.compact,
   });
 
@@ -840,6 +887,9 @@ class _SunTimesPill extends StatelessWidget {
             ?.copyWith(
               color: cs.onSurface.withAlpha(220),
               fontWeight: FontWeight.w600,
+              // Tighten line height slightly so the sun/wind detail content fits
+              // inside the fixed-height details region without overflow.
+              height: 1.05,
             );
 
     final labelStyle = rowStyle?.copyWith(
@@ -888,37 +938,65 @@ class _SunTimesPill extends StatelessWidget {
         nowUtc: sun!.sunsetUtc,
       );
 
+      final use24Primary = primaryUse24h ?? true;
+      final use24Secondary = secondaryUse24h ?? true;
+
       rise =
-          'Sunrise ${_format24h(risePrimary)} ${risePrimary.abbreviation} • ${_format24h(riseSecondary)} ${riseSecondary.abbreviation}';
+          'Sunrise ${TimezoneUtils.formatClock(risePrimary, use24h: use24Primary)} • ${TimezoneUtils.formatClock(riseSecondary, use24h: use24Secondary)}';
       set =
-          'Sunset ${_format24h(setPrimary)} ${setPrimary.abbreviation} • ${_format24h(setSecondary)} ${setSecondary.abbreviation}';
+          'Sunset ${TimezoneUtils.formatClock(setPrimary, use24h: use24Primary)} • ${TimezoneUtils.formatClock(setSecondary, use24h: use24Secondary)}';
     }
 
-    return Container(
-      key: const ValueKey('hero_sun_pill'),
-      padding: EdgeInsets.symmetric(
-        horizontal: compact ? 12 : 14,
-        vertical: compact ? 8 : 10,
-      ),
-      decoration: BoxDecoration(
-        color: cs.surface.withAlpha(35),
-        borderRadius: BorderRadius.circular(r),
-        border: Border.all(color: cs.outlineVariant.withAlpha(170), width: 1),
-      ),
-      child: Column(
+    final isWind = detailsMode == HeroDetailsPillMode.wind;
+    final semanticsLabel = isWind
+        ? 'Wind details. Tap to show sunrise and sunset.'
+        : 'Sunrise and sunset details. Tap to show wind.';
+
+    Widget titleRow(String icon, String text) {
+      return SizedBox(
+        width: double.infinity,
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          alignment: Alignment.center,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SizedBox(
+                width: 18,
+                height: 18,
+                child: Center(
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 160),
+                    switchInCurve: Curves.easeOut,
+                    switchOutCurve: Curves.easeIn,
+                    child: Text(
+                      icon,
+                      key: ValueKey<String>('hero_details_icon_$icon'),
+                      style: titleStyle,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 6),
+              Text(text, style: titleStyle),
+              const SizedBox(width: 6),
+              PulseSwapIcon(
+                color: cs.onSurface.withAlpha(150),
+                size: compact ? 14 : 16,
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    Widget sunContent() {
+      return Column(
+        key: const ValueKey('hero_details_sun_content'),
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          SizedBox(
-            width: double.infinity,
-            child: _ScaleDownText(
-              'Sunrise / Sunset',
-              style: titleStyle,
-              alignment: Alignment.center,
-              textAlign: TextAlign.center,
-            ),
-          ),
-          const SizedBox(height: 4),
+          SizedBox(height: compact ? 0 : 2),
           _ScaleDownRichText(
             span: labeledLineSpan(
               rise,
@@ -927,7 +1005,7 @@ class _SunTimesPill extends StatelessWidget {
             ),
             textKey: const ValueKey('hero_sunrise_row'),
           ),
-          const SizedBox(height: 2),
+          SizedBox(height: compact ? 0 : 1),
           _ScaleDownRichText(
             span: labeledLineSpan(
               set,
@@ -937,15 +1015,125 @@ class _SunTimesPill extends StatelessWidget {
             textKey: const ValueKey('hero_sunset_row'),
           ),
         ],
+      );
+    }
+
+    Widget windContent() {
+      return Column(
+        key: const ValueKey('hero_details_wind_content'),
+        crossAxisAlignment: CrossAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SizedBox(height: compact ? 0 : 2),
+          Align(
+            alignment: Alignment.center,
+            child: _ScaleDownRichText(
+              span: labeledLineSpan(
+                windLine,
+                baseStyle: rowStyle,
+                labelStyle: labelStyle,
+              ),
+              textKey: const ValueKey('hero_wind_row'),
+            ),
+          ),
+          SizedBox(height: compact ? 0 : 1),
+          Align(
+            alignment: Alignment.center,
+            child: _ScaleDownRichText(
+              span: labeledLineSpan(
+                gustLine,
+                baseStyle: rowStyle,
+                labelStyle: labelStyle,
+              ),
+              textKey: const ValueKey('hero_gust_row'),
+            ),
+          ),
+        ],
+      );
+    }
+
+    return Semantics(
+      button: true,
+      label: semanticsLabel,
+      onTap: onToggleDetailsMode,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onToggleDetailsMode,
+          borderRadius: BorderRadius.circular(r),
+          child: Container(
+            key: const ValueKey('hero_sun_pill'),
+            constraints: BoxConstraints.tightFor(
+              // Contract: identical pill bounds across modes to prevent any visual
+              // jump and to keep pinned/mini layouts stable.
+              height: compact ? 44.0 : 92.0,
+            ),
+            padding: EdgeInsets.symmetric(
+              horizontal: compact ? 12 : 14,
+              vertical: compact ? 6 : 10,
+            ),
+            decoration: BoxDecoration(
+              color: cs.surface.withAlpha(35),
+              borderRadius: BorderRadius.circular(r),
+              border: Border.all(
+                color: cs.outlineVariant.withAlpha(170),
+                width: 1,
+              ),
+            ),
+            child: LayoutBuilder(
+              builder: (context, c) {
+                final content = Column(
+                  crossAxisAlignment: isWind
+                      ? CrossAxisAlignment.center
+                      : CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    titleRow(
+                      isWind ? '🌬' : '☀︎',
+                      isWind ? 'Wind / Gust' : 'Sunrise / Sunset',
+                    ),
+                    AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 180),
+                      switchInCurve: Curves.easeOut,
+                      switchOutCurve: Curves.easeIn,
+                      transitionBuilder: (child, anim) {
+                        return FadeTransition(opacity: anim, child: child);
+                      },
+                      child: isWind ? windContent() : sunContent(),
+                    ),
+                  ],
+                );
+
+                return Align(
+                  alignment: isWind ? Alignment.center : Alignment.centerLeft,
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: isWind ? Alignment.center : Alignment.centerLeft,
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(maxWidth: c.maxWidth),
+                      child: content,
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ),
       ),
     );
   }
 }
 
 String _placeLabel(Place? p) {
-  if (p == null) return '-';
-  if (p.cityName.isNotEmpty) return p.cityName;
-  if (p.name.isNotEmpty) return p.name;
+  if (p == null) {
+    return '-';
+  }
+  if (p.cityName.isNotEmpty) {
+    return p.cityName;
+  }
+  if (p.name.isNotEmpty) {
+    return p.name;
+  }
   return '-';
 }
 
@@ -973,12 +1161,6 @@ String _formatWeekdayDate(ZoneTime zt) {
   return '$wd ${dt.day} $mon';
 }
 
-String _format24h(ZoneTime zt) {
-  final hh = zt.local.hour.toString().padLeft(2, '0');
-  final mm = zt.local.minute.toString().padLeft(2, '0');
-  return '$hh:$mm';
-}
-
 String _formatTemp(Place place, WeatherSnapshot w) {
   final degree = String.fromCharCode(0x00B0);
   final metric = place.unitSystem == 'metric';
@@ -997,7 +1179,7 @@ double _kmhToMph(num kmh) => kmh.toDouble() * 0.621371;
 
 (String, String) _windLines(Place place, WeatherSnapshot? w) {
   if (w == null) {
-    return ('Wind - km/h (- mph)', 'Gust - km/h (- mph)');
+    return ('-- km/h (-- mph)', '-- km/h (-- mph)');
   }
 
   final windKmh = w.windKmh.round();
@@ -1007,15 +1189,9 @@ double _kmhToMph(num kmh) => kmh.toDouble() * 0.621371;
 
   final metricActive = place.unitSystem == 'metric';
   if (metricActive) {
-    return (
-      'Wind $windKmh km/h ($windMph mph)',
-      'Gust $gustKmh km/h ($gustMph mph)',
-    );
+    return ('$windKmh km/h ($windMph mph)', '$gustKmh km/h ($gustMph mph)');
   }
-  return (
-    'Wind $windMph mph ($windKmh km/h)',
-    'Gust $gustMph mph ($gustKmh km/h)',
-  );
+  return ('$windMph mph ($windKmh km/h)', '$gustMph mph ($gustKmh km/h)');
 }
 
 (String, String) _currencyLines({
@@ -1082,9 +1258,13 @@ String _symbol(String code) {
 
 String _flagEmojiFromIso2(String? iso2) {
   final code = (iso2 ?? '').trim().toUpperCase();
-  if (code.length != 2) return '🌐';
+  if (code.length != 2) {
+    return '🌐';
+  }
   final a = code.codeUnitAt(0);
   final b = code.codeUnitAt(1);
-  if (a < 65 || a > 90 || b < 65 || b > 90) return '🌐';
+  if (a < 65 || a > 90 || b < 65 || b > 90) {
+    return '🌐';
+  }
   return String.fromCharCodes(<int>[0x1F1E6 + (a - 65), 0x1F1E6 + (b - 65)]);
 }

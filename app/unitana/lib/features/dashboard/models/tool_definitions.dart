@@ -67,6 +67,16 @@ class ToolDefinitions {
     defaultSecondary: "5' 10\"",
   );
 
+  static const length = ToolDefinition(
+    id: 'length',
+    canonicalToolId: CanonicalToolId.length,
+    lensId: ActivityLensId.homeDiy,
+    title: 'Length',
+    icon: Icons.straighten_rounded,
+    defaultPrimary: '178 cm',
+    defaultSecondary: "5' 10\"",
+  );
+
   static const baking = ToolDefinition(
     id: 'baking',
     canonicalToolId: CanonicalToolId.liquids,
@@ -95,6 +105,26 @@ class ToolDefinitions {
     icon: Icons.crop_square_rounded,
     defaultPrimary: '12 m²',
     defaultSecondary: '129 ft²',
+  );
+
+  static const volume = ToolDefinition(
+    id: 'volume',
+    canonicalToolId: CanonicalToolId.volume,
+    lensId: ActivityLensId.homeDiy,
+    title: 'Volume',
+    icon: Icons.local_drink_rounded,
+    defaultPrimary: '10 L',
+    defaultSecondary: '2.6 gal',
+  );
+
+  static const pressure = ToolDefinition(
+    id: 'pressure',
+    canonicalToolId: CanonicalToolId.pressure,
+    lensId: ActivityLensId.homeDiy,
+    title: 'Pressure',
+    icon: Icons.tire_repair_rounded,
+    defaultPrimary: '220 kPa',
+    defaultSecondary: '32 psi',
   );
 
   static const distance = ToolDefinition(
@@ -147,6 +177,16 @@ class ToolDefinitions {
     defaultSecondary: '\$11.00',
   );
 
+  static const shoeSizes = ToolDefinition(
+    id: 'shoe_sizes',
+    canonicalToolId: CanonicalToolId.shoeSizes,
+    lensId: ActivityLensId.quickTools,
+    title: 'Shoe Sizes',
+    icon: Icons.directions_run_rounded,
+    defaultPrimary: '42 EU',
+    defaultSecondary: '9 US M',
+  );
+
   static const weight = ToolDefinition(
     id: 'weight',
     canonicalToolId: CanonicalToolId.weight,
@@ -155,6 +195,21 @@ class ToolDefinitions {
     icon: Icons.monitor_weight_rounded,
     defaultPrimary: '1 kg',
     defaultSecondary: '2.2 lb',
+  );
+
+  /// Weather summary tile.
+  ///
+  /// This is not a numeric converter; it opens a lightweight details sheet
+  /// driven by the live dashboard data controller.
+  static const weatherSummary = ToolDefinition(
+    id: 'weather_summary',
+    canonicalToolId: CanonicalToolId.weather,
+    lensId: ActivityLensId.weatherTime,
+    title: 'Weather',
+    icon: Icons.cloud_rounded,
+    // These are placeholders; the dashboard renders live labels when possible.
+    defaultPrimary: '—',
+    defaultSecondary: '—',
   );
 
   static const bodyWeight = ToolDefinition(
@@ -174,33 +229,63 @@ class ToolDefinitions {
   /// user-added tiles).
   static const registry = <ToolDefinition>[
     height,
+    length,
     baking,
     liquids,
     area,
+    volume,
+    pressure,
     distance,
     speed,
     temperature,
     time,
     currencyConvert,
+    shoeSizes,
     weight,
     bodyWeight,
+    weatherSummary,
   ];
 
   static const Map<String, ToolDefinition> _byId = {
     'height': height,
+    'length': length,
     'baking': baking,
     'liquids': liquids,
     'area': area,
+    'volume': volume,
+    'pressure': pressure,
     'distance': distance,
     'speed': speed,
     'temperature': temperature,
     'time': time,
     'currency_convert': currencyConvert,
+    'shoe_sizes': shoeSizes,
     'weight': weight,
     'body_weight': bodyWeight,
+    'weather_summary': weatherSummary,
   };
 
   static ToolDefinition? byId(String toolId) => _byId[toolId];
+}
+
+// Local data row for the shoe-size lookup table.
+// Kept private and colocated with the tool definitions so we do not introduce
+// any cross-feature dependency for a small, static dataset.
+//
+// NOTE: Values are approximate, intended for quick travel use rather than
+// brand-specific fit.
+class _ShoeRow {
+  final int eu;
+  final double usM;
+  final double uk;
+  final double jp;
+
+  const _ShoeRow({
+    required this.eu,
+    required this.usM,
+    required this.uk,
+    required this.jp,
+  });
 }
 
 class ToolConverters {
@@ -228,6 +313,12 @@ class ToolConverters {
         return _convertLiquids(forward: forward, input: input);
       case CanonicalToolId.area:
         return _convertArea(forward: forward, input: input);
+      case CanonicalToolId.volume:
+        return _convertVolume(forward: forward, input: input);
+      case CanonicalToolId.pressure:
+        return _convertPressure(forward: forward, input: input);
+      case CanonicalToolId.shoeSizes:
+        return _convertShoeSizes(forward: forward, input: input);
       case CanonicalToolId.weight:
         return _convertWeight(forward: forward, input: input);
       case CanonicalToolId.time:
@@ -235,6 +326,122 @@ class ToolConverters {
       default:
         return null;
     }
+  }
+
+  /// Multi-unit conversion for tools that support more than a single fixed pair.
+  ///
+  /// This is intentionally narrow-scope (currently Volume and Pressure) so we can
+  /// expand the unit surface without forcing a “From/To” UI everywhere.
+  ///
+  /// Returns a formatted output label including the [toUnit] suffix, or null if
+  /// the input could not be parsed.
+  static String? convertWithUnits({
+    required String toolId,
+    required String fromUnit,
+    required String toUnit,
+    required String input,
+  }) {
+    switch (toolId) {
+      case CanonicalToolId.volume:
+        return _convertVolumeWithUnits(
+          fromUnit: fromUnit,
+          toUnit: toUnit,
+          input: input,
+        );
+      case CanonicalToolId.pressure:
+        return _convertPressureWithUnits(
+          fromUnit: fromUnit,
+          toUnit: toUnit,
+          input: input,
+        );
+      case CanonicalToolId.weight:
+        return _convertWeightWithUnits(
+          fromUnit: fromUnit,
+          toUnit: toUnit,
+          input: input,
+        );
+      default:
+        // Fallback to the dual-unit engine when no multi-unit mapping exists.
+        return convert(toolId: toolId, forward: true, input: input);
+    }
+  }
+
+  static String? _convertVolumeWithUnits({
+    required String fromUnit,
+    required String toUnit,
+    required String input,
+  }) {
+    final value = double.tryParse(input.trim());
+    if (value == null) return null;
+
+    // Normalize into liters as a base unit.
+    const litersPer = <String, double>{
+      'mL': 0.001,
+      'L': 1.0,
+      // US liquid units.
+      'pt': 0.473176,
+      'qt': 0.946353,
+      'gal': 3.78541,
+    };
+
+    final fromFactor = litersPer[fromUnit];
+    final toFactor = litersPer[toUnit];
+    if (fromFactor == null || toFactor == null) return null;
+
+    final liters = value * fromFactor;
+    final out = liters / toFactor;
+    return '${_fmt(out)} $toUnit';
+  }
+
+  static String? _convertPressureWithUnits({
+    required String fromUnit,
+    required String toUnit,
+    required String input,
+  }) {
+    final value = double.tryParse(input.trim());
+    if (value == null) return null;
+
+    // Normalize into kPa as a base unit.
+    const kpaPer = <String, double>{
+      'kPa': 1.0,
+      'psi': 6.89476,
+      'bar': 100.0,
+      'atm': 101.325,
+    };
+
+    final fromFactor = kpaPer[fromUnit];
+    final toFactor = kpaPer[toUnit];
+    if (fromFactor == null || toFactor == null) return null;
+
+    final kpa = value * fromFactor;
+    final out = kpa / toFactor;
+    return '${_fmt(out)} $toUnit';
+  }
+
+  static String? _convertWeightWithUnits({
+    required String fromUnit,
+    required String toUnit,
+    required String input,
+  }) {
+    final value = double.tryParse(input.trim());
+    if (value == null) return null;
+
+    // Normalize into kilograms as a base unit.
+    const kgPer = <String, double>{
+      'g': 0.001,
+      'kg': 1.0,
+      'oz': 0.0283495,
+      'lb': 0.453592,
+      'st': 6.35029,
+    };
+
+    final fromFactor = kgPer[fromUnit];
+    final toFactor = kgPer[toUnit];
+    if (fromFactor == null || toFactor == null) return null;
+
+    final kg = value * fromFactor;
+    final out = kg / toFactor;
+    return '${_fmt(out)} $toUnit';
   }
 
   /// Converts between 24h and 12h time representations.
@@ -426,6 +633,107 @@ class ToolConverters {
     }
     final m2 = value / ft2PerM2;
     return '${_fmt(m2)} m²';
+  }
+
+  static String? _convertVolume({
+    required bool forward,
+    required String input,
+  }) {
+    final value = double.tryParse(input.trim());
+    if (value == null) return null;
+    // US liquid gallons.
+    const litersPerGallon = 3.78541;
+    if (forward) {
+      final gal = value / litersPerGallon;
+      return '${_fmt(gal)} gal';
+    }
+    final liters = value * litersPerGallon;
+    return '${_fmt(liters)} L';
+  }
+
+  static String? _convertPressure({
+    required bool forward,
+    required String input,
+  }) {
+    final value = double.tryParse(input.trim());
+    if (value == null) return null;
+    // kPa ↔ psi. 1 psi = 6.89476 kPa.
+    const kpaPerPsi = 6.89476;
+    if (forward) {
+      final psi = value / kpaPerPsi;
+      return '${_fmt(psi)} psi';
+    }
+    final kpa = value * kpaPerPsi;
+    return '${_fmt(kpa)} kPa';
+  }
+
+  static String? _convertShoeSizes({
+    required bool forward,
+    required String input,
+  }) {
+    final value = double.tryParse(input.trim());
+    if (value == null) return null;
+
+    // EU is treated as the “metric” side. US uses men's sizing.
+    const rows = <_ShoeRow>[
+      _ShoeRow(eu: 35, usM: 3, uk: 2.5, jp: 21.5),
+      _ShoeRow(eu: 36, usM: 4, uk: 3.5, jp: 22.5),
+      _ShoeRow(eu: 37, usM: 5, uk: 4.5, jp: 23.5),
+      _ShoeRow(eu: 38, usM: 6, uk: 5.5, jp: 24.5),
+      _ShoeRow(eu: 39, usM: 7, uk: 6.5, jp: 25.0),
+      _ShoeRow(eu: 40, usM: 7.5, uk: 7, jp: 25.5),
+      _ShoeRow(eu: 41, usM: 8, uk: 7.5, jp: 26.0),
+      _ShoeRow(eu: 42, usM: 9, uk: 8, jp: 26.5),
+      _ShoeRow(eu: 43, usM: 9.5, uk: 8.5, jp: 27.0),
+      _ShoeRow(eu: 44, usM: 10, uk: 9, jp: 27.5),
+      _ShoeRow(eu: 45, usM: 11, uk: 10, jp: 28.5),
+      _ShoeRow(eu: 46, usM: 12, uk: 11, jp: 29.5),
+      _ShoeRow(eu: 47, usM: 13, uk: 12, jp: 30.5),
+    ];
+
+    _ShoeRow nearestByEu(double eu) {
+      var best = rows.first;
+      var bestDelta = (best.eu.toDouble() - eu).abs();
+      for (final r in rows.skip(1)) {
+        final delta = (r.eu.toDouble() - eu).abs();
+        if (delta < bestDelta) {
+          best = r;
+          bestDelta = delta;
+        }
+      }
+      return best;
+    }
+
+    _ShoeRow nearestByUs(double us) {
+      var best = rows.first;
+      var bestDelta = (best.usM - us).abs();
+      for (final r in rows.skip(1)) {
+        final delta = (r.usM - us).abs();
+        if (delta < bestDelta) {
+          best = r;
+          bestDelta = delta;
+        }
+      }
+      return best;
+    }
+
+    if (forward) {
+      // EU -> US (men)
+      final r = nearestByEu(value);
+      return '${_fmtShoe(r.usM)} US M (UK ${_fmtShoe(r.uk)}, JP ${_fmtShoe(r.jp)})';
+    }
+
+    // US (men) -> EU
+    final r = nearestByUs(value);
+    return '${_fmtShoe(r.eu.toDouble())} EU (UK ${_fmtShoe(r.uk)}, JP ${_fmtShoe(r.jp)})';
+  }
+
+  static String _fmtShoe(double v) {
+    if ((v - v.roundToDouble()).abs() < 0.0001) {
+      return v.round().toString();
+    }
+    // Shoe sizes commonly use 0.5 increments.
+    return v.toStringAsFixed(1).replaceAll('.0', '');
   }
 
   static String? _convertLength({

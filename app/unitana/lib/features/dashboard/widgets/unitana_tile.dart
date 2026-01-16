@@ -15,6 +15,7 @@ class UnitanaTile extends StatelessWidget {
   final VoidCallback? onLongPress;
   final IconData? leadingIcon;
   final Gradient? backgroundGradient;
+  final Key? interactionKey;
 
   /// Optional accent override used for icon + footer cue coloring.
   ///
@@ -33,6 +34,7 @@ class UnitanaTile extends StatelessWidget {
     this.leadingIcon,
     this.backgroundGradient,
     this.accentColor,
+    this.interactionKey,
   });
 
   @override
@@ -112,8 +114,12 @@ class UnitanaTile extends StatelessWidget {
           final hasSecondary = safeSecondary.trim().isNotEmpty && !isMicro;
           final hasFooter = safeFooter.trim().isNotEmpty;
 
+          final boundedWidth = constraints.maxWidth.isFinite
+              ? constraints.maxWidth
+              : null;
+
           Widget buildPrimary() => SizedBox(
-            width: double.infinity,
+            width: boundedWidth,
             child: FittedBox(
               fit: BoxFit.scaleDown,
               alignment: Alignment.center,
@@ -134,7 +140,7 @@ class UnitanaTile extends StatelessWidget {
           );
 
           Widget buildSecondary() => SizedBox(
-            width: double.infinity,
+            width: boundedWidth,
             child: FittedBox(
               fit: BoxFit.scaleDown,
               alignment: Alignment.center,
@@ -153,7 +159,7 @@ class UnitanaTile extends StatelessWidget {
           );
 
           Widget buildFooter() => SizedBox(
-            width: double.infinity,
+            width: boundedWidth,
             child: Center(
               child: FittedBox(
                 fit: BoxFit.scaleDown,
@@ -347,6 +353,7 @@ class UnitanaTile extends StatelessWidget {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
+          key: interactionKey,
           onTap: onTap,
           onLongPress: onLongPress,
           borderRadius: borderRadius,

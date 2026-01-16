@@ -1,3 +1,5 @@
 #include "resource.h"
 
-IDI_APP_ICON ICON "resources\\app_icon.ico"
+// Application icon used by the Windows runner.
+// Keep this path stable; widget tests validate it to prevent silent icon regressions.
+IDI_APP_ICON ICON "resources\app_icon.ico"

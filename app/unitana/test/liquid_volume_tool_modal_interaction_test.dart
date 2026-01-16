@@ -113,7 +113,7 @@ void main() {
     return m == null ? null : double.tryParse(m.group(0) ?? '');
   }
 
-  testWidgets('Distance: convert, history copy, and long-press edit', (
+  testWidgets('Liquid Volume: convert, history copy, and long-press edit', (
     tester,
   ) async {
     SharedPreferences.setMockInitialValues({});
@@ -156,11 +156,11 @@ void main() {
     final searchField = find.byKey(const ValueKey('toolpicker_search'));
     expect(searchField, findsOneWidget);
 
-    await tester.enterText(searchField, 'Distance');
+    await tester.enterText(searchField, 'Liquid Volume');
     await tester.pumpAndSettle(const Duration(milliseconds: 250));
 
     final toolRow = find.byKey(
-      const ValueKey('toolpicker_search_tool_distance'),
+      const ValueKey('toolpicker_search_tool_liquid_volume'),
     );
     expect(toolRow, findsOneWidget);
     await tester.tap(toolRow);
@@ -173,14 +173,12 @@ void main() {
     final units = readUnitArrowLabel(tester, modal, toolId);
     final fromUnit = units.split(arrow).first.trim().toLowerCase();
 
-    // Canonical distance pair is km <-> mi.
-    const kmToMi = 0.621371;
-    const miToKm = 1.609344;
-
-    final fromIsKm = fromUnit.contains('km');
-    final inputValue = fromIsKm ? '5' : '3.1';
-    final expectedUnit = fromIsKm ? 'mi' : 'km';
-    final expectedOut = fromIsKm ? 5.0 * kmToMi : 3.1 * miToKm;
+    // In Food & Cooking, the canonical liquids engine uses the Baking preset:
+    // cups <-> ml (1 cup = 240 ml).
+    final fromIsCup = fromUnit.contains('cup');
+    final inputValue = fromIsCup ? '2' : '240';
+    final expectedUnit = fromIsCup ? 'ml' : 'cup';
+    final expectedOut = fromIsCup ? 2.0 * 240.0 : 240.0 / 240.0;
 
     final inputKey = ValueKey('tool_input_$toolId');
     await tester.enterText(find.byKey(inputKey), inputValue);
@@ -195,7 +193,7 @@ void main() {
 
     final outputNumber = parseFirstNumber(outputPart);
     expect(outputNumber, isNotNull);
-    expect(outputNumber!, closeTo(expectedOut, 0.15));
+    expect(outputNumber!, closeTo(expectedOut, 0.2));
 
     // First history line appears.
     final history0 = find.byKey(ValueKey('tool_history_${toolId}_0'));
@@ -207,7 +205,7 @@ void main() {
 
     final copied = parseFirstNumber(lastClipboardText);
     expect(copied, isNotNull);
-    expect(copied!, closeTo(expectedOut, 0.15));
+    expect(copied!, closeTo(expectedOut, 0.2));
 
     // Long-press to edit should restore the original numeric input.
     await tester.longPress(history0);

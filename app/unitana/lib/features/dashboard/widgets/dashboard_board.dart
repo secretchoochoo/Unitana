@@ -17,14 +17,35 @@ import '../models/lens_accents.dart';
 import 'places_hero_v2.dart';
 import 'tool_modal_bottom_sheet.dart';
 import 'unitana_tile.dart';
+import 'weather_summary_bottom_sheet.dart';
 
 // Layout constants for the dashboard grid.
 // The board measures itself based on available width and derives tile geometry
 // from these values.
-const int _minRowsPhone = 6;
-const int _minRowsTablet = 5;
+// Baseline grid height. This intentionally shows a few empty slots even when the
+// user is not in edit mode, so the “add” affordance is discoverable.
+//
+// Phone (2 cols): +2 rows equals an additional 2x2 of visible capacity.
+// Tablet (3 cols): keep proportionally similar breathing room.
+// D2: add one more baseline row of visible capacity.
+// Phone (2 cols): +1 row = +2 additional slots visible by default.
+// Tablet (3 cols): +1 row keeps parity with the denser phone baseline.
+const int _minRowsPhone = 9;
+const int _minRowsTablet = 8;
 const double _gap = 12.0;
 const double _tileHeightRatio = 0.78;
+
+class _DragTilePayload {
+  final bool isDefault;
+  final String toolIdOrItemId;
+  final int currentIndex;
+
+  const _DragTilePayload({
+    required this.isDefault,
+    required this.toolIdOrItemId,
+    required this.currentIndex,
+  });
+}
 
 class DashboardBoard extends StatefulWidget {
   final UnitanaAppState state;
@@ -53,9 +74,12 @@ class DashboardBoard extends StatefulWidget {
   State<DashboardBoard> createState() => _DashboardBoardState();
 }
 
-class _DashboardBoardState extends State<DashboardBoard> {
+class _DashboardBoardState extends State<DashboardBoard>
+    with SingleTickerProviderStateMixin {
   String? _lastFocusId;
   bool _pendingShowActions = false;
+
+  late final AnimationController _wiggle;
 
   bool _dashboardHasToolId(String toolId, {String? ignoreItemId}) {
     // Includes visible default tiles and user-added tiles.
@@ -77,9 +101,80 @@ class _DashboardBoardState extends State<DashboardBoard> {
     return ToolDefinitions.defaultTiles.any((t) => t.id == toolId);
   }
 
+  double _wiggleAngleFor(String id) {
+    // Gentle, phase-shifted jiggle while in edit mode (home-screen style).
+    final phase = (id.hashCode % 360) * (math.pi / 180.0);
+
+    // 0 → 1 repeating. Keep it subtle to avoid nausea and preserve readability.
+    final v = _wiggle.value;
+    final carrier = math.sin(
+      (v * 2 * math.pi * 2) + phase,
+    ); // ~2 wiggles per cycle
+
+    return carrier * 0.014;
+  }
+
+  Widget _maybeWiggle(String id, Widget child) {
+    if (!widget.isEditing) return child;
+    return AnimatedBuilder(
+      animation: _wiggle,
+      builder: (context, _) {
+        return Transform.rotate(angle: _wiggleAngleFor(id), child: child);
+      },
+    );
+  }
+
+  _DragTilePayload _payloadForToolTile({
+    required DashboardBoardItem item,
+    required int currentIndex,
+  }) {
+    final toolId = item.toolId ?? item.id;
+    final isDefault = _isDefaultToolTile(item);
+    return _DragTilePayload(
+      isDefault: isDefault,
+      toolIdOrItemId: isDefault ? toolId : item.id,
+      currentIndex: currentIndex,
+    );
+  }
+
+  Future<void> _setAnchorIndex(_DragTilePayload payload, int? index) async {
+    if (payload.isDefault) {
+      await widget.layout.setDefaultToolAnchorIndex(
+        payload.toolIdOrItemId,
+        index,
+      );
+    } else {
+      await widget.layout.setUserItemAnchorIndex(payload.toolIdOrItemId, index);
+    }
+  }
+
+  Future<void> _handleDrop({
+    required _DragTilePayload dragged,
+    required int targetIndex,
+    _DragTilePayload? target,
+  }) async {
+    if (dragged.currentIndex == targetIndex) {
+      return;
+    }
+    if (target != null && target.toolIdOrItemId == dragged.toolIdOrItemId) {
+      return;
+    }
+    await _setAnchorIndex(dragged, targetIndex);
+    if (target != null) {
+      await _setAnchorIndex(target, dragged.currentIndex);
+    }
+  }
+
   @override
   void initState() {
     super.initState();
+    _wiggle = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 700),
+    );
+    if (widget.isEditing) {
+      _wiggle.repeat();
+    }
     _syncFocus(widget.focusActionTileId);
   }
 
@@ -88,6 +183,15 @@ class _DashboardBoardState extends State<DashboardBoard> {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.focusActionTileId != widget.focusActionTileId) {
       _syncFocus(widget.focusActionTileId);
+    }
+
+    if (oldWidget.isEditing != widget.isEditing) {
+      if (widget.isEditing) {
+        _wiggle.repeat();
+      } else {
+        _wiggle.stop();
+        _wiggle.value = 0.0;
+      }
     }
   }
 
@@ -106,6 +210,7 @@ class _DashboardBoardState extends State<DashboardBoard> {
 
   @override
   void dispose() {
+    _wiggle.dispose();
     super.dispose();
   }
 
@@ -113,10 +218,13 @@ class _DashboardBoardState extends State<DashboardBoard> {
   Widget build(BuildContext context) {
     if (widget.isEditing && _pendingShowActions && _lastFocusId != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) async {
-        if (!mounted) return;
+        if (!mounted) {
+          return;
+        }
         final id = _lastFocusId;
-        if (id == null) return;
-
+        if (id == null) {
+          return;
+        }
         _pendingShowActions = false;
         widget.onConsumedFocusTileId();
 
@@ -128,7 +236,9 @@ class _DashboardBoardState extends State<DashboardBoard> {
             span: DashboardTileSpan.oneByOne,
           ),
         );
-        if (item.id.isEmpty) return;
+        if (item.id.isEmpty) {
+          return;
+        }
         await _showTileActions(context, item);
       });
     }
@@ -147,6 +257,11 @@ class _DashboardBoardState extends State<DashboardBoard> {
             kind: DashboardItemKind.tool,
             span: DashboardTileSpan.oneByOne,
             toolId: t.id,
+            anchor: widget.layout.defaultToolAnchorIndex(t.id) == null
+                ? null
+                : DashboardAnchor(
+                    index: widget.layout.defaultToolAnchorIndex(t.id)!,
+                  ),
           ),
         )
         .toList();
@@ -191,13 +306,38 @@ class _DashboardBoardState extends State<DashboardBoard> {
               top: cell.row * (tileH + _gap),
               width: tileW,
               height: tileH,
-              child: _AddToolTile(
-                key: ValueKey('dashboard_add_slot_${cell.row}_${cell.col}'),
-                onTap: () => _showToolPicker(
-                  context,
-                  anchor: DashboardAnchor(index: cell.row * cols + cell.col),
-                ),
-              ),
+              child: widget.isEditing
+                  ? DragTarget<_DragTilePayload>(
+                      onWillAcceptWithDetails: (details) => true,
+                      onAcceptWithDetails: (details) => _handleDrop(
+                        dragged: details.data,
+                        targetIndex: cell.row * cols + cell.col,
+                      ),
+                      builder: (context, candidates, rejects) {
+                        return _AddToolTile(
+                          key: ValueKey(
+                            'dashboard_add_slot_${cell.row}_${cell.col}',
+                          ),
+                          onTap: () => _showToolPicker(
+                            context,
+                            anchor: DashboardAnchor(
+                              index: cell.row * cols + cell.col,
+                            ),
+                          ),
+                        );
+                      },
+                    )
+                  : _AddToolTile(
+                      key: ValueKey(
+                        'dashboard_add_slot_${cell.row}_${cell.col}',
+                      ),
+                      onTap: () => _showToolPicker(
+                        context,
+                        anchor: DashboardAnchor(
+                          index: cell.row * cols + cell.col,
+                        ),
+                      ),
+                    ),
             ),
           for (final p in placed)
             Positioned(
@@ -205,7 +345,13 @@ class _DashboardBoardState extends State<DashboardBoard> {
               top: p.row * (tileH + _gap),
               width: p.span.colSpan * tileW + (p.span.colSpan - 1) * _gap,
               height: p.span.rowSpan * tileH + (p.span.rowSpan - 1) * _gap,
-              child: _buildTile(context, p.item, home, dest),
+              child: _buildTile(
+                context,
+                p.item,
+                home,
+                dest,
+                currentIndex: p.row * cols + p.col,
+              ),
             ),
         ],
       ),
@@ -216,8 +362,9 @@ class _DashboardBoardState extends State<DashboardBoard> {
     BuildContext context,
     DashboardBoardItem item,
     Place? home,
-    Place? dest,
-  ) {
+    Place? dest, {
+    required int currentIndex,
+  }) {
     final activePlace = widget.session.reality == DashboardReality.home
         ? home
         : dest;
@@ -248,10 +395,11 @@ class _DashboardBoardState extends State<DashboardBoard> {
           context,
           item,
           tool,
+          currentIndex: currentIndex,
           activePlace: activePlace,
           secondaryPlace: secondaryPlace,
-          homePlace: home,
-          destinationPlace: dest,
+          home: home,
+          destination: dest,
         );
       case DashboardItemKind.emptySlot:
         // Empty slots are rendered separately as “+” placeholders.
@@ -275,23 +423,21 @@ class _DashboardBoardState extends State<DashboardBoard> {
     String toolId,
   ) {
     final scheme = Theme.of(context).colorScheme;
-    return KeyedSubtree(
+    return Container(
       key: ValueKey('dashboard_item_${item.id}'),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: scheme.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: scheme.outlineVariant),
-        ),
-        child: Center(
-          child: Text(
-            'Missing tool: $toolId',
-            style: Theme.of(
-              context,
-            ).textTheme.bodyMedium?.copyWith(color: scheme.onSurfaceVariant),
-            textAlign: TextAlign.center,
-          ),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: scheme.outlineVariant),
+      ),
+      child: Center(
+        child: Text(
+          'Missing tool: $toolId',
+          style: Theme.of(
+            context,
+          ).textTheme.bodyMedium?.copyWith(color: scheme.onSurfaceVariant),
+          textAlign: TextAlign.center,
         ),
       ),
     );
@@ -301,12 +447,15 @@ class _DashboardBoardState extends State<DashboardBoard> {
     BuildContext context,
     DashboardBoardItem item,
     ToolDefinition tool, {
+    required int currentIndex,
     required Place? activePlace,
     required Place? secondaryPlace,
-    required Place? homePlace,
-    required Place? destinationPlace,
+    required Place? home,
+    required Place? destination,
   }) {
     final latest = widget.session.latestFor(tool.id);
+
+    final isWeatherSummary = tool.id == 'weather_summary';
 
     // Dashboard tiles should always reflect the currently selected reality.
     // Currency is special: even before a user runs the tool, the preview should
@@ -353,7 +502,9 @@ class _DashboardBoardState extends State<DashboardBoard> {
             latest.outputLabel.contains('eurToUsd') ||
             latest.outputLabel.contains('toStringAsFixed'));
 
-    final labels = (isCurrency && (latest == null || currencyLabelsLookBroken))
+    final labels = isWeatherSummary
+        ? _weatherSummaryLabels(activePlace: activePlace)
+        : (isCurrency && (latest == null || currencyLabelsLookBroken))
         ? currencyPreviewLabels(
             from: activePlace,
             to: secondaryPlace,
@@ -361,6 +512,7 @@ class _DashboardBoardState extends State<DashboardBoard> {
           )
         : _pickToolLabels(tool: tool, latest: latest, activePlace: activePlace);
     final preferMetric = (activePlace?.unitSystem ?? 'metric') == 'metric';
+    final prefer24h = activePlace?.use24h ?? false;
     final primary = labels.$1;
     final secondary = labels.$2;
 
@@ -368,6 +520,7 @@ class _DashboardBoardState extends State<DashboardBoard> {
     final canEdit = item.userAdded || isDefaultTile;
 
     final tile = UnitanaTile(
+      interactionKey: ValueKey('dashboard_item_${item.id}'),
       title: ToolDefinitions.widgetTitleFor(tool),
       // UnitanaTile expects an IconData, not an Icon widget.
       leadingIcon: tool.icon,
@@ -389,37 +542,80 @@ class _DashboardBoardState extends State<DashboardBoard> {
       onTap: widget.isEditing
           ? null
           : () {
+              if (isWeatherSummary) {
+                WeatherSummaryBottomSheet.show(
+                  context,
+                  liveData: widget.liveData,
+                  home: home,
+                  destination: destination,
+                );
+                return;
+              }
+
               ToolModalBottomSheet.show(
                 context,
                 tool: tool,
                 session: widget.session,
                 preferMetric: preferMetric,
+                prefer24h: prefer24h,
                 eurToUsd: widget.liveData.eurToUsd,
-                home: homePlace,
-                destination: destinationPlace,
+                home: home,
+                destination: destination,
               );
             },
     );
 
     if (!widget.isEditing || !canEdit) {
-      return KeyedSubtree(
-        key: ValueKey('dashboard_item_${item.id}'),
-        child: tile,
-      );
+      // IMPORTANT: This key must sit on a RenderBox-backed widget so that
+      // long-press interactions are hit-testable in widget tests.
+      //
+      // KeyedSubtree is not reliably hit-testable because it does not
+      // necessarily introduce its own RenderObject.
+      return tile;
     }
 
-    return Stack(
-      key: ValueKey('dashboard_item_${item.id}'),
+    final payload = _payloadForToolTile(item: item, currentIndex: currentIndex);
+
+    final previewTile = UnitanaTile(
+      title: ToolDefinitions.widgetTitleFor(tool),
+      leadingIcon: tool.icon,
+      accentColor: tool.lensId == null
+          ? null
+          : LensAccents.iconTintFor(tool.lensId!),
+      primary: primary,
+      secondary: secondary,
+      footer: 'Move',
+    );
+
+    final stack = Stack(
       children: [
         tile,
+        Positioned(
+          top: 8,
+          left: 8,
+          child: Draggable<_DragTilePayload>(
+            data: payload,
+            dragAnchorStrategy: pointerDragAnchorStrategy,
+            feedback: Material(
+              color: Colors.transparent,
+              child: Opacity(opacity: 0.9, child: previewTile),
+            ),
+            childWhenDragging: const _EditDragHandle(isDragging: true),
+            child: const _EditDragHandle(),
+          ),
+        ),
         Positioned(
           top: 8,
           right: 8,
           child: _EditRemoveBadge(
             onTap: () async {
               final ok = await _confirmRemoveTile(context, tool.title);
-              if (!ok) return;
-              if (!context.mounted) return;
+              if (!ok) {
+                return;
+              }
+              if (!context.mounted) {
+                return;
+              }
               if (isDefaultTile) {
                 await widget.layout.hideDefaultTool(tool.id);
               } else {
@@ -430,6 +626,25 @@ class _DashboardBoardState extends State<DashboardBoard> {
         ),
       ],
     );
+
+    final target = DragTarget<_DragTilePayload>(
+      onWillAcceptWithDetails: (details) {
+        final incoming = details.data;
+        if (incoming.toolIdOrItemId == payload.toolIdOrItemId &&
+            incoming.isDefault == payload.isDefault) {
+          return false;
+        }
+        return true;
+      },
+      onAcceptWithDetails: (details) => _handleDrop(
+        dragged: details.data,
+        targetIndex: currentIndex,
+        target: payload,
+      ),
+      builder: (context, candidates, rejects) => stack,
+    );
+
+    return _maybeWiggle(item.id, target);
   }
 
   Future<bool> _confirmRemoveTile(BuildContext context, String label) async {
@@ -504,12 +719,14 @@ class _DashboardBoardState extends State<DashboardBoard> {
           child: Wrap(
             children: [
               ListTile(
+                key: ValueKey('dashboard_tile_action_replace_${item.id}'),
                 leading: const Icon(Icons.swap_horiz),
                 title: const Text('Replace tile'),
                 onTap: () =>
                     Navigator.of(sheetContext).pop(_TileEditAction.replace),
               ),
               ListTile(
+                key: ValueKey('dashboard_tile_action_remove_${item.id}'),
                 leading: Icon(Icons.delete_outline, color: scheme.error),
                 title: Text(
                   'Remove tile',
@@ -525,9 +742,12 @@ class _DashboardBoardState extends State<DashboardBoard> {
       },
     );
 
-    if (action == null) return;
-    if (!context.mounted) return;
-
+    if (action == null) {
+      return;
+    }
+    if (!context.mounted) {
+      return;
+    }
     switch (action) {
       case _TileEditAction.replace:
         final picked = await showModalBottomSheet<ToolDefinition>(
@@ -537,8 +757,12 @@ class _DashboardBoardState extends State<DashboardBoard> {
           showDragHandle: true,
           builder: (_) => ToolPickerSheet(session: widget.session),
         );
-        if (picked == null) return;
-        if (!context.mounted) return;
+        if (picked == null) {
+          return;
+        }
+        if (!context.mounted) {
+          return;
+        }
         // Prevent duplicate tiles for the same tool.
         // Allow replacing the tile with the same tool (no-op).
         final currentToolId = item.toolId ?? _legacyToolIdForKind(item.kind);
@@ -562,7 +786,9 @@ class _DashboardBoardState extends State<DashboardBoard> {
         } else {
           await widget.layout.replaceItem(item.id, picked);
         }
-        if (!context.mounted) return;
+        if (!context.mounted) {
+          return;
+        }
         UnitanaToast.showSuccess(
           context,
           'Tile replaced with ${picked.title}.',
@@ -570,8 +796,12 @@ class _DashboardBoardState extends State<DashboardBoard> {
         return;
       case _TileEditAction.remove:
         final ok = await _confirmRemoveTile(context, _titleForItem(item));
-        if (!ok) return;
-        if (!context.mounted) return;
+        if (!ok) {
+          return;
+        }
+        if (!context.mounted) {
+          return;
+        }
         if (_isDefaultToolTile(item)) {
           final toolId = item.toolId ?? _legacyToolIdForKind(item.kind);
           if (toolId != null) {
@@ -580,7 +810,9 @@ class _DashboardBoardState extends State<DashboardBoard> {
         } else {
           await widget.layout.removeItem(item.id);
         }
-        if (!context.mounted) return;
+        if (!context.mounted) {
+          return;
+        }
         UnitanaToast.showSuccess(context, 'Tile removed from dashboard.');
         return;
     }
@@ -649,10 +881,12 @@ class _DashboardBoardState extends State<DashboardBoard> {
       backgroundColor: Theme.of(context).colorScheme.surface,
       builder: (ctx) => ToolPickerSheet(session: widget.session),
     );
-    if (picked == null) return;
-
-    if (!context.mounted) return;
-
+    if (picked == null) {
+      return;
+    }
+    if (!context.mounted) {
+      return;
+    }
     if (_dashboardHasToolId(picked.id)) {
       UnitanaToast.showError(
         context,
@@ -668,7 +902,9 @@ class _DashboardBoardState extends State<DashboardBoard> {
 
     if (isDefault && widget.layout.isDefaultToolHidden(picked.id)) {
       await widget.layout.unhideDefaultTool(picked.id);
-      if (!context.mounted) return;
+      if (!context.mounted) {
+        return;
+      }
       _showTransientBanner(
         'Restored ${picked.title} on dashboard',
         bannerKey: 'dashboard_restore_tool_${picked.id}',
@@ -678,7 +914,9 @@ class _DashboardBoardState extends State<DashboardBoard> {
 
     await widget.layout.addTool(picked, anchor: anchor);
 
-    if (!context.mounted) return;
+    if (!context.mounted) {
+      return;
+    }
     _showTransientBanner(
       'Added ${picked.title} to dashboard',
       bannerKey: 'dashboard_add_tool_${picked.id}',
@@ -714,6 +952,25 @@ class _DashboardBoardState extends State<DashboardBoard> {
       }
     }
 
+    // Time tiles should follow the active place's 12/24-hour preference.
+    // The Places Hero reflects Place.use24h, so the Time tile preview should
+    // mirror that behavior when showing 12h vs 24h sample labels.
+    if (tool.id == 'time' && activePlace != null) {
+      bool is12h(String v) =>
+          RegExp(r'\b(am|pm)\b', caseSensitive: false).hasMatch(v);
+      final wants24h = activePlace.use24h;
+      final aIs12h = is12h(a);
+      final bIs12h = is12h(b);
+
+      if (wants24h) {
+        // Prefer the label without AM/PM as primary when available.
+        if (aIs12h && !bIs12h) return (b, a);
+      } else {
+        // Prefer the label with AM/PM as primary when available.
+        if (!aIs12h && bIs12h) return (b, a);
+      }
+    }
+
     final preferMetric = (activePlace?.unitSystem ?? 'metric') == 'metric';
     final aIsMetric = _isMetricLabel(tool.id, a);
     final bIsMetric = _isMetricLabel(tool.id, b);
@@ -727,6 +984,26 @@ class _DashboardBoardState extends State<DashboardBoard> {
     final bIsImperial = !bIsMetric;
     if (!aIsImperial && bIsImperial) return (b, a);
     return (a, b);
+  }
+
+  (String, String) _weatherSummaryLabels({required Place? activePlace}) {
+    if (activePlace == null) {
+      return ('—', 'Set a place');
+    }
+
+    final snap = widget.liveData.weatherFor(activePlace);
+    if (snap == null) {
+      return ('—', 'No weather data');
+    }
+
+    final preferMetric = (activePlace.unitSystem == 'metric');
+    final c = snap.temperatureC;
+    final f = (c * 9 / 5) + 32;
+    final primary = preferMetric ? '${c.round()}°C' : '${f.round()}°F';
+    final secondary = (snap.conditionText).trim().isEmpty
+        ? '—'
+        : (snap.conditionText).trim();
+    return (primary, secondary);
   }
 
   bool _isMetricLabel(String toolId, String label) {
@@ -1030,7 +1307,9 @@ class _ToolPickerSheetState extends State<ToolPickerSheet> {
                       tool: t,
                       lensId: lensId,
                     );
-                    if (mapped == null) return;
+                    if (mapped == null) {
+                      return;
+                    }
                     Navigator.of(context).pop(mapped);
                   },
           ),
@@ -1110,7 +1389,9 @@ class _ToolPickerSheetState extends State<ToolPickerSheet> {
                     tool: t,
                     lensId: lensId,
                   );
-                  if (mapped == null) return;
+                  if (mapped == null) {
+                    return;
+                  }
                   Navigator.of(context).pop(mapped);
                 },
         ),
@@ -1225,6 +1506,45 @@ class _ToolPickerSheetState extends State<ToolPickerSheet> {
         ],
         const SizedBox(height: 8),
       ],
+    );
+  }
+}
+
+class _EditDragHandle extends StatelessWidget {
+  final bool isDragging;
+
+  const _EditDragHandle({this.isDragging = false});
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final bg = isDragging
+        ? scheme.surfaceContainerHighest.withAlpha(115)
+        : scheme.surfaceContainerHighest.withAlpha(166);
+    final fg = scheme.onSurfaceVariant.withAlpha(isDragging ? 153 : 217);
+
+    return MouseRegion(
+      cursor: isDragging
+          ? SystemMouseCursors.grabbing
+          : SystemMouseCursors.grab,
+      child: Semantics(
+        label: 'Drag to reorder',
+        button: true,
+        child: SizedBox(
+          width: 44,
+          height: 44,
+          child: Container(
+            alignment: Alignment.center,
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+            decoration: BoxDecoration(
+              color: bg,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: scheme.outlineVariant.withAlpha(153)),
+            ),
+            child: Icon(Icons.pan_tool_alt_rounded, size: 18, color: fg),
+          ),
+        ),
+      ),
     );
   }
 }

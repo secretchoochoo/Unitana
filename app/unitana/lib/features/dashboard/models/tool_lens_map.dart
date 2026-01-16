@@ -31,6 +31,8 @@ class ToolLensMap {
     ActivityLensId.homeDiy: <String>[
       CanonicalToolId.length,
       CanonicalToolId.area,
+      CanonicalToolId.volume,
+      CanonicalToolId.pressure,
       CanonicalToolId.distance,
       CanonicalToolId.weight,
       CanonicalToolId.liquids,
@@ -46,6 +48,7 @@ class ToolLensMap {
       CanonicalToolId.currency,
       CanonicalToolId.time,
       CanonicalToolId.distance,
+      CanonicalToolId.shoeSizes,
     ],
 
     // Quick Tools is a "fast entry" lens. Until its dedicated lookup tools
@@ -55,6 +58,7 @@ class ToolLensMap {
       CanonicalToolId.time,
       CanonicalToolId.currency,
       CanonicalToolId.distance,
+      CanonicalToolId.shoeSizes,
     ],
   };
 

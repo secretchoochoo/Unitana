@@ -16,6 +16,9 @@ class CanonicalToolId {
   static const String liquids = 'liquids';
   static const String weight = 'weight';
   static const String length = 'length';
+  static const String volume = 'volume';
+  static const String pressure = 'pressure';
+  static const String shoeSizes = 'shoe_sizes';
   static const String weather = 'weather';
 
   static const List<String> all = <String>[
@@ -28,6 +31,9 @@ class CanonicalToolId {
     liquids,
     weight,
     length,
+    volume,
+    pressure,
+    shoeSizes,
     weather,
   ];
 }
@@ -137,6 +143,27 @@ class CanonicalTools {
     example: DualUnitExample(metric: '178 cm', imperial: "5' 10\""),
   );
 
+  static const CanonicalTool volume = CanonicalTool(
+    id: CanonicalToolId.volume,
+    name: 'Volume',
+    descriptor: 'L ↔ gal',
+    icon: Icons.local_drink_rounded,
+  );
+
+  static const CanonicalTool pressure = CanonicalTool(
+    id: CanonicalToolId.pressure,
+    name: 'Pressure',
+    descriptor: 'kPa ↔ psi',
+    icon: Icons.tire_repair_rounded,
+  );
+
+  static const CanonicalTool shoeSizes = CanonicalTool(
+    id: CanonicalToolId.shoeSizes,
+    name: 'Shoe Sizes',
+    descriptor: 'EU ↔ US (men) with UK/JP hints',
+    icon: Icons.directions_run_rounded,
+  );
+
   static const CanonicalTool weather = CanonicalTool(
     id: CanonicalToolId.weather,
     name: 'Weather',
@@ -154,6 +181,9 @@ class CanonicalTools {
     liquids,
     weight,
     length,
+    volume,
+    pressure,
+    shoeSizes,
     weather,
   ];
 

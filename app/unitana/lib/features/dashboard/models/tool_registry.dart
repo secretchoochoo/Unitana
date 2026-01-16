@@ -181,6 +181,7 @@ class ToolRegistry {
       label: 'Length',
       icon: Icons.straighten_rounded,
       lenses: <String>[ActivityLensId.homeDiy],
+      isEnabled: true,
     ),
     ToolRegistryTool(
       toolId: 'area',
@@ -193,12 +194,14 @@ class ToolRegistry {
       toolId: 'volume',
       label: 'Volume',
       icon: Icons.local_drink_rounded,
+      isEnabled: true,
       lenses: <String>[ActivityLensId.homeDiy],
     ),
     ToolRegistryTool(
       toolId: 'pressure',
       label: 'Pressure',
       icon: Icons.tire_repair_rounded,
+      isEnabled: true,
       lenses: <String>[ActivityLensId.homeDiy],
     ),
 
@@ -207,6 +210,7 @@ class ToolRegistry {
       toolId: 'weather_summary',
       label: 'Weather Summary',
       icon: Icons.cloud_rounded,
+      isEnabled: true,
       lenses: <String>[ActivityLensId.weatherTime],
     ),
     ToolRegistryTool(
@@ -248,6 +252,7 @@ class ToolRegistry {
       toolId: 'shoe_sizes',
       label: 'Shoe Sizes',
       icon: Icons.directions_walk_rounded,
+      isEnabled: true,
       lenses: <String>[ActivityLensId.quickTools, ActivityLensId.oddUseful],
     ),
     ToolRegistryTool(

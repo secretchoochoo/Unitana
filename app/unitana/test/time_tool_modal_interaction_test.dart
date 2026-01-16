@@ -31,7 +31,10 @@ void main() {
         countryCode: 'US',
         timeZoneId: 'America/Denver',
         unitSystem: 'imperial',
-        use24h: false,
+        // Intentionally mismatch unit system vs time preference so this test
+        // catches regressions where Time defaults are incorrectly tied to
+        // metric/imperial rather than the Place wizard preference.
+        use24h: true,
       ),
       Place(
         id: 'dest',
@@ -41,7 +44,7 @@ void main() {
         countryCode: 'PT',
         timeZoneId: 'Europe/Lisbon',
         unitSystem: 'metric',
-        use24h: true,
+        use24h: false,
       ),
     ];
     state.defaultPlaceId = 'home';
@@ -118,6 +121,16 @@ void main() {
     final state = buildSeededState();
     await pumpDashboard(tester, state);
 
+    // Dashboard sessions default to Destination reality. This test intentionally
+    // seeds Home with an imperial unitSystem but a 24h time preference so we
+    // must switch to Home before opening the Time tool.
+    final homeSegment = find.byKey(const ValueKey('places_hero_segment_home'));
+    expect(homeSegment, findsOneWidget);
+    await tester.tap(homeSegment);
+    // The dashboard has live elements; avoid full pumpAndSettle timeouts.
+    await tester.pump(const Duration(milliseconds: 200));
+    await tester.pump(const Duration(milliseconds: 200));
+
     // Open ToolPickerSheet via the dedicated Tools button.
     await tester.tap(find.byKey(const Key('dashboard_tools_button')));
     await tester.pumpAndSettle(const Duration(milliseconds: 250));
@@ -136,7 +149,9 @@ void main() {
         await tester.enterText(searchField, 'time');
         await tester.pumpAndSettle(const Duration(milliseconds: 250));
 
-        final searchRow = find.byKey(const Key('toolpicker_search_tool_time'));
+        final searchRow = find.byKey(
+          const ValueKey('toolpicker_search_tool_time'),
+        );
         if (tester.any(searchRow)) {
           await tester.tap(searchRow);
           await tester.pumpAndSettle(const Duration(milliseconds: 300));
@@ -195,6 +210,9 @@ void main() {
 
     // Decide an input that matches the current direction label.
     final units = readUnitArrowLabel(tester, modal, toolId);
+    // Home is configured as use24h: true even though it is imperial; ensure
+    // the modal is using the place preference, not metric/imperial.
+    expect(units.trim().toLowerCase().startsWith('24h'), isTrue);
     final fromUnit = units.split('→').first.trim().toLowerCase();
     final inputValue = fromUnit.startsWith('12') ? '6:30 PM' : '18:30';
 
@@ -264,5 +282,74 @@ void main() {
       field.controller?.text.replaceAll(' ', '').toUpperCase(),
       inputValue.replaceAll(' ', '').toUpperCase(),
     );
+  });
+
+  testWidgets('Time modal default direction follows Places Hero reality', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+
+    await tester.binding.setSurfaceSize(const Size(390, 844));
+    addTearDown(() async => tester.binding.setSurfaceSize(null));
+
+    final state = buildSeededState();
+    await pumpDashboard(tester, state);
+
+    Future<String> openTimeAndReadUnits() async {
+      await tester.tap(find.byKey(const Key('dashboard_tools_button')));
+      await tester.pumpAndSettle(const Duration(milliseconds: 250));
+
+      final searchField = find.byKey(const ValueKey('toolpicker_search'));
+      if (tester.any(searchField)) {
+        await tester.enterText(searchField, 'time');
+        await tester.pumpAndSettle(const Duration(milliseconds: 250));
+        final searchRow = find.byKey(const Key('toolpicker_search_tool_time'));
+        if (tester.any(searchRow)) {
+          await tester.tap(searchRow);
+          await tester.pumpAndSettle(const Duration(milliseconds: 300));
+        } else {
+          final timeToolRow = find.byKey(
+            const ValueKey('toolpicker_tool_time'),
+          );
+          await tester.tap(timeToolRow);
+          await tester.pumpAndSettle(const Duration(milliseconds: 300));
+        }
+      } else {
+        final timeToolRow = find.byKey(const ValueKey('toolpicker_tool_time'));
+        await tester.tap(timeToolRow);
+        await tester.pumpAndSettle(const Duration(milliseconds: 300));
+      }
+
+      final modal = find.byType(ToolModalBottomSheet);
+      expect(modal, findsOneWidget);
+      final toolId = resolveToolIdFromModal(tester, modal);
+      return readUnitArrowLabel(tester, modal, toolId);
+    }
+
+    // Ensure Home reality is active (use24h: true in this test seed).
+    final homeSeg = find.byKey(const ValueKey('places_hero_segment_home'));
+    if (tester.any(homeSeg)) {
+      await tester.tap(homeSeg);
+      await tester.pumpAndSettle(const Duration(milliseconds: 200));
+    }
+
+    var units = await openTimeAndReadUnits();
+    expect(units.trim().toLowerCase().startsWith('24h'), isTrue);
+
+    // Close modal.
+    Navigator.of(tester.element(find.byType(ToolModalBottomSheet))).pop();
+    await tester.pumpAndSettle(const Duration(milliseconds: 250));
+
+    // Switch to Destination reality (use24h: false in this test seed).
+    final destSeg = find.byKey(
+      const ValueKey('places_hero_segment_destination'),
+    );
+    if (tester.any(destSeg)) {
+      await tester.tap(destSeg);
+      await tester.pumpAndSettle(const Duration(milliseconds: 200));
+    }
+
+    units = await openTimeAndReadUnits();
+    expect(units.trim().toLowerCase().startsWith('12h'), isTrue);
   });
 }

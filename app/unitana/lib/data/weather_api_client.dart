@@ -48,7 +48,7 @@ class WeatherApiClient {
   /// You can override this by passing `sendApiKey` to the constructor or by
   /// setting `--dart-define=WEATHERAPI_SEND_KEY=true|false`.
   final bool sendApiKey;
-  final http.Client _client;
+  http.Client? _client;
   final Duration cacheTtl;
 
   final Map<String, ({DateTime fetchedAtUtc, WeatherApiForecast value})>
@@ -66,7 +66,11 @@ class WeatherApiClient {
            _defaultSendApiKey(
              _normalizeBaseUri(baseUri ?? Uri.parse(_defaultBaseUrl)),
            ),
-       _client = client ?? http.Client();
+       _client = client;
+
+  // Keep tests hermetic: only allocate a real HTTP client when a fetch is
+  // actually invoked.
+  http.Client get _http => _client ??= http.Client();
 
   /// Reads `WEATHERAPI_KEY` from `--dart-define`.
   factory WeatherApiClient.fromEnvironment() {
@@ -136,7 +140,7 @@ class WeatherApiClient {
       queryParameters: params,
     );
 
-    final resp = await _client.get(uri);
+    final resp = await _http.get(uri);
     if (resp.statusCode != 200) {
       throw StateError(
         'WeatherAPI request failed (${resp.statusCode}): ${resp.body}',

@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -13,6 +15,9 @@ import '../models/dashboard_exceptions.dart';
 import '../models/lens_accents.dart';
 import '../models/numeric_input_policy.dart';
 import '../models/tool_definitions.dart';
+import '../models/canonical_tools.dart';
+
+import 'pulse_swap_icon.dart';
 
 /// Bottom sheet calculator for tool tiles.
 ///
@@ -27,6 +32,12 @@ class ToolModalBottomSheet extends StatefulWidget {
   /// This sets the default conversion direction so the input matches the
   /// currently-dominant system.
   final bool preferMetric;
+
+  /// True if the active reality prefers a 24-hour time display.
+  ///
+  /// This must be derived from the active Place (home/destination) and is
+  /// intentionally separate from unitSystem (metric/imperial).
+  final bool prefer24h;
 
   /// Optional live exchange rate used by Currency (EUR -> USD).
   ///
@@ -49,6 +60,7 @@ class ToolModalBottomSheet extends StatefulWidget {
     required this.tool,
     required this.session,
     required this.preferMetric,
+    this.prefer24h = false,
     this.eurToUsd,
     this.home,
     this.destination,
@@ -61,6 +73,7 @@ class ToolModalBottomSheet extends StatefulWidget {
     required ToolDefinition tool,
     required DashboardSessionController session,
     required bool preferMetric,
+    bool prefer24h = false,
     double? eurToUsd,
     Place? home,
     Place? destination,
@@ -75,6 +88,7 @@ class ToolModalBottomSheet extends StatefulWidget {
         tool: tool,
         session: session,
         preferMetric: preferMetric,
+        prefer24h: prefer24h,
         eurToUsd: eurToUsd,
         home: home,
         destination: destination,
@@ -160,6 +174,32 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
   /// - area: forward => m² -> ft²
   bool _forward = true;
 
+  // Multi-unit support (medium-scope): Volume and Pressure can choose among
+  // a small set of units via unit pills, while most tools remain dual-unit.
+  //
+  // These are display + conversion units, not persistence keys. History remains
+  // keyed by tool id and stores the rendered labels.
+  String? _fromUnitOverride;
+  String? _toUnitOverride;
+
+  bool get _isMultiUnitTool =>
+      widget.tool.canonicalToolId == CanonicalToolId.volume ||
+      widget.tool.canonicalToolId == CanonicalToolId.pressure ||
+      widget.tool.canonicalToolId == CanonicalToolId.weight;
+
+  List<String> get _multiUnitChoices {
+    switch (widget.tool.canonicalToolId) {
+      case CanonicalToolId.volume:
+        return const <String>['mL', 'L', 'pt', 'qt', 'gal'];
+      case CanonicalToolId.pressure:
+        return const <String>['kPa', 'psi', 'bar', 'atm'];
+      case CanonicalToolId.weight:
+        return const <String>['g', 'kg', 'oz', 'lb', 'st'];
+      default:
+        return const <String>[];
+    }
+  }
+
   /// Inline result display line (separate from the History list).
   String? _resultLine;
 
@@ -169,10 +209,15 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
     _forward = _defaultForwardFor(
       toolId: widget.tool.canonicalToolId,
       preferMetric: widget.preferMetric,
+      prefer24h: widget.prefer24h,
     );
 
     if (_isCurrencyTool) {
       _forward = _defaultCurrencyForward();
+    }
+
+    if (_isMultiUnitTool) {
+      _seedMultiUnitOverrides();
     }
 
     final latest = widget.session.latestFor(widget.tool.id);
@@ -186,6 +231,121 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
     _noticeTimer?.cancel();
     _controller.dispose();
     super.dispose();
+  }
+
+  void _swapUnits() {
+    if (_isMultiUnitTool) {
+      setState(() {
+        _forward = !_forward;
+        if (_fromUnitOverride == null || _toUnitOverride == null) {
+          _seedMultiUnitOverrides();
+        } else {
+          final tmp = _fromUnitOverride;
+          _fromUnitOverride = _toUnitOverride;
+          _toUnitOverride = tmp;
+        }
+      });
+      return;
+    }
+
+    setState(() => _forward = !_forward);
+  }
+
+  void _seedMultiUnitOverrides() {
+    switch (widget.tool.canonicalToolId) {
+      case CanonicalToolId.volume:
+        _fromUnitOverride = _forward ? 'L' : 'gal';
+        _toUnitOverride = _forward ? 'gal' : 'L';
+        return;
+      case CanonicalToolId.pressure:
+        _fromUnitOverride = _forward ? 'kPa' : 'psi';
+        _toUnitOverride = _forward ? 'psi' : 'kPa';
+        return;
+      case CanonicalToolId.weight:
+        _fromUnitOverride = _forward ? 'kg' : 'lb';
+        _toUnitOverride = _forward ? 'lb' : 'kg';
+        return;
+      default:
+        _fromUnitOverride = null;
+        _toUnitOverride = null;
+        return;
+    }
+  }
+
+  String _sanitizeUnitKey(String unit) {
+    // Keep stable-ish keys even with symbols.
+    return unit.replaceAll(RegExp(r'[^a-zA-Z0-9]+'), '_');
+  }
+
+  Future<void> _pickUnit({required bool isFrom}) async {
+    final choices = _multiUnitChoices;
+    if (choices.isEmpty) return;
+
+    final current = isFrom ? _fromUnitOverride : _toUnitOverride;
+
+    final selected = await showModalBottomSheet<String>(
+      context: context,
+      showDragHandle: true,
+      builder: (context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: 8),
+              Text(
+                isFrom ? 'From Unit' : 'To Unit',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w800,
+                  color: DraculaPalette.foreground,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Flexible(
+                child: ListView(
+                  key: ValueKey(
+                    'tool_unit_picker_${widget.tool.id}_${isFrom ? 'from' : 'to'}',
+                  ),
+                  shrinkWrap: true,
+                  children: [
+                    for (final u in choices)
+                      ListTile(
+                        key: ValueKey(
+                          'tool_unit_item_${widget.tool.id}_${isFrom ? 'from' : 'to'}_${_sanitizeUnitKey(u)}',
+                        ),
+                        title: Text(
+                          u,
+                          style: Theme.of(context).textTheme.titleMedium
+                              ?.copyWith(
+                                color: DraculaPalette.foreground,
+                                fontWeight: FontWeight.w700,
+                              ),
+                        ),
+                        trailing: (u == current)
+                            ? Icon(
+                                Icons.check_rounded,
+                                color: DraculaPalette.purple,
+                              )
+                            : null,
+                        onTap: () => Navigator.of(context).pop(u),
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+
+    if (selected == null || !mounted) return;
+
+    setState(() {
+      if (isFrom) {
+        _fromUnitOverride = selected;
+      } else {
+        _toUnitOverride = selected;
+      }
+    });
   }
 
   void _showNotice(String text, UnitanaNoticeKind kind) {
@@ -206,6 +366,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
   bool _defaultForwardFor({
     required String toolId,
     required bool preferMetric,
+    required bool prefer24h,
   }) {
     // NOTE: toolId is a canonical tool id.
     // Forward direction means "left input" -> "right output".
@@ -226,6 +387,17 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
       case 'area':
         // m² <-> ft²
         return preferMetric;
+      case 'volume':
+        // L <-> gal
+        return preferMetric;
+      case 'pressure':
+        // kPa <-> psi
+        return preferMetric;
+      case 'shoe_sizes':
+        // Shoe sizes are commonly entered as US first for travelers.
+        // Keep the default stable (US -> EU) regardless of active reality;
+        // users can swap directions if they want EU -> US.
+        return false;
       case 'temperature':
         // °C <-> °F
         return preferMetric;
@@ -234,7 +406,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
         return preferMetric;
       case 'time':
         // 24h <-> 12h
-        return preferMetric;
+        return prefer24h;
       default:
         return true;
     }
@@ -300,9 +472,13 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
         return _forward ? 'oz' : 'ml';
       case 'area':
         return _forward ? 'm²' : 'ft²';
+      case 'volume':
+        return _fromUnitOverride ?? (_forward ? 'L' : 'gal');
+      case 'pressure':
+        return _fromUnitOverride ?? (_forward ? 'kPa' : 'psi');
       case 'weight':
       case 'body_weight':
-        return _forward ? 'kg' : 'lb';
+        return _fromUnitOverride ?? (_forward ? 'kg' : 'lb');
       default:
         return '';
     }
@@ -328,9 +504,13 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
         return _forward ? 'ml' : 'oz';
       case 'area':
         return _forward ? 'ft²' : 'm²';
+      case 'volume':
+        return _toUnitOverride ?? (_forward ? 'gal' : 'L');
+      case 'pressure':
+        return _toUnitOverride ?? (_forward ? 'psi' : 'kPa');
       case 'weight':
       case 'body_weight':
-        return _forward ? 'lb' : 'kg';
+        return _toUnitOverride ?? (_forward ? 'lb' : 'kg');
       default:
         return '';
     }
@@ -387,12 +567,19 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
       return;
     }
 
-    final result = ToolConverters.convert(
-      toolId: widget.tool.canonicalToolId,
-      lensId: widget.tool.lensId,
-      forward: _forward,
-      input: input,
-    );
+    final result = _isMultiUnitTool
+        ? ToolConverters.convertWithUnits(
+            toolId: widget.tool.canonicalToolId,
+            fromUnit: _fromUnit,
+            toUnit: _toUnit,
+            input: input,
+          )
+        : ToolConverters.convert(
+            toolId: widget.tool.canonicalToolId,
+            lensId: widget.tool.lensId,
+            forward: _forward,
+            input: input,
+          );
 
     if (result == null) {
       _showNotice(
@@ -433,8 +620,17 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
     working = working.replaceAll(',', '');
 
     const suffixes = <String>[
+      'eu',
+      'us',
+      'us m',
       'cm',
       'ft/in',
+      // Weight
+      'kg',
+      'lb',
+      'lbs',
+      'g',
+      'st',
       'km',
       'mi',
       'km/h',
@@ -464,6 +660,22 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
     return working.trim();
   }
 
+  String _trimTrailingZerosForClipboard(String value) {
+    final s = value.trim();
+    final m = RegExp(r'^(-?\d+)(?:\.(\d+))?$').firstMatch(s);
+    if (m == null) return s;
+
+    final whole = m.group(1) ?? s;
+    final frac = m.group(2);
+    if (frac == null) return whole;
+
+    if (RegExp(r'^0+$').hasMatch(frac)) return whole;
+
+    final trimmed = frac.replaceFirst(RegExp(r'0+$'), '');
+    if (trimmed.isEmpty) return whole;
+    return '$whole.$trimmed';
+  }
+
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
@@ -486,67 +698,62 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                 children: [
                   Padding(
                     padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-                    child: Stack(
+                    child: Row(
                       children: [
-                        Align(
-                          alignment: Alignment.center,
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(widget.tool.icon, color: accent, size: 28),
-                              const SizedBox(width: 12),
-                              Text(
-                                widget.tool.title,
-                                style: GoogleFonts.robotoSlab(
-                                  textStyle: Theme.of(
-                                    context,
-                                  ).textTheme.headlineSmall,
-                                  fontWeight: FontWeight.w800,
-                                  color: DraculaPalette.foreground,
+                        // Balance the trailing close action so the title reads centered.
+                        const SizedBox(width: 44),
+                        Expanded(
+                          child: Center(
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(widget.tool.icon, color: accent, size: 28),
+                                const SizedBox(width: 12),
+                                Flexible(
+                                  child: Text(
+                                    widget.tool.title,
+                                    key: ValueKey(
+                                      'tool_title_${widget.tool.id}',
+                                    ),
+                                    maxLines: 1,
+                                    softWrap: false,
+                                    overflow: TextOverflow.fade,
+                                    style: GoogleFonts.robotoSlab(
+                                      textStyle: Theme.of(
+                                        context,
+                                      ).textTheme.headlineSmall,
+                                      fontWeight: FontWeight.w800,
+                                      color: DraculaPalette.foreground,
+                                    ),
+                                  ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
                         ),
-                        Align(
-                          alignment: Alignment.centerRight,
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              if (widget.canAddWidget &&
-                                  widget.onAddWidget != null)
-                                TextButton.icon(
-                                  key: ValueKey(
-                                    'tool_add_widget_${widget.tool.id}',
-                                  ),
-                                  onPressed: () async {
-                                    try {
-                                      await widget.onAddWidget!.call();
-                                      if (!mounted) return;
-                                      _showNotice(
-                                        'Added ${widget.tool.title} to dashboard',
-                                        UnitanaNoticeKind.success,
-                                      );
-                                    } on DuplicateDashboardWidgetException catch (
-                                      _
-                                    ) {
-                                      if (!mounted) return;
-                                      _showNotice(
-                                        '${widget.tool.title} is already on your dashboard.',
-                                        UnitanaNoticeKind.error,
-                                      );
-                                    } catch (_) {
-                                      if (!mounted) return;
-                                      _showNotice(
-                                        'Could not add ${widget.tool.title} to dashboard.',
-                                        UnitanaNoticeKind.error,
-                                      );
-                                    }
-                                  },
-                                  icon: const Icon(Icons.add_rounded),
-                                  label: const Text('Add Widget'),
-                                ),
-                            ],
+                        Tooltip(
+                          message: 'Close',
+                          child: OutlinedButton(
+                            key: ValueKey('tool_close_${widget.tool.id}'),
+                            style: OutlinedButton.styleFrom(
+                              minimumSize: const Size(44, 34),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                              ),
+                              visualDensity: VisualDensity.compact,
+                              side: BorderSide(
+                                color: DraculaPalette.comment.withAlpha(160),
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            onPressed: () => Navigator.of(context).maybePop(),
+                            child: Icon(
+                              Icons.close_rounded,
+                              size: 18,
+                              color: DraculaPalette.foreground.withAlpha(220),
+                            ),
                           ),
                         ),
                       ],
@@ -572,255 +779,596 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                           ),
                   ),
 
-                  // Calculator (top half)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Edit Value',
-                                style: Theme.of(context).textTheme.labelLarge
-                                    ?.copyWith(color: DraculaPalette.comment),
-                              ),
-                              const SizedBox(height: 6),
-                              TextField(
-                                key: ValueKey('tool_input_${widget.tool.id}'),
-                                controller: _controller,
-                                keyboardType: _requiresFreeformInput
-                                    ? TextInputType.text
-                                    : TextInputType.numberWithOptions(
-                                        decimal: numericPolicy.allowDecimal,
-                                        signed: numericPolicy.allowNegative,
-                                      ),
-                                inputFormatters: _requiresFreeformInput
-                                    ? const <TextInputFormatter>[]
-                                    : <TextInputFormatter>[
-                                        NumericTextInputFormatter(
-                                          policy: numericPolicy,
-                                        ),
-                                      ],
-                                decoration: const InputDecoration(
-                                  hintText: 'Enter Value',
-                                ),
-                                onSubmitted: (_) => _runConversion(),
-                              ),
-                              const SizedBox(height: 8),
-                              Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Flexible(
-                                    child: Text(
-                                      '$_fromUnit → $_toUnit',
-                                      key: ValueKey(
-                                        'tool_units_${widget.tool.id}',
-                                      ),
-                                      overflow: TextOverflow.ellipsis,
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .labelLarge
-                                          ?.copyWith(
-                                            fontWeight: FontWeight.w800,
-                                            color: accent,
-                                          ),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Tooltip(
-                                    message: 'Swap units',
-                                    child: InkWell(
-                                      key: ValueKey(
-                                        'tool_swap_${widget.tool.id}',
-                                      ),
-                                      borderRadius: BorderRadius.circular(10),
-                                      onTap: () =>
-                                          setState(() => _forward = !_forward),
-                                      child: Padding(
-                                        padding: const EdgeInsets.all(6),
-                                        child: Icon(
-                                          Icons.swap_horiz_rounded,
-                                          size: 20,
-                                          color: accent,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Padding(
-                          padding: const EdgeInsets.only(top: 26),
-                          child: SizedBox(
-                            height: 52,
-                            child: FilledButton(
-                              key: ValueKey('tool_run_${widget.tool.id}'),
-                              style: FilledButton.styleFrom(
-                                minimumSize: const Size(0, 52),
-                              ),
-                              onPressed: _runConversion,
-                              child: const Text('Convert'),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(height: 12),
-
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: _ResultCard(
-                      toolId: widget.tool.id,
-                      lensId: widget.tool.lensId,
-                      line: _resultLine,
-                    ),
-                  ),
-
-                  const SizedBox(height: 12),
-                  const Divider(height: 1),
-
-                  // History (bottom section)
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-                    child: Align(
-                      alignment: Alignment.centerLeft,
-                      child: Text(
-                        'History',
-                        style: Theme.of(context).textTheme.titleMedium,
-                      ),
-                    ),
-                  ),
-
+                  // Body (scrollable to prevent overflow on smallest sizes)
                   Expanded(
-                    child: Padding(
+                    child: ListView(
+                      key: ValueKey('tool_scroll_${widget.tool.id}'),
+                      // Cache more offscreen content so widget tests can locate
+                      // history items reliably on small surfaces.
+                      cacheExtent: 1200,
                       padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: DraculaPalette.currentLine,
-                          borderRadius: BorderRadius.circular(14),
-                          border: Border.all(
-                            color: DraculaPalette.comment.withAlpha(160),
-                          ),
-                        ),
-                        child: history.isEmpty
-                            ? const _EmptyHistory()
-                            : ListView.builder(
-                                itemCount: history.length,
-                                itemBuilder: (context, index) {
-                                  final r = history[index];
-                                  final isMostRecent = index == 0;
+                      children: [
+                        // Calculator (top half)
+                        LayoutBuilder(
+                          builder: (context, constraints) {
+                            // The smallest supported test surface (320px wide) can
+                            // overflow if we force the Convert button to live on
+                            // the same row as the input. When tight, stack Convert
+                            // below the editor to keep the layout green.
+                            final isNarrow = constraints.maxWidth <= 340;
 
-                                  final inputLabel = r.inputLabel;
-                                  final outputLabel = r.outputLabel;
-                                  final timestamp = r.timestamp
-                                      .toLocal()
-                                      .toIso8601String()
-                                      .substring(11, 19);
+                            final inputBlock = Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Edit Value',
+                                  style: Theme.of(context).textTheme.labelLarge
+                                      ?.copyWith(color: DraculaPalette.comment),
+                                ),
+                                const SizedBox(height: 6),
+                                TextField(
+                                  key: ValueKey('tool_input_${widget.tool.id}'),
+                                  controller: _controller,
+                                  keyboardType: _requiresFreeformInput
+                                      ? TextInputType.text
+                                      : TextInputType.numberWithOptions(
+                                          decimal: numericPolicy.allowDecimal,
+                                          signed: numericPolicy.allowNegative,
+                                        ),
+                                  inputFormatters: _requiresFreeformInput
+                                      ? const <TextInputFormatter>[]
+                                      : <TextInputFormatter>[
+                                          NumericTextInputFormatter(
+                                            policy: numericPolicy,
+                                          ),
+                                        ],
+                                  decoration: const InputDecoration(
+                                    hintText: 'Enter Value',
+                                  ),
+                                  onSubmitted: (_) => _runConversion(),
+                                ),
+                                const SizedBox(height: 8),
+                                LayoutBuilder(
+                                  builder: (context, constraints) {
+                                    final canAdd =
+                                        widget.canAddWidget &&
+                                        widget.onAddWidget != null;
 
-                                  return InkWell(
-                                    key: ValueKey(
-                                      'tool_history_${widget.tool.id}_$index',
-                                    ),
-                                    onTap: () async {
-                                      final toCopy = _stripKnownUnitSuffix(
-                                        r.outputLabel,
-                                      );
-                                      await Clipboard.setData(
-                                        ClipboardData(text: toCopy),
-                                      );
-                                      if (!mounted) return;
-                                      _showNotice(
-                                        'Copied $toCopy',
-                                        UnitanaNoticeKind.success,
-                                      );
-                                    },
-                                    onLongPress: () {
-                                      _controller.text = _stripKnownUnitSuffix(
-                                        r.inputLabel,
-                                      );
-                                      setState(() {});
-                                    },
-                                    child: Padding(
-                                      padding: const EdgeInsets.fromLTRB(
-                                        12,
-                                        10,
-                                        12,
-                                        10,
-                                      ),
-                                      child: Row(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Expanded(
-                                            child: Column(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.start,
+                                    // Keep units + swap on the first row and move Add Widget
+                                    // onto its own line when space is tight.
+                                    final isNarrow =
+                                        constraints.maxWidth <= 320;
+
+                                    Widget buildUnitsAndSwap() {
+                                      final Widget unitsWidget =
+                                          _isMultiUnitTool
+                                          ? Row(
+                                              key: ValueKey(
+                                                'tool_units_${widget.tool.id}',
+                                              ),
+                                              mainAxisSize: MainAxisSize.min,
                                               children: [
-                                                _TerminalLine(
-                                                  prompt: '>',
-                                                  input: inputLabel,
-                                                  output: outputLabel,
-                                                  emphasize: isMostRecent,
-                                                  arrowColor:
-                                                      DraculaPalette.pink,
-                                                ),
-                                                const SizedBox(height: 4),
-                                                RichText(
-                                                  text: TextSpan(
-                                                    style: Theme.of(context)
-                                                        .textTheme
-                                                        .labelMedium
-                                                        ?.copyWith(
-                                                          fontFamily:
-                                                              'monospace',
-                                                          color: DraculaPalette
-                                                              .comment,
+                                                OutlinedButton(
+                                                  key: ValueKey(
+                                                    'tool_unit_from_${widget.tool.id}',
+                                                  ),
+                                                  style: OutlinedButton.styleFrom(
+                                                    minimumSize: const Size(
+                                                      0,
+                                                      34,
+                                                    ),
+                                                    padding:
+                                                        const EdgeInsets.symmetric(
+                                                          horizontal: 10,
+                                                          vertical: 0,
                                                         ),
+                                                    visualDensity:
+                                                        VisualDensity.compact,
+                                                    side: BorderSide(
+                                                      color: DraculaPalette
+                                                          .comment
+                                                          .withAlpha(160),
+                                                    ),
+                                                    shape: RoundedRectangleBorder(
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                            999,
+                                                          ),
+                                                    ),
+                                                  ),
+                                                  onPressed: () =>
+                                                      _pickUnit(isFrom: true),
+                                                  child: Row(
+                                                    mainAxisSize:
+                                                        MainAxisSize.min,
                                                     children: [
-                                                      const TextSpan(
-                                                        text:
-                                                            'tap to copy output · long-press to edit · ',
-                                                      ),
-                                                      TextSpan(
-                                                        text: timestamp,
+                                                      Text(
+                                                        _fromUnit,
                                                         style: Theme.of(context)
                                                             .textTheme
-                                                            .labelMedium
+                                                            .titleMedium
                                                             ?.copyWith(
-                                                              fontFamily:
-                                                                  'monospace',
-                                                              fontStyle:
-                                                                  FontStyle
-                                                                      .italic,
-                                                              color:
-                                                                  DraculaPalette
-                                                                      .comment
-                                                                      .withAlpha(
-                                                                        200,
-                                                                      ),
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .w800,
+                                                              color: accent,
                                                             ),
+                                                      ),
+                                                      Icon(
+                                                        Icons
+                                                            .arrow_drop_down_rounded,
+                                                        color: accent.withAlpha(
+                                                          220,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                                Padding(
+                                                  padding:
+                                                      const EdgeInsets.symmetric(
+                                                        horizontal: 8,
+                                                      ),
+                                                  child: Text(
+                                                    '→',
+                                                    style: Theme.of(context)
+                                                        .textTheme
+                                                        .titleLarge
+                                                        ?.copyWith(
+                                                          fontWeight:
+                                                              FontWeight.w900,
+                                                          color: accent,
+                                                        ),
+                                                  ),
+                                                ),
+                                                OutlinedButton(
+                                                  key: ValueKey(
+                                                    'tool_unit_to_${widget.tool.id}',
+                                                  ),
+                                                  style: OutlinedButton.styleFrom(
+                                                    minimumSize: const Size(
+                                                      0,
+                                                      34,
+                                                    ),
+                                                    padding:
+                                                        const EdgeInsets.symmetric(
+                                                          horizontal: 10,
+                                                          vertical: 0,
+                                                        ),
+                                                    visualDensity:
+                                                        VisualDensity.compact,
+                                                    side: BorderSide(
+                                                      color: DraculaPalette
+                                                          .comment
+                                                          .withAlpha(160),
+                                                    ),
+                                                    shape: RoundedRectangleBorder(
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                            999,
+                                                          ),
+                                                    ),
+                                                  ),
+                                                  onPressed: () =>
+                                                      _pickUnit(isFrom: false),
+                                                  child: Row(
+                                                    mainAxisSize:
+                                                        MainAxisSize.min,
+                                                    children: [
+                                                      Text(
+                                                        _toUnit,
+                                                        style: Theme.of(context)
+                                                            .textTheme
+                                                            .titleMedium
+                                                            ?.copyWith(
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .w800,
+                                                              color: accent,
+                                                            ),
+                                                      ),
+                                                      Icon(
+                                                        Icons
+                                                            .arrow_drop_down_rounded,
+                                                        color: accent.withAlpha(
+                                                          220,
+                                                        ),
                                                       ),
                                                     ],
                                                   ),
                                                 ),
                                               ],
+                                            )
+                                          : Text(
+                                              '$_fromUnit → $_toUnit',
+                                              key: ValueKey(
+                                                'tool_units_${widget.tool.id}',
+                                              ),
+                                              style: Theme.of(context)
+                                                  .textTheme
+                                                  .titleLarge
+                                                  ?.copyWith(
+                                                    fontWeight: FontWeight.w800,
+                                                    color: accent,
+                                                  ),
+                                              overflow: TextOverflow.visible,
+                                              softWrap: false,
+                                            );
+
+                                      final swapButton = OutlinedButton(
+                                        key: ValueKey(
+                                          'tool_swap_${widget.tool.id}',
+                                        ),
+                                        style: OutlinedButton.styleFrom(
+                                          minimumSize: const Size(34, 34),
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 8,
+                                            vertical: 0,
+                                          ),
+                                          visualDensity: VisualDensity.compact,
+                                          side: BorderSide(
+                                            color: DraculaPalette.comment
+                                                .withAlpha(160),
+                                          ),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              12,
                                             ),
                                           ),
+                                        ),
+                                        onPressed: _swapUnits,
+                                        child: PulseSwapIcon(
+                                          color: accent.withAlpha(220),
+                                          size: 18,
+                                        ),
+                                      );
+
+                                      return Row(
+                                        key: ValueKey(
+                                          'tool_units_row_${widget.tool.id}',
+                                        ),
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.center,
+                                        children: [
+                                          Expanded(
+                                            child: Align(
+                                              alignment: Alignment.centerLeft,
+                                              child: FittedBox(
+                                                fit: BoxFit.scaleDown,
+                                                alignment: Alignment.centerLeft,
+                                                child: unitsWidget,
+                                              ),
+                                            ),
+                                          ),
+                                          const SizedBox(width: 6),
+                                          swapButton,
                                         ],
+                                      );
+                                    }
+
+                                    Widget buildAddWidgetButton() {
+                                      return OutlinedButton.icon(
+                                        key: ValueKey(
+                                          'tool_add_widget_${widget.tool.id}',
+                                        ),
+                                        style: OutlinedButton.styleFrom(
+                                          minimumSize: const Size(0, 34),
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 12,
+                                          ),
+                                          visualDensity: VisualDensity.compact,
+                                          side: BorderSide(
+                                            color: DraculaPalette.comment
+                                                .withAlpha(160),
+                                          ),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              12,
+                                            ),
+                                          ),
+                                        ),
+                                        onPressed: () async {
+                                          try {
+                                            await widget.onAddWidget!.call();
+                                            if (!mounted) return;
+                                            _showNotice(
+                                              'Added ${widget.tool.title} to dashboard',
+                                              UnitanaNoticeKind.success,
+                                            );
+                                          } on DuplicateDashboardWidgetException catch (
+                                            _
+                                          ) {
+                                            if (!mounted) return;
+                                            _showNotice(
+                                              '${widget.tool.title} is already on your dashboard',
+                                              UnitanaNoticeKind.info,
+                                            );
+                                          } catch (_) {
+                                            if (!mounted) return;
+                                            _showNotice(
+                                              'Could not add widget',
+                                              UnitanaNoticeKind.error,
+                                            );
+                                          }
+                                        },
+                                        icon: Icon(
+                                          Icons.add_circle_outline,
+                                          size: 18,
+                                          color: accent,
+                                        ),
+                                        label: Text(
+                                          '+ Add Widget',
+                                          maxLines: 1,
+                                          softWrap: false,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .labelLarge
+                                              ?.copyWith(
+                                                fontWeight: FontWeight.w700,
+                                                color: accent,
+                                              ),
+                                        ),
+                                      );
+                                    }
+
+                                    return Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Row(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.center,
+                                          children: [
+                                            Expanded(
+                                              child: buildUnitsAndSwap(),
+                                            ),
+                                            if (canAdd && !isNarrow) ...[
+                                              const SizedBox(width: 10),
+                                              Flexible(
+                                                child: Align(
+                                                  alignment:
+                                                      Alignment.centerRight,
+                                                  child: buildAddWidgetButton(),
+                                                ),
+                                              ),
+                                            ],
+                                          ],
+                                        ),
+                                        if (canAdd && isNarrow) ...[
+                                          const SizedBox(height: 10),
+                                          Align(
+                                            alignment: Alignment.centerRight,
+                                            child: buildAddWidgetButton(),
+                                          ),
+                                        ],
+                                      ],
+                                    );
+                                  },
+                                ),
+                              ],
+                            );
+
+                            final convertButton = SizedBox(
+                              height: 52,
+                              child: FilledButton(
+                                key: ValueKey('tool_run_${widget.tool.id}'),
+                                style: FilledButton.styleFrom(
+                                  minimumSize: const Size(0, 52),
+                                ),
+                                onPressed: _runConversion,
+                                child: const Text('Convert'),
+                              ),
+                            );
+
+                            if (isNarrow) {
+                              return Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  inputBlock,
+                                  const SizedBox(height: 12),
+                                  Align(
+                                    alignment: Alignment.centerRight,
+                                    child: convertButton,
+                                  ),
+                                ],
+                              );
+                            }
+
+                            return Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Expanded(child: inputBlock),
+                                const SizedBox(width: 12),
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 26),
+                                  child: convertButton,
+                                ),
+                              ],
+                            );
+                          },
+                        ),
+
+                        const SizedBox(height: 12),
+
+                        _ResultCard(
+                          toolId: widget.tool.id,
+                          lensId: widget.tool.lensId,
+                          line: _resultLine,
+                        ),
+
+                        const SizedBox(height: 12),
+                        const Divider(height: 1),
+                        const SizedBox(height: 12),
+
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: Wrap(
+                            spacing: 10,
+                            runSpacing: 4,
+                            crossAxisAlignment: WrapCrossAlignment.center,
+                            children: [
+                              Text(
+                                'History',
+                                style: Theme.of(context).textTheme.titleMedium
+                                    ?.copyWith(
+                                      fontWeight: FontWeight.w800,
+                                      color: DraculaPalette.purple,
+                                    ),
+                              ),
+                              Text(
+                                'tap copies result; long-press copies input',
+                                style: Theme.of(context).textTheme.labelMedium
+                                    ?.copyWith(
+                                      fontStyle: FontStyle.italic,
+                                      color: DraculaPalette.comment.withAlpha(
+                                        220,
                                       ),
                                     ),
-                                  );
-                                },
                               ),
-                      ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+
+                        SizedBox(
+                          height: math.min(
+                            MediaQuery.sizeOf(context).height * 0.28,
+                            280.0,
+                          ),
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: DraculaPalette.currentLine,
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(
+                                color: DraculaPalette.comment.withAlpha(160),
+                              ),
+                            ),
+                            child: history.isEmpty
+                                ? const _EmptyHistory()
+                                : ListView.builder(
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 4,
+                                    ),
+                                    itemCount: history.length,
+                                    itemBuilder: (context, index) {
+                                      final r = history[index];
+                                      final isMostRecent = index == 0;
+
+                                      final inputLabel = r.inputLabel;
+                                      final outputLabel = r.outputLabel;
+                                      final timestamp = r.timestamp
+                                          .toLocal()
+                                          .toIso8601String()
+                                          .substring(11, 19);
+
+                                      return InkWell(
+                                        key: ValueKey(
+                                          'tool_history_${widget.tool.id}_$index',
+                                        ),
+                                        onTap: () async {
+                                          final toCopy = _stripKnownUnitSuffix(
+                                            r.outputLabel,
+                                          );
+                                          await Clipboard.setData(
+                                            ClipboardData(text: toCopy),
+                                          );
+                                          if (!mounted) return;
+                                          _showNotice(
+                                            'Copied result',
+                                            UnitanaNoticeKind.success,
+                                          );
+                                        },
+                                        onLongPress: () async {
+                                          final preservedText =
+                                              _controller.text;
+
+                                          final raw = _stripKnownUnitSuffix(
+                                            r.inputLabel,
+                                          );
+                                          final toCopy =
+                                              _trimTrailingZerosForClipboard(
+                                                raw,
+                                              );
+                                          await Clipboard.setData(
+                                            ClipboardData(text: toCopy),
+                                          );
+                                          if (!mounted) return;
+
+                                          // Guard against accidental "restore/edit" regressions.
+                                          if (_controller.text !=
+                                              preservedText) {
+                                            _controller
+                                              ..text = preservedText
+                                              ..selection =
+                                                  TextSelection.collapsed(
+                                                    offset:
+                                                        preservedText.length,
+                                                  );
+                                          }
+                                          _showNotice(
+                                            'Copied input',
+                                            UnitanaNoticeKind.success,
+                                          );
+                                        },
+                                        child: Padding(
+                                          padding: const EdgeInsets.fromLTRB(
+                                            12,
+                                            10,
+                                            12,
+                                            10,
+                                          ),
+                                          child: Row(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Expanded(
+                                                child: Column(
+                                                  crossAxisAlignment:
+                                                      CrossAxisAlignment.start,
+                                                  children: [
+                                                    _TerminalLine(
+                                                      prompt: '>',
+                                                      input: inputLabel,
+                                                      output: outputLabel,
+                                                      emphasize: isMostRecent,
+                                                      arrowColor: isMostRecent
+                                                          ? DraculaPalette
+                                                                .purple
+                                                          : DraculaPalette
+                                                                .comment,
+                                                    ),
+                                                    const SizedBox(height: 6),
+                                                    Text(
+                                                      timestamp,
+                                                      style: Theme.of(context)
+                                                          .textTheme
+                                                          .labelSmall
+                                                          ?.copyWith(
+                                                            color:
+                                                                DraculaPalette
+                                                                    .comment,
+                                                          ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                              const SizedBox(width: 8),
+                                              Icon(
+                                                Icons.copy_rounded,
+                                                size: 16,
+                                                color: DraculaPalette.comment
+                                                    .withAlpha(200),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
@@ -838,79 +1386,45 @@ class _ResultCard extends StatelessWidget {
   final String? lensId;
   final String? line;
 
-  const _ResultCard({required this.toolId, this.lensId, required this.line});
+  const _ResultCard({
+    required this.toolId,
+    required this.lensId,
+    required this.line,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final text = Theme.of(context).textTheme;
     final accent = LensAccents.iconTintFor(lensId ?? '');
 
+    final resolved = line;
+    String input;
+    String output;
+    if (resolved == null || resolved.trim().isEmpty) {
+      input = 'Result';
+      output = 'Run Convert';
+    } else if (resolved.contains('→')) {
+      final parts = resolved.split('→');
+      input = parts.first.trim();
+      output = parts.sublist(1).join('→').trim();
+    } else {
+      input = resolved.trim();
+      output = '';
+    }
+
     return Container(
-      padding: const EdgeInsets.all(12),
+      key: ValueKey('tool_result_$toolId'),
+      padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
       decoration: BoxDecoration(
         color: DraculaPalette.currentLine,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: DraculaPalette.comment.withAlpha(160)),
       ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(Icons.calculate_rounded, color: accent),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Result',
-                  style: text.labelLarge?.copyWith(
-                    color: DraculaPalette.foreground,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                if (line == null)
-                  Text(
-                    'Run a conversion to see the result here.',
-                    key: ValueKey('tool_result_$toolId'),
-                    style: text.bodyMedium?.copyWith(
-                      fontFamily: 'monospace',
-                      fontWeight: FontWeight.w700,
-                      color: DraculaPalette.foreground,
-                    ),
-                  )
-                else
-                  Builder(
-                    builder: (context) {
-                      // Expected shape: "<input> → <output>".
-                      final parts = line!.split('→');
-                      final input = parts.isNotEmpty
-                          ? parts.first.trim()
-                          : line!;
-                      final output = parts.length > 1
-                          ? parts.sublist(1).join('→').trim()
-                          : '';
-                      return KeyedSubtree(
-                        key: ValueKey('tool_result_$toolId'),
-                        child: Semantics(
-                          label: 'Result',
-                          child: DefaultTextStyle(
-                            style: text.bodyLarge ?? const TextStyle(),
-                            child: _TerminalLine(
-                              prompt: '>',
-                              input: input,
-                              output: output,
-                              emphasize: true,
-                              arrowColor: DraculaPalette.purple,
-                            ),
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-              ],
-            ),
-          ),
-        ],
+      child: _TerminalLine(
+        prompt: '>',
+        input: input,
+        output: output,
+        emphasize: true,
+        arrowColor: accent,
       ),
     );
   }
