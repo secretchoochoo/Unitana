@@ -5,6 +5,9 @@ import 'package:flutter/foundation.dart';
 /// Shared between the main Places Hero and the pinned overlay.
 enum HeroDetailsPillMode { sun, wind }
 
+/// Session-scoped env pill mode (Hero left rail).
+enum HeroEnvPillMode { aqi, pollen }
+
 /// Backwards-compatible enum name for pinned overlay callers.
 enum PinnedHeroDetailsMode { sun, wind }
 
@@ -51,6 +54,11 @@ class DashboardSessionController extends ChangeNotifier {
   // checking while scrolling.
   PinnedHeroDetailsMode _pinnedHeroDetailsMode = PinnedHeroDetailsMode.wind;
 
+  // Places hero env pill mode (AQI / Pollen).
+  //
+  // Session-scoped only: not persisted. Defaults to AQI as a neutral baseline.
+  HeroEnvPillMode _heroEnvPillMode = HeroEnvPillMode.aqi;
+
   HeroDetailsPillMode get heroDetailsPillMode => _heroDetailsPillMode;
 
   void setHeroDetailsPillMode(HeroDetailsPillMode value) {
@@ -79,6 +87,21 @@ class DashboardSessionController extends ChangeNotifier {
     _pinnedHeroDetailsMode = _pinnedHeroDetailsMode == PinnedHeroDetailsMode.sun
         ? PinnedHeroDetailsMode.wind
         : PinnedHeroDetailsMode.sun;
+    notifyListeners();
+  }
+
+  HeroEnvPillMode get heroEnvPillMode => _heroEnvPillMode;
+
+  void setHeroEnvPillMode(HeroEnvPillMode value) {
+    if (_heroEnvPillMode == value) return;
+    _heroEnvPillMode = value;
+    notifyListeners();
+  }
+
+  void toggleHeroEnvPillMode() {
+    _heroEnvPillMode = _heroEnvPillMode == HeroEnvPillMode.aqi
+        ? HeroEnvPillMode.pollen
+        : HeroEnvPillMode.aqi;
     notifyListeners();
   }
 

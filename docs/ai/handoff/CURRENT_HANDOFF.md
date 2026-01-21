@@ -1,38 +1,61 @@
 # Current handoff (canonical)
 
 ## Status
-- Build: should be green once `patch_2026-01-13_S6k_tool_modal_scroll_tests_hotfix` is applied (fixes failing widget tests from S6j).
-- Merge gates (non-negotiable): `dart format .`, `flutter analyze`, `flutter test`.
-- Dashboard architecture: sliver-based dashboard; Places Hero V2 supports a compact pinned overlay that keeps Reality toggle and key pills actionable during scroll.
-- Time contract: device clock is the source of truth; timezones are display-only formatting.
-- Tool modal UX contract (current):
-  - Units row: units label + swap control are visually tied; swap uses a subtle pulse affordance.
-  - History: terminal-style pane; tap copies **result** to clipboard; long-press copies **input** to clipboard (no “restore/edit” behavior).
-  - Notices/toasts: non-interactive so they never block long-press actions.
+- Repo is green at merge gates: `dart format .`, `flutter analyze`, `flutter test`.
+- Sev1 (P1.11 Hero) is closed.
+- Places Hero V2 is stable with Option 3 (two-bay layout).
 
-## What we completed in this chat (high level)
-- Sev1 lock: pinned mini-hero pill strip contract hardened (single-row only, no wrapping/stacking; scale-down only).
-- Pinned “Details” chip: Sunrise/Sunset ↔ Wind toggle geometry hardened to avoid jitter/size-shift during transitions.
-- Tool surface expansion: added Volume, Pressure, and Shoe Sizes tools (plus associated UX/test hardening).
-- Tool modals: swap control placement tightened (vertically aligned with units), history pane made more terminal-like, and clipboard contract clarified (Copied result vs Copied input).
-- QA hardening: targeted widget tests for the pinned pill row and tool modal clipboard behavior; tests now locate the actual Scrollable descendant reliably.
+## Sev1 closure summary
+### What was failing
+- Widget tests used pathological constraints that yielded tiny inner boxes (observed: `w=124, h=26` after padding). Any multi-line `Column` inside this space overflowed.
+- A separate contract test required the hero left rail to be readable, including a minimum width target (>=150 on phone surface). Flex splits were not guaranteeing it.
 
-## Current priorities (next slices)
-1) Multi-unit conversion UX (design-first): define the “unit matrix” approach for tools that may expand beyond a simple two-unit swap (volume, weight, length, etc.) without becoming clunky.
-2) Platform icon audit execution: complete Android + iOS + one desktop/web target per `docs/ai/reference/PLATFORM_ICON_AUDIT.md`.
-3) Weather binding (deferred until tool surface is close): bind provider condition codes to SceneKey behind a flag; keep network off by default until endgame.
+### What fixed it
+- Micro-first gating for Env and Currency. Mode selection happens before any multi-line `Column` is constructed.
+- Explicit width allocation with minimums, rather than relying on flexible children.
+- Stable keys kept intact, including a specific contract: `hero_currency_primary_line` always points to a `Text` widget.
 
-## Backlog (captured, not scheduled)
-- Multi-unit conversion UX:
-  - Avoid a clunky From/To picker; explore a compact “units pill” that opens a minimal selector, or a “More units” sub-sheet that keeps the main modal clean.
-  - Ensure unit selection is reflected consistently across widgets and tool modals.
-  - Keep Dracula theme palette and terminal-adjacent aesthetic.
-- Edit mode: drag-and-drop widget rearrangement (homescreen-style) with a subtle “shake” animation.
-- Modals: optional top-right close “X” (tasteful Dracula theme) in addition to outside-tap dismissal.
-- History header polish: consider a more deliberate Dracula-themed treatment while preserving readability.
+## Contracts (non-negotiable)
+- Keep repo green: `dart format .`, `flutter analyze`, `flutter test`.
+- Stable keys everywhere (tests and persistence depend on them).
+- Patch workflow: changed-files-only zip, paths preserved.
+- Exactly one refresh label. It lives under the city header (header-only contract). There is no refresh label under the hero marquee.
 
-## Contracts to preserve
-- Stable keys everywhere (persistence + tests).
-- No public widget API churn unless strictly necessary.
-- Pinned mini-hero pill strip: single row only, never stacks/wraps; scale-down only (no ellipsis).
-- Deliver patches as changed-files-only zips, paths preserved.
+## Places Hero V2 contracts
+### Region map (phone surface)
+- Top-left: temperature.
+- Top-right: marquee.
+- Bottom-left: Env (AQI or Pollen) and Currency.
+- Bottom-right: Sunrise and Sunset, with Wind and Gust toggled in the same pill.
+
+### Micro behavior
+- Env and Currency must degrade to a single-line micro layout under tight constraints. The micro trigger must occur before building any multi-line `Column`.
+
+## Current UX issue
+The hero is stable but the top row can feel visually compressed. The next work is no longer about preventing overflows. It is about visual proportions:
+- Currency, Env (AQI/Pollen), and Sunrise/Sunset should look flatter vertically to free space for the temperature and marquee.
+- Once space is available, the temperature should be vertically centered with the marquee row.
+
+## Latest slice completed
+### P1.13 Hero Lane Geometry and Visual Compaction
+Status: complete.
+
+What changed:
+- Marquee condition label duplication removed (single widget-layer label).
+- Marquee slot is allowed to grow within the top band (capped) instead of being hard-limited to 84dp.
+- Top row stretches and centers lane contents so temperature and marquee align vertically when there is height to do so.
+- Env, Currency, and Sunrise/Sunset padding tightened to reduce perceived vertical weight.
+
+## Next slice (single objective)
+### P1.14 Hero polish and proportional tuning
+Goal: tune the hero proportions to match the red-box intent more closely, without re-introducing test fragility.
+
+Focus:
+- Rebalance left stack vs Sunrise/Sunset footprint (horizontal and vertical) so the bottom band reads as two intentional lanes.
+- Ensure currency and Env pills can be slightly narrower and typography can scale down in non-compact mode (as long as keys and micro rules remain authoritative).
+- Verify iconography consistency for currency and Env in both normal and micro modes.
+
+Definition of Done:
+- Tests stay green.
+- No RenderFlex overflows in the hero under pathological constraints.
+- Marquee tile is not visually “capsuled” on phone surfaces and the condition text remains legible.

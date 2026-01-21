@@ -9,6 +9,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../../data/city_repository.dart';
 import '../../../data/weather_api_client.dart';
 import '../../../data/open_meteo_client.dart';
+import '../../../data/frankfurter_client.dart';
 import '../../../models/place.dart';
 import '../../../utils/timezone_utils.dart';
 
@@ -21,6 +22,14 @@ enum WeatherBackend {
 
   /// Live weather from WeatherAPI (requires WEATHERAPI_KEY).
   weatherApi,
+}
+
+enum CurrencyBackend {
+  /// No network; uses a stable demo rate.
+  mock,
+
+  /// Live FX from Frankfurter (ECB-based).
+  frankfurter,
 }
 
 enum WeatherCondition {
@@ -478,14 +487,17 @@ class DashboardLiveDataController extends ChangeNotifier {
   final CityRepository _cityRepository;
   final WeatherApiClient _weatherApi;
   final OpenMeteoClient _openMeteo;
+  final FrankfurterClient _frankfurter;
 
   DashboardLiveDataController({
     CityRepository? cityRepository,
     WeatherApiClient? weatherApiClient,
     OpenMeteoClient? openMeteoClient,
+    FrankfurterClient? frankfurterClient,
   }) : _cityRepository = cityRepository ?? CityRepository.instance,
        _weatherApi = weatherApiClient ?? WeatherApiClient.fromEnvironment(),
-       _openMeteo = openMeteoClient ?? OpenMeteoClient();
+       _openMeteo = openMeteoClient ?? OpenMeteoClient(),
+       _frankfurter = frankfurterClient ?? FrankfurterClient();
 
   bool get isRefreshing => _isRefreshing;
   Object? get lastError => _lastError;
@@ -531,6 +543,36 @@ class DashboardLiveDataController extends ChangeNotifier {
 
   static const String _kDevWeatherBackend = 'dev_weather_backend_v1';
 
+  // Currency backend selection.
+  //
+  // Contract: currency network is OFF by default so tests and demo builds stay hermetic.
+  //
+  // Compile-time defaults (optional):
+  // - --dart-define=CURRENCY_NETWORK_ENABLED=true
+  // - --dart-define=CURRENCY_PROVIDER=frankfurter
+  //
+  // Compile-time hard-disable (optional):
+  // - --dart-define=CURRENCY_NETWORK_ALLOWED=false
+  static const bool _envCurrencyNetworkEnabled = bool.fromEnvironment(
+    'CURRENCY_NETWORK_ENABLED',
+    defaultValue: false,
+  );
+  static const String _envCurrencyProvider = String.fromEnvironment(
+    'CURRENCY_PROVIDER',
+    defaultValue: 'mock',
+  );
+  static const bool _currencyNetworkAllowed = bool.fromEnvironment(
+    'CURRENCY_NETWORK_ALLOWED',
+    defaultValue: true,
+  );
+
+  static const String _kDevCurrencyBackend = 'dev_currency_backend_v1';
+  static const String _kCachedEurToUsdRate = 'currency_eur_to_usd_rate_v1';
+  static const String _kCachedEurToUsdUpdatedAt =
+      'currency_eur_to_usd_updated_at_v1';
+
+  static const Duration _currencyTtl = Duration(hours: 12);
+
   static WeatherBackend _backendFromEnv() {
     if (!_envWeatherNetworkEnabled) return WeatherBackend.mock;
     switch (_envWeatherProvider.toLowerCase()) {
@@ -554,10 +596,41 @@ class DashboardLiveDataController extends ChangeNotifier {
     }
   }
 
+  static CurrencyBackend _currencyBackendFromEnv() {
+    if (!_envCurrencyNetworkEnabled) return CurrencyBackend.mock;
+    switch (_envCurrencyProvider.toLowerCase()) {
+      case 'frankfurter':
+        return CurrencyBackend.frankfurter;
+      default:
+        return CurrencyBackend.mock;
+    }
+  }
+
+  static String _currencyBackendKey(CurrencyBackend b) {
+    switch (b) {
+      case CurrencyBackend.frankfurter:
+        return 'frankfurter';
+      case CurrencyBackend.mock:
+        return 'mock';
+    }
+  }
+
   WeatherBackend _weatherBackend = _backendFromEnv();
+  CurrencyBackend _currencyBackend = _currencyBackendFromEnv();
+  DateTime? _lastCurrencyRefreshedAt;
   bool _devSettingsLoaded = false;
 
   WeatherBackend get weatherBackend => _weatherBackend;
+
+  CurrencyBackend get currencyBackend => _currencyBackend;
+
+  /// Whether live network currency is enabled (and allowed) for this build.
+  bool get currencyNetworkEnabled =>
+      _currencyNetworkAllowed && _currencyBackend != CurrencyBackend.mock;
+
+  bool get currencyNetworkAllowed => _currencyNetworkAllowed;
+
+  DateTime? get lastCurrencyRefreshedAt => _lastCurrencyRefreshedAt;
 
   /// Whether live network weather is enabled (and allowed) for this build.
   bool get weatherNetworkEnabled =>
@@ -580,30 +653,57 @@ class DashboardLiveDataController extends ChangeNotifier {
     _devSettingsLoaded = true;
 
     final prefs = await SharedPreferences.getInstance();
-    final raw = prefs.getString(_kDevWeatherBackend);
-    if (raw == null || raw.trim().isEmpty) return;
 
-    final norm = raw.trim().toLowerCase();
-    final WeatherBackend next;
-    if (norm == 'openmeteo' ||
-        norm == 'open_meteo' ||
-        norm == 'open-meteo' ||
-        norm == 'openmeto') {
-      next = WeatherBackend.openMeteo;
-    } else if (norm == 'weatherapi' ||
-        norm == 'weather_api' ||
-        norm == 'weather-api') {
-      next = WeatherBackend.weatherApi;
-    } else {
-      next = WeatherBackend.mock;
+    final weatherRaw = prefs.getString(_kDevWeatherBackend);
+    if (weatherRaw != null && weatherRaw.trim().isNotEmpty) {
+      final norm = weatherRaw.trim().toLowerCase();
+      final WeatherBackend next;
+      if (norm == 'openmeteo' ||
+          norm == 'open_meteo' ||
+          norm == 'open-meteo' ||
+          norm == 'openmeto') {
+        next = WeatherBackend.openMeteo;
+      } else if (norm == 'weatherapi' ||
+          norm == 'weather_api' ||
+          norm == 'weather-api') {
+        next = WeatherBackend.weatherApi;
+      } else {
+        next = WeatherBackend.mock;
+      }
+
+      // If the dev setting asks for WeatherAPI but the build isn't configured,
+      // silently fall back to Open-Meteo (or mock if network is disallowed).
+      if (next == WeatherBackend.weatherApi && !_weatherApi.isConfigured) {
+        _weatherBackend = WeatherBackend.openMeteo;
+      } else {
+        _weatherBackend = next;
+      }
     }
 
-    // If the dev setting asks for WeatherAPI but the build isn't configured,
-    // silently fall back to Open-Meteo (or mock if network is disallowed).
-    if (next == WeatherBackend.weatherApi && !_weatherApi.isConfigured) {
-      _weatherBackend = WeatherBackend.openMeteo;
-    } else {
-      _weatherBackend = next;
+    final currencyRaw = prefs.getString(_kDevCurrencyBackend);
+    if (currencyRaw != null && currencyRaw.trim().isNotEmpty) {
+      final norm = currencyRaw.trim().toLowerCase();
+      final CurrencyBackend next;
+      if (norm == 'frankfurter') {
+        next = CurrencyBackend.frankfurter;
+      } else {
+        next = CurrencyBackend.mock;
+      }
+
+      if (!_currencyNetworkAllowed && next != CurrencyBackend.mock) {
+        _currencyBackend = CurrencyBackend.mock;
+      } else {
+        _currencyBackend = next;
+      }
+    }
+
+    final cachedRate = prefs.getDouble(_kCachedEurToUsdRate);
+    if (cachedRate != null && cachedRate > 0) {
+      _eurToUsd = cachedRate;
+    }
+    final cachedAt = prefs.getInt(_kCachedEurToUsdUpdatedAt);
+    if (cachedAt != null && cachedAt > 0) {
+      _lastCurrencyRefreshedAt = DateTime.fromMillisecondsSinceEpoch(cachedAt);
     }
 
     notifyListeners();
@@ -629,6 +729,22 @@ class DashboardLiveDataController extends ChangeNotifier {
 
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_kDevWeatherBackend, _backendKey(backend));
+
+    notifyListeners();
+  }
+
+  Future<void> setCurrencyBackend(CurrencyBackend backend) async {
+    if (!_currencyNetworkAllowed && backend != CurrencyBackend.mock) {
+      _lastError = StateError('Network currency is disallowed for this build');
+      notifyListeners();
+      return;
+    }
+
+    if (_currencyBackend == backend) return;
+    _currencyBackend = backend;
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_kDevCurrencyBackend, _currencyBackendKey(backend));
 
     notifyListeners();
   }
@@ -972,15 +1088,13 @@ class DashboardLiveDataController extends ChangeNotifier {
             // Sun times stay stable in this mock layer.
           }
         }
+        await _maybeRefreshCurrency();
 
         _lastRefreshedAt = DateTime.now();
 
-        // Simulate a tiny rate drift while keeping outputs stable.
-        _eurToUsd =
-            (_eurToUsd +
-                    (math.sin(DateTime.now().millisecondsSinceEpoch / 100000) *
-                        0.01))
-                .clamp(1.02, 1.25);
+        if (!currencyNetworkEnabled) {
+          _eurToUsd = 1.10;
+        }
       } catch (e) {
         _lastError = e;
       } finally {
@@ -990,6 +1104,39 @@ class DashboardLiveDataController extends ChangeNotifier {
       }
     });
     return completer.future;
+  }
+
+  Future<void> _maybeRefreshCurrency() async {
+    if (!currencyNetworkEnabled) return;
+
+    // TTL-based refresh so we don't create a chatty background dependency.
+    final now = DateTime.now();
+    final last = _lastCurrencyRefreshedAt;
+    final stale = last == null || now.difference(last) > _currencyTtl;
+    if (!stale) return;
+
+    try {
+      double? rate;
+      switch (_currencyBackend) {
+        case CurrencyBackend.frankfurter:
+          rate = await _frankfurter.fetchEurToUsd();
+          break;
+        case CurrencyBackend.mock:
+          rate = null;
+          break;
+      }
+
+      if (rate == null || rate <= 0) return;
+
+      _eurToUsd = rate;
+      _lastCurrencyRefreshedAt = now;
+
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setDouble(_kCachedEurToUsdRate, rate);
+      await prefs.setInt(_kCachedEurToUsdUpdatedAt, now.millisecondsSinceEpoch);
+    } catch (_) {
+      // Best-effort only. Keep the last stable value.
+    }
   }
 
   WeatherSnapshot _seedWeather(Place p) {

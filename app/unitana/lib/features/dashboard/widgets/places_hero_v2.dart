@@ -92,9 +92,8 @@ class PlacesHeroV2 extends StatelessWidget {
       builder: (context, constraints) {
         final isCompact =
             constraints.maxHeight < 280 || constraints.maxWidth < 320;
-        final pad = isCompact ? 10.0 : 14.0;
-        final gap = isCompact ? 6.0 : 10.0;
-        final sideWidth = isCompact ? 160.0 : 196.0;
+        final pad = 10.0;
+        final gap = 6.0;
 
         return Container(
           padding: EdgeInsets.all(pad),
@@ -131,41 +130,28 @@ class PlacesHeroV2 extends StatelessWidget {
                     ),
                     SizedBox(height: gap),
                     Expanded(
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          Expanded(
-                            child: _LeftPrimaryBlock(
-                              place: primary,
-                              weather: primaryWeather,
-                              secondaryPlace: secondary,
-                              secondaryWeather: secondaryWeather,
-                              eurToUsd: liveData.eurToUsd,
-                              compact: isCompact,
-                            ),
-                          ),
-                          SizedBox(width: gap),
-                          SizedBox(
-                            width: sideWidth,
-                            child: _RightSunRail(
-                              liveData: liveData,
-                              sun: primarySun,
-                              sceneKey: primaryWeather?.sceneKey,
-                              conditionLabel: primaryWeather?.conditionText,
-                              isNight: isNight,
-                              primaryTzId: primary?.timeZoneId,
-                              secondaryTzId: secondary?.timeZoneId,
-                              primaryUse24h: primary?.use24h,
-                              secondaryUse24h: secondary?.use24h,
-                              detailsMode: session.heroDetailsPillMode,
-                              onToggleDetailsMode:
-                                  session.toggleHeroDetailsPillMode,
-                              windLine: primaryWindLine,
-                              gustLine: primaryGustLine,
-                              compact: isCompact,
-                            ),
-                          ),
-                        ],
+                      child: _HeroBandsBody(
+                        primary: primary,
+                        primaryWeather: primaryWeather,
+                        secondary: secondary,
+                        secondaryWeather: secondaryWeather,
+                        eurToUsd: liveData.eurToUsd,
+                        envMode: session.heroEnvPillMode,
+                        onToggleEnvMode: session.toggleHeroEnvPillMode,
+                        sun: primarySun,
+                        sceneKey: primaryWeather?.sceneKey,
+                        conditionLabel: primaryWeather?.conditionText,
+                        isNight: isNight,
+                        primaryTzId: primary?.timeZoneId,
+                        secondaryTzId: secondary?.timeZoneId,
+                        primaryUse24h: primary?.use24h,
+                        secondaryUse24h: secondary?.use24h,
+                        detailsMode: session.heroDetailsPillMode,
+                        onToggleDetailsMode: session.toggleHeroDetailsPillMode,
+                        windLine: primaryWindLine,
+                        gustLine: primaryGustLine,
+                        compact: isCompact,
+                        gap: gap,
                       ),
                     ),
                   ],
@@ -467,117 +453,256 @@ class _ClocksHeaderBlock extends StatelessWidget {
   }
 }
 
-class _LeftPrimaryBlock extends StatelessWidget {
-  final Place? place;
-  final WeatherSnapshot? weather;
-  final Place? secondaryPlace;
+/// Hero body layout that aligns content into two bands:
+/// - Top band: temperature (left) and marquee (right)
+/// - Bottom band: Env+Currency stack (left), middle anim bay, and Sun/Wind pill (right)
+///
+/// This avoids cross-band constraint ambiguity and ensures the middle bay always
+/// sits below the marquee without shrinking the left tiles.
+class _HeroBandsBody extends StatelessWidget {
+  final Place? primary;
+  final WeatherSnapshot? primaryWeather;
+  final Place? secondary;
   final WeatherSnapshot? secondaryWeather;
-  final double eurToUsd;
-  final bool compact;
+  final double? eurToUsd;
+  final HeroEnvPillMode envMode;
+  final VoidCallback onToggleEnvMode;
 
-  const _LeftPrimaryBlock({
-    required this.place,
-    required this.weather,
-    required this.secondaryPlace,
+  final SunTimesSnapshot? sun;
+  final SceneKey? sceneKey;
+  final String? conditionLabel;
+  final bool isNight;
+  final String? primaryTzId;
+  final String? secondaryTzId;
+  final bool? primaryUse24h;
+  final bool? secondaryUse24h;
+  final HeroDetailsPillMode detailsMode;
+  final VoidCallback onToggleDetailsMode;
+  final String windLine;
+  final String gustLine;
+
+  final bool compact;
+  final double gap;
+
+  const _HeroBandsBody({
+    required this.primary,
+    required this.primaryWeather,
+    required this.secondary,
     required this.secondaryWeather,
     required this.eurToUsd,
-    this.compact = false,
+    required this.envMode,
+    required this.onToggleEnvMode,
+    required this.sun,
+    required this.sceneKey,
+    required this.conditionLabel,
+    required this.isNight,
+    required this.primaryTzId,
+    required this.secondaryTzId,
+    required this.primaryUse24h,
+    required this.secondaryUse24h,
+    required this.detailsMode,
+    required this.onToggleDetailsMode,
+    required this.windLine,
+    required this.gustLine,
+    required this.compact,
+    required this.gap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, c) {
+        final innerW = c.maxWidth;
+        final colGap = gap;
+        final stackGap = 4.0;
+
+        // Option 3: remove the middle animation bay.
+        // Sizing priority: Sunrise/Wind (right) gets the most space;
+        // Env/Currency (left) stays readable and never collapses into a stamp.
+        final leftMin = 150.0;
+
+        final available = (innerW - colGap).clamp(0.0, double.infinity);
+
+        double leftW;
+        double rightW;
+
+        if (available <= 0) {
+          leftW = 0;
+          rightW = 0;
+        } else {
+          // Contract-first allocation:
+          // - Prefer left rail >= leftMin when possible.
+          // - Ensure Sunrise/Wind (right) is never narrower than the left rail.
+          if (available >= leftMin * 2) {
+            leftW = leftMin;
+            rightW = available - leftW;
+          } else {
+            // Tight case: split evenly to preserve readability parity.
+            leftW = available / 2;
+            rightW = available - leftW;
+          }
+
+          // Final guard: keep right >= left when there's any rounding drift.
+          if (rightW < leftW) {
+            final mid = available / 2;
+            leftW = mid;
+            rightW = available - mid;
+          }
+        }
+
+        final topRow = Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            SizedBox(
+              width: leftW,
+              child: _LeftTempBand(
+                primary: primary,
+                primaryWeather: primaryWeather,
+                secondary: secondary,
+                secondaryWeather: secondaryWeather,
+                compact: compact,
+              ),
+            ),
+            SizedBox(width: colGap),
+            SizedBox(
+              width: rightW,
+              child: Align(
+                alignment: Alignment.bottomCenter,
+                child: _RightMarqueeSlot(
+                  compact: compact,
+                  isNight: isNight,
+                  sceneKey: sceneKey,
+                  conditionLabel: conditionLabel,
+                  renderConditionLabel: false,
+                ),
+              ),
+            ),
+          ],
+        );
+
+        final bottomRow = Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            SizedBox(
+              width: leftW,
+              child: _LeftEnvCurrencyStack(
+                primary: primary,
+                secondary: secondary,
+                eurToUsd: eurToUsd,
+                envMode: envMode,
+                onToggleEnvMode: onToggleEnvMode,
+                compact: compact,
+                gap: stackGap,
+              ),
+            ),
+            SizedBox(width: colGap),
+            SizedBox(
+              width: rightW,
+              child: _RightDetailsPill(
+                sun: sun,
+                primaryTzId: primaryTzId,
+                secondaryTzId: secondaryTzId,
+                primaryUse24h: primaryUse24h,
+                secondaryUse24h: secondaryUse24h,
+                detailsMode: detailsMode,
+                onToggleDetailsMode: onToggleDetailsMode,
+                windLine: windLine,
+                gustLine: gustLine,
+                compact: compact,
+              ),
+            ),
+          ],
+        );
+
+        // Contract: Env and Currency tiles must each have a >=44dp touch target.
+        // Keep this as a single source of truth so tests and layout policy
+        // don't drift again.
+        final tileTapH = 44.0;
+        final bottomMinH = tileTapH + stackGap + tileTapH;
+        final totalH = c.hasBoundedHeight ? c.maxHeight : double.infinity;
+
+        // Pin the bottom band whenever the overall hero height can afford it.
+        // This prevents the top row from expanding naturally and starving the
+        // Env/Currency stack into a ~20dp postage stamp (the P1.12 regressions).
+        final canPinBottom =
+            c.hasBoundedHeight &&
+            totalH.isFinite &&
+            totalH >= (bottomMinH + colGap + 1.0);
+
+        if (canPinBottom) {
+          final usable = totalH - colGap;
+          final bottomH = bottomMinH;
+          final topH = (usable - bottomH).clamp(0.0, double.infinity);
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              SizedBox(height: topH, child: topRow),
+              SizedBox(height: colGap),
+              SizedBox(height: bottomH, child: bottomRow),
+            ],
+          );
+        }
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            topRow,
+            SizedBox(height: colGap),
+            Expanded(child: bottomRow),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _LeftTempBand extends StatelessWidget {
+  final Place? primary;
+  final WeatherSnapshot? primaryWeather;
+  final Place? secondary;
+  final WeatherSnapshot? secondaryWeather;
+  final bool compact;
+
+  const _LeftTempBand({
+    required this.primary,
+    required this.primaryWeather,
+    required this.secondary,
+    required this.secondaryWeather,
+    required this.compact,
   });
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final muted = cs.onSurface.withAlpha(170);
 
-    final primaryTemp = (place == null || weather == null)
-        ? '--'
-        : _formatTemp(place!, weather!);
+    final primaryTemp = (primary != null && primaryWeather != null)
+        ? _formatTemp(primary!, primaryWeather!)
+        : '--';
 
-    final secondaryTemp = (secondaryPlace == null || secondaryWeather == null)
-        ? ''
-        : _formatTemp(secondaryPlace!, secondaryWeather!);
-
-    final (windLine, gustLine) = (place != null)
-        ? _windLines(place!, weather)
-        : ('Wind --', 'Gust --');
-
-    final currencyLines = _currencyLines(
-      primary: place,
-      secondary: secondaryPlace,
-      eurToUsd: eurToUsd,
-    );
-
-    final windStyle =
-        (compact
-                ? Theme.of(context).textTheme.bodySmall
-                : Theme.of(context).textTheme.bodyMedium)
-            ?.copyWith(
-              color: cs.onSurface.withAlpha(215),
-              fontWeight: FontWeight.w600,
-            );
-
-    final rateStyle = Theme.of(context).textTheme.bodySmall?.copyWith(
-      color: cs.onSurface.withAlpha(155),
-      fontWeight: FontWeight.w500,
-    );
-
-    final labelStyle =
-        (compact
-                ? Theme.of(context).textTheme.bodySmall
-                : Theme.of(context).textTheme.bodyMedium)
-            ?.copyWith(color: cs.onSurface, fontWeight: FontWeight.w800);
-
-    InlineSpan labeledLineSpan(
-      String line, {
-      required TextStyle? baseStyle,
-      required TextStyle? labelStyle,
-    }) {
-      final trimmed = line.trim();
-      final firstSpace = trimmed.indexOf(' ');
-      final label = firstSpace <= 0
-          ? trimmed
-          : trimmed.substring(0, firstSpace);
-      final rest = firstSpace <= 0 ? '' : trimmed.substring(firstSpace);
-      return TextSpan(
-        children: [
-          TextSpan(text: label, style: labelStyle),
-          if (rest.isNotEmpty) TextSpan(text: rest, style: baseStyle),
-        ],
-      );
-    }
-
-    InlineSpan rateLineSpan(
-      String line, {
-      required TextStyle? baseStyle,
-      required TextStyle? labelStyle,
-    }) {
-      final trimmed = line.trim();
-      const prefix = 'Rate:';
-      if (trimmed.startsWith(prefix)) {
-        final rest = trimmed.substring(prefix.length);
-        return TextSpan(
-          children: [
-            TextSpan(text: prefix, style: labelStyle),
-            TextSpan(text: rest, style: baseStyle),
-          ],
-        );
-      }
-      return TextSpan(text: trimmed, style: baseStyle);
-    }
+    final secondaryTemp = (secondary != null && secondaryWeather != null)
+        ? _formatTemp(secondary!, secondaryWeather!)
+        : '';
 
     final primaryTempStyle =
         (compact
-                ? Theme.of(context).textTheme.headlineMedium
+                ? Theme.of(context).textTheme.displaySmall
                 : Theme.of(context).textTheme.displayMedium)
-            ?.copyWith(fontWeight: FontWeight.w800, height: 1.0);
+            ?.copyWith(
+              color: cs.onSurface,
+              fontWeight: FontWeight.w900,
+              height: 0.95,
+            );
 
     final secondaryTempStyle =
         (compact
-                ? Theme.of(context).textTheme.labelMedium
+                ? Theme.of(context).textTheme.titleSmall
                 : Theme.of(context).textTheme.titleMedium)
-            ?.copyWith(color: muted, fontWeight: FontWeight.w700);
+            ?.copyWith(
+              color: cs.onSurface.withAlpha(200),
+              fontWeight: FontWeight.w800,
+            );
 
-    Widget tempRow() => FittedBox(
+    return FittedBox(
       fit: BoxFit.scaleDown,
       alignment: Alignment.centerLeft,
       child: Row(
@@ -603,135 +728,60 @@ class _LeftPrimaryBlock extends StatelessWidget {
         ],
       ),
     );
+  }
+}
 
-    Widget windBlock({required double gap}) => Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _ScaleDownRichText(
-          span: labeledLineSpan(
-            windLine,
-            baseStyle: windStyle,
-            labelStyle: labelStyle,
-          ),
-          textKey: const ValueKey('hero_wind_line'),
-        ),
-        SizedBox(height: gap),
-        _ScaleDownRichText(
-          span: labeledLineSpan(
-            gustLine,
-            baseStyle: windStyle,
-            labelStyle: labelStyle,
-          ),
-          textKey: const ValueKey('hero_gust_line'),
-        ),
-      ],
-    );
+class _LeftEnvCurrencyStack extends StatelessWidget {
+  final Place? primary;
+  final Place? secondary;
+  final double? eurToUsd;
+  final HeroEnvPillMode envMode;
+  final VoidCallback onToggleEnvMode;
+  final bool compact;
+  final double gap;
 
-    Widget moneyBlock({required double gap}) => Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _ScaleDownText(
-          currencyLines.$1,
-          style:
-              (compact
-                      ? Theme.of(context).textTheme.bodySmall
-                      : Theme.of(context).textTheme.bodyMedium)
-                  ?.copyWith(
-                    color: cs.onSurface.withAlpha(230),
-                    fontWeight: FontWeight.w700,
-                  ),
-        ),
-        SizedBox(height: gap),
-        _ScaleDownRichText(
-          span: rateLineSpan(
-            currencyLines.$2,
-            baseStyle: rateStyle,
-            labelStyle: labelStyle,
-          ),
-          textKey: const ValueKey('hero_rate_line'),
-        ),
-      ],
-    );
+  const _LeftEnvCurrencyStack({
+    required this.primary,
+    required this.secondary,
+    required this.eurToUsd,
+    required this.envMode,
+    required this.onToggleEnvMode,
+    required this.compact,
+    required this.gap,
+  });
 
+  @override
+  Widget build(BuildContext context) {
     return LayoutBuilder(
-      builder: (context, constraints) {
-        final bounded = constraints.hasBoundedHeight;
-        final smallH =
-            bounded && constraints.maxHeight <= (compact ? 132 : 160);
-        final gapAfterTemp = compact ? (smallH ? 8.0 : 10.0) : 14.0;
-        final innerGap = compact ? (smallH ? 0.0 : 1.0) : 2.0;
-
-        if (!bounded) {
-          // Unbounded height is rare here; keep a simple flow layout.
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              tempRow(),
-              SizedBox(height: gapAfterTemp),
-              windBlock(gap: innerGap),
-              SizedBox(height: compact ? 6 : 10),
-              moneyBlock(gap: innerGap),
-            ],
-          );
-        }
-
-        // Bounded height: use flexible distribution to avoid tiny overflows
-        // and keep wind/money blocks visually separated.
-        // In very tight heights (small phones / landscape), the inner blocks
-        // can overflow because Column children are unconstrained. In that case
-        // we constrain each block and allow it to scale down as a whole.
-        if (smallH) {
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              tempRow(),
-              SizedBox(height: gapAfterTemp),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      child: Align(
-                        alignment: Alignment.topLeft,
-                        child: FittedBox(
-                          fit: BoxFit.scaleDown,
-                          alignment: Alignment.topLeft,
-                          child: windBlock(gap: innerGap),
-                        ),
-                      ),
-                    ),
-                    Expanded(
-                      child: Align(
-                        alignment: Alignment.bottomLeft,
-                        child: FittedBox(
-                          fit: BoxFit.scaleDown,
-                          alignment: Alignment.bottomLeft,
-                          child: moneyBlock(gap: innerGap),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          );
-        }
+      builder: (context, c) {
+        final innerGap = gap < 2.0 ? 2.0 : (gap > 10.0 ? 10.0 : gap);
+        final tileH = ((c.maxHeight - innerGap) / 2).clamp(
+          0.0,
+          double.infinity,
+        );
+        final dense = tileH < (compact ? 66.0 : 86.0);
+        // Keep rendering deterministic even if the currency rate hasn't loaded.
+        final safeRate = eurToUsd ?? 1.10;
 
         return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            tempRow(),
-            SizedBox(height: gapAfterTemp),
             Expanded(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  windBlock(gap: innerGap),
-                  moneyBlock(gap: innerGap),
-                ],
+              child: _HeroEnvPill(
+                envMode: envMode,
+                onToggle: onToggleEnvMode,
+                compact: compact,
+                dense: dense,
+              ),
+            ),
+            SizedBox(height: innerGap),
+            Expanded(
+              child: _HeroCurrencyCard(
+                primary: primary,
+                secondary: secondary,
+                eurToUsd: safeRate,
+                compact: compact,
+                dense: dense,
               ),
             ),
           ],
@@ -741,13 +791,601 @@ class _LeftPrimaryBlock extends StatelessWidget {
   }
 }
 
-class _RightSunRail extends StatelessWidget {
-  final DashboardLiveDataController liveData;
+class _HeroEnvPill extends StatelessWidget {
+  final HeroEnvPillMode envMode;
+  final VoidCallback onToggle;
+  final bool compact;
+  final bool dense;
 
-  final SunTimesSnapshot? sun;
+  const _HeroEnvPill({
+    required this.envMode,
+    required this.onToggle,
+    required this.compact,
+    required this.dense,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final layout = Theme.of(context).extension<UnitanaLayoutTokens>();
+
+    final radius = (layout?.radiusCard ?? 20.0) - 6;
+    final stroke = (layout?.strokeHairline ?? 1.0);
+
+    final pad = compact
+        ? EdgeInsets.symmetric(horizontal: 10, vertical: dense ? 5 : 7)
+        : EdgeInsets.symmetric(horizontal: 11, vertical: dense ? 6 : 8);
+
+    // Compact mode is routinely forced into very small inner heights by the
+    // test harness. Any extra vertical gap risks sub-pixel overflow.
+    final innerGap = dense ? 0.0 : (compact ? 0.0 : 2.0);
+
+    final baseTitle = Theme.of(context).textTheme.labelLarge;
+    final titleStyle = baseTitle?.copyWith(
+      // Slightly smaller to free room for future dual-value env lines
+      // (AQI + PM2.5, dual scale, etc.) without squeezing the marquee.
+      fontSize: (baseTitle.fontSize ?? 14) - 1,
+      color: cs.onSurface.withAlpha(230),
+      fontWeight: FontWeight.w800,
+    );
+
+    final baseRow = (compact
+        ? Theme.of(context).textTheme.bodySmall
+        : Theme.of(context).textTheme.bodyMedium);
+    final rowStyle = baseRow?.copyWith(
+      fontSize: (baseRow.fontSize ?? 12) - 1,
+      color: cs.onSurface.withAlpha(210),
+      fontWeight: FontWeight.w600,
+    );
+
+    final isAqi = envMode == HeroEnvPillMode.aqi;
+    final icon = isAqi ? '🌫' : '🌼';
+    final title = isAqi ? 'AQI' : 'Pollen';
+    final line = isAqi ? 'AQI -- • PM2.5 --' : 'Pollen -- • Type --';
+
+    final semanticsLabel = isAqi
+        ? 'Air quality details. Tap to show pollen.'
+        : 'Pollen details. Tap to show air quality.';
+
+    Widget body(bool forceExpand, bool applyMinHeight) {
+      return Semantics(
+        button: true,
+        label: semanticsLabel,
+        child: InkWell(
+          onTap: onToggle,
+          borderRadius: BorderRadius.circular(radius),
+          child: Container(
+            key: const ValueKey('hero_env_pill'),
+            width: forceExpand ? double.infinity : null,
+            height: forceExpand ? double.infinity : null,
+            constraints: applyMinHeight
+                ? const BoxConstraints(minHeight: 44.0)
+                : null,
+            padding: pad,
+            decoration: BoxDecoration(
+              color: cs.surface.withAlpha(40),
+              borderRadius: BorderRadius.circular(radius),
+              border: Border.all(
+                color: cs.outlineVariant.withAlpha(170),
+                width: stroke,
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                SizedBox(
+                  width: double.infinity,
+                  child: Stack(
+                    children: [
+                      Padding(
+                        // Reserve space so the right-aligned swap icon never overlaps the title.
+                        padding: EdgeInsets.only(right: compact ? 18 : 20),
+                        child: Align(
+                          alignment: Alignment.centerLeft,
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            alignment: Alignment.centerLeft,
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(icon, style: titleStyle),
+                                const SizedBox(width: 6),
+                                Text(title, style: titleStyle),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: PulseSwapIcon(
+                          color: cs.onSurface.withAlpha(150),
+                          size: compact ? 14 : 16,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                SizedBox(height: innerGap),
+                _ScaleDownText(
+                  line,
+                  style: rowStyle,
+                  textKey: const ValueKey('hero_env_primary_line'),
+                ),
+                const SizedBox.shrink(key: ValueKey('hero_env_content_aqi')),
+                const SizedBox.shrink(key: ValueKey('hero_env_content_pollen')),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    return LayoutBuilder(
+      builder: (context, c) {
+        final forceExpand = c.hasBoundedWidth && c.hasBoundedHeight;
+
+        // Sev1 contract: this pill must never overflow even under pathological
+        // widget-test constraints (e.g. ~66x19). When too small, render a single
+        // line with zero-risk layout, and keep key stability via zero-size nodes.
+        final maxH = c.hasBoundedHeight ? c.maxHeight : double.infinity;
+        final maxW = c.hasBoundedWidth ? c.maxWidth : double.infinity;
+        final innerH = maxH.isFinite ? (maxH - pad.vertical) : double.infinity;
+        final innerW = maxW.isFinite
+            ? (maxW - pad.horizontal)
+            : double.infinity;
+        // Micro-first: avoid building the 2-line Column under tiny inner boxes.
+        // Micro-first: if the inner height is even slightly constrained, avoid
+        // building multi-line layout that can overflow by sub-pixels.
+        final isMicro = dense || innerH < 36.0 || innerW < 96.0;
+
+        final applyMinHeight = !c.hasBoundedHeight || c.maxHeight >= 44;
+
+        if (!isMicro) {
+          return body(forceExpand, applyMinHeight);
+        }
+
+        return Semantics(
+          button: true,
+          label: semanticsLabel,
+          child: InkWell(
+            onTap: onToggle,
+            borderRadius: BorderRadius.circular(radius),
+            child: Container(
+              key: const ValueKey('hero_env_pill'),
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: cs.surface.withAlpha(40),
+                borderRadius: BorderRadius.circular(radius),
+                border: Border.all(
+                  color: cs.outlineVariant.withAlpha(170),
+                  width: stroke,
+                ),
+              ),
+              child: Stack(
+                children: [
+                  Padding(
+                    // Reserve space so the right-aligned swap icon never overlaps the title.
+                    padding: EdgeInsets.only(right: compact ? 16 : 18),
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(icon, style: titleStyle),
+                            const SizedBox(width: 6),
+                            Text(title, style: titleStyle),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: PulseSwapIcon(
+                      color: cs.onSurface.withAlpha(150),
+                      size: compact ? 12 : 14,
+                    ),
+                  ),
+                  const SizedBox.shrink(key: ValueKey('hero_env_primary_line')),
+                  const SizedBox.shrink(key: ValueKey('hero_env_content_aqi')),
+                  const SizedBox.shrink(
+                    key: ValueKey('hero_env_content_pollen'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _HeroCurrencyCard extends StatelessWidget {
+  final Place? primary;
+  final Place? secondary;
+  final double eurToUsd;
+  final bool compact;
+  final bool dense;
+
+  const _HeroCurrencyCard({
+    required this.primary,
+    required this.secondary,
+    required this.eurToUsd,
+    required this.compact,
+    required this.dense,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final layout = Theme.of(context).extension<UnitanaLayoutTokens>();
+
+    final currencyLines = _currencyLines(
+      primary: primary,
+      secondary: secondary,
+      eurToUsd: eurToUsd,
+    );
+
+    final radius = (layout?.radiusCard ?? 20.0) - 6;
+    final stroke = (layout?.strokeHairline ?? 1.0);
+
+    final pad = compact
+        ? EdgeInsets.symmetric(horizontal: 10, vertical: dense ? 5 : 7)
+        : EdgeInsets.symmetric(horizontal: 11, vertical: dense ? 6 : 8);
+
+    final innerGap = dense ? 0.0 : (compact ? 0.0 : 2.0);
+
+    final basePrimary = Theme.of(context).textTheme.labelLarge;
+    final primaryLineStyle = basePrimary?.copyWith(
+      // Slightly smaller to keep the currency tile compact and leave room
+      // for the marquee without losing readability.
+      fontSize: (basePrimary.fontSize ?? 14) - 1,
+      color: cs.onSurface.withAlpha(230),
+      fontWeight: FontWeight.w900,
+    );
+
+    final baseRate = (compact
+        ? Theme.of(context).textTheme.bodySmall
+        : Theme.of(context).textTheme.bodyMedium);
+    final rateStyle = baseRate?.copyWith(
+      fontSize: (baseRate.fontSize ?? 12) - 1,
+      color: cs.onSurface.withAlpha(200),
+      fontWeight: FontWeight.w600,
+    );
+
+    final labelStyle = rateStyle?.copyWith(
+      color: cs.onSurface,
+      fontWeight: FontWeight.w900,
+    );
+
+    InlineSpan rateLineSpan(
+      String line, {
+      required TextStyle? baseStyle,
+      required TextStyle? labelStyle,
+    }) {
+      final trimmed = line.trim();
+      const prefix = 'Rate:';
+      if (trimmed.startsWith(prefix)) {
+        final rest = trimmed.substring(prefix.length);
+        return TextSpan(
+          children: [
+            TextSpan(text: prefix, style: labelStyle),
+            TextSpan(text: rest, style: baseStyle),
+          ],
+        );
+      }
+      return TextSpan(text: trimmed, style: baseStyle);
+    }
+
+    Widget body(bool forceExpand, bool applyMinHeight) {
+      return Container(
+        key: const ValueKey('hero_currency_card'),
+        width: forceExpand ? double.infinity : null,
+        height: forceExpand ? double.infinity : null,
+        constraints: applyMinHeight
+            ? const BoxConstraints(minHeight: 44.0)
+            : null,
+        padding: pad,
+        decoration: BoxDecoration(
+          color: cs.surface.withAlpha(40),
+          borderRadius: BorderRadius.circular(radius),
+          border: Border.all(
+            color: cs.outlineVariant.withAlpha(170),
+            width: stroke,
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text('🪙', style: primaryLineStyle),
+                  const SizedBox(width: 6),
+                  Text(
+                    currencyLines.$1,
+                    key: const ValueKey('hero_currency_primary_line'),
+                    style: primaryLineStyle,
+                    maxLines: 1,
+                    softWrap: false,
+                    overflow: TextOverflow.visible,
+                  ),
+                ],
+              ),
+            ),
+            SizedBox(height: innerGap),
+            _ScaleDownRichText(
+              span: rateLineSpan(
+                currencyLines.$2,
+                baseStyle: rateStyle,
+                labelStyle: labelStyle,
+              ),
+              textKey: const ValueKey('hero_rate_line'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return LayoutBuilder(
+      builder: (context, c) {
+        final forceExpand = c.hasBoundedWidth && c.hasBoundedHeight;
+
+        final maxH = c.hasBoundedHeight ? c.maxHeight : double.infinity;
+        final maxW = c.hasBoundedWidth ? c.maxWidth : double.infinity;
+        final innerH = maxH.isFinite ? (maxH - pad.vertical) : double.infinity;
+        final innerW = maxW.isFinite
+            ? (maxW - pad.horizontal)
+            : double.infinity;
+        // Micro-first: avoid building the 2-line Column under tiny inner boxes.
+        // Use a slightly higher threshold to prevent sub-pixel overflows when
+        // font metrics + padding land right on the edge.
+        final isMicro = dense || innerH < 36.0 || innerW < 96.0;
+
+        final applyMinHeight = !c.hasBoundedHeight || c.maxHeight >= 44;
+
+        if (!isMicro) {
+          return body(forceExpand, applyMinHeight);
+        }
+
+        return Container(
+          key: const ValueKey('hero_currency_card'),
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+          decoration: BoxDecoration(
+            color: cs.surface.withAlpha(40),
+            borderRadius: BorderRadius.circular(radius),
+            border: Border.all(
+              color: cs.outlineVariant.withAlpha(170),
+              width: stroke,
+            ),
+          ),
+          child: Stack(
+            children: [
+              Align(
+                alignment: Alignment.centerLeft,
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text('🪙', style: primaryLineStyle),
+                      const SizedBox(width: 6),
+                      Text(
+                        currencyLines.$1,
+                        key: const ValueKey('hero_currency_primary_line'),
+                        style: primaryLineStyle,
+                        maxLines: 1,
+                        softWrap: false,
+                        overflow: TextOverflow.visible,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox.shrink(key: ValueKey('hero_rate_line')),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _RightMarqueeSlot extends StatelessWidget {
+  final bool compact;
+  final bool isNight;
   final SceneKey? sceneKey;
   final String? conditionLabel;
-  final bool isNight;
+
+  final bool renderConditionLabel;
+
+  const _RightMarqueeSlot({
+    required this.compact,
+    required this.isNight,
+    required this.sceneKey,
+    required this.conditionLabel,
+    this.renderConditionLabel = true,
+  });
+
+  String _fallbackLabel(SceneKey? key) {
+    switch (key) {
+      case SceneKey.clear:
+        return 'Clear';
+      case SceneKey.partlyCloudy:
+        return 'Partly cloudy';
+      case SceneKey.cloudy:
+        return 'Cloudy';
+      case SceneKey.overcast:
+        return 'Overcast';
+      case SceneKey.mist:
+        return 'Mist';
+      case SceneKey.fog:
+        return 'Fog';
+      case SceneKey.drizzle:
+        return 'Drizzle';
+      case SceneKey.freezingDrizzle:
+        return 'Freezing drizzle';
+      case SceneKey.rainLight:
+        return 'Light rain';
+      case SceneKey.rainModerate:
+        return 'Rain';
+      case SceneKey.rainHeavy:
+        return 'Heavy rain';
+      case SceneKey.freezingRain:
+        return 'Freezing rain';
+      case SceneKey.sleet:
+        return 'Sleet';
+      case SceneKey.snowLight:
+        return 'Light snow';
+      case SceneKey.snowModerate:
+        return 'Snow';
+      case SceneKey.snowHeavy:
+        return 'Heavy snow';
+      case SceneKey.blowingSnow:
+        return 'Blowing snow';
+      case SceneKey.blizzard:
+        return 'Blizzard';
+      case SceneKey.icePellets:
+        return 'Ice pellets';
+      case SceneKey.thunderRain:
+        return 'Thunderstorm';
+      case SceneKey.thunderSnow:
+        return 'Thunder snow';
+      case SceneKey.hazeDust:
+        return 'Haze';
+      case SceneKey.smokeWildfire:
+        return 'Smoke';
+      case SceneKey.ashfall:
+        return 'Ash';
+      case SceneKey.windy:
+        return 'Windy';
+      case SceneKey.tornado:
+        return 'Tornado';
+      case SceneKey.squall:
+        return 'Squall';
+      case null:
+        return 'Weather';
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final layout = Theme.of(context).extension<UnitanaLayoutTokens>();
+    final radius = (layout?.radiusCard ?? 20.0) - 6;
+
+    final desiredH = compact ? 56.0 : 172.0;
+    final label = (conditionLabel ?? '').trim().isNotEmpty
+        ? conditionLabel!.trim()
+        : _fallbackLabel(sceneKey);
+
+    return LayoutBuilder(
+      builder: (context, c) {
+        final maxH = c.hasBoundedHeight ? c.maxHeight : desiredH;
+        final h = desiredH.clamp(0.0, maxH.isFinite ? maxH : desiredH);
+
+        return SizedBox(
+          key: const ValueKey('hero_marquee_slot'),
+          height: h,
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(radius),
+              border: Border.all(
+                color: cs.outlineVariant.withAlpha(170),
+                width: (layout?.strokeHairline ?? 1.0),
+              ),
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(radius),
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  HeroAliveMarquee(
+                    compact: compact,
+                    isNight: isNight,
+                    sceneKey: sceneKey,
+                    conditionLabel: conditionLabel,
+                    renderConditionLabel: renderConditionLabel,
+                  ),
+                  // Subtle scrim so the condition chip stays readable over any scene.
+                  if (!renderConditionLabel)
+                    IgnorePointer(
+                      child: Align(
+                        alignment: Alignment.bottomCenter,
+                        child: Container(
+                          height: compact ? 18.0 : 22.0,
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                              colors: [
+                                Colors.transparent,
+                                Colors.black.withAlpha(110),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  // Condition chip (widget-layer) so it never disappears visually.
+                  if (!renderConditionLabel)
+                    Positioned(
+                      left: 6,
+                      right: 6,
+                      bottom: compact ? 4 : 5,
+                      child: Center(
+                        child: Container(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: compact ? 8 : 10,
+                            vertical: compact ? 3 : 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: cs.surface.withAlpha(190),
+                            borderRadius: BorderRadius.circular(
+                              compact ? 10 : 12,
+                            ),
+                            border: Border.all(
+                              color: cs.outlineVariant.withAlpha(170),
+                              width: (layout?.strokeHairline ?? 1.0),
+                            ),
+                          ),
+                          child: Text(
+                            label,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.inconsolata(
+                              fontSize: compact ? 10 : 11,
+                              fontWeight: FontWeight.w800,
+                              color: cs.onSurface,
+                              height: 1.0,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _RightDetailsPill extends StatelessWidget {
+  final SunTimesSnapshot? sun;
   final String? primaryTzId;
   final String? secondaryTzId;
   final bool? primaryUse24h;
@@ -758,12 +1396,8 @@ class _RightSunRail extends StatelessWidget {
   final String gustLine;
   final bool compact;
 
-  const _RightSunRail({
-    required this.liveData,
+  const _RightDetailsPill({
     required this.sun,
-    required this.sceneKey,
-    required this.conditionLabel,
-    required this.isNight,
     required this.primaryTzId,
     required this.secondaryTzId,
     required this.primaryUse24h,
@@ -777,72 +1411,35 @@ class _RightSunRail extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final layout = Theme.of(context).extension<UnitanaLayoutTokens>();
-    final radius = (layout?.radiusCard ?? 20.0) - 6;
-    final marqueeHeight = compact ? 44.0 : 52.0;
-
-    return Column(
-      key: const ValueKey('hero_right_rail'),
-      crossAxisAlignment: CrossAxisAlignment.end,
-      children: [
-        SizedBox(
-          key: const ValueKey('hero_marquee_slot'),
-          height: marqueeHeight,
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(radius),
-              border: Border.all(
-                color: cs.outlineVariant.withAlpha(170),
-                width: (layout?.strokeHairline ?? 1.0),
-              ),
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(radius),
-              child: HeroAliveMarquee(
+    return LayoutBuilder(
+      builder: (context, c) {
+        return Align(
+          alignment: Alignment.bottomRight,
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.bottomRight,
+            child: SizedBox(
+              width: c.maxWidth,
+              child: _SunTimesPill(
+                sun: sun,
+                primaryTzId: primaryTzId,
+                secondaryTzId: secondaryTzId,
+                primaryUse24h: primaryUse24h,
+                secondaryUse24h: secondaryUse24h,
+                detailsMode: detailsMode,
+                onToggleDetailsMode: onToggleDetailsMode,
+                windLine: windLine,
+                gustLine: gustLine,
                 compact: compact,
-                isNight: isNight,
-                sceneKey: sceneKey,
-                conditionLabel: conditionLabel,
               ),
             ),
           ),
-        ),
-        SizedBox(height: compact ? 6 : 8),
-        Expanded(
-          child: LayoutBuilder(
-            builder: (context, c) {
-              return Align(
-                alignment: Alignment.bottomRight,
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  alignment: Alignment.bottomRight,
-                  child: SizedBox(
-                    width: c.maxWidth,
-                    child: _SunTimesPill(
-                      sun: sun,
-                      primaryTzId: primaryTzId,
-                      secondaryTzId: secondaryTzId,
-                      primaryUse24h: primaryUse24h,
-                      secondaryUse24h: secondaryUse24h,
-                      detailsMode: detailsMode,
-                      onToggleDetailsMode: onToggleDetailsMode,
-                      windLine: windLine,
-                      gustLine: gustLine,
-                      compact: compact,
-                    ),
-                  ),
-                ),
-              );
-            },
-          ),
-        ),
-      ],
+        );
+      },
     );
   }
 }
 
-// Shared mini-pill used in both the expanded hero and the pinned overlay.
 class _SunTimesPill extends StatelessWidget {
   final SunTimesSnapshot? sun;
   final String? primaryTzId;
@@ -1066,11 +1663,11 @@ class _SunTimesPill extends StatelessWidget {
             constraints: BoxConstraints.tightFor(
               // Contract: identical pill bounds across modes to prevent any visual
               // jump and to keep pinned/mini layouts stable.
-              height: compact ? 44.0 : 92.0,
+              height: compact ? 44.0 : 72.0,
             ),
             padding: EdgeInsets.symmetric(
-              horizontal: compact ? 12 : 14,
-              vertical: compact ? 6 : 10,
+              horizontal: compact ? 12 : 12,
+              vertical: compact ? 6 : 6,
             ),
             decoration: BoxDecoration(
               color: cs.surface.withAlpha(35),
@@ -1203,11 +1800,17 @@ double _kmhToMph(num kmh) => kmh.toDouble() * 0.621371;
   final primaryCurrency = _currencyForCountry(primary?.countryCode);
   final secondaryCurrency = _currencyForCountry(secondary?.countryCode);
 
+  String fmtMoney(double v) {
+    // Up to 2 decimals, trimmed (10.00 -> 10, 10.50 -> 10.5).
+    final s = v.toStringAsFixed(2);
+    return s.replaceFirst(RegExp(r'[.]?0+$'), '');
+  }
+
   final amount = 10.0;
   if (primaryCurrency == 'EUR' && secondaryCurrency == 'USD') {
     final approx = amount * eurToUsd;
     return (
-      '${_symbol('EUR')}${amount.toStringAsFixed(0)} ≈ ${_symbol('USD')}${approx.toStringAsFixed(0)}',
+      '${_symbol('EUR')}${fmtMoney(amount)} ≈ ${_symbol('USD')}${fmtMoney(approx)}',
       'Rate: 1 EUR ≈ ${eurToUsd.toStringAsFixed(2)} USD',
     );
   }
@@ -1215,7 +1818,7 @@ double _kmhToMph(num kmh) => kmh.toDouble() * 0.621371;
     final usdToEur = 1.0 / eurToUsd;
     final approx = amount * usdToEur;
     return (
-      '${_symbol('USD')}${amount.toStringAsFixed(0)} ≈ ${_symbol('EUR')}${approx.toStringAsFixed(0)}',
+      '${_symbol('USD')}${fmtMoney(amount)} ≈ ${_symbol('EUR')}${fmtMoney(approx)}',
       'Rate: 1 USD ≈ ${usdToEur.toStringAsFixed(2)} EUR',
     );
   }

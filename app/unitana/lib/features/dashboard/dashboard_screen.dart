@@ -1010,20 +1010,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
-                              if (!_isEditingWidgets &&
-                                  _liveData.weatherNetworkEnabled &&
-                                  _liveData.weatherBackend !=
-                                      WeatherBackend.mock) ...[
-                                Center(
+                              // Single, unified refresh indicator.
+                              // Contract: visible under the city header, never
+                              // inside the hero marquee.
+                              Align(
+                                alignment: Alignment.center,
+                                child: Padding(
+                                  padding: const EdgeInsets.only(bottom: 10),
                                   child: DataRefreshStatusLabel(
-                                    key: const ValueKey(
-                                      'dashboard_refresh_status',
-                                    ),
                                     liveData: _liveData,
+                                    compact: false,
+                                    showBackground: true,
                                   ),
                                 ),
-                                const SizedBox(height: 8),
-                              ],
+                              ),
                               DashboardBoard(
                                 state: state,
                                 session: _session,

@@ -1247,6 +1247,9 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                             child: history.isEmpty
                                 ? const _EmptyHistory()
                                 : ListView.builder(
+                                    key: ValueKey(
+                                      'tool_history_list_${widget.tool.id}',
+                                    ),
                                     padding: const EdgeInsets.symmetric(
                                       vertical: 4,
                                     ),

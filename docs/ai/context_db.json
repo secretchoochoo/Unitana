@@ -1,6 +1,76 @@
 {
   "backlog": [
     {
+      "id": "profiles_mvp",
+      "title": "Profiles: Add Profile + Switch Profile (state + persistence)",
+      "summary": "Implement real multi-profile support. \"Add Profile\" reuses onboarding wizard and results in a new profile. \"Switch Profile\" shows a tiled gallery of profiles to select, reorder, and remove.",
+      "notes": [
+        "Profile state must own: places (home/destination), dashboard layout + per-tile config, theme/customization hooks for future modes.",
+        "Menu labels should use Title Case (e.g., \"Edit Widgets\").",
+        "Stable keys + persistence are non-negotiable; no public widget API churn unless unavoidable."
+      ]
+    },
+    {
+      "id": "coming_soon_audit",
+      "title": "Tools: audit \"Coming Soon\" surfaces and plan MVP fills",
+      "summary": "Inventory all tools currently exposed in menus that are still \"Coming Soon\". Decide what ships in MVP (implement) vs later (hide).",
+      "notes": [
+        "Keep categories coherent (Travel Essentials, Food & Cooking, Health & Fitness, etc.).",
+        "Prefer tools with real cross-country unit differences and high travel frequency.",
+        "Ensure all implemented tools honor reality flip + modal defaults."
+      ]
+    },
+    {
+      "id": "currency_tool_ui",
+      "title": "Currency: complete user-facing UI (tool + widget) on top of backend",
+      "summary": "Wire Currency into the tool surface (modal + history) and optionally a dashboard tile; keep refresh non-chatty and free-for-commercial-use compliant.",
+      "notes": [
+        "Choose an FX source that is free for commercial use (document license/terms).",
+        "No minute-by-minute updates; TTL caching is required.",
+        "Hero currency card should eventually open the currency tool (tap target + accessibility)."
+      ]
+    },
+    {
+      "id": "new_user_wizard_pass",
+      "title": "Onboarding: final aesthetic pass and live hero preview",
+      "summary": "Update the new user wizard to reflect the current Dracula/terminal theme and the final hero/dashboard aesthetics. Replace early mock widget examples with a live hero preview.",
+      "notes": [
+        "Do near MVP lock; avoid churn while core UI is still shifting."
+      ]
+    },
+    {
+      "id": "about_licenses",
+      "title": "About + Licenses pages",
+      "summary": "Add an About page with Unitana logo, version/build info, and a link to an OSS licenses page if required.",
+      "notes": [
+        "Place after MVP shape stabilizes; keep simple and deterministic."
+      ]
+    },
+    {
+      "id": "shoe_sizes_v2_mattress",
+      "title": "Shoe Sizes v2 + Mattress Sizes tool",
+      "summary": "Expand Shoe Sizes to show system labels (US/UK/EU/JP, etc.) and add Mattress Sizes as a Travel Essentials tool.",
+      "notes": [
+        "Follow the same unit-pill/compact-selector paradigm where applicable."
+      ]
+    },
+    {
+      "id": "pollen_air_quality",
+      "title": "Optional: Pollen + Air Quality (tool or 1x2 widget)",
+      "summary": "Explore a travel-adjacent air quality and pollen surface. Could be a 1x2 widget or independent tools.",
+      "notes": [
+        "If implemented as 1x2, ensure edit-mode drag, jiggle, and persistence work across breakpoints."
+      ]
+    },
+    {
+      "id": "haptics_sound_polish",
+      "title": "UX polish: haptics, sound, accessibility",
+      "summary": "Add light haptics for key interactions and audit accessibility labels/focus order. Optional Dracula-friendly sound effects (default OFF).",
+      "notes": [
+        "No noisy haptics; keep learning-first and non-distracting."
+      ]
+    },
+    {
       "id": "radio_lofi_playback",
       "title": "Radio: license-free lo-fi playback (default OFF)",
       "summary": "Optional ambient lo-fi playback feature. Default OFF; when OFF, do not start any network/audio session/background work.",
@@ -23,13 +93,16 @@
   "current_state": {
     "notes": [
       "Build green through Slice O12g3 (WeatherAPI wiring + SceneKey binding in progress; marquee label is live).",
-      "ToolPicker is opened from the top-left tools icon; Quick Tools lens removed; Most Recent + Search remain.",
-      "Default tiles are removable and persist; restoring a removed default via picker restores it without duplicates.",
+      "Currency backend MVP exists (EUR\u2192USD) with TTL caching; UI currently shows EUR/USD when PT/US detected.",
       "Dashboard tiles inherit per-tool tint and per-lens accent mapping.",
+      "Default tiles are removable and persist; restoring a removed default via picker restores it without duplicates.",
+      "Next slice: O12g4 live SceneKey mapping/binding (WeatherAPI code -> SceneKey -> marquee), then continue O12f family scene redesign.",
+      "Places Hero V2: bottom-left quadrant is currency; wind/gust are only in the right-side details pill.",
       "Places Hero V2: clocks first; header format locked; sun pill present; wind and gust split; text scales down (no ellipsis).",
-      "iOS app icon visibility remains backlog only.",
+      "Reality toggle continues to drive tool tile default unit selection and tool modal defaults.",
+      "ToolPicker is opened from the top-left tools icon; Quick Tools lens removed; Most Recent + Search remain.",
       "Weather MVP decision: WeatherAPI.com provider; map condition codes -> SceneKey catalog (docs/ai/reference/SCENEKEY_CATALOG.md).",
-      "Next slice: O12g4 live SceneKey mapping/binding (WeatherAPI code -> SceneKey -> marquee), then continue O12f family scene redesign."
+      "iOS app icon visibility remains backlog only."
     ],
     "status": "green"
   },
@@ -83,7 +156,7 @@
     "Keep docs/ai small and canonical: avoid duplicate prompts and parallel copies.",
     "Prefer updating existing canonical files over creating new variants."
   ],
-  "last_updated": "2026-01-16T18:07:26Z",
+  "last_updated": "2026-01-20",
   "patch_log": [
     {
       "date": "2025-12-31",
@@ -1876,6 +1949,454 @@
         "Removes redundant \"gust\" suffix from gust line formatting (pill + left block) for cleaner readability.",
         "Sunrise/Sunset rows remain timezone-label free; timezone is implied by the main hero clock line."
       ]
+    },
+    {
+      "id": "S7z",
+      "date": "2026-01-16",
+      "title": "Weather Summary: add minimal smoke test for tile open + core labels",
+      "files": [
+        "app/unitana/test/weather_summary_tile_open_smoke_test.dart",
+        "docs/ai/context_db.json"
+      ],
+      "notes": [
+        "Adds a widget smoke test that taps the Weather Summary dashboard tile, opens the read-only sheet, and asserts core labels for both places without depending on network.",
+        "Uses stable tile keys via SharedPreferences seeding to keep persistence and test behavior aligned."
+      ]
+    },
+    {
+      "id": "S7z1",
+      "date": "2026-01-16",
+      "title": "Test fix: Weather Summary refresh label assertion is non-flaky",
+      "files": [
+        "app/unitana/test/weather_summary_tile_open_smoke_test.dart",
+        "docs/ai/context_db.json"
+      ],
+      "notes": [
+        "Allows either 'Not updated yet' or 'Updated X ago' to satisfy the refresh label assertion, preventing flake when live refresh updates lastRefreshedAt during sheet open.",
+        "Makes place header checks resilient to dot spacing and typography differences."
+      ]
+    },
+    {
+      "id": "S8a",
+      "date": "2026-01-16",
+      "title": "Tools: Distance adopts multi-unit pills (m, km, mi, ft, in)",
+      "files": [
+        "app/unitana/lib/features/dashboard/widgets/tool_modal_bottom_sheet.dart",
+        "app/unitana/lib/features/dashboard/models/tool_definitions.dart",
+        "docs/ai/context_db.json"
+      ],
+      "notes": [
+        "Distance tool now uses From/To unit pills with compact selector sheet, matching the Volume/Pressure/Weight UX contract.",
+        "Adds distance unit set and conversion mapping (meters base) without changing public widget APIs."
+      ]
+    },
+    {
+      "id": "S8a1",
+      "date": "2026-01-16",
+      "title": "Test fix: Distance tool modal expects multi-unit Row, not Text",
+      "files": [
+        "app/unitana/test/distance_tool_modal_interaction_test.dart",
+        "docs/ai/context_db.json"
+      ],
+      "notes": [
+        "Updates widget test to read From/To unit labels via stable keys instead of casting the units label to Text.",
+        "Prevents type cast failures after Distance switched to pill-based unit selection."
+      ]
+    },
+    {
+      "id": "S8b",
+      "date": "2026-01-16",
+      "title": "Platform icon audit: monorepo wrappers for icon_audit and verify",
+      "files": [
+        "tools/icon_audit.sh",
+        "tools/verify.sh",
+        "docs/ai/context_db.json"
+      ],
+      "notes": [
+        "Adds monorepo-root wrappers that delegate to app/unitana/tools scripts, matching the PLATFORM_ICON_AUDIT doc path.",
+        "Ensures icon audit is accessible from repo root and can be included in standard verification flows."
+      ]
+    },
+    {
+      "id": "S8c",
+      "date": "2026-01-16",
+      "title": "Weather Summary sheet: add top-right Close (X) action",
+      "files": [
+        "app/unitana/lib/features/dashboard/widgets/weather_summary_bottom_sheet.dart",
+        "docs/ai/context_db.json"
+      ],
+      "notes": [
+        "Adds a top-right Close icon button for the read-only Weather Summary sheet with stable key 'weather_summary_close'.",
+        "Keeps weather refresh UX unchanged; close affordance is purely navigational."
+      ]
+    },
+    {
+      "id": "P0.2",
+      "date": "2026-01-16",
+      "title": "Test: dashboard reorder persists across breakpoints",
+      "files": [
+        "app/unitana/test/dashboard_reorder_persistence_breakpoints_test.dart",
+        "docs/ai/context_db.json"
+      ],
+      "notes": [
+        "Adds a widget test that reorders tiles in edit mode, exits edit mode, rebuilds at a different width, and confirms persisted order.",
+        "Targets known regression zone: persistence across breakpoints and layout reflow."
+      ]
+    },
+    {
+      "id": "P0.2a",
+      "date": "2026-01-16",
+      "title": "Test fix: remove invalid package import from dashboard reorder test",
+      "files": [
+        "app/unitana/test/dashboard_reorder_persistence_breakpoints_test.dart",
+        "docs/ai/context_db.json"
+      ],
+      "notes": [
+        "Widget tests cannot import from package:unitana/test; inlines the small dashboard seed helper into the test."
+      ]
+    },
+    {
+      "id": "P0.2b",
+      "date": "2026-01-16",
+      "title": "Test fix: drag handle finder avoids semantics dependency",
+      "files": [
+        "app/unitana/test/dashboard_reorder_persistence_breakpoints_test.dart",
+        "docs/ai/context_db.json"
+      ],
+      "notes": [
+        "Semantics labels under Draggable can be inconsistent in widget tests; finder moved toward a visual handle-based target."
+      ]
+    },
+    {
+      "id": "P0.2c",
+      "date": "2026-01-16",
+      "title": "Test fix: locate edit-mode drag handle via Stack ancestor",
+      "files": [
+        "app/unitana/test/dashboard_reorder_persistence_breakpoints_test.dart",
+        "docs/ai/context_db.json"
+      ],
+      "notes": [
+        "Drag handle renders as a sibling overlay in the tile Stack; finder updated to search within the Stack ancestor rather than tile subtree."
+      ]
+    },
+    {
+      "id": "P0.3",
+      "date": "2026-01-16",
+      "title": "Test: edit mode drag-handle hit testing guard",
+      "files": [
+        "app/unitana/test/dashboard_edit_drag_handle_hit_testing_test.dart",
+        "docs/ai/context_db.json"
+      ],
+      "notes": [
+        "Adds a widget test that verifies drag reorder starts only from the drag handle in edit mode, and tile body interactions do not open sheets or persist reorder changes."
+      ]
+    },
+    {
+      "id": "P0.3a",
+      "date": "2026-01-17",
+      "title": "Combined patch: P0.3 drag-handle hit-testing test + context_db update",
+      "files": [
+        "app/unitana/test/dashboard_edit_drag_handle_hit_testing_test.dart",
+        "docs/ai/context_db.json"
+      ],
+      "notes": [
+        "Packages P0.3 test and context_db update together for changed-files-only patch workflow."
+      ]
+    },
+    {
+      "id": "P0.4",
+      "date": "2026-01-17",
+      "title": "Tool modal clipboard contract smoke test",
+      "files": [
+        "app/unitana/test/tool_modal_clipboard_contract_smoke_test.dart",
+        "docs/ai/context_db.json"
+      ],
+      "notes": [
+        "Adds widget test validating history tap copies result, long-press copies input, and notice surface renders expected labels."
+      ]
+    },
+    {
+      "id": "P0.5",
+      "date": "2026-01-17",
+      "title": "Tool modal history lazy-build + nested scroll smoke test",
+      "files": [
+        "app/unitana/test/tool_modal_history_lazy_build_smoke_test.dart",
+        "docs/ai/context_db.json"
+      ],
+      "notes": [
+        {
+          "type": "test",
+          "text": "Adds a widget test that generates a full (10-item) tool history and scrolls the history ListView until the oldest entry is visible, asserting no overflow or nested-scroll exceptions."
+        }
+      ]
+    },
+    {
+      "id": "P0.5a",
+      "date": "2026-01-17",
+      "title": "Test fix: target inner history ListView (avoid outer scroll ListView ancestor match)",
+      "files": [
+        "app/unitana/test/tool_modal_history_lazy_build_smoke_test.dart",
+        "docs/ai/context_db.json"
+      ],
+      "notes": [
+        "Updates the test to locate the inner history ListView as a descendant of the outer tool scroll view (tool_scroll_<toolId>), avoiding ambiguous ListView ancestor matches in widget tests."
+      ]
+    },
+    {
+      "id": "P0.5b",
+      "date": "2026-01-17",
+      "title": "Test fix: tool modal history scrollUntilVisible targets Scrollable under inner ListView",
+      "files": [
+        "app/unitana/test/tool_modal_history_lazy_build_smoke_test.dart",
+        "docs/ai/context_db.json"
+      ],
+      "notes": [
+        "flutter_test scrollUntilVisible requires a Scrollable finder; ListView is not a Scrollable and caused a cast error.",
+        "Finder now targets the Scrollable child under the inner history ListView."
+      ]
+    },
+    {
+      "id": "P0.5c",
+      "date": "2026-01-17",
+      "title": "Tool modal: key the history ListView for stable widget tests",
+      "files": [
+        "app/unitana/lib/features/dashboard/widgets/tool_modal_bottom_sheet.dart",
+        "app/unitana/test/tool_modal_history_lazy_build_smoke_test.dart",
+        "docs/ai/context_db.json"
+      ],
+      "notes": [
+        "Adds ValueKey(tool_history_list_<toolId>) to the history ListView.builder.",
+        "Updates P0.5 history lazy-build test to scroll using the keyed history list descendant Scrollable."
+      ]
+    },
+    {
+      "id": "P1.8",
+      "date": "2026-01-17",
+      "title": "Currency backend MVP: Frankfurter EUR\u2192USD + 12h TTL cache (non-chatty)",
+      "files": [
+        "app/unitana/lib/data/frankfurter_client.dart",
+        "app/unitana/lib/features/dashboard/models/dashboard_live_data.dart",
+        "app/unitana/test/frankfurter_client_test.dart",
+        "docs/ai/context_db.json"
+      ],
+      "notes": [
+        "Adds FrankfurterClient and CurrencyBackend (mock/frankfurter) with build/runtime gating.",
+        "Loads cached EUR\u2192USD rate from SharedPreferences and refreshes on a 12h TTL (manual refresh remains non-chatty).",
+        "Removes simulated EUR\u2192USD drift in refreshAll; demo mode uses stable 1.10 unless a debug override is set.",
+        "Adds unit tests for FrankfurterClient JSON parsing and error handling."
+      ]
+    },
+    {
+      "id": "P1.9",
+      "date": "2026-01-17",
+      "title": "Tool tile reality flip audit: ensure conversion tiles track active place (Pressure fix) + docs",
+      "files": [
+        "app/unitana/lib/features/dashboard/widgets/dashboard_board.dart",
+        "app/unitana/test/dashboard_core_conversion_tiles_reality_switch_audit_test.dart",
+        "docs/ai/handoff/CURRENT_HANDOFF.md",
+        "docs/ai/context_db.json"
+      ],
+      "notes": [
+        "Audits core conversion tiles to ensure they update their displayed unit system when the hero reality flips.",
+        "Adds a widget test that iterates core conversion tiles and asserts unit labels change with Destination/Home.",
+        "Updates AI docs to reflect the audit and current priorities."
+      ]
+    },
+    {
+      "id": "P1.9a",
+      "date": "2026-01-17",
+      "title": "QA hardening: fix hit-test warning in reality switch audit test",
+      "files": [
+        "app/unitana/test/dashboard_core_conversion_tiles_reality_switch_audit_test.dart",
+        "docs/ai/context_db.json"
+      ],
+      "notes": [
+        "Adjusts test tapping to target hit-testable surfaces and avoid RenderBox warnings."
+      ]
+    },
+    {
+      "id": "P1.10",
+      "date": "2026-01-17",
+      "title": "Hero currency quadrant: remove duplicate wind/gust lines; add currency mini-card + contract updates",
+      "files": [
+        "app/unitana/lib/features/dashboard/widgets/places_hero_v2.dart",
+        "app/unitana/test/dashboard_places_hero_v2_test.dart",
+        "docs/ui/PLACES_HERO_V2_SPEC.md",
+        "docs/ai/context_db.json",
+        "docs/ai/handoff/CURRENT_HANDOFF.md"
+      ],
+      "notes": [
+        "Bottom-left hero quadrant is now dedicated to Currency; wind/gust only appear inside the right-side Details pill.",
+        "Introduces `hero_currency_card` + `hero_currency_primary_line` stable keys and updates the PlacesHeroV2 contract spec.",
+        "Extends PlacesHeroV2 widget test to assert currency card presence and absence of legacy wind/gust keys."
+      ]
+    },
+    {
+      "id": "P1.11",
+      "date": "2026-01-17",
+      "title": "Hero env pill (AQI/Pollen) above currency",
+      "summary": [
+        "Adds a swappable env pill in the Places Hero left rail, occupying the reclaimed space above the currency card.",
+        "Env pill is provider-agnostic and uses placeholders until an air-quality backend is selected.",
+        "Introduces stable keys for env pill content and updates hero regression test."
+      ],
+      "files_changed": [
+        "app/unitana/lib/features/dashboard/models/dashboard_session_controller.dart",
+        "app/unitana/lib/features/dashboard/widgets/places_hero_v2.dart",
+        "app/unitana/test/dashboard_places_hero_v2_test.dart",
+        "docs/ui/PLACES_HERO_V2_SPEC.md",
+        "docs/ai/context_db.json"
+      ],
+      "gates": [
+        "dart format .",
+        "flutter analyze",
+        "flutter test"
+      ]
+    },
+    {
+      "id": "P1.11a",
+      "date": "2026-01-18",
+      "title": "Fix Env pill unconstrained layout on compact hero surfaces",
+      "files_changed": [
+        "app/unitana/lib/features/dashboard/widgets/places_hero_v2.dart",
+        "docs/ai/context_db.json"
+      ],
+      "notes": [
+        "Env pill header no longer forces infinite width; prevents RenderBox not laid out errors when the pill is wrapped in FittedBox on small hero heights."
+      ]
+    },
+    {
+      "id": "P1.11b",
+      "date": "2026-01-18",
+      "title": "Align Env pill width with currency card",
+      "files_changed": [
+        "app/unitana/lib/features/dashboard/widgets/places_hero_v2.dart",
+        "docs/ai/context_db.json"
+      ],
+      "notes": [
+        "Env pill and currency card now expand to the same bounded width in normal hero layouts; compact layouts remain safe under FittedBox (unbounded width)."
+      ]
+    },
+    {
+      "id": "P1.11d",
+      "date": "2026-01-18",
+      "title": "Fix Env pill width by forcing expansion under bounded constraints",
+      "files_changed": [
+        "app/unitana/lib/features/dashboard/widgets/places_hero_v2.dart",
+        "docs/ai/context_db.json"
+      ],
+      "notes": [
+        "Env pill now explicitly sets its container width to expand when the layout provides a bounded width, preventing shrink-wrapping that made it appear narrower than the currency card.",
+        "Unbounded-width (compact/FittedBox) layouts remain unchanged to avoid layout exceptions."
+      ]
+    },
+    {
+      "id": "P1.11k",
+      "date": "2026-01-17",
+      "title": "Sev1: Rebuild Places Hero body into top/bottom bands; restore readable Env/Currency tiles and add middle anim bay",
+      "files_changed": [
+        "app/unitana/lib/features/dashboard/widgets/places_hero_v2.dart",
+        "app/unitana/test/dashboard_places_hero_v2_test.dart",
+        "docs/ai/context_db.json"
+      ],
+      "notes": [
+        "Hero body is now banded: top band holds temperature (left) and marquee (right); bottom band holds Env+Currency stack (left), a dedicated middle animation slot, and the Sunrise/Sunset (and Wind/Gust) pill (right).",
+        "Env and Currency pills now expand to the full left-column width and split the available bottom-band height without global FittedBox scaling, restoring readability on phone surfaces.",
+        "Added a widget test asserting Env/Currency width parity and guarding against the postage-stamp regression; also asserts the middle anim slot has a meaningful footprint."
+      ]
+    },
+    {
+      "id": "P1.11af",
+      "date": "2026-01-18",
+      "title": "Sev1: Restore Places Hero compile stability by wiring primary+secondary into Currency card and adding safe rate fallback",
+      "files_changed": [
+        "app/unitana/lib/features/dashboard/widgets/places_hero_v2.dart",
+        "docs/ai/context_db.json"
+      ],
+      "notes": [
+        "Fixed breaking signature drift by ensuring the left Env/Currency stack passes both primary and secondary Place objects into the currency card, matching _currencyLines() requirements.",
+        "Added a safe fallback when eurToUsd is null so the hero can render deterministically while the rate is still loading.",
+        "Removed an unused local (sideWidth) introduced during earlier layout iterations to keep analyze clean."
+      ]
+    },
+    {
+      "id": "P1.11aw",
+      "date": "2026-01-19",
+      "title": "Sev1: Preserve hero left-rail readability by shrinking right pill under tight widths",
+      "files_changed": [
+        "app/unitana/lib/features/dashboard/widgets/places_hero_v2.dart",
+        "docs/ai/context_db.json"
+      ],
+      "notes": [
+        "Fixed phone-surface regression where Env/Currency rail collapsed to ~92px by allowing the right pill to shrink first when total width is constrained.",
+        "Maintains the test contract that left-rail tiles remain readable (>=150px) while keeping layout deterministic across breakpoints."
+      ]
+    },
+    {
+      "id": "P1.11aw",
+      "date": "2026-01-19",
+      "title": "Sev1: Preserve hero left-rail readability by shrinking right pill under tight widths",
+      "files_changed": [
+        "app/unitana/lib/features/dashboard/widgets/places_hero_v2.dart",
+        "docs/ai/context_db.json"
+      ],
+      "notes": [
+        "Fixes phone-surface regression where the left Env/Currency rail collapsed to ~92px by allowing the right pill to shrink first when total width is insufficient.",
+        "Ensures the left rail meets the readability contract (>=150px in compact mode) while keeping layout deterministic in widget tests."
+      ]
+    },
+    {
+      "id": "P1.11ay",
+      "date": "2026-01-19",
+      "title": "Sev1: Enforce minimum touch-height for hero Env/Currency tiles on normal surfaces",
+      "files_changed": [
+        "app/unitana/lib/features/dashboard/widgets/places_hero_v2.dart",
+        "docs/ai/context_db.json"
+      ],
+      "notes": [
+        "Adds a minHeight (44dp) guard for the hero Env pill and Currency card when not in micro-mode, fixing the widget-test regression where the Env tile collapsed below the readability/tap target contract on phone surfaces.",
+        "Min-height is applied only when the parent allows it (unbounded height or >=44dp), preserving the micro-mode overflow guarantees under pathological constraints."
+      ]
+    },
+    {
+      "id": "P1.11az",
+      "date": "2026-01-19",
+      "title": "Hero bands: enforce bottom band min height in compact so Env/Currency meet 44dp contract",
+      "files": [
+        "app/unitana/lib/features/dashboard/widgets/places_hero_v2.dart"
+      ],
+      "notes": [
+        "In compact hero layout with bounded height, reserve >=94dp for the bottom band (Env+gap+Currency) so each tile can meet the 44dp touch-target contract.",
+        "Top row shrinks first; bottom row stays deterministic."
+      ]
+    },
+    {
+      "id": "P1.12e_hotfix",
+      "date": "2026-01-20",
+      "title": "Hero bands: fix syntax regression in places_hero_v2.dart (topRow duplicate Row)",
+      "files_changed": [
+        "app/unitana/lib/features/dashboard/widgets/places_hero_v2.dart",
+        "docs/ai/context_db.json"
+      ],
+      "notes": [
+        "Fixes a parse error introduced during P1.12e where topRow was mistakenly declared twice (\"final topRow = Row(final topRow = Row(\") causing dart format/analyze to fail.",
+        "Removes an unused rightMin variable to keep analyze clean."
+      ]
+    },
+    {
+      "id": "P1.14c3",
+      "date": "2026-01-21",
+      "title": "Hero pills: keep 44dp touch contract, add currency icon, and format currency up to 2 decimals",
+      "files_changed": [
+        "app/unitana/lib/features/dashboard/widgets/places_hero_v2.dart",
+        "docs/ai/context_db.json"
+      ],
+      "notes": [
+        "Enforce 44dp minimum touch target for Env and Currency tiles across compact and non-compact surfaces (prevents regression in phone-surface tests).",
+        "Slightly reduce font sizes for Env and Currency primary text to free visual space while preserving readability and future-proofing for longer AQI/Pollen + units strings.",
+        "Add coin iconography to the currency primary line without changing existing keys (keeps tests stable).",
+        "Update currency formatting to show up to 2 decimals (trim trailing zeros) for both the sample amount and approximate conversion."
+      ]
     }
   ],
   "project": {
@@ -1885,5 +2406,77 @@
     "repo_root": "unitana/",
     "tagline": "travel-first decoder ring; dual reality side-by-side"
   },
-  "schema_version": "1.0"
+  "schema_version": "1.0",
+  "patches": [
+    {
+      "id": "P1.11ay_sev1_min_height_env_currency",
+      "date": "2026-01-19",
+      "title": "Sev1: Enforce minimum touch-height for hero Env/Currency tiles on normal surfaces",
+      "files_changed": [
+        "app/unitana/lib/features/dashboard/widgets/places_hero_v2.dart",
+        "docs/ai/context_db.json"
+      ],
+      "notes": [
+        "Adds a minHeight (44dp) guard for the hero Env pill and Currency card when not in micro-mode, fixing the widget-test regression where the Env tile collapsed below the readability/tap target contract on phone surfaces.",
+        "Min-height is applied only when the parent allows it (unbounded height or >=44dp), preserving the micro-mode overflow guarantees under pathological constraints."
+      ]
+    },
+    {
+      "id": "P1.11bf2",
+      "title": "Option 3: remove middle hero bay; deterministic left/right widths; eliminate clamp crash",
+      "date": "2026-01-19",
+      "files": [
+        "app/unitana/lib/features/dashboard/widgets/places_hero_v2.dart",
+        "app/unitana/test/dashboard_places_hero_v2_test.dart"
+      ],
+      "notes": [
+        "Removed the middle animation bay from Places hero to reclaim width budget (Option 3 decision).",
+        "Replaced brittle clamp-based width allocation with deterministic two-column sizing: left rail pinned to >=150dp (unless physically impossible), right rail receives remaining width to prioritize Sunrise/Wind readability.",
+        "Separated horizontal column gap from internal Env/Currency stack gap to stabilize vertical touch-target math.",
+        "Updated phone-surface hero test: removed middle-bay assertions; added priority width assertion for the Sunrise pill."
+      ]
+    },
+    {
+      "id": "P1.12e1",
+      "date": "2026-01-20",
+      "title": "Hero bands: always reserve bottom touch targets; remove 120dp left fallback; keep Sunrise width >= left",
+      "files": [
+        "app/unitana/lib/features/dashboard/widgets/places_hero_v2.dart"
+      ],
+      "notes": [
+        "Fixes phone-surface regression where the top row consumed intrinsic height and starved the bottom band, shrinking the Env pill below 44dp (test expected >=44).",
+        "Bottom band reservation is now enforced whenever total hero height can accommodate the two 44dp tiles plus stack gap, even if the top row must compress.",
+        "Replaces the previous tight-width fallback that allowed left rail to drop to 120dp; left rail is pinned to 150dp when feasible and the right rail receives remaining width.",
+        "Ensures Sunrise/Wind lane never receives less width than the left rail when there is sufficient width budget, preserving the readability priority contract."
+      ]
+    },
+    {
+      "id": "P1.12f1",
+      "date": "2026-01-20",
+      "title": "Hero tiles: micro-first thresholds to prevent RenderFlex overflow under 124x26 constraints",
+      "files": [
+        "app/unitana/lib/features/dashboard/widgets/places_hero_v2.dart",
+        "docs/ai/context_db.json"
+      ],
+      "notes": [
+        "Fixes Sev1 test failures where Env and Currency were still building a 2-line Column under pathological inner constraints (w=124, h=26), causing RenderFlex bottom overflows.",
+        "Raises micro-mode trigger to innerH < 32dp or innerW < 96dp so the tiles degrade to the single-line micro layout before any multi-line Column is constructed.",
+        "Keeps stable keys intact; only the mode-selection threshold changes."
+      ]
+    },
+    {
+      "id": "P1.13c1",
+      "date": "2026-01-20",
+      "title": "Hero env/currency: raise micro threshold + remove compact inner gap to eliminate sub-pixel overflow",
+      "files": [
+        "app/unitana/lib/features/dashboard/widgets/places_hero_v2.dart",
+        "docs/ai/context_db.json"
+      ],
+      "notes": [
+        "Fixes RenderFlex overflow in Env pill under inner constraints (w\u2248124, h\u224830) by widening the micro-mode threshold to innerH < 36dp.",
+        "Removes the last 1dp compact-only inner gap in Env pill to avoid edge-of-metrics overflows.",
+        "Applies the same micro threshold to Currency for symmetry; stable keys preserved."
+      ]
+    }
+  ]
 }

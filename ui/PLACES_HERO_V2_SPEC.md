@@ -179,3 +179,8 @@ Implementation keys:
 - `hero_alive_paint` (CustomPaint)
 
 
+
+
+## Left rail: Env + Currency
+
+Env pill above currency card; see keys: `hero_env_pill`, `hero_env_primary_line`, `hero_env_content_aqi`, `hero_env_content_pollen`, `hero_currency_card`, `hero_currency_primary_line`, `hero_rate_line`.

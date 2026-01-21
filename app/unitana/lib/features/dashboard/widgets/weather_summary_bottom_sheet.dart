@@ -60,19 +60,54 @@ class WeatherSummaryBottomSheet extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text(
-              'Weather',
-              style: theme.textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.w900,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              refreshedLabel,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: cs.onSurfaceVariant,
-                fontWeight: FontWeight.w600,
-              ),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Weather',
+                        style: theme.textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        refreshedLabel,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: cs.onSurfaceVariant,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Tooltip(
+                  message: 'Close',
+                  child: OutlinedButton(
+                    key: const ValueKey('weather_summary_close'),
+                    style: OutlinedButton.styleFrom(
+                      minimumSize: const Size(44, 34),
+                      padding: const EdgeInsets.symmetric(horizontal: 10),
+                      visualDensity: VisualDensity.compact,
+                      side: BorderSide(
+                        color: DraculaPalette.comment.withAlpha(160),
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    onPressed: () => Navigator.of(context).maybePop(),
+                    child: Icon(
+                      Icons.close_rounded,
+                      size: 18,
+                      color: DraculaPalette.foreground.withAlpha(220),
+                    ),
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 12),
             _placeCard(context, place: destination, label: 'Destination'),

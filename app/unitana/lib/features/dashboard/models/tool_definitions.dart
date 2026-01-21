@@ -342,6 +342,12 @@ class ToolConverters {
     required String input,
   }) {
     switch (toolId) {
+      case CanonicalToolId.distance:
+        return _convertDistanceWithUnits(
+          fromUnit: fromUnit,
+          toUnit: toUnit,
+          input: input,
+        );
       case CanonicalToolId.volume:
         return _convertVolumeWithUnits(
           fromUnit: fromUnit,
@@ -364,6 +370,32 @@ class ToolConverters {
         // Fallback to the dual-unit engine when no multi-unit mapping exists.
         return convert(toolId: toolId, forward: true, input: input);
     }
+  }
+
+  static String? _convertDistanceWithUnits({
+    required String fromUnit,
+    required String toUnit,
+    required String input,
+  }) {
+    final value = double.tryParse(input.trim());
+    if (value == null) return null;
+
+    // Normalize into meters as a base unit.
+    const metersPer = <String, double>{
+      'm': 1.0,
+      'km': 1000.0,
+      'mi': 1609.344,
+      'ft': 0.3048,
+      'in': 0.0254,
+    };
+
+    final fromFactor = metersPer[fromUnit];
+    final toFactor = metersPer[toUnit];
+    if (fromFactor == null || toFactor == null) return null;
+
+    final meters = value * fromFactor;
+    final out = meters / toFactor;
+    return '${_fmt(out)} $toUnit';
   }
 
   static String? _convertVolumeWithUnits({

@@ -81,17 +81,45 @@ void main() {
     return key.value.substring('tool_input_'.length);
   }
 
-  String readUnitArrowLabel(
+  String readFromUnitLabel(
     WidgetTester tester,
     Finder modalRoot,
     String toolId,
   ) {
-    final label = find.descendant(
+    // Multi-unit tools expose a stable From button key.
+    final fromBtn = find.descendant(
+      of: modalRoot,
+      matching: find.byKey(ValueKey('tool_unit_from_$toolId')),
+    );
+
+    if (tester.any(fromBtn)) {
+      final fromText = find.descendant(
+        of: fromBtn,
+        matching: find.byType(Text),
+      );
+      expect(fromText, findsAtLeastNWidgets(1));
+      return tester.widget<Text>(fromText.first).data ?? '';
+    }
+
+    // Legacy fallback: a single Text label like "km → mi".
+    final unitsLabel = find.descendant(
       of: modalRoot,
       matching: find.byKey(ValueKey('tool_units_$toolId')),
     );
-    expect(label, findsOneWidget);
-    return tester.widget<Text>(label).data ?? '';
+    expect(unitsLabel, findsOneWidget);
+
+    final unitsWidget = tester.widget<Widget>(unitsLabel);
+    if (unitsWidget is Text) return unitsWidget.data ?? '';
+
+    final nestedText = find.descendant(
+      of: unitsLabel,
+      matching: find.byType(Text),
+    );
+    if (tester.any(nestedText)) {
+      return tester.widget<Text>(nestedText.first).data ?? '';
+    }
+
+    return '';
   }
 
   String readResultLine(WidgetTester tester, String toolId) {
@@ -170,8 +198,11 @@ void main() {
     expect(modal, findsOneWidget);
 
     final toolId = resolveToolIdFromModal(tester, modal);
-    final units = readUnitArrowLabel(tester, modal, toolId);
-    final fromUnit = units.split(arrow).first.trim().toLowerCase();
+    final fromUnit = readFromUnitLabel(
+      tester,
+      modal,
+      toolId,
+    ).trim().toLowerCase();
 
     // Canonical distance pair is km <-> mi.
     const kmToMi = 0.621371;

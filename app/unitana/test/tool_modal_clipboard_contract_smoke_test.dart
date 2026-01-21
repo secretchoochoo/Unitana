@@ -1,0 +1,242 @@
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+import 'package:unitana/app/app_state.dart';
+import 'package:unitana/app/storage.dart';
+import 'package:unitana/features/dashboard/dashboard_screen.dart';
+import 'package:unitana/features/dashboard/widgets/tool_modal_bottom_sheet.dart';
+import 'package:unitana/models/place.dart';
+import 'package:unitana/theme/app_theme.dart';
+
+void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
+  // Prevent runtime font fetching in widget tests (avoids incidental HttpClient
+  // creation and keeps the suite deterministic).
+  GoogleFonts.config.allowRuntimeFetching = false;
+
+  const arrow = '→';
+
+  UnitanaAppState buildSeededState() {
+    final storage = UnitanaStorage();
+    final state = UnitanaAppState(storage);
+
+    state.places = const [
+      Place(
+        id: 'home',
+        type: PlaceType.living,
+        name: 'Home',
+        cityName: 'Denver',
+        countryCode: 'US',
+        timeZoneId: 'America/Denver',
+        unitSystem: 'imperial',
+        use24h: false,
+      ),
+      Place(
+        id: 'dest',
+        type: PlaceType.visiting,
+        name: 'Destination',
+        cityName: 'Lisbon',
+        countryCode: 'PT',
+        timeZoneId: 'Europe/Lisbon',
+        unitSystem: 'metric',
+        use24h: true,
+      ),
+    ];
+    state.defaultPlaceId = 'home';
+
+    return state;
+  }
+
+  Future<void> pumpDashboard(WidgetTester tester, UnitanaAppState state) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: UnitanaTheme.dark(),
+        home: DashboardScreen(state: state),
+      ),
+    );
+
+    // The dashboard has live elements; avoid full pumpAndSettle timeouts.
+    await tester.pump(const Duration(milliseconds: 120));
+    await tester.pump(const Duration(milliseconds: 120));
+    await tester.pump(const Duration(milliseconds: 120));
+  }
+
+  String resolveToolIdFromModal(WidgetTester tester, Finder modalRoot) {
+    final inputFinder = find.descendant(
+      of: modalRoot,
+      matching: find.byWidgetPredicate((w) {
+        if (w is! TextField) return false;
+        final key = w.key;
+        return key is ValueKey<String> && key.value.startsWith('tool_input_');
+      }),
+    );
+    expect(inputFinder, findsOneWidget);
+
+    final input = tester.widget<TextField>(inputFinder);
+    final key = input.key as ValueKey<String>;
+    return key.value.substring('tool_input_'.length);
+  }
+
+  String readUnitArrowLabel(
+    WidgetTester tester,
+    Finder modalRoot,
+    String toolId,
+  ) {
+    final label = find.descendant(
+      of: modalRoot,
+      matching: find.byKey(ValueKey('tool_units_$toolId')),
+    );
+    expect(label, findsOneWidget);
+    return tester.widget<Text>(label).data ?? '';
+  }
+
+  String readResultLine(WidgetTester tester, String toolId) {
+    final resultRoot = find.byKey(ValueKey('tool_result_$toolId'));
+    expect(resultRoot, findsOneWidget);
+
+    final line = find.descendant(
+      of: resultRoot,
+      matching: find.byType(RichText),
+    );
+    expect(line, findsAtLeastNWidgets(1));
+
+    final rich = tester.widget<RichText>(line.first);
+    return rich.text.toPlainText();
+  }
+
+  double? parseFirstNumber(String s) {
+    final m = RegExp(r'-?\d+(?:\.\d+)?').firstMatch(s);
+    return m == null ? null : double.tryParse(m.group(0) ?? '');
+  }
+
+  testWidgets(
+    'Tool modal clipboard contract: history tap copies result; long-press copies input',
+    (tester) async {
+      SharedPreferences.setMockInitialValues({});
+
+      String lastClipboardText = '';
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        (call) async {
+          switch (call.method) {
+            case 'Clipboard.setData':
+              final args =
+                  (call.arguments as Map?) ?? const <String, dynamic>{};
+              lastClipboardText = (args['text']?.toString() ?? '').trim();
+              return null;
+            case 'Clipboard.getData':
+              return <String, dynamic>{'text': lastClipboardText};
+            default:
+              return null;
+          }
+        },
+      );
+      addTearDown(() {
+        tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          SystemChannels.platform,
+          null,
+        );
+      });
+
+      await tester.binding.setSurfaceSize(const Size(390, 844));
+      addTearDown(() async => tester.binding.setSurfaceSize(null));
+
+      final state = buildSeededState();
+      await pumpDashboard(tester, state);
+
+      // Open ToolPickerSheet via the dedicated Tools button.
+      await tester.tap(find.byKey(const Key('dashboard_tools_button')));
+      await tester.pumpAndSettle(const Duration(milliseconds: 250));
+
+      // Prefer ToolPicker search so the test is resilient to lens collapse/scroll
+      // behavior and ordering changes.
+      final searchField = find.byKey(const ValueKey('toolpicker_search'));
+      expect(searchField, findsOneWidget);
+
+      await tester.enterText(searchField, 'Area');
+      await tester.pumpAndSettle(const Duration(milliseconds: 250));
+
+      final areaSearchRow = find.byKey(
+        const ValueKey('toolpicker_search_tool_area'),
+      );
+      if (tester.any(areaSearchRow)) {
+        await tester.tap(areaSearchRow);
+        await tester.pumpAndSettle(const Duration(milliseconds: 300));
+      } else {
+        // Fallback: expand Home & DIY and tap the tool row directly.
+        final homeLens = find.byKey(const ValueKey('toolpicker_lens_home_diy'));
+        expect(homeLens, findsOneWidget);
+        await tester.tap(homeLens);
+        await tester.pumpAndSettle(const Duration(milliseconds: 200));
+
+        final areaToolRow = find.byKey(const ValueKey('toolpicker_tool_area'));
+        expect(areaToolRow, findsOneWidget);
+        await tester.tap(areaToolRow);
+        await tester.pumpAndSettle(const Duration(milliseconds: 300));
+      }
+
+      final modal = find.byType(ToolModalBottomSheet);
+      expect(modal, findsOneWidget);
+
+      final toolId = resolveToolIdFromModal(tester, modal);
+
+      final units = readUnitArrowLabel(tester, modal, toolId);
+      final fromUnit = units.split(arrow).first.trim().toLowerCase();
+
+      // m² -> ft² (forward) OR ft² -> m² (reverse)
+      final fromIsM2 = fromUnit.contains('m') && !fromUnit.contains('ft');
+      final inputValue = fromIsM2 ? '10' : '100';
+      final expectedUnit = fromIsM2 ? 'ft' : 'm';
+
+      const ft2PerM2 = 10.7639104167;
+      final expectedOut = fromIsM2 ? 10.0 * ft2PerM2 : 100.0 / ft2PerM2;
+
+      final inputKey = ValueKey('tool_input_$toolId');
+      await tester.enterText(find.byKey(inputKey), inputValue);
+      await tester.tap(find.byKey(ValueKey('tool_run_$toolId')));
+      await tester.pumpAndSettle(const Duration(milliseconds: 300));
+
+      final resultLine = readResultLine(tester, toolId);
+      expect(resultLine, contains(arrow));
+      final outputPart = resultLine.split(arrow).last.trim();
+
+      // Output should include the expected unit family.
+      expect(outputPart.toLowerCase(), contains(expectedUnit));
+
+      final outputNumber = parseFirstNumber(outputPart);
+      expect(outputNumber, isNotNull);
+      expect(outputNumber!, closeTo(expectedOut, 0.2));
+
+      // First history line appears.
+      final history0 = find.byKey(ValueKey('tool_history_${toolId}_0'));
+      expect(history0, findsOneWidget);
+
+      // Tap history item to copy output.
+      await tester.tap(history0);
+      await tester.pumpAndSettle(const Duration(milliseconds: 220));
+
+      final noticeKey = ValueKey('tool_add_widget_notice_$toolId');
+      expect(find.byKey(noticeKey), findsOneWidget);
+      expect(find.text('Copied result'), findsOneWidget);
+
+      final copied = parseFirstNumber(lastClipboardText);
+      expect(copied, isNotNull);
+      expect(copied!, closeTo(expectedOut, 0.2));
+
+      // Long-press should copy the numeric input (and must not mutate the field).
+      await tester.longPress(history0);
+      await tester.pumpAndSettle(const Duration(milliseconds: 200));
+
+      expect(find.byKey(noticeKey), findsOneWidget);
+      expect(find.text('Copied input'), findsOneWidget);
+      expect(lastClipboardText, inputValue);
+
+      final field = tester.widget<TextField>(find.byKey(inputKey));
+      expect(field.controller?.text, inputValue);
+    },
+  );
+}

@@ -1010,12 +1010,19 @@ class _DashboardBoardState extends State<DashboardBoard>
     final l = label.toLowerCase();
     return switch (toolId) {
       'height' => l.contains('cm'),
+      // Length uses the same canonical engine as Height but is its own tool.
+      'length' =>
+        l.contains('cm') || l.contains('mm') || RegExp(r'\bm\b').hasMatch(l),
       'baking' => l.contains('ml'),
       'liquids' => l.contains('ml'),
       'area' => l.contains('m²') || l.contains('m2'),
-      'distance' => l.contains('km'),
+      'volume' => RegExp(r'\bml\b|\bl\b').hasMatch(l),
+      'pressure' => RegExp(r'\bkpa\b|\bhpa\b|\bbar\b|\bpa\b').hasMatch(l),
+      'weight' => RegExp(r'\bkg\b|\bg\b').hasMatch(l),
+      'body_weight' => RegExp(r'\bkg\b|\bg\b').hasMatch(l),
+      'distance' => l.contains('km') || RegExp(r'\bm\b').hasMatch(l),
       'speed' => l.contains('km'),
-      'temperature' => l.contains('°c') || l.contains('c'),
+      'temperature' => l.contains('°c') || RegExp(r'\bc\b').hasMatch(l),
       _ => false,
     };
   }

@@ -65,6 +65,40 @@ void main() {
 
       expect(find.byKey(const ValueKey('places_hero_v2')), findsOneWidget);
 
+      // Currency now owns the bottom-left quadrant; wind/gust no longer render there.
+      expect(find.byKey(const ValueKey('hero_currency_card')), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('hero_currency_primary_line')),
+        findsOneWidget,
+      );
+      expect(find.byKey(const ValueKey('hero_rate_line')), findsOneWidget);
+      expect(find.byKey(const ValueKey('hero_wind_line')), findsNothing);
+      expect(find.byKey(const ValueKey('hero_gust_line')), findsNothing);
+
+      // Env pill lives above currency and toggles between AQI and Pollen.
+      expect(find.byKey(const ValueKey('hero_env_pill')), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('hero_env_primary_line')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey('hero_env_content_aqi')),
+        findsOneWidget,
+      );
+
+      await tester.tap(find.byKey(const ValueKey('hero_env_pill')));
+      await pumpStable(tester);
+
+      expect(
+        find.byKey(const ValueKey('hero_env_content_pollen')),
+        findsOneWidget,
+      );
+
+      final currencyPrimary = tester.widget<Text>(
+        find.byKey(const ValueKey('hero_currency_primary_line')),
+      );
+      expect(currencyPrimary.data, contains('≈'));
+
       // Sun pill exists and contains sunrise/sunset rows.
       expect(find.byKey(const ValueKey('hero_sun_pill')), findsOneWidget);
       expect(find.byKey(const ValueKey('hero_sunrise_row')), findsOneWidget);
@@ -197,6 +231,78 @@ void main() {
       }
 
       expect(emptyHistory, findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'Hero env/currency tiles stay readable and Sunrise pill gets priority width on a phone surface',
+    (WidgetTester tester) async {
+      SharedPreferences.setMockInitialValues({});
+
+      // iPhone-ish logical size.
+      await tester.binding.setSurfaceSize(const Size(390, 844));
+      addTearDown(() async {
+        await tester.binding.setSurfaceSize(null);
+      });
+
+      final state = UnitanaAppState(UnitanaStorage());
+      await state.load();
+
+      state.profileName = 'Lisbon';
+      state.places = <Place>[
+        Place(
+          id: 'dest',
+          type: PlaceType.visiting,
+          name: 'Destination',
+          cityName: 'Lisbon',
+          countryCode: 'PT',
+          timeZoneId: 'Europe/Lisbon',
+          unitSystem: 'metric',
+          use24h: false,
+        ),
+        Place(
+          id: 'home',
+          type: PlaceType.living,
+          name: 'Home',
+          cityName: 'Denver',
+          countryCode: 'US',
+          timeZoneId: 'America/Denver',
+          unitSystem: 'imperial',
+          use24h: false,
+        ),
+      ];
+
+      await tester.pumpWidget(MaterialApp(home: DashboardScreen(state: state)));
+      await pumpStable(tester);
+
+      final envFinder = find.byKey(const ValueKey('hero_env_pill'));
+      final currencyFinder = find.byKey(const ValueKey('hero_currency_card'));
+
+      expect(envFinder, findsOneWidget);
+      expect(currencyFinder, findsOneWidget);
+
+      final envSize = tester.getSize(envFinder);
+      final currencySize = tester.getSize(currencyFinder);
+
+      final sunPill = find.byKey(const ValueKey('hero_sun_pill'));
+
+      // Default details mode should be sunrise/sunset on the dashboard.
+
+      expect(sunPill, findsOneWidget);
+
+      final sunSize = tester.getSize(sunPill);
+
+      // Width parity is the contract; they should read as a single left column.
+      expect((envSize.width - currencySize.width).abs(), lessThan(0.5));
+
+      // Guard against the "postage stamp" regression.
+      expect(envSize.width, greaterThanOrEqualTo(150));
+
+      // Sizing priority: Sunrise should receive at least as much width as the left rail.
+
+      expect(sunSize.width, greaterThanOrEqualTo(envSize.width));
+
+      expect(envSize.height, greaterThanOrEqualTo(44));
     },
   );
 }

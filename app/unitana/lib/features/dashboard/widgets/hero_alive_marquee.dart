@@ -18,12 +18,19 @@ class HeroAliveMarquee extends StatefulWidget {
   /// When null, the marquee uses a coarse label for [sceneKey].
   final String? conditionLabel;
 
+  /// When false, the painter will not render an inline condition label.
+  ///
+  /// This is used when the marquee slot provides its own widget-layer label
+  /// to guarantee readability without duplication.
+  final bool renderConditionLabel;
+
   const HeroAliveMarquee({
     super.key,
     required this.compact,
     required this.isNight,
     this.sceneKey,
     this.conditionLabel,
+    this.renderConditionLabel = true,
   });
 
   @override
@@ -111,6 +118,7 @@ class _HeroAliveMarqueeState extends State<HeroAliveMarquee>
             isNight: widget.isNight,
             sceneKey: widget.sceneKey,
             conditionLabel: widget.conditionLabel,
+            renderConditionLabel: widget.renderConditionLabel,
           ),
           // Ensure the painter expands to fill the marquee slot.
           child: const SizedBox.expand(),
@@ -127,12 +135,19 @@ class _AliveScenePainter extends CustomPainter {
   final SceneKey? sceneKey;
   final String? conditionLabel;
 
+  /// When false, the painter will not render an inline condition label.
+  ///
+  /// This is used when the marquee slot provides its own widget-layer label
+  /// to guarantee readability without duplication.
+  final bool renderConditionLabel;
+
   _AliveScenePainter({
     required this.repaint,
     required this.compact,
     required this.isNight,
     required this.sceneKey,
     required this.conditionLabel,
+    required this.renderConditionLabel,
   }) : super(repaint: repaint);
 
   // Palette: Dracula-adjacent, tuned for legibility on small devices.
@@ -1057,6 +1072,8 @@ class _AliveScenePainter extends CustomPainter {
     String? labelOverride,
   ) {
     // Guard: if the marquee is extremely short, keep the scene uncluttered.
+    if (!renderConditionLabel) return;
+
     if (size.height < 28) return;
 
     final raw = (labelOverride ?? '').trim();
@@ -1113,10 +1130,10 @@ class _AliveScenePainter extends CustomPainter {
     // Keep the label chip fully inside the canvas so the border never clips.
     final double bgX = snap(
       (size.width - bgWidth) / 2,
-    ).clamp(1.0, size.width - bgWidth - 1.0);
+    ).clamp(1.0, math.max(1.0, size.width - bgWidth - 1.0));
     final double bgY = snap(
       size.height - bgHeight - (compact ? 2.0 : 3.0),
-    ).clamp(1.0, size.height - bgHeight - 1.0);
+    ).clamp(1.0, math.max(1.0, size.height - bgHeight - 1.0));
 
     final bgRect = Rect.fromLTWH(bgX, bgY, bgWidth, bgHeight);
 
@@ -1138,6 +1155,7 @@ class _AliveScenePainter extends CustomPainter {
     return oldDelegate.compact != compact ||
         oldDelegate.sceneKey != sceneKey ||
         oldDelegate.conditionLabel != conditionLabel ||
+        oldDelegate.renderConditionLabel != renderConditionLabel ||
         oldDelegate.repaint != repaint;
   }
 }
