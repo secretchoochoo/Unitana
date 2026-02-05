@@ -363,6 +363,63 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
     });
   }
 
+  Future<bool> _confirmClearHistory(BuildContext context) async {
+    final decision = await showModalBottomSheet<bool>(
+      context: context,
+      useSafeArea: true,
+      showDragHandle: true,
+      builder: (sheetContext) {
+        final scheme = Theme.of(sheetContext).colorScheme;
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Clear history?',
+                style: Theme.of(
+                  sheetContext,
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'This removes the last 10 conversions for this tool.',
+                style: Theme.of(sheetContext).textTheme.bodyMedium?.copyWith(
+                  color: scheme.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.of(sheetContext).pop(false),
+                      child: const Text('Cancel'),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: FilledButton(
+                      onPressed: () => Navigator.of(sheetContext).pop(true),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: scheme.error,
+                        foregroundColor: scheme.onError,
+                      ),
+                      child: const Text('Clear'),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
+    );
+
+    return decision ?? false;
+  }
+
   bool _defaultForwardFor({
     required String toolId,
     required bool preferMetric,
@@ -718,13 +775,18 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                                     maxLines: 1,
                                     softWrap: false,
                                     overflow: TextOverflow.fade,
-                                    style: GoogleFonts.robotoSlab(
-                                      textStyle: Theme.of(
-                                        context,
-                                      ).textTheme.headlineSmall,
-                                      fontWeight: FontWeight.w800,
-                                      color: DraculaPalette.foreground,
-                                    ),
+                                    style:
+                                        (Theme.of(
+                                                  context,
+                                                ).textTheme.headlineSmall ??
+                                                const TextStyle())
+                                            .merge(
+                                              GoogleFonts.robotoSlab(
+                                                fontWeight: FontWeight.w800,
+                                                color:
+                                                    DraculaPalette.foreground,
+                                              ),
+                                            ),
                                   ),
                                 ),
                               ],
@@ -1369,6 +1431,42 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                                       );
                                     },
                                   ),
+                          ),
+                        ),
+
+                        const SizedBox(height: 6),
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: TextButton(
+                            onPressed: history.isEmpty
+                                ? null
+                                : () async {
+                                    final ok = await _confirmClearHistory(
+                                      context,
+                                    );
+                                    if (!ok || !mounted) return;
+
+                                    widget.session.clearHistory(widget.tool.id);
+                                    setState(() {
+                                      _controller.clear();
+                                      _resultLine = null;
+                                    });
+                                    _showNotice(
+                                      'History cleared',
+                                      UnitanaNoticeKind.success,
+                                    );
+                                  },
+                            style: TextButton.styleFrom(
+                              padding: EdgeInsets.zero,
+                              minimumSize: const Size(0, 0),
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                              foregroundColor: const Color(0xFFFBBF24),
+                            ),
+                            child: Text(
+                              'Clear History',
+                              style: Theme.of(context).textTheme.labelLarge
+                                  ?.copyWith(color: const Color(0xFFFBBF24)),
+                            ),
                           ),
                         ),
                       ],

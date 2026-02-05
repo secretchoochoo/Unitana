@@ -8,6 +8,8 @@ import 'package:unitana/features/dashboard/dashboard_screen.dart';
 import 'package:unitana/models/place.dart';
 import 'package:unitana/theme/app_theme.dart';
 
+import 'dashboard_test_helpers.dart';
+
 Future<void> _scrollDownUntilFound(
   WidgetTester tester,
   Finder sheet,
@@ -101,7 +103,7 @@ void main() {
 
         await _scrollDownUntilFound(tester, menuSheet, developerToolsTile);
         expect(developerToolsTile, findsOneWidget);
-        await tester.ensureVisible(developerToolsTile);
+        await ensureVisibleAligned(tester, developerToolsTile);
         await tester.pump();
         await tester.tap(developerToolsTile);
         await tester.pumpAndSettle();
@@ -120,7 +122,7 @@ void main() {
 
         await _scrollDownUntilFound(tester, devToolsSheet, weatherMenuTile);
         expect(weatherMenuTile, findsOneWidget);
-        await tester.ensureVisible(weatherMenuTile);
+        await ensureVisibleAligned(tester, weatherMenuTile);
         await tester.pump();
         await tester.tap(weatherMenuTile);
         await tester.pumpAndSettle();

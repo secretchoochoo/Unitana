@@ -10,6 +10,9 @@ import 'package:unitana/features/dashboard/dashboard_screen.dart';
 import 'package:unitana/models/place.dart';
 import 'package:unitana/theme/app_theme.dart';
 
+import 'dashboard_test_helpers.dart';
+import 'test_utils/pinned_header_tap.dart';
+
 void main() {
   testWidgets(
     'Weather Summary tile opens its read-only sheet and renders core labels',
@@ -93,8 +96,14 @@ void main() {
         final tileKey = const ValueKey('dashboard_item_weather_summary_test');
         expect(find.byKey(tileKey), findsOneWidget);
 
-        await tester.tap(find.byKey(tileKey));
-        await tester.pump();
+        await ensureVisibleAligned(tester, find.byKey(tileKey));
+        await safeTapPinned(
+          tester,
+          find.byKey(tileKey),
+          obstruction: find.byKey(
+            const ValueKey('dashboard_collapsing_header_mini_layer'),
+          ),
+        );
         await tester.pump(const Duration(milliseconds: 450));
 
         final sheetKey = const ValueKey('weather_summary_sheet');

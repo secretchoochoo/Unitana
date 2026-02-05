@@ -10,6 +10,8 @@ import 'package:unitana/features/dashboard/dashboard_screen.dart';
 import 'package:unitana/models/place.dart';
 import 'package:unitana/theme/app_theme.dart';
 
+import 'dashboard_test_helpers.dart';
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -71,7 +73,7 @@ void main() {
     tester,
   ) async {
     SharedPreferences.setMockInitialValues({});
-    GoogleFonts.config.allowRuntimeFetching = false;
+    GoogleFonts.config.allowRuntimeFetching = true;
 
     String lastClipboardText = '';
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
@@ -97,6 +99,8 @@ void main() {
     // Add Weight via the + slot.
     final addSlot = firstAddSlotFinder();
     expect(addSlot, findsWidgets);
+
+    await ensureVisibleAligned(tester, addSlot.first);
 
     await tester.tap(addSlot.first);
     await tester.pumpAndSettle(const Duration(milliseconds: 250));
@@ -131,7 +135,9 @@ void main() {
     expect(find.text('Weight'), findsOneWidget);
 
     // Open the Weight modal.
-    await tester.tap(find.text('Weight'));
+    final weightTile = find.text('Weight');
+    await ensureVisibleAligned(tester, weightTile);
+    await tester.tap(weightTile, warnIfMissed: false);
     await tester.pumpAndSettle(const Duration(milliseconds: 250));
 
     final inputField = find.byKey(const ValueKey('tool_input_weight'));

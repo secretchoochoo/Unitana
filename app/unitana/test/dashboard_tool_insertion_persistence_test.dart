@@ -11,6 +11,8 @@ import 'package:unitana/features/dashboard/dashboard_screen.dart';
 import 'package:unitana/models/place.dart';
 import 'package:unitana/theme/app_theme.dart';
 
+import 'dashboard_test_helpers.dart';
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -83,6 +85,8 @@ void main() {
     final addSlot = firstAddSlotFinder();
     expect(addSlot, findsWidgets);
 
+    await ensureVisibleAligned(tester, addSlot.first);
+
     await tester.tap(addSlot.first);
     await tester.pumpAndSettle(const Duration(milliseconds: 250));
 
@@ -131,6 +135,8 @@ void main() {
     expect(find.text('Distance'), findsOneWidget);
 
     // Attempt to add Distance again; it should be blocked.
+    await ensureVisibleAligned(tester, addSlot.first);
+
     await tester.tap(addSlot.first);
     await tester.pumpAndSettle(const Duration(milliseconds: 250));
 
@@ -183,6 +189,8 @@ void main() {
     final addSlot = firstAddSlotFinder();
     expect(addSlot, findsWidgets);
 
+    await ensureVisibleAligned(tester, addSlot.first);
+
     await tester.tap(addSlot.first);
     await tester.pumpAndSettle(const Duration(milliseconds: 250));
 
@@ -229,7 +237,9 @@ void main() {
 
     // Pull the persisted layout so we can target the user-added tile by key.
     final prefs = await SharedPreferences.getInstance();
-    final raw = prefs.getString('dashboard_layout_v1');
+    final raw =
+        prefs.getString('dashboard_layout_v1::profile_1') ??
+        prefs.getString('dashboard_layout_v1');
     expect(raw, isNotNull);
 
     final decoded = jsonDecode(raw!) as List<dynamic>;
@@ -251,7 +261,7 @@ void main() {
     final tile = find.byKey(ValueKey('dashboard_item_$id'));
     expect(tile, findsOneWidget);
 
-    await tester.ensureVisible(tile);
+    await ensureVisibleAligned(tester, tile);
     await tester.pump(const Duration(milliseconds: 250));
 
     // NOTE: While in edit mode the dashboard tiles run a continuous jiggle
@@ -281,6 +291,7 @@ void main() {
       // can be partially occluded by pinned overlays at small viewport sizes.
       // Instead, press inside the tile bounds (lower-middle) which is reliably
       // tappable across layouts.
+      await ensureVisibleAligned(tester, tile);
       final rect = tester.getRect(tile);
       final pressPoint = Offset(
         rect.center.dx,
@@ -364,7 +375,9 @@ void main() {
     expect(find.text('Area'), findsOneWidget);
 
     // Enter edit mode by long-pressing the Area tile.
-    await tester.longPress(find.text('Area').first, warnIfMissed: false);
+    final areaTile = find.text('Area').first;
+    await ensureVisibleAligned(tester, areaTile);
+    await tester.longPress(areaTile, warnIfMissed: false);
     Future<void> pumpFor(Duration duration) async {
       final deadline = DateTime.now().add(duration);
       while (DateTime.now().isBefore(deadline)) {
@@ -398,13 +411,17 @@ void main() {
 
     // Ensure the hidden defaults list persisted the removed tool.
     final prefs = await SharedPreferences.getInstance();
-    final hiddenRaw = prefs.getString('dashboard_hidden_defaults_v1');
+    final hiddenRaw =
+        prefs.getString('dashboard_hidden_defaults_v1::profile_1') ??
+        prefs.getString('dashboard_hidden_defaults_v1');
     expect(hiddenRaw, isNotNull);
     expect(hiddenRaw, contains('area'));
 
     // Restore Area via the picker search.
     final addSlot = firstAddSlotFinder();
     expect(addSlot, findsWidgets);
+    await ensureVisibleAligned(tester, addSlot.first);
+
     await tester.tap(addSlot.first);
     await tester.pumpAndSettle(const Duration(milliseconds: 250));
 

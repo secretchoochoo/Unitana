@@ -245,17 +245,17 @@ class UnitanaTile extends StatelessWidget {
                             overflow: TextOverflow.ellipsis,
                             softWrap: false,
                             textAlign: TextAlign.center,
-                            style: GoogleFonts.robotoSlab(
-                              textStyle:
-                                  (isCompact
-                                          ? text.titleSmall
-                                          : text.titleMedium)
-                                      ?.copyWith(
-                                        color: scheme.onSurface,
-                                        fontWeight: FontWeight.w700,
-                                        letterSpacing: 0.2,
-                                      ),
-                            ),
+                            style:
+                                ((isCompact
+                                                ? text.titleSmall
+                                                : text.titleMedium)
+                                            ?.copyWith(
+                                              color: scheme.onSurface,
+                                              fontWeight: FontWeight.w700,
+                                              letterSpacing: 0.2,
+                                            ) ??
+                                        const TextStyle())
+                                    .merge(GoogleFonts.robotoSlab()),
                           ),
                         ),
                       ),

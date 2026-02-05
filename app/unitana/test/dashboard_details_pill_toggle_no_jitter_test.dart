@@ -46,43 +46,43 @@ void main() {
     expectRectClose(before, back);
   });
 
-  testWidgets('Pinned overlay Details pill toggles with no layout jitter', (
+  testWidgets('Pinned overlay segment toggle has no layout jitter', (
     tester,
   ) async {
     await pumpDashboardForTest(tester, surfaceSize: const Size(390, 640));
     await pumpStable(tester);
 
-    final detailsPill = find.byKey(
-      const ValueKey('dashboard_pinned_details_pill'),
-    );
-    expect(detailsPill, findsOneWidget);
-
-    // Scroll until the pinned overlay is interactive.
+    // The pinned overlay is only built after scrolling past the hero. Scroll
+    // first, then assert the segment exists.
     final scrollable = find.byType(CustomScrollView);
     expect(scrollable, findsOneWidget);
+
+    Finder detailsSeg() =>
+        find.byKey(const ValueKey('dashboard_pinned_segment_home'));
 
     for (var i = 0; i < 14; i++) {
       await tester.drag(scrollable, const Offset(0, -200));
       await tester.pump(const Duration(milliseconds: 120));
-      if (detailsPill.hitTestable().evaluate().isNotEmpty) break;
+      if (detailsSeg().hitTestable().evaluate().isNotEmpty) break;
     }
 
-    expect(detailsPill.hitTestable(), findsOneWidget);
+    expect(detailsSeg(), findsOneWidget);
+    expect(detailsSeg().hitTestable(), findsOneWidget);
 
-    final before = tester.getRect(detailsPill);
+    final before = tester.getRect(detailsSeg());
 
-    await tester.tap(detailsPill.hitTestable());
+    await tester.tap(detailsSeg().hitTestable());
     await tester.pump(const Duration(milliseconds: 220));
     await pumpStable(tester);
 
-    final after = tester.getRect(detailsPill);
+    final after = tester.getRect(detailsSeg());
     expectRectClose(before, after, tol: 12.0);
 
-    await tester.tap(detailsPill.hitTestable());
+    await tester.tap(detailsSeg().hitTestable());
     await tester.pump(const Duration(milliseconds: 220));
     await pumpStable(tester);
 
-    final back = tester.getRect(detailsPill);
+    final back = tester.getRect(detailsSeg());
     expectRectClose(before, back, tol: 12.0);
   });
 }

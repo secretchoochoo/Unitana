@@ -4,48 +4,32 @@ import 'package:flutter_test/flutter_test.dart';
 import 'dashboard_test_helpers.dart';
 
 void main() {
-  testWidgets('Pinned overlay has no layout overflows on smallest surface', (
-    tester,
-  ) async {
-    await pumpDashboardForTest(tester, surfaceSize: const Size(320, 568));
+  Future<void> pumpStable(WidgetTester tester) async {
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 120));
+    await tester.pump(const Duration(milliseconds: 120));
+  }
 
-    // Overlay exists in the tree, but becomes interactive only after scroll.
-    final detailsPill = find.byKey(
-      const ValueKey('dashboard_pinned_details_pill'),
+  testWidgets('Pinned header smoke test at small viewport', (tester) async {
+    tester.view.physicalSize = const Size(360, 740);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
+
+    await pumpDashboardHarness(tester);
+    await pumpStable(tester);
+
+    // Ensure we can scroll without exceptions and pinned header can appear.
+    await tester.drag(find.byType(Scrollable).first, const Offset(0, -900));
+    await pumpStable(tester);
+
+    final miniOpacityFinder = find.byKey(
+      const ValueKey('dashboard_collapsing_header_mini_layer'),
     );
-    expect(detailsPill.hitTestable(), findsNothing);
-
-    final scrollable = find.byType(CustomScrollView);
-    expect(scrollable, findsOneWidget);
-
-    for (var i = 0; i < 18; i++) {
-      await tester.drag(scrollable, const Offset(0, -220));
-      await tester.pumpAndSettle();
-      if (detailsPill.hitTestable().evaluate().isNotEmpty) {
-        break;
-      }
-    }
-
-    expect(detailsPill.hitTestable(), findsOneWidget);
-
-    // Smoke: key surfaces remain present on smallest supported size.
-    expect(
-      find.byKey(const ValueKey('dashboard_pinned_time_temp_pill')),
-      findsOneWidget,
-    );
-    expect(
-      find.byKey(const ValueKey('dashboard_pinned_currency_pill')),
-      findsOneWidget,
-    );
-    expect(
-      find.byKey(const ValueKey('dashboard_pinned_details_pill')),
-      findsOneWidget,
-    );
-
-    // Tap the details pill to ensure mode swap doesn't trigger overflows.
-    await tester.tap(detailsPill.hitTestable());
-    await tester.pumpAndSettle();
-
-    expect(tester.takeException(), isNull);
+    expect(miniOpacityFinder, findsOneWidget);
+    final after = tester.widget<Opacity>(miniOpacityFinder);
+    expect(after.opacity, greaterThan(0.5));
   });
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// Session-scoped details pill mode.
 ///
@@ -10,6 +11,11 @@ enum HeroEnvPillMode { aqi, pollen }
 
 /// Backwards-compatible enum name for pinned overlay callers.
 enum PinnedHeroDetailsMode { sun, wind }
+
+/// Session-scoped right pill mode for the pinned mini-hero overlay.
+///
+/// Independent from the main hero to keep semantics clear while scrolling.
+enum PinnedHeroRightMode { timeTemp, currency }
 
 enum DashboardReality { destination, home }
 
@@ -39,6 +45,15 @@ class ConversionRecord {
 /// - selected reality: drives hero + tools
 /// - per-tool conversion history (last 10)
 class DashboardSessionController extends ChangeNotifier {
+  final String prefsNamespace;
+
+  DashboardSessionController({this.prefsNamespace = ''});
+
+  static const String _kHeroEnvMode = 'hero_env_mode_v1';
+
+  String _k(String base) =>
+      prefsNamespace.trim().isEmpty ? base : '$base::${prefsNamespace.trim()}';
+  bool _envModeLoaded = false;
   // Places hero details pill mode.
   //
   // Session-scoped only: not persisted, so tests remain hermetic.
@@ -54,10 +69,47 @@ class DashboardSessionController extends ChangeNotifier {
   // checking while scrolling.
   PinnedHeroDetailsMode _pinnedHeroDetailsMode = PinnedHeroDetailsMode.wind;
 
+  // Pinned hero (compact overlay) right pill mode.
+  //
+  // Session-scoped only: defaults to Time/Temp for quick glance.
+  PinnedHeroRightMode _pinnedHeroRightMode = PinnedHeroRightMode.timeTemp;
+
   // Places hero env pill mode (AQI / Pollen).
   //
   // Session-scoped only: not persisted. Defaults to AQI as a neutral baseline.
   HeroEnvPillMode _heroEnvPillMode = HeroEnvPillMode.aqi;
+
+  /// Best-effort load of persisted env pill mode.
+  ///
+  /// - Defaults remain deterministic until this method is called.
+  /// - Tests remain hermetic unless they explicitly call this (or set prefs).
+  Future<void> loadPersisted() async {
+    if (_envModeLoaded) return;
+    _envModeLoaded = true;
+    final prefs = await SharedPreferences.getInstance();
+    final raw =
+        prefs.getString(_k(_kHeroEnvMode)) ?? prefs.getString(_kHeroEnvMode);
+    if (raw == null || raw.trim().isEmpty) return;
+    final norm = raw.trim().toLowerCase();
+    final next = norm == 'pollen'
+        ? HeroEnvPillMode.pollen
+        : HeroEnvPillMode.aqi;
+    if (next == _heroEnvPillMode) return;
+    _heroEnvPillMode = next;
+    notifyListeners();
+  }
+
+  Future<void> _persistEnvMode() async {
+    // If persistence was never initialized, don't opportunistically create
+    // storage state during tests.
+    if (!_envModeLoaded) return;
+    final prefs = await SharedPreferences.getInstance();
+    final v = _heroEnvPillMode == HeroEnvPillMode.pollen ? 'pollen' : 'aqi';
+    await prefs.setString(_k(_kHeroEnvMode), v);
+    if (prefsNamespace.trim().isNotEmpty) {
+      await prefs.remove(_kHeroEnvMode);
+    }
+  }
 
   HeroDetailsPillMode get heroDetailsPillMode => _heroDetailsPillMode;
 
@@ -90,11 +142,27 @@ class DashboardSessionController extends ChangeNotifier {
     notifyListeners();
   }
 
+  PinnedHeroRightMode get pinnedHeroRightMode => _pinnedHeroRightMode;
+
+  void setPinnedHeroRightMode(PinnedHeroRightMode value) {
+    if (_pinnedHeroRightMode == value) return;
+    _pinnedHeroRightMode = value;
+    notifyListeners();
+  }
+
+  void togglePinnedHeroRightMode() {
+    _pinnedHeroRightMode = _pinnedHeroRightMode == PinnedHeroRightMode.timeTemp
+        ? PinnedHeroRightMode.currency
+        : PinnedHeroRightMode.timeTemp;
+    notifyListeners();
+  }
+
   HeroEnvPillMode get heroEnvPillMode => _heroEnvPillMode;
 
   void setHeroEnvPillMode(HeroEnvPillMode value) {
     if (_heroEnvPillMode == value) return;
     _heroEnvPillMode = value;
+    _persistEnvMode();
     notifyListeners();
   }
 
@@ -102,6 +170,7 @@ class DashboardSessionController extends ChangeNotifier {
     _heroEnvPillMode = _heroEnvPillMode == HeroEnvPillMode.aqi
         ? HeroEnvPillMode.pollen
         : HeroEnvPillMode.aqi;
+    _persistEnvMode();
     notifyListeners();
   }
 
@@ -135,6 +204,13 @@ class DashboardSessionController extends ChangeNotifier {
     if (list.length > 10) {
       list.removeRange(10, list.length);
     }
+    notifyListeners();
+  }
+
+  void clearHistory(String toolId) {
+    final list = _history[toolId];
+    if (list == null || list.isEmpty) return;
+    _history.remove(toolId);
     notifyListeners();
   }
 

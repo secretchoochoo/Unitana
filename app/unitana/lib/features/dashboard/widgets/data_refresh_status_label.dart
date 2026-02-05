@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import '../../../theme/dracula_palette.dart';
 
 import '../models/dashboard_live_data.dart';
 
@@ -108,6 +109,11 @@ class _DataRefreshStatusLabelState extends State<DataRefreshStatusLabel> {
         if (text == null) return const SizedBox.shrink();
 
         final cs = Theme.of(context).colorScheme;
+        final bool isStale = text.startsWith('Stale');
+        final Color labelColor = isStale
+            ? DraculaPalette.orange.withAlpha(235)
+            : DraculaPalette.purple.withAlpha(220);
+
         final baseStyle =
             (widget.compact
                     ? Theme.of(context).textTheme.labelSmall
@@ -115,7 +121,8 @@ class _DataRefreshStatusLabelState extends State<DataRefreshStatusLabel> {
                 ?.copyWith(
                   fontWeight: FontWeight.w600,
                   letterSpacing: 0.2,
-                  color: cs.onSurface.withAlpha(190),
+                  // More intrigue than a pill, while staying readable.
+                  color: labelColor,
                 );
 
         final child = Text(

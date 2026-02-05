@@ -12,9 +12,9 @@ import 'package:unitana/theme/app_theme.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  // Prevent runtime font fetching in widget tests (avoids incidental HttpClient
-  // creation and keeps the suite deterministic).
-  GoogleFonts.config.allowRuntimeFetching = false;
+  // Allow runtime font fetching in widget/golden tests so GoogleFonts can resolve
+  // required font files during tests (avoids bundling font assets in-repo).
+  GoogleFonts.config.allowRuntimeFetching = true;
 
   UnitanaAppState buildSeededState() {
     final storage = UnitanaStorage();
@@ -63,8 +63,24 @@ void main() {
   String readClockDetail(WidgetTester tester) {
     final detail = find.byKey(const ValueKey('places_hero_clock_detail'));
     expect(detail, findsOneWidget);
-    final widget = tester.widget<Text>(detail);
-    return widget.data ?? '';
+
+    // The widget carrying this key may be wrapped (for example, by an internal
+    // KeyedSubtree). Read the first Text descendant if present; otherwise treat
+    // the keyed widget itself as a Text.
+    final textDesc = find.descendant(of: detail, matching: find.byType(Text));
+    if (textDesc.evaluate().isNotEmpty) {
+      final widget = tester.widget<Text>(textDesc.first);
+      return widget.data ?? '';
+    }
+
+    final widget = tester.widget(detail);
+    if (widget is Text) {
+      return widget.data ?? widget.textSpan?.toPlainText() ?? '';
+    }
+    if (widget is RichText) {
+      return widget.text.toPlainText();
+    }
+    return '';
   }
 
   testWidgets('DevTools Clock Override updates hero clock display', (

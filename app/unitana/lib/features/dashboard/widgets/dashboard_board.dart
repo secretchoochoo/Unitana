@@ -54,6 +54,13 @@ class DashboardBoard extends StatefulWidget {
   final DashboardLayoutController layout;
   final double availableWidth;
   final bool isEditing;
+
+  /// When true, the grid can render the Places Hero as a normal tile.
+  ///
+  /// The dashboard now also supports a pinned/collapsing Places Hero header.
+  /// In that configuration we must not render a second hero inside the grid,
+  /// otherwise tests (and users) will see duplicate hero widgets.
+  final bool includePlacesHero;
   final String? focusActionTileId;
   final ValueChanged<String?> onEnteredEditMode;
   final VoidCallback onConsumedFocusTileId;
@@ -65,6 +72,7 @@ class DashboardBoard extends StatefulWidget {
     required this.layout,
     required this.availableWidth,
     required this.isEditing,
+    this.includePlacesHero = true,
     required this.focusActionTileId,
     required this.onEnteredEditMode,
     required this.onConsumedFocusTileId,
@@ -163,6 +171,13 @@ class _DashboardBoardState extends State<DashboardBoard>
     if (target != null) {
       await _setAnchorIndex(target, dragged.currentIndex);
     }
+
+    // The layout controller persists anchor indices, but the dashboard needs an
+    // immediate rebuild so the user (and widget tests) see the updated order
+    // without waiting for an unrelated state change.
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   @override
@@ -247,7 +262,45 @@ class _DashboardBoardState extends State<DashboardBoard>
     final home = _pickHome(places);
     final dest = _pickDestination(places);
 
+    // Deterministic mock/demo data: seed per-place snapshots (weather, sun, AQI, pollen)
+    // before any tiles attempt to read them. This is idempotent and guarded internally.
+    widget.liveData.ensureSeeded([
+      if (home != null) home,
+      if (dest != null) dest,
+    ]);
+
     final cols = widget.availableWidth >= 520 ? 3 : 2;
+
+    // When the Places hero moved into the sliver header, some persisted
+    // tile anchor indices still assume the hero consumes the first 2 rows.
+    // We only apply the offset removal when the anchors *look* legacy.
+    //
+    // Why this matters: applying a row-based offset unconditionally can break
+    // reorder persistence across breakpoints (2 cols vs 3 cols), because the
+    // same anchors would be "shifted" differently when the column count changes.
+    const int heroRows = 2;
+    final legacyAnchors = <int>[];
+
+    if (!widget.includePlacesHero) {
+      for (final t in ToolDefinitions.defaultTiles) {
+        final idx = widget.layout.defaultToolAnchorIndex(t.id);
+        if (idx != null) legacyAnchors.add(idx);
+      }
+      for (final i in widget.layout.items) {
+        final a = i.anchor;
+        if (a != null) legacyAnchors.add(a.index);
+      }
+    }
+
+    final bool needsLegacyHeroOffset =
+        !widget.includePlacesHero && legacyAnchors.isNotEmpty
+        ? legacyAnchors.map((a) => a ~/ cols).reduce(math.min) >= heroRows
+        : false;
+
+    final heroAnchorOffset = needsLegacyHeroOffset ? cols * heroRows : 0;
+
+    int adjustAnchor(int raw) =>
+        heroAnchorOffset == 0 ? raw : math.max(0, raw - heroAnchorOffset);
 
     final toolItems = ToolDefinitions.defaultTiles
         .where((t) => !widget.layout.isDefaultToolHidden(t.id))
@@ -260,20 +313,37 @@ class _DashboardBoardState extends State<DashboardBoard>
             anchor: widget.layout.defaultToolAnchorIndex(t.id) == null
                 ? null
                 : DashboardAnchor(
-                    index: widget.layout.defaultToolAnchorIndex(t.id)!,
+                    index: adjustAnchor(
+                      widget.layout.defaultToolAnchorIndex(t.id)!,
+                    ),
                   ),
           ),
         )
         .toList();
 
+    final adjustedUserItems = widget.layout.items.map((i) {
+      final a = i.anchor;
+      if (a == null) return i;
+      if (heroAnchorOffset == 0) return i;
+      return DashboardBoardItem(
+        id: i.id,
+        kind: i.kind,
+        span: i.span,
+        toolId: i.toolId,
+        userAdded: i.userAdded,
+        anchor: DashboardAnchor(index: adjustAnchor(a.index)),
+      );
+    }).toList();
+
     final items = <DashboardBoardItem>[
-      const DashboardBoardItem(
-        id: 'places_hero_v2',
-        kind: DashboardItemKind.placesHero,
-        span: DashboardTileSpan.fullWidthTwoTall,
-      ),
+      if (widget.includePlacesHero)
+        const DashboardBoardItem(
+          id: 'places_hero_v2',
+          kind: DashboardItemKind.placesHero,
+          span: DashboardTileSpan.fullWidthTwoTall,
+        ),
       ...toolItems,
-      ...widget.layout.items,
+      ...adjustedUserItems,
     ];
 
     final placed = _place(items, cols);
@@ -371,6 +441,9 @@ class _DashboardBoardState extends State<DashboardBoard>
 
     switch (item.kind) {
       case DashboardItemKind.placesHero:
+        if (!widget.includePlacesHero) {
+          return const SizedBox.shrink();
+        }
         return PlacesHeroV2(
           key: const Key('places_hero_v2'),
           home: home,
@@ -1491,28 +1564,31 @@ class _ToolPickerSheetState extends State<ToolPickerSheet> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return ListView(
+    return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(vertical: 12),
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-          child: Text('Choose a tool', style: theme.textTheme.titleMedium),
-        ),
-        _recentShortcut(context),
-        _searchField(context),
-        if (_query.trim().isNotEmpty) _searchResultsSection(context),
-        for (final lens in ActivityLenses.all) ...[
-          _lensHeader(context, lens),
-          if (_expandedLensId == lens.id)
-            ..._buildToolRows(
-              context,
-              lensId: lens.id,
-              tools: ToolRegistry.toolsForLens(lens.id),
-            ),
-          const Divider(height: 1),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+            child: Text('Choose a tool', style: theme.textTheme.titleMedium),
+          ),
+          _recentShortcut(context),
+          _searchField(context),
+          if (_query.trim().isNotEmpty) _searchResultsSection(context),
+          for (final lens in ActivityLenses.all) ...[
+            _lensHeader(context, lens),
+            if (_expandedLensId == lens.id)
+              ..._buildToolRows(
+                context,
+                lensId: lens.id,
+                tools: ToolRegistry.toolsForLens(lens.id),
+              ),
+            const Divider(height: 1),
+          ],
+          const SizedBox(height: 8),
         ],
-        const SizedBox(height: 8),
-      ],
+      ),
     );
   }
 }

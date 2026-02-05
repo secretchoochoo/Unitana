@@ -9,6 +9,8 @@ import 'package:unitana/features/dashboard/widgets/unitana_tile.dart';
 import 'package:unitana/models/place.dart';
 import 'package:unitana/theme/app_theme.dart';
 
+import 'dashboard_test_helpers.dart';
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -95,6 +97,8 @@ void main() {
     // Add Currency via the first available + slot.
     final addSlot = firstAddSlotFinder();
     expect(addSlot, findsWidgets);
+    await ensureVisibleAligned(tester, addSlot.first);
+
     await tester.tap(addSlot.first);
     await tester.pumpAndSettle(const Duration(milliseconds: 300));
 
@@ -124,8 +128,8 @@ void main() {
       const ValueKey('places_hero_segment_destination'),
     );
     if (destSeg.evaluate().isNotEmpty) {
-      await tester.ensureVisible(destSeg);
-      await tester.tap(destSeg);
+      await ensureVisibleAligned(tester, destSeg);
+      await tester.tap(destSeg, warnIfMissed: false);
       await tester.pumpAndSettle(const Duration(milliseconds: 200));
     }
 
@@ -141,8 +145,8 @@ void main() {
 
     // Switch to Home reality and ensure USD becomes primary.
     final homeSeg = find.byKey(const ValueKey('places_hero_segment_home'));
-    await tester.ensureVisible(homeSeg);
-    await tester.tap(homeSeg);
+    await ensureVisibleAligned(tester, homeSeg);
+    await tester.tap(homeSeg, warnIfMissed: false);
     await tester.pumpAndSettle(const Duration(milliseconds: 200));
 
     tile = tester.widget<UnitanaTile>(currencyTileFinder());

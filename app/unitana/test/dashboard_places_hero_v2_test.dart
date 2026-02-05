@@ -7,6 +7,8 @@ import 'package:unitana/app/storage.dart';
 import 'package:unitana/features/dashboard/dashboard_screen.dart';
 import 'package:unitana/models/place.dart';
 
+import 'dashboard_test_helpers.dart';
+
 void main() {
   Future<void> pumpStable(WidgetTester tester) async {
     // The dashboard contains live UI elements (eg, time displays) that may
@@ -39,16 +41,6 @@ void main() {
       state.profileName = 'Lisbon';
       state.places = <Place>[
         Place(
-          id: 'dest',
-          type: PlaceType.visiting,
-          name: 'Destination',
-          cityName: 'Lisbon',
-          countryCode: 'PT',
-          timeZoneId: 'Europe/Lisbon',
-          unitSystem: 'metric',
-          use24h: false,
-        ),
-        Place(
           id: 'home',
           type: PlaceType.living,
           name: 'Home',
@@ -56,6 +48,16 @@ void main() {
           countryCode: 'US',
           timeZoneId: 'America/Denver',
           unitSystem: 'imperial',
+          use24h: false,
+        ),
+        Place(
+          id: 'dest',
+          type: PlaceType.visiting,
+          name: 'Destination',
+          cityName: 'Lisbon',
+          countryCode: 'PT',
+          timeZoneId: 'Europe/Lisbon',
+          unitSystem: 'metric',
           use24h: false,
         ),
       ];
@@ -129,8 +131,14 @@ void main() {
       }
 
       // Labels may be word-based or icon-based depending on the active UX.
-      expect(sunriseText, anyOf(contains('Sunrise'), contains('☀')));
-      expect(sunsetText, anyOf(contains('Sunset'), contains('🌙')));
+      expect(
+        sunriseText,
+        anyOf(contains("🌅"), contains("Sunrise"), contains("☀")),
+      );
+      expect(
+        sunsetText,
+        anyOf(contains("🌇"), contains("Sunset"), contains("🌙")),
+      );
       expectClocksOrPlaceholder(sunriseText);
       expectClocksOrPlaceholder(sunsetText);
       // Default tiles on a fresh profile are currently: Height, Baking,
@@ -199,17 +207,14 @@ void main() {
       await pumpUntilGone(tester, find.byType(ModalBarrier));
 
       // Liquids is a separate user-facing tool with its own history.
-      final liquidsText = find.text('Liquids');
-      await tester.ensureVisible(liquidsText);
-      // Tap the tile surface (InkWell) instead of the Text node; the text
-      // itself is not guaranteed to be hit-testable.
-      final liquidsInk = find.ancestor(
-        of: liquidsText,
-        matching: find.byType(InkWell),
-      );
-      await tester.tap(
-        liquidsInk.evaluate().isNotEmpty ? liquidsInk.first : liquidsText,
-      );
+      // Use the stable dashboard tile key so we always scroll the real tap
+      // target into view (tight viewports can show the title text while the
+      // InkWell center is still below the fold).
+      final liquidsTile = find.byKey(const ValueKey('dashboard_item_liquids'));
+      expect(liquidsTile, findsOneWidget);
+      await ensureVisibleAligned(tester, liquidsTile);
+      await pumpStable(tester);
+      await tester.tap(liquidsTile);
       await pumpStable(tester);
 
       // The modal body is a scrollable ListView; on tight surfaces, the History

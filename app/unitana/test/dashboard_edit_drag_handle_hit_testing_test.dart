@@ -32,7 +32,9 @@ Future<void> _enterEditMode(WidgetTester tester) async {
 
 Future<Map<String, dynamic>> _readDefaultAnchors() async {
   final prefs = await SharedPreferences.getInstance();
-  final raw = prefs.getString('dashboard_default_tool_anchors_v1');
+  final raw =
+      prefs.getString('dashboard_default_tool_anchors_v1::profile_1') ??
+      prefs.getString('dashboard_default_tool_anchors_v1');
   if (raw == null || raw.trim().isEmpty) return <String, dynamic>{};
 
   final decoded = jsonDecode(raw);

@@ -13,7 +13,14 @@ import 'tool_definitions.dart';
 /// - Long-press actions on user-added tiles can Replace or Remove.
 /// - The board remains dense-packed; reorder and resize come later.
 class DashboardLayoutController extends ChangeNotifier {
+  final String prefsNamespace;
+
+  DashboardLayoutController({this.prefsNamespace = ''});
+
   static const String _prefsKey = 'dashboard_layout_v1';
+
+  String _k(String base) =>
+      prefsNamespace.trim().isEmpty ? base : '$base::${prefsNamespace.trim()}';
 
   // Persisted anchor overrides for default tool tiles.
   //
@@ -163,12 +170,16 @@ class DashboardLayoutController extends ChangeNotifier {
 
     // If the controller was cleared while we were awaiting prefs, abort.
     if (epochAtStart != _epoch) return;
-    final raw = prefs.getString(_prefsKey);
+    final raw = prefs.getString(_k(_prefsKey)) ?? prefs.getString(_prefsKey);
 
-    final defaultAnchorsRaw = prefs.getString(_prefsDefaultToolAnchorsKey);
+    final defaultAnchorsRaw =
+        prefs.getString(_k(_prefsDefaultToolAnchorsKey)) ??
+        prefs.getString(_prefsDefaultToolAnchorsKey);
 
     // Hidden defaults: canonical is a JSON string list, but older builds may have stored a StringList.
     final hiddenValue =
+        prefs.get(_k(_prefsHiddenDefaultsKey)) ??
+        prefs.get(_k(_prefsHiddenDefaultsLegacyKey)) ??
         prefs.get(_prefsHiddenDefaultsKey) ??
         prefs.get(_prefsHiddenDefaultsLegacyKey);
 
@@ -264,29 +275,47 @@ class DashboardLayoutController extends ChangeNotifier {
     Set<String> hiddenToolIds,
   ) async {
     // Ensure we can safely change stored types (e.g., StringList -> String).
-    await prefs.remove(_prefsHiddenDefaultsKey);
-    await prefs.remove(_prefsHiddenDefaultsLegacyKey);
+    await prefs.remove(_k(_prefsHiddenDefaultsKey));
+    await prefs.remove(_k(_prefsHiddenDefaultsLegacyKey));
     await prefs.remove(_prefsHiddenDefaultsAltLegacyKey);
+
+    if (prefsNamespace.trim().isNotEmpty) {
+      // Avoid cross-profile bleed from older global keys.
+      await prefs.remove(_k(_prefsHiddenDefaultsKey));
+      await prefs.remove(_prefsHiddenDefaultsKey);
+      await prefs.remove(_k(_prefsHiddenDefaultsLegacyKey));
+      await prefs.remove(_prefsHiddenDefaultsLegacyKey);
+    }
 
     if (hiddenToolIds.isEmpty) return;
 
     final payload = jsonEncode(hiddenToolIds.toList(growable: false)..sort());
-    await prefs.setString(_prefsHiddenDefaultsKey, payload);
-    await prefs.setString(_prefsHiddenDefaultsLegacyKey, payload);
-    await prefs.setString(_prefsHiddenDefaultsAltLegacyKey, payload);
+    await prefs.setString(_k(_prefsHiddenDefaultsKey), payload);
+    await prefs.setString(_k(_prefsHiddenDefaultsLegacyKey), payload);
+
+    // Keep older test key stable (global), but only when we are not namespaced.
+    if (prefsNamespace.trim().isEmpty) {
+      await prefs.setString(_prefsHiddenDefaultsAltLegacyKey, payload);
+    } else {
+      await prefs.remove(_prefsHiddenDefaultsAltLegacyKey);
+    }
   }
 
   Future<void> clear() async {
     // Invalidate any in-flight load.
     _epoch++;
     final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_k(_prefsKey));
     await prefs.remove(_prefsKey);
 
     // Clear default tool anchors.
+    await prefs.remove(_k(_prefsDefaultToolAnchorsKey));
     await prefs.remove(_prefsDefaultToolAnchorsKey);
 
     // Clear hidden-default state across all known keys (canonical + legacy).
+    await prefs.remove(_k(_prefsHiddenDefaultsKey));
     await prefs.remove(_prefsHiddenDefaultsKey);
+    await prefs.remove(_k(_prefsHiddenDefaultsLegacyKey));
     await prefs.remove(_prefsHiddenDefaultsLegacyKey);
     await prefs.remove(_prefsHiddenDefaultsAltLegacyKey);
 
@@ -375,31 +404,38 @@ class DashboardLayoutController extends ChangeNotifier {
 
   Future<void> _persist() async {
     final prefs = await SharedPreferences.getInstance();
-    final payload = jsonEncode(_items.map(_toJson).toList(growable: false));
-    await prefs.setString(_prefsKey, payload);
 
-    // Persist default tool anchor overrides.
-    if (_defaultToolAnchors.isEmpty) {
-      await prefs.remove(_prefsDefaultToolAnchorsKey);
-    } else {
-      final anchorsPayload = jsonEncode(_defaultToolAnchors);
-      await prefs.setString(_prefsDefaultToolAnchorsKey, anchorsPayload);
+    // Layout items.
+    final payload = jsonEncode(_items.map(_toJson).toList(growable: false));
+    await prefs.setString(_k(_prefsKey), payload);
+    if (prefsNamespace.trim().isNotEmpty) {
+      // Avoid cross-profile bleed from older global key.
+      await prefs.remove(_prefsKey);
     }
 
-    // Persist hidden-default state only when non-empty. If empty, remove the
-    // keys so Reset Dashboard Defaults can truly clear the state.
-    if (_hiddenDefaultToolIds.isEmpty) {
-      await prefs.remove(_prefsHiddenDefaultsKey);
-      await prefs.remove(_prefsHiddenDefaultsLegacyKey);
-      await prefs.remove(_prefsHiddenDefaultsAltLegacyKey);
+    // Default tool anchor overrides.
+    if (_defaultToolAnchors.isEmpty) {
+      await prefs.remove(_k(_prefsDefaultToolAnchorsKey));
     } else {
-      final hiddenPayload = jsonEncode(
-        _hiddenDefaultToolIds.toList(growable: false)..sort(),
-      );
-      // Write canonical + legacy keys for compatibility.
-      await prefs.setString(_prefsHiddenDefaultsKey, hiddenPayload);
-      await prefs.setString(_prefsHiddenDefaultsLegacyKey, hiddenPayload);
-      await prefs.setString(_prefsHiddenDefaultsAltLegacyKey, hiddenPayload);
+      final anchorsPayload = jsonEncode(_defaultToolAnchors);
+      await prefs.setString(_k(_prefsDefaultToolAnchorsKey), anchorsPayload);
+    }
+    if (prefsNamespace.trim().isNotEmpty) {
+      await prefs.remove(_prefsDefaultToolAnchorsKey);
+    }
+
+    // Hidden defaults.
+    if (_hiddenDefaultToolIds.isEmpty) {
+      await prefs.remove(_k(_prefsHiddenDefaultsKey));
+      await prefs.remove(_k(_prefsHiddenDefaultsLegacyKey));
+      await prefs.remove(_prefsHiddenDefaultsAltLegacyKey);
+
+      if (prefsNamespace.trim().isNotEmpty) {
+        await prefs.remove(_prefsHiddenDefaultsKey);
+        await prefs.remove(_prefsHiddenDefaultsLegacyKey);
+      }
+    } else {
+      await _storeHiddenDefaults(prefs, _hiddenDefaultToolIds);
     }
   }
 

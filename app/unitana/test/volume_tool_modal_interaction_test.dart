@@ -9,6 +9,8 @@ import 'package:unitana/features/dashboard/dashboard_screen.dart';
 import 'package:unitana/models/place.dart';
 import 'package:unitana/theme/app_theme.dart';
 
+import 'dashboard_test_helpers.dart';
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -67,7 +69,7 @@ void main() {
 
   testWidgets('Volume modal: convert and history entry', (tester) async {
     SharedPreferences.setMockInitialValues({});
-    GoogleFonts.config.allowRuntimeFetching = false;
+    GoogleFonts.config.allowRuntimeFetching = true;
 
     await tester.binding.setSurfaceSize(const Size(390, 844));
     addTearDown(() async => tester.binding.setSurfaceSize(null));
@@ -78,6 +80,8 @@ void main() {
     // Add Volume via the + slot.
     final addSlot = firstAddSlotFinder();
     expect(addSlot, findsWidgets);
+
+    await ensureVisibleAligned(tester, addSlot.first);
 
     await tester.tap(addSlot.first);
     await tester.pumpAndSettle(const Duration(milliseconds: 250));
@@ -116,7 +120,9 @@ void main() {
     expect(find.text('Volume'), findsOneWidget);
 
     // Open the Volume modal.
-    await tester.tap(find.text('Volume'));
+    final volumeTile = find.text('Volume');
+    await ensureVisibleAligned(tester, volumeTile);
+    await tester.tap(volumeTile, warnIfMissed: false);
     await tester.pumpAndSettle(const Duration(milliseconds: 250));
 
     final inputField = find.byKey(const ValueKey('tool_input_volume'));

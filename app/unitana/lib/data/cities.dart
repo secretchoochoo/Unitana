@@ -353,6 +353,9 @@ const List<City> kCuratedCities = [
     countryName: 'Portugal',
     iso3: 'PRT',
     continent: 'EU',
+    // Coordinates required for Open-Meteo live weather.
+    lat: 38.7223,
+    lon: -9.1393,
   ),
   City(
     id: 'porto_pt',
@@ -365,6 +368,9 @@ const List<City> kCuratedCities = [
     countryName: 'Portugal',
     iso3: 'PRT',
     continent: 'EU',
+    // Coordinates required for Open-Meteo live weather.
+    lat: 41.1579,
+    lon: -8.6291,
   ),
   City(
     id: 'amsterdam_nl',

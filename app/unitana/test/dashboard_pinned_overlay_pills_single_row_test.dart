@@ -1,56 +1,37 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'dashboard_test_helpers.dart';
 
 void main() {
-  testWidgets('Pinned cockpit pills remain single-row on smallest surface', (
+  Future<void> pumpStable(WidgetTester tester) async {
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 120));
+    await tester.pump(const Duration(milliseconds: 120));
+  }
+
+  testWidgets('Pinned header stacks toggle above mini hero readout', (
     tester,
   ) async {
-    // Smallest supported surface (see pinned overlay smoke test).
-    await pumpDashboardForTest(tester, surfaceSize: const Size(320, 568));
+    await pumpDashboardHarness(tester);
+    await pumpStable(tester);
 
-    final pillTimeTemp = find.byKey(
-      const ValueKey('dashboard_pinned_time_temp_pill'),
+    // Scroll so the pinned header becomes visible.
+    await tester.drag(find.byType(Scrollable).first, const Offset(0, -800));
+    await pumpStable(tester);
+
+    final dest = find.byKey(const ValueKey('dashboard_pinned_segment_dest'));
+    final readout = find.byKey(
+      const ValueKey('dashboard_pinned_mini_hero_readout'),
     );
-    final pillCurrency = find.byKey(
-      const ValueKey('dashboard_pinned_currency_pill'),
-    );
-    final pillDetails = find.byKey(
-      const ValueKey('dashboard_pinned_details_pill'),
-    );
+    expect(dest, findsOneWidget);
+    expect(readout, findsOneWidget);
 
-    expect(pillTimeTemp, findsOneWidget);
-    expect(pillCurrency, findsOneWidget);
-    expect(pillDetails, findsOneWidget);
+    final destRect = tester.getRect(dest);
+    final readoutRect = tester.getRect(readout);
 
-    // Overlay exists in the tree, but becomes interactive only after scroll.
-    // Scroll until the pinned overlay is in its final laid-out state.
-    final scrollable = find.byType(CustomScrollView);
-    expect(scrollable, findsOneWidget);
-
-    for (var i = 0; i < 18; i++) {
-      await tester.drag(scrollable, const Offset(0, -220));
-      await tester.pumpAndSettle();
-      if (pillDetails.hitTestable().evaluate().isNotEmpty) {
-        break;
-      }
-    }
-
-    expect(pillDetails.hitTestable(), findsOneWidget);
-
-    final dyA = tester.getTopLeft(pillTimeTemp).dy;
-    final dyB = tester.getTopLeft(pillCurrency).dy;
-    final dyC = tester.getTopLeft(pillDetails).dy;
-
-    final minDy = math.min(dyA, math.min(dyB, dyC));
-    final maxDy = math.max(dyA, math.max(dyB, dyC));
-    final delta = maxDy - minDy;
-
-    // Not pixel-perfect; just ensure we never regress into multi-row stacking.
-    // Stacking regressions jump delta by ~pill height (tens of px).
-    expect(delta, lessThan(12.0));
+    // In the pinned (collapsed) header, the compact toggle stays on its own
+    // row, with the mini hero readout below it for readability.
+    expect(readoutRect.center.dy - destRect.center.dy, greaterThan(16));
   });
 }

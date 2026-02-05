@@ -6,13 +6,20 @@ import 'package:unitana/app/app_state.dart';
 import 'package:unitana/data/cities.dart';
 import 'package:unitana/data/city_repository.dart';
 import 'package:unitana/features/dashboard/dashboard_screen.dart';
+import 'package:unitana/features/dashboard/models/dashboard_live_data.dart';
+import 'package:unitana/features/dashboard/models/dashboard_session_controller.dart';
+import 'package:unitana/features/dashboard/widgets/compact_reality_toggle.dart';
+import 'package:unitana/features/dashboard/widgets/pinned_mini_hero_readout.dart';
+import 'package:unitana/features/dashboard/widgets/places_hero_v2.dart';
 import 'package:unitana/models/place.dart';
+import 'package:unitana/theme/dracula_palette.dart';
 import 'package:unitana/widgets/city_picker.dart';
 
 class FirstRunScreen extends StatefulWidget {
   final UnitanaAppState state;
+  final bool editMode;
 
-  const FirstRunScreen({super.key, required this.state});
+  const FirstRunScreen({super.key, required this.state, this.editMode = false});
 
   @override
   State<FirstRunScreen> createState() => _FirstRunScreenState();
@@ -21,463 +28,275 @@ class FirstRunScreen extends StatefulWidget {
 class _FirstRunScreenState extends State<FirstRunScreen> {
   final CityRepository _cityRepo = CityRepository.instance;
 
+  /// Shorthand for the active theme's ColorScheme.
+  ///
+  /// This screen uses a lot of colorScheme values to keep the onboarding
+  /// visuals aligned with the dashboard.
+  ColorScheme get cs => Theme.of(context).colorScheme;
+
   /// We start with a curated list so onboarding never blocks on asset IO.
   /// If the full dataset loads successfully, we swap it in.
   List<City> _cities = List<City>.from(kCuratedCities);
 
   // 0: Welcome
-  // 1: Home
-  // 2: Destination
-  // 3: Review
-  static const int _pageCount = 4;
+  // 1: Places (Home + Destination + mini hero preview)
+  // 2: Confirm (Name + main hero preview)
+  static const int _pageCount = 3;
 
-  // Shared animation duration for subtle UI transitions in the wizard.
   static const Duration _kAnim = Duration(milliseconds: 220);
+  static const double _kWizardTitleFontSize = 40.0;
+  static const double _kFooterCtaHeight = 56.0;
+  static const double _kFooterCtaWidth = 240.0;
 
   final PageController _pageCtrl = PageController();
   int _page = 0;
   int _maxVisited = 0;
   bool _isRevertingSwipe = false;
 
-  String _profileName = '';
-  bool _profileNameTouched = false;
-
   City? _homeCity;
   City? _destCity;
 
-  String _homeUnit = 'imperial';
-  String _destUnit = 'metric';
-
+  // Wizard-specific preferences. These are persisted into the created profile
+  // and used for preview rendering so the onboarding reflects the real dashboard.
+  String _homeUnitSystem = 'metric';
   bool _homeUse24h = false;
-  bool _destUse24h = true;
+  String _destUnitSystem = 'metric';
+  bool _destUse24h = false;
 
-  bool _homeUnitTouched = false;
-  bool _destUnitTouched = false;
-  bool _homeClockTouched = false;
-  bool _destClockTouched = false;
+  String _profileName = '';
+  late final TextEditingController _nameCtrl;
+
+  // Preview-only controllers. These mirror dashboard wiring so the wizard can
+  // show the real visual system without duplicating widget trees.
+  late final DashboardSessionController _previewSession;
+  late final DashboardLiveDataController _previewLiveData;
+
+  bool _previewRefreshPending = false;
+
+  bool get _hasBothCities => _homeCity != null && _destCity != null;
+
+  bool get _canContinue {
+    switch (_page) {
+      case 0:
+        return true;
+      case 1:
+        return _hasBothCities;
+      case 2:
+        return _hasBothCities;
+      default:
+        return false;
+    }
+  }
+
+  bool _canGoToStep(int idx) {
+    if (idx < 0 || idx >= _pageCount) return false;
+
+    // Always allow moving backwards.
+    if (idx <= _page) return true;
+
+    // Forward navigation is gated by completion.
+    if (_page == 0) return true;
+    if (_page == 1) return _hasBothCities;
+    return false;
+  }
 
   @override
   void initState() {
     super.initState();
 
-    // Bootstrap immediately (no spinner), then try to load the full dataset.
-    _bootstrapFromState();
-    _loadCitiesBestEffort();
+    _previewSession = DashboardSessionController();
+    _previewLiveData = DashboardLiveDataController();
+    _nameCtrl = TextEditingController();
+
+    if (widget.editMode) {
+      _profileName = widget.state.profileName;
+      _nameCtrl.text = _profileName;
+
+      // Best-effort: seed home/destination from the persisted Places.
+      // We resolve Cities from the curated list first, then refine after the
+      // full dataset loads.
+      final living = widget.state.places
+          .where((p) => p.type == PlaceType.living)
+          .cast<Place?>()
+          .firstWhere((p) => p != null, orElse: () => null);
+      final visiting = widget.state.places
+          .where((p) => p.type == PlaceType.visiting)
+          .cast<Place?>()
+          .firstWhere((p) => p != null, orElse: () => null);
+
+      if (living != null) {
+        _homeUnitSystem = living.unitSystem;
+        _homeUse24h = living.use24h;
+        _homeCity = _findCity(living.cityName, living.countryCode);
+      }
+      if (visiting != null) {
+        _destUnitSystem = visiting.unitSystem;
+        _destUse24h = visiting.use24h;
+        _destCity = _findCity(visiting.cityName, visiting.countryCode);
+      }
+    }
+
+    // Best-effort load of the full city dataset in the background.
+    _cityRepo.load().then((_) {
+      if (!mounted) return;
+      setState(() {
+        _cities = _cityRepo.cities;
+
+        // If we're editing, refine city resolution against the full dataset.
+        if (widget.editMode) {
+          final living = widget.state.places
+              .where((p) => p.type == PlaceType.living)
+              .cast<Place?>()
+              .firstWhere((p) => p != null, orElse: () => null);
+          final visiting = widget.state.places
+              .where((p) => p.type == PlaceType.visiting)
+              .cast<Place?>()
+              .firstWhere((p) => p != null, orElse: () => null);
+
+          if (living != null) {
+            _homeCity = _findCity(living.cityName, living.countryCode);
+          }
+          if (visiting != null) {
+            _destCity = _findCity(visiting.cityName, visiting.countryCode);
+          }
+        }
+      });
+    });
+  }
+
+  City? _findCity(String cityName, String countryCode) {
+    final name = cityName.trim().toLowerCase();
+    final cc = countryCode.trim().toUpperCase();
+
+    // Prefer exact city+country match.
+    final exact = _cities.where((c) {
+      return c.cityName.trim().toLowerCase() == name &&
+          c.countryCode.trim().toUpperCase() == cc;
+    });
+    if (exact.isNotEmpty) return exact.first;
+
+    // Fallback: match by name.
+    final byName = _cities.where(
+      (c) => c.cityName.trim().toLowerCase() == name,
+    );
+    if (byName.isNotEmpty) return byName.first;
+
+    return null;
   }
 
   @override
   void dispose() {
     _pageCtrl.dispose();
+    _nameCtrl.dispose();
+    _previewSession.dispose();
+    _previewLiveData.dispose();
     super.dispose();
   }
 
-  TextStyle _scriptHeaderStyle(BuildContext context) {
-    final tt = Theme.of(context).textTheme;
-    final cs = Theme.of(context).colorScheme;
-    return GoogleFonts.robotoSlab(
-      textStyle: tt.headlineMedium,
-      fontWeight: FontWeight.w800,
-    ).copyWith(fontSize: 34, height: 1.0, color: cs.onSurface);
-  }
-
-  TextStyle _scriptSectionStyle(BuildContext context) {
-    final tt = Theme.of(context).textTheme;
-    final cs = Theme.of(context).colorScheme;
-    return GoogleFonts.robotoSlab(
-      textStyle: tt.titleLarge,
-      fontWeight: FontWeight.w800,
-    ).copyWith(fontSize: 30, height: 1.0, color: cs.onSurface);
-  }
-
-  TextStyle _scriptCardTitleStyle(BuildContext context) {
-    final tt = Theme.of(context).textTheme;
-    final cs = Theme.of(context).colorScheme;
-    return GoogleFonts.robotoSlab(
-      textStyle: tt.titleLarge,
-      fontWeight: FontWeight.w800,
-    ).copyWith(fontSize: 32, height: 1.0, color: cs.onSurface);
-  }
-
-  TextStyle _scriptProfileNameStyle(BuildContext context) {
-    final tt = Theme.of(context).textTheme;
-    final cs = Theme.of(context).colorScheme;
-    return GoogleFonts.robotoSlab(
-      textStyle: tt.titleLarge,
-      fontWeight: FontWeight.w800,
-    ).copyWith(fontSize: 34, height: 1.0, color: cs.onSurface);
-  }
-
-  ButtonStyle _segmentedStyle(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final tt = Theme.of(context).textTheme;
-    return ButtonStyle(
-      backgroundColor: WidgetStateProperty.resolveWith<Color>((states) {
-        if (states.contains(WidgetState.selected)) {
-          return cs.primaryContainer;
-        }
-        return cs.surface;
-      }),
-      foregroundColor: WidgetStateProperty.resolveWith<Color>((states) {
-        if (states.contains(WidgetState.selected)) {
-          return cs.onPrimaryContainer;
-        }
-        return cs.onSurface;
-      }),
-      side: WidgetStateProperty.resolveWith<BorderSide?>((states) {
-        if (states.contains(WidgetState.selected)) {
-          return BorderSide(color: cs.primary);
-        }
-        return BorderSide(color: cs.outline);
-      }),
-      shape: WidgetStatePropertyAll(
-        RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
-      ),
-      padding: const WidgetStatePropertyAll(
-        EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      ),
-      textStyle: WidgetStatePropertyAll(
-        tt.titleSmall?.copyWith(fontWeight: FontWeight.w600),
-      ),
-    );
-  }
-
-  Widget _cityPickButton(
-    BuildContext context, {
-    required Key key,
-    required VoidCallback onPressed,
-    required IconData icon,
-    required String label,
-  }) {
-    final cs = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
-
-    return Center(
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 520),
-        child: SizedBox(
-          width: double.infinity,
-          child: OutlinedButton.icon(
-            key: key,
-            onPressed: onPressed,
-            icon: Icon(icon, size: 20),
-            label: Text(label),
-            style: OutlinedButton.styleFrom(
-              backgroundColor: cs.surface,
-              foregroundColor: cs.onSurface,
-              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
-              textStyle: textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
-              shape: const StadiumBorder(),
-              side: BorderSide(color: cs.outline),
-            ).copyWith(iconColor: WidgetStatePropertyAll(cs.primary)),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Future<void> _loadCitiesBestEffort() async {
-    try {
-      final loaded = await _cityRepo.load();
-      if (!mounted) return;
-
-      setState(() {
-        _cities = loaded;
-        _refreshSelectedCitiesFromNewList();
-      });
-    } catch (_) {
-      // CityRepository already falls back to curated cities on failure.
-      // This is an extra safety net.
-    }
-  }
-
-  void _refreshSelectedCitiesFromNewList() {
-    // If we already picked a city from the curated list, keep the selection but
-    // try to swap it to the equivalent object in the new list (for metadata).
-    if (_homeCity != null) {
-      final match = _cities.firstWhere(
-        (c) => c.id == _homeCity!.id,
-        orElse: () => _homeCity!,
-      );
-      _homeCity = match;
-    }
-    if (_destCity != null) {
-      final match = _cities.firstWhere(
-        (c) => c.id == _destCity!.id,
-        orElse: () => _destCity!,
-      );
-      _destCity = match;
-    }
-  }
-
-  void _bootstrapFromState() {
-    // AppState is already loaded in app.dart before showing FirstRunScreen.
-    final places = widget.state.places;
-    final profile = widget.state.profileName;
-
-    setState(() {
-      _profileName = (profile == 'My Places') ? '' : profile;
-      _profileNameTouched = _profileName.trim().isNotEmpty;
-
-      if (places.isNotEmpty) {
-        final home = places.firstWhere(
-          (p) => p.type == PlaceType.living,
-          orElse: () => places.first,
-        );
-        final dest = places.firstWhere(
-          (p) => p.type == PlaceType.visiting,
-          orElse: () => places.length > 1 ? places[1] : places.first,
-        );
-
-        _homeUnit = home.unitSystem;
-        _homeUse24h = home.use24h;
-        _homeUnitTouched = true;
-        _homeClockTouched = true;
-        _homeCity = _cityForPlace(home) ?? _fallbackHomeCity();
-
-        _destUnit = dest.unitSystem;
-        _destUse24h = dest.use24h;
-        _destUnitTouched = true;
-        _destClockTouched = true;
-        _destCity = _cityForPlace(dest) ?? _fallbackDestCity();
-      } else {
-        _homeCity = _fallbackHomeCity();
-        _destCity = _fallbackDestCity();
-        _applyCityDefaults(home: true);
-        _applyCityDefaults(home: false);
-
-        // Default profile name follows Destination city until the user customizes it.
-        if (!_profileNameTouched) {
-          _profileName = (_destCity?.cityName ?? '').trim();
-        }
-      }
-    });
-  }
-
-  City _fallbackHomeCity() {
-    return _cities.firstWhere(
-      (c) => c.id == 'denver_us',
-      orElse: () => _cities.first,
-    );
-  }
-
-  City _fallbackDestCity() {
-    return _cities.firstWhere(
-      (c) => c.id == 'lisbon_pt',
-      orElse: () => _cities.first,
-    );
-  }
-
-  City? _cityForPlace(Place place) {
-    // Place stores cityName/countryCode/timeZoneId (no cityId).
-    // Try strict match first.
-    for (final c in _cities) {
-      if (c.cityName == place.cityName &&
-          c.countryCode == place.countryCode &&
-          c.timeZoneId == place.timeZoneId) {
-        return c;
-      }
-    }
-
-    // Fallback: city + country (timezone might differ in future).
-    for (final c in _cities) {
-      if (c.cityName == place.cityName && c.countryCode == place.countryCode) {
-        return c;
-      }
-    }
-
-    return null;
-  }
-
-  void _applyCityDefaults({required bool home}) {
-    final city = home ? _homeCity : _destCity;
-    if (city == null) return;
-
-    if (home) {
-      if (!_homeUnitTouched) _homeUnit = city.defaultUnitSystem;
-      if (!_homeClockTouched) _homeUse24h = city.defaultUse24h;
-    } else {
-      if (!_destUnitTouched) _destUnit = city.defaultUnitSystem;
-      if (!_destClockTouched) _destUse24h = city.defaultUse24h;
-    }
-  }
-
-  bool get _canContinue {
-    if (_page == 0) return true;
-    if (_page == 1) return _homeCity != null;
-    if (_page == 2) return _destCity != null;
-    return true;
-  }
-
-  bool _canGoToStep(int target) {
-    if (target < 0 || target >= _pageCount) return false;
-    if (target == _page) return true;
-
-    // Allow going backward and revisiting any already-visited step.
-    if (target <= _maxVisited) return true;
-
-    // Allow moving forward one step at a time only when the current step is valid.
-    if (target == _page + 1 && _canContinue) return true;
-
-    return false;
-  }
-
-  void _goToStep(int target) {
-    if (!_canGoToStep(target)) return;
-    _goTo(target);
-  }
-
-  Future<void> _goTo(int index) async {
-    final next = index.clamp(0, _pageCount - 1);
-    if (!_canGoToStep(next)) return;
-
-    setState(() {
-      _page = next;
-      if (next > _maxVisited) _maxVisited = next;
-    });
-
-    await _pageCtrl.animateToPage(
-      next,
-      duration: _kAnim,
-      curve: Curves.easeOutCubic,
-    );
+  void _goToStep(int idx) {
+    if (!_canGoToStep(idx)) return;
+    _pageCtrl.animateToPage(idx, duration: _kAnim, curve: Curves.easeOutCubic);
   }
 
   void _next() {
     if (!_canContinue) return;
-    if (_page < _pageCount - 1) {
-      _goTo(_page + 1);
-    }
+    final next = _page + 1;
+    if (next >= _pageCount) return;
+    _goToStep(next);
   }
 
   void _back() {
-    if (_page > 0) {
-      _goTo(_page - 1);
-    }
+    final prev = _page - 1;
+    if (prev < 0) return;
+    _goToStep(prev);
   }
 
-  String _unitLabel(String u) => u == 'metric' ? 'Metric' : 'Imperial';
-  String _clockLabel(bool use24h) => use24h ? '24-hour' : '12-hour';
-  String _timeSamplePrimary(bool use24h) => use24h ? '19:55' : '7:55 PM';
-  String _timeSampleSecondary(bool use24h) => use24h ? '7:55 PM' : '19:55';
-
-  String _tempPreview(String unitSystem) {
-    const f = 68;
-    const c = 20;
-    if (unitSystem == 'metric') return '$c°C ($f°F)';
-    return '$f°F ($c°C)';
+  Place? _previewHome() {
+    final c = _homeCity;
+    if (c == null) return null;
+    return Place(
+      id: 'preview_home',
+      type: PlaceType.living,
+      name: 'Home',
+      cityName: c.cityName,
+      countryCode: c.countryCode,
+      timeZoneId: c.timeZoneId,
+      unitSystem: _homeUnitSystem,
+      use24h: _homeUse24h,
+    );
   }
 
-  String _windPreview(String unitSystem) {
-    const mph = 12;
-    const kmh = 19;
-    if (unitSystem == 'metric') return '$kmh km/h ($mph mph)';
-    return '$mph mph ($kmh km/h)';
+  Place? _previewDest() {
+    final c = _destCity;
+    if (c == null) return null;
+    return Place(
+      id: 'preview_destination',
+      type: PlaceType.visiting,
+      name: 'Destination',
+      cityName: c.cityName,
+      countryCode: c.countryCode,
+      timeZoneId: c.timeZoneId,
+      unitSystem: _destUnitSystem,
+      use24h: _destUse24h,
+    );
   }
 
-  String _tzDiffLabel({required String fromTz, required String toTz}) {
-    // Lightweight approximate offsets for MVP preview only.
-    const offsets = <String, int>{
-      'Europe/Amsterdam': 1,
-      'Europe/Madrid': 1,
-      'Europe/Berlin': 1,
-      'Europe/Copenhagen': 1,
-      'Europe/Lisbon': 0,
-      'Europe/London': 0,
-      'America/Chicago': -6,
-      'America/Denver': -7,
-      'America/New_York': -5,
-      'America/Los_Angeles': -8,
-      'Europe/Paris': 1,
-      'Europe/Rome': 1,
-      'Europe/Stockholm': 1,
-      'Europe/Oslo': 1,
-    };
-
-    final a = offsets[fromTz];
-    final b = offsets[toTz];
-    if (a == null || b == null) return '';
-
-    final diff = b - a;
-    if (diff == 0) return 'same time';
-    final sign = diff > 0 ? '+' : '';
-    return '$sign${diff}h';
+  Future<void> _refreshPreview() async {
+    final home = _previewHome();
+    final dest = _previewDest();
+    if (home == null || dest == null) return;
+    await _previewLiveData.refreshAll(places: [home, dest]);
   }
 
-  String _currencyExample({required String fromCode, required String toCode}) {
-    const rates = <String, double>{
-      'EUR:USD': 1.10,
-      'USD:EUR': 0.91,
-      'GBP:USD': 1.28,
-      'USD:GBP': 0.78,
-      'EUR:GBP': 0.86,
-      'GBP:EUR': 1.16,
-      'CAD:USD': 0.74,
-      'USD:CAD': 1.35,
-    };
+  void _schedulePreviewRefresh() {
+    if (_previewRefreshPending) return;
+    _previewRefreshPending = true;
+    Future.delayed(const Duration(milliseconds: 120), () async {
+      if (!mounted) return;
+      _previewRefreshPending = false;
+      if (!_hasBothCities) return;
+      await _refreshPreview();
+    });
+  }
 
-    const symbols = <String, String>{
-      'USD': r'$',
-      'EUR': '\u20AC',
-      'GBP': '\u00A3',
-      'DKK': 'kr',
-      'CAD': r'$',
-    };
-
-    final rate = rates['$fromCode:$toCode'];
-    if (rate == null) return fromCode;
-
-    const fromAmount = 10.0;
-    final toAmount = (fromAmount * rate).round();
-
-    final fromSym = symbols[fromCode] ?? '';
-    final toSym = symbols[toCode] ?? '';
-
-    // Show symbol + ISO to avoid ambiguity ($ USD vs $ CAD).
-    final fromText = fromSym.isEmpty
-        ? '$fromCode ${fromAmount.toStringAsFixed(0)}'
-        : '$fromSym $fromCode ${fromAmount.toStringAsFixed(0)}';
-
-    final toText = toSym.isEmpty
-        ? '$toCode $toAmount'
-        : '$toSym $toCode $toAmount';
-
-    return '$fromText ≈ $toText';
+  Future<City?> showCityPicker({
+    required BuildContext context,
+    required List<City> cities,
+    City? initial,
+  }) async {
+    return showModalBottomSheet<City>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: DraculaPalette.background,
+      builder: (ctx) => CityPicker(cities: cities, selected: initial),
+    );
   }
 
   Future<void> _pickCity({required bool home}) async {
-    final selected = await showModalBottomSheet<City>(
+    final selected = await showCityPicker(
       context: context,
-      isScrollControlled: true,
-      builder: (_) =>
-          CityPicker(cities: _cities, selected: home ? _homeCity : _destCity),
+      cities: _cities,
+      initial: home ? _homeCity : _destCity,
     );
-
     if (selected == null) return;
-
     setState(() {
       if (home) {
         _homeCity = selected;
-        _applyCityDefaults(home: true);
-
-        // Nice onboarding nudge: if destination not touched yet, invert defaults.
-        if (!_destUnitTouched) {
-          _destUnit = (_homeUnit == 'metric') ? 'imperial' : 'metric';
-        }
-        if (!_destClockTouched) {
-          _destUse24h = !_homeUse24h;
-        }
+        _homeUnitSystem = selected.defaultUnitSystem;
+        _homeUse24h = selected.defaultUse24h;
       } else {
         _destCity = selected;
-        _applyCityDefaults(home: false);
-
-        // Default profile name follows Destination city until the user customizes it.
-        if (!_profileNameTouched) {
-          _profileName = (_destCity?.cityName ?? '').trim();
-        }
+        _destUnitSystem = selected.defaultUnitSystem;
+        _destUse24h = selected.defaultUse24h;
+      }
+      // Keep the default name aligned to Destination unless the user typed.
+      if (_profileName.trim().isEmpty && _destCity != null) {
+        _profileName = _destCity!.cityName;
+        _nameCtrl.text = _profileName;
       }
     });
+
+    _schedulePreviewRefresh();
   }
 
   Future<void> _saveAndFinish() async {
@@ -485,45 +304,56 @@ class _FirstRunScreenState extends State<FirstRunScreen> {
     final dest = _destCity;
     if (home == null || dest == null) return;
 
-    await widget.state.setProfileName(_effectiveProfileName());
+    final name = _effectiveProfileName();
 
-    final homePlace = Place(
-      id: 'place_home',
+    final living = Place(
+      id: 'living-1',
       type: PlaceType.living,
       name: 'Home',
       cityName: home.cityName,
       countryCode: home.countryCode,
       timeZoneId: home.timeZoneId,
-      unitSystem: _homeUnit,
+      unitSystem: _homeUnitSystem,
       use24h: _homeUse24h,
     );
 
-    final destPlace = Place(
-      id: 'place_destination',
+    final visiting = Place(
+      id: 'visit-1',
       type: PlaceType.visiting,
       name: 'Destination',
       cityName: dest.cityName,
       countryCode: dest.countryCode,
       timeZoneId: dest.timeZoneId,
-      unitSystem: _destUnit,
+      unitSystem: _destUnitSystem,
       use24h: _destUse24h,
     );
-
-    // Do NOT Navigator.pop() here; app.dart swaps home screen when state updates.
     await widget.state.overwritePlaces(
-      newPlaces: [homePlace, destPlace],
-      defaultId: homePlace.id,
+      newPlaces: [living, visiting],
+      defaultId: visiting.id,
     );
+    await widget.state.setProfileName(name);
 
     if (!mounted) return;
 
-    // If this wizard was opened from an in-app reset flow, the previous routes may
-    // have been removed. To ensure we always land on the dashboard, explicitly
-    // replace the stack with the dashboard.
+    if (widget.editMode) {
+      Navigator.of(context).pop();
+      return;
+    }
+
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(builder: (_) => DashboardScreen(state: widget.state)),
       (route) => false,
     );
+  }
+
+  String _effectiveProfileName() {
+    final trimmed = _profileName.trim();
+    if (trimmed.isNotEmpty) return trimmed;
+    final dest = _destCity;
+    if (dest != null && dest.cityName.trim().isNotEmpty) {
+      return dest.cityName.trim();
+    }
+    return 'Unitana';
   }
 
   @override
@@ -532,7 +362,7 @@ class _FirstRunScreenState extends State<FirstRunScreen> {
       appBar: null,
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 18, 20, 20),
+          padding: const EdgeInsets.fromLTRB(20, 14, 20, 14),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -563,6 +393,13 @@ class _FirstRunScreenState extends State<FirstRunScreen> {
                       _page = idx;
                       if (idx > _maxVisited) _maxVisited = idx;
                     });
+
+                    if (idx >= 1 && _hasBothCities) {
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        if (!mounted) return;
+                        _refreshPreview();
+                      });
+                    }
                   },
                   children: [
                     KeyedSubtree(
@@ -570,36 +407,44 @@ class _FirstRunScreenState extends State<FirstRunScreen> {
                       child: _welcomeStep(context),
                     ),
                     KeyedSubtree(
-                      key: const Key('first_run_step_home'),
-                      child: _placeStep(context, home: true),
+                      key: const Key('first_run_step_places'),
+                      child: _placesStep(context),
                     ),
                     KeyedSubtree(
-                      key: const Key('first_run_step_destination'),
-                      child: _placeStep(context, home: false),
-                    ),
-                    KeyedSubtree(
-                      key: const Key('first_run_step_review'),
-                      child: _reviewStep(context),
+                      key: const Key('first_run_step_confirm'),
+                      child: _confirmStep(context),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: 14),
+              const SizedBox(height: 10),
               _buildPagerControls(context),
-              const SizedBox(height: 14),
-              // Keep the footer height consistent across all steps so controls don't jump.
-              Visibility(
-                visible: _page == _pageCount - 1,
-                maintainAnimation: true,
-                maintainSize: true,
-                maintainState: true,
-                child: SizedBox(
-                  width: double.infinity,
-                  child: FilledButton.icon(
-                    key: const Key('first_run_finish_button'),
-                    onPressed: _saveAndFinish,
-                    icon: const Icon(Icons.check),
-                    label: const Text('Finish'),
+              const SizedBox(height: 10),
+              SizedBox(
+                height: _kFooterCtaHeight,
+                child: Center(
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 180),
+                    switchInCurve: Curves.easeOut,
+                    switchOutCurve: Curves.easeIn,
+                    child: _page == _pageCount - 1
+                        ? ConstrainedBox(
+                            constraints: const BoxConstraints(
+                              maxWidth: _kFooterCtaWidth,
+                              minHeight: _kFooterCtaHeight,
+                            ),
+                            child: FilledButton.icon(
+                              key: const Key('first_run_finish_button'),
+                              onPressed: _saveAndFinish,
+                              icon: const Icon(Icons.check),
+                              label: Text(
+                                widget.editMode
+                                    ? 'Save Changes'
+                                    : 'Create Profile',
+                              ),
+                            ),
+                          )
+                        : const SizedBox.shrink(),
                   ),
                 ),
               ),
@@ -615,7 +460,7 @@ class _FirstRunScreenState extends State<FirstRunScreen> {
     final cs = theme.colorScheme;
 
     final canPrev = _canGoToStep(_page - 1);
-    final canNext = _canGoToStep(_page + 1);
+    final canNext = _canGoToStep(_page + 1) && _canContinue;
 
     return SafeArea(
       top: false,
@@ -675,8 +520,6 @@ class _FirstRunScreenState extends State<FirstRunScreen> {
   }
 
   Widget _buildDots(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: List.generate(_pageCount, (i) {
@@ -713,17 +556,16 @@ class _FirstRunScreenState extends State<FirstRunScreen> {
   }
 
   Widget _welcomeStep(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
 
-    final bodyStyle = tt.bodyLarge ?? const TextStyle(fontSize: 16);
-    final taglineStyle =
-        tt.titleMedium?.copyWith(fontWeight: FontWeight.w600) ??
-        const TextStyle(fontSize: 18, fontWeight: FontWeight.w600);
-
-    final unitanaStyle = GoogleFonts.shadowsIntoLight(
-      textStyle: tt.displaySmall,
-    ).copyWith(fontSize: 60, height: 1.0, color: cs.onSurface);
+    final headlineStyle = GoogleFonts.robotoSlab(
+      fontSize: _kWizardTitleFontSize,
+      fontWeight: FontWeight.w800,
+      color: cs.onSurface,
+      height: 1.05,
+    );
+    final taglineStyle = (tt.bodyLarge ?? const TextStyle(fontSize: 16))
+        .copyWith(color: cs.onSurfaceVariant.withAlpha(220), height: 1.35);
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -733,53 +575,54 @@ class _FirstRunScreenState extends State<FirstRunScreen> {
             constraints: BoxConstraints(minHeight: constraints.maxHeight),
             child: Center(
               child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 520),
+                constraints: const BoxConstraints(maxWidth: 560),
                 child: Padding(
                   padding: const EdgeInsets.symmetric(vertical: 8),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
-                    mainAxisAlignment: MainAxisAlignment.center,
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       Container(
-                        width: 170,
-                        height: 170,
+                        width: 120,
+                        height: 120,
                         decoration: BoxDecoration(
-                          color: cs.surface,
-                          border: Border.all(color: cs.outlineVariant),
-                          borderRadius: BorderRadius.circular(28),
+                          color: cs.surfaceContainerHighest.withAlpha(60),
+                          border: Border.all(
+                            color: cs.outlineVariant.withAlpha(160),
+                          ),
+                          borderRadius: BorderRadius.circular(24),
                         ),
                         child: Padding(
-                          padding: const EdgeInsets.all(22),
+                          padding: const EdgeInsets.all(18),
                           child: Image.asset(
                             'assets/brand/unitana_logo.png',
                             fit: BoxFit.contain,
                           ),
                         ),
                       ),
-                      const SizedBox(height: 14),
+                      const SizedBox(height: 18),
                       Text(
-                        'Unitana',
-                        style: unitanaStyle,
+                        'Welcome to Unitana',
+                        style: headlineStyle,
                         textAlign: TextAlign.center,
                       ),
-                      const SizedBox(height: 10),
-                      Text(
-                        'A decoder ring for real life.',
-                        style: taglineStyle,
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 30),
-                      Text(
-                        'For wanderers who want temperature, distance, time, and money to feel effortless, wherever they land.',
-                        style: bodyStyle,
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 22),
-                      Text(
-                        'Next choose a Home and Destination. You can name this setup on the last step.',
-                        style: bodyStyle,
-                        textAlign: TextAlign.center,
+                      const SizedBox(height: 18),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: cs.surfaceContainerHighest.withAlpha(55),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: cs.outlineVariant.withAlpha(160),
+                          ),
+                        ),
+                        child: Text(
+                          'A dual-reality dashboard for the stuff\n'
+                          'your brain keeps converting anyway.',
+                          style: taglineStyle,
+                          textAlign: TextAlign.center,
+                        ),
                       ),
                     ],
                   ),
@@ -792,354 +635,272 @@ class _FirstRunScreenState extends State<FirstRunScreen> {
     );
   }
 
-  Widget _placeStep(BuildContext context, {required bool home}) {
-    final city = home ? _homeCity : _destCity;
-    final unit = home ? _homeUnit : _destUnit;
-    final use24h = home ? _homeUse24h : _destUse24h;
+  Widget _placesStep(BuildContext context) {
+    final tt = Theme.of(context).textTheme;
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Center(
-            child: Text(
-              home ? 'Home' : 'Destination',
-              style: _scriptHeaderStyle(context),
-              textAlign: TextAlign.center,
-            ),
-          ),
-          const SizedBox(height: 14),
-          _cityPickButton(
-            context,
-            key: home
-                ? const Key('first_run_home_city_button')
-                : const Key('first_run_dest_city_button'),
-            onPressed: () => _pickCity(home: home),
-            icon: home ? Icons.location_city : Icons.flight_takeoff,
-            label:
-                city?.display ??
-                (home ? 'Choose Home city' : 'Choose Destination city'),
-          ),
-          const SizedBox(height: 18),
-          Text('Units', style: _scriptSectionStyle(context)),
-          const SizedBox(height: 8),
-          SegmentedButton<String>(
-            segments: const [
-              ButtonSegment<String>(value: 'imperial', label: Text('Imperial')),
-              ButtonSegment<String>(value: 'metric', label: Text('Metric')),
-            ],
-            style: _segmentedStyle(context),
-            selected: {unit},
-            onSelectionChanged: (v) {
-              final next = v.first;
-              setState(() {
-                if (home) {
-                  _homeUnitTouched = true;
-                  _homeUnit = next;
-                } else {
-                  _destUnitTouched = true;
-                  _destUnit = next;
-                }
-              });
-            },
-          ),
-          const SizedBox(height: 18),
-          Text('Clock', style: _scriptSectionStyle(context)),
-          const SizedBox(height: 8),
-          SegmentedButton<bool>(
-            segments: const [
-              ButtonSegment<bool>(value: false, label: Text('12-hour')),
-              ButtonSegment<bool>(value: true, label: Text('24-hour')),
-            ],
-            style: _segmentedStyle(context),
-            selected: {use24h},
-            onSelectionChanged: (v) {
-              final next = v.first;
-              setState(() {
-                if (home) {
-                  _homeClockTouched = true;
-                  _homeUse24h = next;
-                } else {
-                  _destClockTouched = true;
-                  _destUse24h = next;
-                }
-              });
-            },
-          ),
-          const SizedBox(height: 18),
-          Card(
-            color: Theme.of(context).colorScheme.surfaceContainerHighest,
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Preview', style: _scriptSectionStyle(context)),
-                  const SizedBox(height: 10),
-                  _kvRow(
-                    'Time',
-                    '${_timeSamplePrimary(use24h)} (${_timeSampleSecondary(use24h)})',
-                  ),
-                  _kvRow('Temp', _tempPreview(unit)),
-                  _kvRow('Wind', _windPreview(unit)),
-                  // Show symbol + ISO if available.
-                  _kvRow('Currency', city?.currencyLabel ?? 'N/A'),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
+    final titleStyle = GoogleFonts.robotoSlab(
+      fontSize: _kWizardTitleFontSize,
+      fontWeight: FontWeight.w800,
+      color: cs.onSurface,
+      height: 1.05,
     );
-  }
+    final subStyle = (tt.bodyMedium ?? const TextStyle(fontSize: 14)).copyWith(
+      color: cs.onSurface.withAlpha(200),
+      height: 1.35,
+    );
 
-  String _effectiveProfileName() {
-    final trimmed = _profileName.trim();
-    if (trimmed.isNotEmpty) return trimmed;
+    final home = _previewHome();
+    final dest = _previewDest();
 
-    // Default to Destination city name. Country is conveyed by the flag.
-    final dest = _destCity;
-    final destName = dest?.cityName.trim() ?? '';
-    if (destName.isNotEmpty) return destName;
-
-    return 'My Places';
-  }
-
-  String _flagEmojiFromIso2(String? iso2) {
-    final code = iso2?.trim().toUpperCase();
-    if (code == null || code.length != 2) return '🌍';
-
-    bool isAZ(int c) => c >= 65 && c <= 90;
-
-    final a = code.codeUnitAt(0);
-    final b = code.codeUnitAt(1);
-    if (!isAZ(a) || !isAZ(b)) return '🌍';
-
-    const base = 0x1F1E6; // Regional Indicator Symbol Letter A
-    return String.fromCharCodes([base + (a - 65), base + (b - 65)]);
-  }
-
-  Future<void> _editProfileNameModal(BuildContext context) async {
-    final controller = TextEditingController(text: _effectiveProfileName());
-
-    final updated = await showModalBottomSheet<String>(
-      context: context,
-      isScrollControlled: true,
-      showDragHandle: true,
-      builder: (ctx) {
-        final bottomInset = MediaQuery.of(ctx).viewInsets.bottom;
-        return Padding(
-          padding: EdgeInsets.fromLTRB(16, 12, 16, 16 + bottomInset),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(
-                'Profile name',
-                style: Theme.of(
-                  ctx,
-                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                key: const Key('first_run_profile_name_modal_field'),
-                controller: controller,
-                autofocus: true,
-                textInputAction: TextInputAction.done,
-                onSubmitted: (_) =>
-                    Navigator.of(ctx).pop(controller.text.trim()),
-                decoration: const InputDecoration(
-                  hintText: 'Lisbon',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: () => Navigator.of(ctx).pop(null),
-                      child: const Text('Cancel'),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: FilledButton(
-                      onPressed: () =>
-                          Navigator.of(ctx).pop(controller.text.trim()),
-                      child: const Text('Save'),
-                    ),
-                  ),
-                ],
-              ),
-            ],
+    Widget preview() {
+      if (home == null || dest == null) {
+        return Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: cs.surfaceContainerHighest.withAlpha(55),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: cs.outlineVariant.withAlpha(160)),
+          ),
+          child: Text(
+            'Pick both places to preview the mini hero.',
+            style: subStyle,
+            textAlign: TextAlign.center,
           ),
         );
-      },
-    );
-
-    if (!mounted) return;
-
-    final trimmed = updated?.trim();
-    if (trimmed == null) return;
-
-    setState(() {
-      if (trimmed.isEmpty) {
-        // If user clears the field, revert to default behavior.
-        _profileNameTouched = false;
-        _profileName = '';
-      } else {
-        _profileNameTouched = true;
-        _profileName = trimmed;
       }
-    });
-  }
 
-  Widget _reviewStep(BuildContext context) {
-    final home = _homeCity;
-    final dest = _destCity;
+      return AnimatedBuilder(
+        animation: Listenable.merge([_previewSession, _previewLiveData]),
+        builder: (context, _) {
+          final isHome = _previewSession.reality == DashboardReality.home;
+          final primary = isHome ? home : dest;
+          final secondary = isHome ? dest : home;
 
-    final homeTz = home?.timeZoneId ?? '';
-    final destTz = dest?.timeZoneId ?? '';
-    final homeVsDest = (homeTz.isNotEmpty && destTz.isNotEmpty)
-        ? _tzDiffLabel(fromTz: homeTz, toTz: destTz)
-        : '';
-    final destVsHome = (homeTz.isNotEmpty && destTz.isNotEmpty)
-        ? _tzDiffLabel(fromTz: destTz, toTz: homeTz)
-        : '';
-    final scriptProfileName = _scriptProfileNameStyle(context);
+          final homeLabel = '${_flagEmoji(home.countryCode)} ${home.cityName}'
+              .trim();
+          final destLabel = '${_flagEmoji(dest.countryCode)} ${dest.cityName}'
+              .trim();
 
-    final profileName = _effectiveProfileName();
-    final flag = _flagEmojiFromIso2(dest?.countryCode);
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CompactRealityToggle(
+                key: const ValueKey('first_run_preview_reality_toggle'),
+                isHome: isHome,
+                homeLabel: homeLabel,
+                destLabel: destLabel,
+                onPickHome: () =>
+                    _previewSession.setReality(DashboardReality.home),
+                onPickDestination: () =>
+                    _previewSession.setReality(DashboardReality.destination),
+              ),
+              const SizedBox(height: 10),
+              PinnedMiniHeroReadout(
+                key: const ValueKey('first_run_preview_mini_hero_readout'),
+                primary: primary,
+                secondary: secondary,
+                liveData: _previewLiveData,
+              ),
+            ],
+          );
+        },
+      );
+    }
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const SizedBox(height: 6),
-          Card(
-            child: InkWell(
-              borderRadius: BorderRadius.circular(12),
-              onTap: () => _editProfileNameModal(context),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 12,
-                ),
-                child: Stack(
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return SingleChildScrollView(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: constraints.maxHeight),
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 640),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    Align(
-                      alignment: Alignment.center,
-                      child: SizedBox(
-                        width: double.infinity,
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(flag, style: const TextStyle(fontSize: 18)),
-                            const SizedBox(width: 12),
-                            Flexible(
-                              child: Text(
-                                profileName,
-                                style: scriptProfileName,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ],
-                        ),
+                    Text(
+                      'Pick Your Places',
+                      style: titleStyle,
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      'Your here and your there, side by side.',
+                      style: subStyle,
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 18),
+                    _cityPickButton(
+                      context,
+                      key: const Key('first_run_home_city_button'),
+                      onPressed: () => _pickCity(home: true),
+                      icon: Icons.home,
+                      label: _homeCity?.display ?? 'Choose Home city',
+                    ),
+                    if (_homeCity != null) ...[
+                      const SizedBox(height: 10),
+                      _unitClockControls(
+                        unitSystem: _homeUnitSystem,
+                        use24h: _homeUse24h,
+                        onPickUnit: (v) {
+                          setState(() => _homeUnitSystem = v);
+                          _schedulePreviewRefresh();
+                        },
+                        onPickClock: (v) {
+                          setState(() => _homeUse24h = v);
+                          _schedulePreviewRefresh();
+                        },
                       ),
+                    ],
+                    const SizedBox(height: 14),
+                    _cityPickButton(
+                      context,
+                      key: const Key('first_run_dest_city_button'),
+                      onPressed: () => _pickCity(home: false),
+                      icon: Icons.flight_takeoff,
+                      label: _destCity?.display ?? 'Choose Destination city',
                     ),
-                    const Align(
-                      alignment: Alignment.centerRight,
-                      child: Icon(Icons.edit_outlined),
-                    ),
+                    if (_destCity != null) ...[
+                      const SizedBox(height: 10),
+                      _unitClockControls(
+                        unitSystem: _destUnitSystem,
+                        use24h: _destUse24h,
+                        onPickUnit: (v) {
+                          setState(() => _destUnitSystem = v);
+                          _schedulePreviewRefresh();
+                        },
+                        onPickClock: (v) {
+                          setState(() => _destUse24h = v);
+                          _schedulePreviewRefresh();
+                        },
+                      ),
+                    ],
+                    const SizedBox(height: 18),
+                    preview(),
                   ],
                 ),
               ),
             ),
           ),
-          const SizedBox(height: 12),
-          _placeReviewCard(
-            context,
-            title: 'Home',
-            city: home,
-            unitSystem: _homeUnit,
-            use24h: _homeUse24h,
-            tzExtra: homeVsDest,
-            otherCurrency: dest?.currencyCode,
-            onTap: () => _goTo(1),
-          ),
-          const SizedBox(height: 12),
-          _placeReviewCard(
-            context,
-            title: 'Destination',
-            city: dest,
-            unitSystem: _destUnit,
-            use24h: _destUse24h,
-            tzExtra: destVsHome,
-            otherCurrency: home?.currencyCode,
-            onTap: () => _goTo(2),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 
-  Widget _placeReviewCard(
-    BuildContext context, {
-    required String title,
-    required City? city,
-    required String unitSystem,
-    required bool use24h,
-    required String tzExtra,
-    required String? otherCurrency,
-    required VoidCallback onTap,
-  }) {
-    final scriptCardTitle = _scriptCardTitleStyle(context);
-    final tz = city?.timeZoneId ?? 'N/A';
-    final tzLine = tzExtra.isEmpty ? tz : '$tz ($tzExtra)';
+  Widget _confirmStep(BuildContext context) {
+    final tt = Theme.of(context).textTheme;
 
-    final currencyCode = city?.currencyCode;
-    String currencyLine = city?.currencyLabel ?? 'N/A';
-    if (currencyCode != null &&
-        otherCurrency != null &&
-        otherCurrency.isNotEmpty) {
-      currencyLine = _currencyExample(
-        fromCode: currencyCode,
-        toCode: otherCurrency,
-      );
-    }
+    final titleStyle = GoogleFonts.robotoSlab(
+      fontSize: _kWizardTitleFontSize,
+      fontWeight: FontWeight.w800,
+      color: cs.onSurface,
+      height: 1.05,
+    );
+    final subStyle = (tt.bodyMedium ?? const TextStyle(fontSize: 14)).copyWith(
+      color: cs.onSurface.withAlpha(200),
+      height: 1.35,
+    );
 
-    return Card(
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(16),
+    final home = _previewHome();
+    final dest = _previewDest();
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 760),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                children: [
-                  Expanded(child: Text(title, style: scriptCardTitle)),
-                  const Icon(Icons.edit_outlined),
-                ],
+              Center(
+                child: Text(
+                  'Name and Confirm',
+                  style: titleStyle,
+                  textAlign: TextAlign.center,
+                ),
               ),
               const SizedBox(height: 10),
-              _kvRow('City', city?.display ?? 'N/A', boldKey: true),
-              _kvRow('Time zone', tzLine, boldKey: true),
-              _kvRow('Units', _unitLabel(unitSystem), boldKey: true),
-              _kvRow('Clock', _clockLabel(use24h), boldKey: true),
-              _kvRow(
-                'Time',
-                '${_timeSamplePrimary(use24h)} (${_timeSampleSecondary(use24h)})',
-                boldKey: true,
+              Center(
+                child: Text(
+                  'This name shows in the header and in your profile list. Keep it short.',
+                  style: subStyle,
+                  textAlign: TextAlign.center,
+                ),
               ),
-              _kvRow('Temp', _tempPreview(unitSystem), boldKey: true),
-              _kvRow('Wind', _windPreview(unitSystem), boldKey: true),
-              _kvRow('Currency', currencyLine, boldKey: true),
+              const SizedBox(height: 16),
+              TextField(
+                key: const ValueKey('first_run_profile_name_field'),
+                decoration: InputDecoration(
+                  labelText: 'Profile Name',
+                  labelStyle: (tt.bodySmall ?? const TextStyle(fontSize: 12))
+                      .copyWith(
+                        color: cs.primary.withAlpha(220),
+                        fontWeight: FontWeight.w700,
+                      ),
+                  hintText: _destCity?.cityName ?? 'Lisbon',
+                  filled: true,
+                  fillColor: cs.surfaceContainerHighest.withAlpha(55),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                ),
+                onChanged: (v) => setState(() => _profileName = v),
+                controller: _nameCtrl,
+              ),
+              const SizedBox(height: 18),
+              if (home == null || dest == null)
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: cs.surfaceContainerHighest.withAlpha(55),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: cs.outlineVariant.withAlpha(160)),
+                  ),
+                  child: Text(
+                    'Go back and pick Home + Destination to preview the hero.',
+                    style: subStyle,
+                    textAlign: TextAlign.center,
+                  ),
+                )
+              else
+                AnimatedBuilder(
+                  animation: Listenable.merge([
+                    _previewSession,
+                    _previewLiveData,
+                  ]),
+                  builder: (context, _) {
+                    return Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(22),
+                          child: DecoratedBox(
+                            decoration: BoxDecoration(
+                              border: Border.all(
+                                color: cs.outlineVariant.withAlpha(160),
+                                width: 1,
+                              ),
+                            ),
+                            child: Padding(
+                              padding: const EdgeInsets.all(12),
+                              child: PlacesHeroV2(
+                                includeTestKeys: false,
+                                home: home,
+                                destination: dest,
+                                session: _previewSession,
+                                liveData: _previewLiveData,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                ),
             ],
           ),
         ),
@@ -1147,19 +908,140 @@ class _FirstRunScreenState extends State<FirstRunScreen> {
     );
   }
 
-  Widget _kvRow(String key, String value, {bool boldKey = false}) {
-    final keyStyle = boldKey
-        ? const TextStyle(fontWeight: FontWeight.w700)
-        : const TextStyle();
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(width: 92, child: Text('$key:', style: keyStyle)),
-          Expanded(child: Text(value)),
-        ],
+  Widget _unitClockControls({
+    required String unitSystem,
+    required bool use24h,
+    required ValueChanged<String> onPickUnit,
+    required ValueChanged<bool> onPickClock,
+  }) {
+    Widget pill({
+      required String label,
+      required bool selected,
+      required VoidCallback onTap,
+    }) {
+      return InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(999),
+        child: AnimatedContainer(
+          duration: _kAnim,
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+          decoration: BoxDecoration(
+            color: selected
+                ? cs.primaryContainer.withAlpha(170)
+                : cs.surfaceContainerHighest.withAlpha(55),
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(
+              color: selected
+                  ? cs.primary.withAlpha(200)
+                  : cs.outlineVariant.withAlpha(160),
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (selected) ...[
+                Icon(Icons.check, size: 14, color: cs.onPrimaryContainer),
+                const SizedBox(width: 6),
+              ],
+              Text(
+                label,
+                style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 16,
+                  color: selected
+                      ? cs.onPrimaryContainer
+                      : cs.onSurface.withAlpha(230),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Wrap(
+          alignment: WrapAlignment.center,
+          spacing: 10,
+          runSpacing: 8,
+          children: [
+            pill(
+              label: 'Metric',
+              selected: unitSystem == 'metric',
+              onTap: () => onPickUnit('metric'),
+            ),
+            pill(
+              label: 'Imperial',
+              selected: unitSystem == 'imperial',
+              onTap: () => onPickUnit('imperial'),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        Wrap(
+          alignment: WrapAlignment.center,
+          spacing: 10,
+          runSpacing: 8,
+          children: [
+            pill(
+              label: '12-Hour',
+              selected: !use24h,
+              onTap: () => onPickClock(false),
+            ),
+            pill(
+              label: '24-Hour',
+              selected: use24h,
+              onTap: () => onPickClock(true),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _cityPickButton(
+    BuildContext context, {
+    required Key key,
+    required VoidCallback onPressed,
+    required IconData icon,
+    required String label,
+  }) {
+    final tt = Theme.of(context).textTheme;
+
+    return SizedBox(
+      width: double.infinity,
+      child: OutlinedButton.icon(
+        key: key,
+        onPressed: onPressed,
+        icon: Icon(icon),
+        label: Text(
+          label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: tt.titleMedium?.copyWith(
+            fontWeight: FontWeight.w700,
+            color: cs.onSurface.withAlpha(230),
+          ),
+        ),
+        style: OutlinedButton.styleFrom(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
+          backgroundColor: cs.surfaceContainerHighest.withAlpha(55),
+          side: BorderSide(color: cs.outlineVariant.withAlpha(160)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+        ),
       ),
     );
+  }
+
+  String _flagEmoji(String countryCode) {
+    if (countryCode.length != 2) return '';
+    final upper = countryCode.toUpperCase();
+    final first = upper.codeUnitAt(0) - 0x41 + 0x1F1E6;
+    final second = upper.codeUnitAt(1) - 0x41 + 0x1F1E6;
+    return String.fromCharCode(first) + String.fromCharCode(second);
   }
 }

@@ -9,6 +9,8 @@ import 'package:unitana/features/dashboard/widgets/unitana_tile.dart';
 import 'package:unitana/models/place.dart';
 import 'package:unitana/theme/app_theme.dart';
 
+import 'dashboard_test_helpers.dart';
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -123,7 +125,7 @@ void main() {
       const ValueKey('places_hero_segment_destination'),
     );
     if (destSeg.evaluate().isNotEmpty) {
-      await tester.ensureVisible(destSeg);
+      await ensureVisibleAligned(tester, destSeg);
       await tester.tap(destSeg);
       await tester.pumpAndSettle(const Duration(milliseconds: 200));
     }
@@ -137,7 +139,7 @@ void main() {
 
     // Switch to Home reality (use24h: false) and ensure 12h becomes primary.
     final homeSeg = find.byKey(const ValueKey('places_hero_segment_home'));
-    await tester.ensureVisible(homeSeg);
+    await ensureVisibleAligned(tester, homeSeg);
     await tester.tap(homeSeg);
     await tester.pumpAndSettle(const Duration(milliseconds: 200));
 

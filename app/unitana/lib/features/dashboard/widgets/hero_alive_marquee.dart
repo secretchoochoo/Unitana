@@ -13,6 +13,12 @@ class HeroAliveMarquee extends StatefulWidget {
   final bool isNight;
   final SceneKey? sceneKey;
 
+  // When false, widget subtree omits deterministic ValueKeys used by tests.
+  //
+  // This is primarily used by wizard previews to avoid key collisions when
+  // multiple hero widgets are rendered on the same screen.
+  final bool includeTestKeys;
+
   /// Optional explicit label to render at the bottom of the marquee.
   ///
   /// When null, the marquee uses a coarse label for [sceneKey].
@@ -26,6 +32,7 @@ class HeroAliveMarquee extends StatefulWidget {
 
   const HeroAliveMarquee({
     super.key,
+    this.includeTestKeys = true,
     required this.compact,
     required this.isNight,
     this.sceneKey,
@@ -111,7 +118,9 @@ class _HeroAliveMarqueeState extends State<HeroAliveMarquee>
       child: ClipRRect(
         borderRadius: BorderRadius.circular(radius),
         child: CustomPaint(
-          key: const ValueKey('hero_alive_paint'),
+          key: widget.includeTestKeys
+              ? const ValueKey('hero_alive_paint')
+              : null,
           painter: _AliveScenePainter(
             repaint: repaint,
             compact: widget.compact,

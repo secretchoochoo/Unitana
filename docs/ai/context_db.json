@@ -1,146 +1,381 @@
 {
   "backlog": [
     {
+      "id": "P0_onboarding_wizard_redesign_3step",
+      "notes": [
+        "Step 1: Welcome to Unitana with Dracula discipline (white-first) and restrained accents.",
+        "Step 2: Home+Destination pickers plus mini hero preview and enum-driven toggle.",
+        "Step 3: Name plus Places Hero V2 preview and enum-driven toggle; confirm creates dashboard.",
+        "Update bottom navigation buttons to match 3 steps (Step1 proceed, Step2 back/next, Step3 back/confirm).",
+        "Add widget tests for compact overflow and add gated wizard goldens (compact + one common phone size)."
+      ],
+      "summary": "Rebuild FirstRun wizard to match dashboard look-and-feel with a unified scaffold and 3-step flow (Welcome; Pick Home+Destination with mini preview; Name with main hero preview + confirm). Update bottom navigation for fewer pages; add compact constraints and gated goldens.",
+      "title": "P0: Onboarding wizard redesign (3-step, dashboard-aligned)"
+    },
+    {
+      "id": "P0_scroll_transition_hardening_pinned_mini_hero",
+      "notes": [
+        "Use a single AnimationController; animate reserved spacer height and overlay opacity/offset from the same value.",
+        "Preserve the 'reserve space' behavior so first-row tiles remain tappable and never sit under the overlay.",
+        "Add a widget test that scrolls across threshold and asserts no large unexpected position delta."
+      ],
+      "summary": "Remove visible jump when pinned mini hero appears/disappears by replacing boolean layout jumps with a coordinated animation that drives reserved space and overlay transition. Add a widget regression test that catches sudden single-frame jumps.",
+      "title": "P0: Dashboard scroll transition hardening (pinned mini hero)"
+    },
+    {
+      "id": "P0_docs_refresh_handoff_context_design_lock",
+      "notes": [
+        "Add docs/ai/design_lock/STABILITY_DOCTRINE.md (non-negotiables, high-risk zones, required tests).",
+        "Add docs/ai/design_lock/FIRST_RUN_WIZARD_CONTRACT.md (visual rules, step flow, preview behavior, compact constraints).",
+        "Update app/unitana/test/goldens/README.md with wizard golden workflow."
+      ],
+      "summary": "Update CURRENT_HANDOFF and context_db to reflect the P0 plan and wizard decisions; add wizard design lock and stability doctrine docs so future teams follow the contract-first workflow.",
+      "title": "P0: Docs refresh (handoff, context db, wizard contract)"
+    },
+    {
+      "id": "P1.40_hardening_goldens_lock",
+      "notes": [
+        "Priority: P0 (execute next).",
+        "Goldens are gated behind UNITANA_GOLDENS=1; CI remains green by default.",
+        "Baselines must be committed under app/unitana/test/goldens/*.png.",
+        "If a visual change is intentional: update HERO_MINI_HERO_CONTRACT.md first, then regenerate baselines."
+      ],
+      "summary": "Add/maintain gated golden tests as the authoritative visual lock for hero and pinned mini-hero. Generate and commit baselines; update contract to treat goldens as required for intentional visual change.",
+      "title": "P1.40 (P0): Hardening goldens lock for Places Hero V2 + pinned mini-hero"
+    },
+    {
+      "id": "P1.41_city_data_latlon_coverage_spike",
+      "notes": [
+        "Priority: P1 (execute after hardening).",
+        "Create audit report of missing/invalid coordinates.",
+        "Populate coordinates (static) and normalize precision.",
+        "Add a unit test gate to fail when in-scope cities are missing lat/lon."
+      ],
+      "summary": "Ensure all in-scope cities have non-null lat/lon and add a build-time validation test to prevent silent Open-Meteo skips and demo fallbacks that appear \u201clive\u201d.",
+      "title": "P1.41 (P1): City data spike: lat/lon coverage + validator gate"
+    },
+    {
+      "id": "P1.15a_env_wiring_swap_contract",
+      "notes": [
+        "Show both city values in normal mode (e.g., A: 42 \u2022 B: 55) with compact fallback (e.g., AQI 42/55).",
+        "Include units for pollen when available; gracefully handle missing values (use '--').",
+        "Do not change hero region proportions or introduce new multi-line Columns in constrained areas.",
+        "Keep swap affordance right-aligned and visible in micro mode."
+      ],
+      "summary": "Make Env pill data-driven for both selected cities. Tap swaps between AQI and Pollen views; formatting must be overflow-safe with micro fallbacks; mode persists.",
+      "title": "P1.15a: Wire Env data (AQI + Pollen) + swap contract"
+    },
+    {
+      "id": "P1.15b_env_polish_icons_trends",
+      "notes": [
+        "All additions must remain single-line and micro-safe; no overflow risk.",
+        "Prefer abbreviations in compact/micro: 'AQI' and 'Pol'."
+      ],
+      "summary": "Add lightweight iconography per Env mode (AQI gauge / pollen flower) and optional trend hints (up/down) without adding extra lines; keep deterministic tests.",
+      "title": "P1.15b: Env polish (icons, trend hints, labels)"
+    },
+    {
+      "id": "P1.16_currency_wiring_expand",
+      "notes": [
+        "Keep existing coin icon and stable keys.",
+        "Add formatting tests for edge cases (0, large numbers, trailing zeros)."
+      ],
+      "summary": "Verify currency values come from the real rate source and display rules are consistent across common pairs; ensure 2-decimal display and rounding are stable under tests.",
+      "title": "P1.16: Currency wiring (rates, cache, multi-pair readiness)"
+    },
+    {
       "id": "profiles_mvp",
-      "title": "Profiles: Add Profile + Switch Profile (state + persistence)",
-      "summary": "Implement real multi-profile support. \"Add Profile\" reuses onboarding wizard and results in a new profile. \"Switch Profile\" shows a tiled gallery of profiles to select, reorder, and remove.",
       "notes": [
         "Profile state must own: places (home/destination), dashboard layout + per-tile config, theme/customization hooks for future modes.",
         "Menu labels should use Title Case (e.g., \"Edit Widgets\").",
         "Stable keys + persistence are non-negotiable; no public widget API churn unless unavoidable."
-      ]
+      ],
+      "summary": "Implement real multi-profile support. \"Add Profile\" reuses onboarding wizard and results in a new profile. \"Switch Profile\" shows a tiled gallery of profiles to select, reorder, and remove.",
+      "title": "Profiles: Add Profile + Switch Profile (state + persistence)"
     },
     {
       "id": "coming_soon_audit",
-      "title": "Tools: audit \"Coming Soon\" surfaces and plan MVP fills",
-      "summary": "Inventory all tools currently exposed in menus that are still \"Coming Soon\". Decide what ships in MVP (implement) vs later (hide).",
       "notes": [
         "Keep categories coherent (Travel Essentials, Food & Cooking, Health & Fitness, etc.).",
         "Prefer tools with real cross-country unit differences and high travel frequency.",
         "Ensure all implemented tools honor reality flip + modal defaults."
-      ]
+      ],
+      "summary": "Inventory all tools currently exposed in menus that are still \"Coming Soon\". Decide what ships in MVP (implement) vs later (hide).",
+      "title": "Tools: audit \"Coming Soon\" surfaces and plan MVP fills"
     },
     {
       "id": "currency_tool_ui",
-      "title": "Currency: complete user-facing UI (tool + widget) on top of backend",
-      "summary": "Wire Currency into the tool surface (modal + history) and optionally a dashboard tile; keep refresh non-chatty and free-for-commercial-use compliant.",
       "notes": [
         "Choose an FX source that is free for commercial use (document license/terms).",
         "No minute-by-minute updates; TTL caching is required.",
         "Hero currency card should eventually open the currency tool (tap target + accessibility)."
-      ]
+      ],
+      "summary": "Wire Currency into the tool surface (modal + history) and optionally a dashboard tile; keep refresh non-chatty and free-for-commercial-use compliant.",
+      "title": "Currency: complete user-facing UI (tool + widget) on top of backend"
     },
     {
       "id": "new_user_wizard_pass",
-      "title": "Onboarding: final aesthetic pass and live hero preview",
-      "summary": "Update the new user wizard to reflect the current Dracula/terminal theme and the final hero/dashboard aesthetics. Replace early mock widget examples with a live hero preview.",
       "notes": [
         "Do near MVP lock; avoid churn while core UI is still shifting."
-      ]
+      ],
+      "summary": "Update the new user wizard to reflect the current Dracula/terminal theme and the final hero/dashboard aesthetics. Replace early mock widget examples with a live hero preview.",
+      "title": "Onboarding: final aesthetic pass and live hero preview"
     },
     {
       "id": "about_licenses",
-      "title": "About + Licenses pages",
-      "summary": "Add an About page with Unitana logo, version/build info, and a link to an OSS licenses page if required.",
       "notes": [
         "Place after MVP shape stabilizes; keep simple and deterministic."
-      ]
+      ],
+      "summary": "Add an About page with Unitana logo, version/build info, and a link to an OSS licenses page if required.",
+      "title": "About + Licenses pages"
     },
     {
       "id": "shoe_sizes_v2_mattress",
-      "title": "Shoe Sizes v2 + Mattress Sizes tool",
-      "summary": "Expand Shoe Sizes to show system labels (US/UK/EU/JP, etc.) and add Mattress Sizes as a Travel Essentials tool.",
       "notes": [
         "Follow the same unit-pill/compact-selector paradigm where applicable."
-      ]
+      ],
+      "summary": "Expand Shoe Sizes to show system labels (US/UK/EU/JP, etc.) and add Mattress Sizes as a Travel Essentials tool.",
+      "title": "Shoe Sizes v2 + Mattress Sizes tool"
     },
     {
       "id": "pollen_air_quality",
-      "title": "Optional: Pollen + Air Quality (tool or 1x2 widget)",
-      "summary": "Explore a travel-adjacent air quality and pollen surface. Could be a 1x2 widget or independent tools.",
       "notes": [
         "If implemented as 1x2, ensure edit-mode drag, jiggle, and persistence work across breakpoints."
-      ]
+      ],
+      "summary": "Explore a travel-adjacent air quality and pollen surface. Could be a 1x2 widget or independent tools.",
+      "title": "Optional: Pollen + Air Quality (tool or 1x2 widget)"
     },
     {
       "id": "haptics_sound_polish",
-      "title": "UX polish: haptics, sound, accessibility",
-      "summary": "Add light haptics for key interactions and audit accessibility labels/focus order. Optional Dracula-friendly sound effects (default OFF).",
       "notes": [
         "No noisy haptics; keep learning-first and non-distracting."
-      ]
+      ],
+      "summary": "Add light haptics for key interactions and audit accessibility labels/focus order. Optional Dracula-friendly sound effects (default OFF).",
+      "title": "UX polish: haptics, sound, accessibility"
     },
     {
       "id": "radio_lofi_playback",
-      "title": "Radio: license-free lo-fi playback (default OFF)",
-      "summary": "Optional ambient lo-fi playback feature. Default OFF; when OFF, do not start any network/audio session/background work.",
       "notes": [
         "Later: onboarding wizard mention + Settings toggle.",
         "Default OFF is non-negotiable for MVP; zero background work when OFF."
-      ]
+      ],
+      "summary": "Optional ambient lo-fi playback feature. Default OFF; when OFF, do not start any network/audio session/background work.",
+      "title": "Radio: license-free lo-fi playback (default OFF)"
     },
     {
       "id": "tool_unit_matrix_ux",
-      "title": "Tools: unit matrix UX (From/To without clunk) + widget parity",
-      "summary": "Design a scalable unit selection model for tools (e.g., grams, liters, cubic units) that avoids a clunky From/To workflow, preserves speed, and keeps widgets consistent with modal selections.",
       "notes": [
         "Goal: no persistence schema change; selections should be key-addressable and reflected in tool widgets + history lines.",
         "Prefer: unit pill(s) that open a Dracula-themed bottom sheet with quick presets + search, with a \"More units\" affordance only when needed.",
         "History should record the unit pair used per entry and render value-first; avoid redundant labels."
+      ],
+      "summary": "Design a scalable unit selection model for tools (e.g., grams, liters, cubic units) that avoids a clunky From/To workflow, preserves speed, and keeps widgets consistent with modal selections.",
+      "title": "Tools: unit matrix UX (From/To without clunk) + widget parity"
+    },
+    {
+      "id": "P0_fix_duplicate_test_keys_collapsing_header",
+      "priority": "P0",
+      "status": "todo",
+      "title": "Collapsing header: eliminate duplicate test keys between expanded hero and compact layer",
+      "acceptance_criteria": [
+        "Hero-related tests no longer fail with 'Expected exactly one' for hero keys.",
+        "Compact layer uses distinct 'mini_*' keys or emits no canonical hero keys."
+      ],
+      "risk": "High (currently red build)",
+      "owner_role": "Engineering Lead"
+    },
+    {
+      "id": "P0_fix_env_pill_key_uniqueness",
+      "priority": "P0",
+      "status": "todo",
+      "title": "Hero env pill: ensure only one widget uses ValueKey('hero_env_pill') on dashboard surface",
+      "acceptance_criteria": [
+        "dashboard_places_hero_v2_test.dart no longer finds 2 hero_env_pill widgets."
+      ],
+      "risk": "Medium",
+      "owner_role": "Engineering Lead"
+    },
+    {
+      "id": "P0_tests_pinned_header_scroll_alignment",
+      "priority": "P0",
+      "status": "todo",
+      "title": "Tests: pinned-header aware scrolling and taps (ensureVisibleAligned)",
+      "acceptance_criteria": [
+        "weather_summary_tile_open_smoke_test.dart taps reliably on phone surface.",
+        "No off-screen tap warnings in dashboard modal/tile tests."
+      ],
+      "risk": "Medium",
+      "owner_role": "QA Lead"
+    },
+    {
+      "id": "P0_goldens_wizard_and_collapsing_states",
+      "priority": "P0",
+      "status": "blocked",
+      "title": "Goldens: wizard steps + dashboard expanded/collapsed header",
+      "acceptance_criteria": [
+        "Goldens updated intentionally with a documented rationale for each changed PNG."
+      ],
+      "risk": "Low",
+      "owner_role": "QA Lead",
+      "blocked_by": [
+        "P0_fix_duplicate_test_keys_collapsing_header"
       ]
     }
   ],
   "current_state": {
+    "current_slice": "P1: Profiles + regression invariants + golden harness (gated) + UI polish",
     "notes": [
-      "Build green through Slice O12g3 (WeatherAPI wiring + SceneKey binding in progress; marquee label is live).",
-      "Currency backend MVP exists (EUR\u2192USD) with TTL caching; UI currently shows EUR/USD when PT/US detected.",
-      "Dashboard tiles inherit per-tool tint and per-lens accent mapping.",
-      "Default tiles are removable and persist; restoring a removed default via picker restores it without duplicates.",
-      "Next slice: O12g4 live SceneKey mapping/binding (WeatherAPI code -> SceneKey -> marquee), then continue O12f family scene redesign.",
-      "Places Hero V2: bottom-left quadrant is currency; wind/gust are only in the right-side details pill.",
-      "Places Hero V2: clocks first; header format locked; sun pill present; wind and gust split; text scales down (no ellipsis).",
-      "Reality toggle continues to drive tool tile default unit selection and tool modal defaults.",
-      "ToolPicker is opened from the top-left tools icon; Quick Tools lens removed; Most Recent + Search remain.",
-      "Weather MVP decision: WeatherAPI.com provider; map condition codes -> SceneKey catalog (docs/ai/reference/SCENEKEY_CATALOG.md).",
-      "iOS app icon visibility remains backlog only."
+      "Collapsing header is pinned SliverPersistentHeader morphing PlacesHeroV2 -> pinned mini readout; no pop-in.",
+      "Wizard consolidated to 3 steps; Step 2 must fit on one screen; titles use Roboto Slab; CTA is Create Profile.",
+      "Canonical hero keys must be unique; use includeTestKeys gating to avoid duplicate finders in previews.",
+      "Goldens are gated via UNITANA_GOLDENS=1; do not update baselines unless intentional and documented.",
+      "Multi-profile support added (profiles list + active profile id) with namespaced prefs and legacy bootstrap."
     ],
-    "status": "green"
+    "overall_health": "Green baseline with regression harness; treat new errors as highest priority.",
+    "status": "GREEN (operator switching to Codex; consult latest error.log if red)"
   },
   "decisions": [
     {
       "date": "2026-01-02",
-      "topic": "Weather provider MVP",
       "decision": "Use WeatherAPI.com for MVP weather provider; map WeatherAPI condition codes to provider-agnostic SceneKeys.",
-      "rationale": "WeatherAPI provides a clear condition-code list and predictable pricing; we can keep requests low via caching and on-demand refresh."
+      "rationale": "WeatherAPI provides a clear condition-code list and predictable pricing; we can keep requests low via caching and on-demand refresh.",
+      "topic": "Weather provider MVP"
     },
     {
       "date": "2026-01-02",
-      "topic": "Hero weather visuals",
       "decision": "Adopt a SceneKey catalog with day/night variation driven by the hero location toggle (sun/moon time-based).",
-      "rationale": "Separates art from provider logic, keeps tests deterministic, and ensures consistent visuals across future providers."
+      "rationale": "Separates art from provider logic, keeps tests deterministic, and ensures consistent visuals across future providers.",
+      "topic": "Hero weather visuals"
     },
     {
       "date": "2026-01-14",
-      "topic": "Multi-unit tool UX (selector strategy)",
       "decision": "Use unit pills that open a compact selector sheet for input/output units. Put secondary outputs behind a \"More units\u2026\" sub-sheet when needed.",
-      "rationale": "Keeps the primary modal clean and fast while still supporting tools with many units; avoids bolting \"From/To\" everywhere."
+      "rationale": "Keeps the primary modal clean and fast while still supporting tools with many units; avoids bolting \"From/To\" everywhere.",
+      "topic": "Multi-unit tool UX (selector strategy)"
     },
     {
       "date": "2026-01-14",
-      "topic": "Multi-unit tool UX strategy",
       "decision": "For multi-unit tools, use input/output unit pills that open a compact selector as the default; expose additional outputs behind a single \"More units\u2026\" sub-sheet when needed.",
-      "rationale": "Keeps the primary modal clean and consistent across tools while still supporting power users; avoids bolting on verbose From/To forms everywhere."
+      "rationale": "Keeps the primary modal clean and consistent across tools while still supporting power users; avoids bolting on verbose From/To forms everywhere.",
+      "topic": "Multi-unit tool UX strategy"
     },
     {
       "date": "2026-01-14",
-      "topic": "Multi-unit tool UX",
       "decision": "Prefer unit pills that open a compact selector (default). Use a \"More units\" sub-sheet only when secondary outputs matter.",
-      "rationale": "Keeps the primary modal clean and fast while still supporting power users; avoids a pervasive From/To form pattern and limits UI complexity growth."
+      "rationale": "Keeps the primary modal clean and fast while still supporting power users; avoids a pervasive From/To form pattern and limits UI complexity growth.",
+      "topic": "Multi-unit tool UX"
+    },
+    {
+      "date": "2026-01-20",
+      "decision": "Adopt Option 3 for Places Hero V2: remove the middle animation bay permanently and prioritize space for Sunrise/Sunset & Wind/Gust (right) while keeping Env and Currency present in a left rail.",
+      "rationale": "Reduces failure surface and increases readability on mobile; provides a clean collapse hierarchy under tight constraints.",
+      "topic": "Hero layout direction (Option 3)"
+    },
+    {
+      "date": "2026-01-20",
+      "decision": "Enforce a single authoritative micro-mode gate for Env and Currency that triggers before any multi-line layout is constructed; under tight constraints render icon + single-line micro layouts.",
+      "rationale": "Prevents recurring RenderFlex overflows caused by 2-line Columns being forced into inner heights in the 20\u201330px range by tests and compact surfaces.",
+      "topic": "Hero overflow prevention (micro-first contract)"
+    },
+    {
+      "date": "2026-01-20",
+      "decision": "Treat 44dp minimum touch targets for hero pills as a contract on normal surfaces; use micro fallbacks for pathological constraints instead of shrinking below 44 when the surface allows.",
+      "rationale": "Maintains usability and keeps widget tests deterministic while still allowing overflow-safe collapse under extreme constraints.",
+      "topic": "Hero tap target contract"
+    },
+    {
+      "date": "2026-01-31",
+      "decision": "Redesign the onboarding wizard to a 3-step flow: Step 1 Welcome; Step 2 pick Home+Destination with mini hero preview + toggle; Step 3 name with main hero preview + toggle + confirm.",
+      "rationale": "Keeps onboarding friendly while reducing page count and aligning the wizard with the matured dashboard design system; preview-driven steps reduce user uncertainty.",
+      "topic": "Onboarding wizard redesign (P0)"
+    },
+    {
+      "date": "2026-01-31",
+      "decision": "Apply Dracula discipline across the wizard (white-first text, restrained accents) and unify wizard scaffolding so all steps share the same layout primitives and button styling as the dashboard.",
+      "rationale": "Eliminates the 'different app' feel and reduces regression risk by reusing established components and tokens.",
+      "topic": "Wizard design system alignment"
+    },
+    {
+      "date": "2026-01-31",
+      "decision": "Update bottom navigation to match the 3-step wizard (Step 1 proceed, Step 2 back/next, Step 3 back/confirm) while preserving existing navigation patterns and accessibility.",
+      "rationale": "Prevents UX inconsistency and reduces implementation churn while supporting the reduced step count.",
+      "topic": "Wizard navigation with fewer pages"
+    },
+    {
+      "date": "2026-01-31",
+      "decision": "Replace boolean-driven spacer insertion with a single coordinated animation controller that drives reserved space and overlay visibility for the pinned mini hero.",
+      "rationale": "Avoids scroll jumps and layout popping under fast scroll; keeps hit testing stable by reserving space smoothly.",
+      "topic": "Pinned mini-hero transition hardening (P0)"
+    },
+    "Hero interaction consistency: AQI/Pollen pill must show tap ripple feedback (Material+InkWell) like Sunrise/Sunset \u2194 Wind/Gust.",
+    "Currency cockpit: center-align the currency rate line in both normal and micro layouts.",
+    {
+      "date": "2026-02-01",
+      "text": "Dashboard uses a SliverPersistentHeader collapsing hero; the grid-based DashboardBoard should not also render PlacesHero. Use DashboardBoard(includePlacesHero: false) from DashboardScreen to avoid duplicate heroes and GlobalKeys. Widget tests must ensureVisible() before tapping add-slot tiles."
+    },
+    {
+      "date": "2026-02-01",
+      "topic": "Onboarding wizard redesign (P0)",
+      "decision": "Wizard is 3 steps: (1) Welcome to Unitana, (2) Pick Your Places, (3) Name and Confirm.",
+      "rationale": "Fewer screens, clearer flow, aligns with mature dashboard UI; maintains a welcoming first screen."
+    },
+    {
+      "date": "2026-02-01",
+      "topic": "Wizard typography + Dracula discipline",
+      "decision": "Wizard titles use the same font family as the dashboard profile name (Roboto Slab). Reduce rainbow text; keep most text white with restrained accents.",
+      "rationale": "Consistency across entry funnel and dashboard, avoids readability regressions."
+    },
+    {
+      "date": "2026-02-01",
+      "topic": "Dashboard scroll transition",
+      "decision": "Adopt SliverPersistentHeader collapsing header to morph expanded PlacesHeroV2 into pinned mini hero readout, replacing threshold insertion.",
+      "rationale": "Eliminates perceived scroll 'jump' and makes the transition continuous."
+    },
+    {
+      "date": "2026-02-01",
+      "topic": "Stability doctrine for collapsing header",
+      "decision": "Canonical hero test keys must remain unique; compact layer must not duplicate expanded hero keys during collapse.",
+      "rationale": "Duplicate keys break tests and create fragile finder behavior."
+    },
+    {
+      "id": "D-2026-02-02-keys-gating",
+      "date": "2026-02-02",
+      "title": "Gate canonical hero keys behind includeTestKeys",
+      "decision": "PlacesHeroV2 emits canonical dashboard test keys only when includeTestKeys=true; wizard and other previews set false.",
+      "rationale": "Prevent duplicate finder/key failures during collapsing header overlap and reduce brittle tests.",
+      "impacts": [
+        "Dashboard tests remain stable",
+        "Preview surfaces must not rely on canonical keys"
+      ]
+    },
+    {
+      "id": "D-2026-02-02-goldens-gated",
+      "date": "2026-02-02",
+      "title": "Gate golden tests behind env var",
+      "decision": "Golden tests run only when UNITANA_GOLDENS=1 is set; baseline updates must be intentional.",
+      "rationale": "Avoid CI churn and accidental visual lock-in while iterating on wizard/dashboard polish.",
+      "impacts": [
+        "Engineers must opt in to golden runs",
+        "Goldens updated only with documented rationale"
+      ]
+    },
+    {
+      "id": "D-2026-02-03-profiles",
+      "date": "2026-02-03",
+      "title": "Introduce multi-profile model and namespaced prefs",
+      "decision": "Persist profiles list and active profile id; namespace settings per profile; bootstrap from legacy single-profile prefs.",
+      "rationale": "Enable switching dashboards cleanly without state bleed; maintain backwards compatibility.",
+      "impacts": [
+        "Migration/bootstrapping code must be kept",
+        "Tests should cover switching and edit flow"
+      ]
     }
   ],
   "design_system": {
     "notes": [
-      "Audit text styles across pages for contrast and hierarchy."
+      "Audit text styles across pages for contrast and hierarchy.",
+      "Interactive pills must provide visible tap feedback (InkWell ripple).",
+      "Currency line is center-aligned (micro and normal)."
     ],
     "theme": "Dracula-inspired"
   },
@@ -156,7 +391,7 @@
     "Keep docs/ai small and canonical: avoid duplicate prompts and parallel copies.",
     "Prefer updating existing canonical files over creating new variants."
   ],
-  "last_updated": "2026-01-20",
+  "last_updated": "2026-02-05",
   "patch_log": [
     {
       "date": "2025-12-31",
@@ -824,30 +1059,22 @@
       "title": "Places Hero V2: emphasize labels and center sun title"
     },
     {
-      "id": "patch_2026-01-01_sliceO7o_analyzer_clean_places_hero",
       "date": "2026-01-01",
+      "files_changed": [
+        "app/unitana/lib/features/dashboard/widgets/places_hero_v2.dart",
+        "docs/ai/context_db.json"
+      ],
+      "id": "patch_2026-01-01_sliceO7o_analyzer_clean_places_hero",
       "slice": "O7o",
-      "title": "Places Hero V2: analyzer cleanup (no behavior change)",
       "summary": [
         "Removed unused private widget parameters that triggered analyzer warnings.",
         "Renamed local helper closures to satisfy lint rules (no leading underscores for locals).",
         "Kept existing keys and text output stable to avoid test and persistence regressions."
       ],
-      "files_changed": [
-        "app/unitana/lib/features/dashboard/widgets/places_hero_v2.dart",
-        "docs/ai/context_db.json"
-      ]
+      "title": "Places Hero V2: analyzer cleanup (no behavior change)"
     },
     {
-      "id": "patch_2026-01-01_sliceR1_tile_footer_convert_cta",
       "date": "2026-01-01",
-      "slice": "R1",
-      "title": "Dashboard tiles: Convert CTA + conversion icon",
-      "summary": [
-        "Replaced the dashboard tile footer copy from \u201cTap to convert\u201d to \u201cConvert\u201d.",
-        "Swapped the footer dot indicator for a conversion icon (swap_horiz) and centered the CTA row.",
-        "Updated widget tests to assert the new footer text and icon tinting behavior."
-      ],
       "files_changed": [
         "app/unitana/lib/features/dashboard/widgets/dashboard_board.dart",
         "app/unitana/lib/features/dashboard/widgets/unitana_tile.dart",
@@ -855,281 +1082,280 @@
         "app/unitana/test/dashboard_tile_icon_accent_test.dart",
         "docs/ai/context_db.json",
         "docs/ai/handoff/CURRENT_HANDOFF.md"
-      ]
+      ],
+      "id": "patch_2026-01-01_sliceR1_tile_footer_convert_cta",
+      "slice": "R1",
+      "summary": [
+        "Replaced the dashboard tile footer copy from \u201cTap to convert\u201d to \u201cConvert\u201d.",
+        "Swapped the footer dot indicator for a conversion icon (swap_horiz) and centered the CTA row.",
+        "Updated widget tests to assert the new footer text and icon tinting behavior."
+      ],
+      "title": "Dashboard tiles: Convert CTA + conversion icon"
     },
     {
-      "id": "O12d2a-docs-weatherapi-scenekey-catalog",
       "date": "2026-01-02",
-      "summary": [
-        "Documented SceneKey catalog for hero marquee weather scenes, including full WeatherAPI code mapping and revised SMOKE_WILDFIRE concept.",
-        "Updated CURRENT_HANDOFF with shipped slice summary, WeatherAPI MVP decision, SceneKey policy, and next-slice breakdown (O12e/O12f/O12g).",
-        "Updated senior review next-chat prompt to enforce smaller slices and focus the next slice on Developer Tools Weather overflow hardening."
-      ],
       "files": [
         "docs/ai/reference/SCENEKEY_CATALOG.md",
         "docs/ai/handoff/CURRENT_HANDOFF.md",
         "docs/ai/prompts/NEXT_CHAT_PROMPT_SENIOR_REVIEW.md",
         "docs/ai/context_db.json"
+      ],
+      "id": "O12d2a-docs-weatherapi-scenekey-catalog",
+      "summary": [
+        "Documented SceneKey catalog for hero marquee weather scenes, including full WeatherAPI code mapping and revised SMOKE_WILDFIRE concept.",
+        "Updated CURRENT_HANDOFF with shipped slice summary, WeatherAPI MVP decision, SceneKey policy, and next-slice breakdown (O12e/O12f/O12g).",
+        "Updated senior review next-chat prompt to enforce smaller slices and focus the next slice on Developer Tools Weather overflow hardening."
       ]
     },
     {
-      "id": "patch_2026-01-03_docs_handoff_refresh_senior_transition",
       "date": "2026-01-03",
+      "files_changed": [
+        "docs/ai/handoff/CURRENT_HANDOFF.md",
+        "docs/ai/prompts/NEXT_CHAT_PROMPT_SENIOR_REVIEW.md",
+        "docs/ai/context_db.json"
+      ],
+      "id": "patch_2026-01-03_docs_handoff_refresh_senior_transition",
       "slice": "DOCS",
-      "title": "Handoff refresh + senior transition prompt (post O12g3 stabilization)",
       "summary": [
         "Refreshed CURRENT_HANDOFF to reflect O12e\u2013O12g3 outcomes, current priorities, risks, and lessons learned.",
         "Set next slice definition for O12g4 (WeatherAPI condition.code -> SceneKey -> marquee selection, DevTools override precedence).",
         "Prepared senior-team transition prompt for next chat to reduce scope thrash and enforce one-slice execution."
       ],
-      "files_changed": [
-        "docs/ai/handoff/CURRENT_HANDOFF.md",
-        "docs/ai/prompts/NEXT_CHAT_PROMPT_SENIOR_REVIEW.md",
-        "docs/ai/context_db.json"
-      ]
+      "title": "Handoff refresh + senior transition prompt (post O12g3 stabilization)"
     },
     {
-      "id": "patch_2026-01-05_o12j10_tool_modal_terminal_typography",
       "date": "2026-01-05",
+      "files_changed": [
+        "lib/features/dashboard/widgets/tool_modal_bottom_sheet.dart"
+      ],
+      "id": "patch_2026-01-05_o12j10_tool_modal_terminal_typography",
       "slice": "O12j10",
-      "title": "Tool modal terminal polish (monospace prompt, remove $ prefix, timestamp styling)",
       "summary": [
         "Strengthened Dracula-terminal feel in tool modals: consistent monospace typography, prompt glyph styling, and improved readability.",
         "Removed all \"$\" prompt prefixes to avoid currency confusion; standardized prompt to \"\u276f\".",
         "Improved microcopy and affordances: dynamic \"Enter Value\" -> \"Edit Value\" when input present; timestamp rendered as lighter italic meta text."
       ],
-      "files_changed": [
-        "lib/features/dashboard/widgets/tool_modal_bottom_sheet.dart"
-      ]
+      "title": "Tool modal terminal polish (monospace prompt, remove $ prefix, timestamp styling)"
     },
     {
-      "id": "patch_2026-01-08_o12k07g_time_tool_test_toolpicker_selection",
       "date": "2026-01-08",
+      "files_changed": [
+        "test/time_tool_modal_interaction_test.dart"
+      ],
+      "id": "patch_2026-01-08_o12k07g_time_tool_test_toolpicker_selection",
       "slice": "O12k07g",
-      "title": "Time modal test: robust ToolPicker selection + direction-aware input",
       "summary": [
         "Fixes brittle test coupling to the exact 'Time' label by selecting the first enabled ToolPicker search result whose title contains 'time' (case-insensitive).",
         "Derives toolId from modal keys (tool_input_*) and chooses 12h vs 24h input based on the modal '<from> \u2192 <to>' direction label.",
         "Validates conversion output shape plus history tap-to-copy and long-press-to-edit behaviors without relying on list ordering."
       ],
-      "files_changed": [
-        "test/time_tool_modal_interaction_test.dart"
-      ]
+      "title": "Time modal test: robust ToolPicker selection + direction-aware input"
     },
     {
-      "id": "patch_2026-01-09_o12k13d_header_button_equal_size_and_platform_icon_audit",
       "date": "2026-01-09",
+      "files_changed": [
+        "app/unitana/lib/features/dashboard/dashboard_screen.dart",
+        "docs/ai/reference/PLATFORM_ICON_AUDIT.md"
+      ],
+      "id": "patch_2026-01-09_o12k13d_header_button_equal_size_and_platform_icon_audit",
       "slice": "O12k13d",
-      "title": "Dashboard header: equal-size mirrored buttons + platform icon audit doc",
       "summary": [
         "Makes the top-left Tools and top-right Menu buttons true mirrors by using a shared header icon button widget with identical size, border, and edge insets.",
         "Adds a lightweight cross-platform launcher icon audit checklist under docs/ai/reference to reduce platform-specific icon regressions."
       ],
-      "files_changed": [
-        "app/unitana/lib/features/dashboard/dashboard_screen.dart",
-        "docs/ai/reference/PLATFORM_ICON_AUDIT.md"
-      ]
+      "title": "Dashboard header: equal-size mirrored buttons + platform icon audit doc"
     },
     {
-      "id": "patch_2026-01-09_o12k13e_fix_duplicate_devtools_clock_override",
       "date": "2026-01-09",
-      "slice": "O12k13e",
-      "title": "Fix duplicate DevTools clock override symbols (debugClockOffset)",
-      "summary": [
-        "Fixes analyzer/test failures caused by duplicate definitions of debugClockOffset and setDebugClockOffset in dashboard_live_data.dart.",
-        "Clarifies clock override comment as a simulator-only offset (not NTP, not backend sync, not timezone reconfiguration)."
-      ],
       "files_changed": [
         "app/unitana/lib/features/dashboard/models/dashboard_live_data.dart",
         "docs/ai/context_db.json",
         "docs/ai/handoff/CURRENT_HANDOFF.md"
-      ]
+      ],
+      "id": "patch_2026-01-09_o12k13e_fix_duplicate_devtools_clock_override",
+      "slice": "O12k13e",
+      "summary": [
+        "Fixes analyzer/test failures caused by duplicate definitions of debugClockOffset and setDebugClockOffset in dashboard_live_data.dart.",
+        "Clarifies clock override comment as a simulator-only offset (not NTP, not backend sync, not timezone reconfiguration)."
+      ],
+      "title": "Fix duplicate DevTools clock override symbols (debugClockOffset)"
     },
     {
-      "id": "patch_2026-01-09_o12k13f_stabilize_time_tool_modal_test",
       "date": "2026-01-09",
-      "slice": "O12k13f",
-      "title": "Stabilize time tool modal widget test",
-      "summary": [
-        "Updates time_tool_modal_interaction_test.dart to prefer ToolPicker search (toolpicker_search + toolpicker_search_tool_time) instead of relying on lens headers ordering/presence.",
-        "Adds fallback paths (direct row, lens expansion, scroll) with a clearer failure message if the ToolPicker contract keys are missing."
-      ],
       "files_changed": [
         "app/unitana/test/time_tool_modal_interaction_test.dart",
         "docs/ai/context_db.json",
         "docs/ai/handoff/CURRENT_HANDOFF.md"
-      ]
+      ],
+      "id": "patch_2026-01-09_o12k13f_stabilize_time_tool_modal_test",
+      "slice": "O12k13f",
+      "summary": [
+        "Updates time_tool_modal_interaction_test.dart to prefer ToolPicker search (toolpicker_search + toolpicker_search_tool_time) instead of relying on lens headers ordering/presence.",
+        "Adds fallback paths (direct row, lens expansion, scroll) with a clearer failure message if the ToolPicker contract keys are missing."
+      ],
+      "title": "Stabilize time tool modal widget test"
     },
     {
-      "id": "patch_2026-01-09_o12k13g_add_devtools_clock_override_ui",
       "date": "2026-01-09",
-      "slice": "O12k13g",
-      "title": "Add DevTools clock override UI (keys + sheet)",
-      "summary": [
-        "Adds a Clock Override entry to the Developer Tools sheet (key: devtools_clock_menu) and a dedicated sheet with an enable toggle + offset slider.",
-        "Wires the UI to DashboardLiveDataController.setDebugClockOffset so Places Hero time displays can be adjusted for simulator testing without NTP or backend sync."
-      ],
       "files_changed": [
         "app/unitana/lib/features/dashboard/dashboard_screen.dart",
         "docs/ai/context_db.json",
         "docs/ai/handoff/CURRENT_HANDOFF.md"
-      ]
+      ],
+      "id": "patch_2026-01-09_o12k13g_add_devtools_clock_override_ui",
+      "slice": "O12k13g",
+      "summary": [
+        "Adds a Clock Override entry to the Developer Tools sheet (key: devtools_clock_menu) and a dedicated sheet with an enable toggle + offset slider.",
+        "Wires the UI to DashboardLiveDataController.setDebugClockOffset so Places Hero time displays can be adjusted for simulator testing without NTP or backend sync."
+      ],
+      "title": "Add DevTools clock override UI (keys + sheet)"
     },
     {
       "date": "2026-01-09",
-      "id": "patch_2026-01-09_O12k13h_sev1_recovery_dashboard_parse_header_mirror",
-      "slice": "O12k13h",
-      "title": "Sev 1 recovery: DashboardScreen parse fix + mirrored header button size guard",
-      "summary": [
-        "Fixed a broken/mismatched bracket/brace sequence in DashboardScreen AppBar menu bottom sheet, restoring clean parsing/formatting.",
-        "Confirmed Tools (top-left) and Menu (top-right) header buttons remain true mirrors by keeping sizing centralized in _HeaderIconButton.",
-        "Added a widget test that asserts dashboard_tools_button and dashboard_menu_button render at identical sizes."
-      ],
       "files_changed": [
         "app/unitana/lib/features/dashboard/dashboard_screen.dart",
         "app/unitana/test/dashboard_header_button_mirror_test.dart",
         "docs/ai/context_db.json",
         "docs/ai/handoff/CURRENT_HANDOFF.md"
       ],
+      "id": "patch_2026-01-09_O12k13h_sev1_recovery_dashboard_parse_header_mirror",
       "notes": {
-        "root_cause": "Incomplete edit in the AppBar menu bottom sheet block (mismatched closure/brackets) caused dart format/analyze/test to fail at parse time.",
         "guards": [
           "Size equality widget test keyed to dashboard_tools_button and dashboard_menu_button.",
           "Header button sizing centralized via _HeaderIconButton size/radius constants to prevent drift when icons change."
         ],
-        "risk": "Low; localized UI block repair + additive test + docs update."
-      }
+        "risk": "Low; localized UI block repair + additive test + docs update.",
+        "root_cause": "Incomplete edit in the AppBar menu bottom sheet block (mismatched closure/brackets) caused dart format/analyze/test to fail at parse time."
+      },
+      "slice": "O12k13h",
+      "summary": [
+        "Fixed a broken/mismatched bracket/brace sequence in DashboardScreen AppBar menu bottom sheet, restoring clean parsing/formatting.",
+        "Confirmed Tools (top-left) and Menu (top-right) header buttons remain true mirrors by keeping sizing centralized in _HeaderIconButton.",
+        "Added a widget test that asserts dashboard_tools_button and dashboard_menu_button render at identical sizes."
+      ],
+      "title": "Sev 1 recovery: DashboardScreen parse fix + mirrored header button size guard"
     },
     {
       "date": "2026-01-09",
-      "id": "patch_2026-01-09_O12k13h1_header_button_exact_mirror_size",
-      "slice": "O12k13h1",
-      "title": "Hotfix: make header Tools/Menu buttons resolve to identical RenderBox size",
-      "summary": [
-        "Diagnosed failing mirror-size widget test: AppBar's leading slot constraints were forcing the Tools button subtree to resolve at 56x56 while Menu remained 44x44.",
-        "Updated _HeaderIconButton's centralized size/radius to 56/28 (matching AppBar toolbar height) so both dashboard_tools_button and dashboard_menu_button report the same size.",
-        "Kept changes localized (no key churn, no modal/ToolPicker changes); this aligns with the 'exact container equality' requirement."
-      ],
       "files_changed": [
         "app/unitana/lib/features/dashboard/dashboard_screen.dart",
         "docs/ai/context_db.json",
         "docs/ai/handoff/CURRENT_HANDOFF.md"
       ],
+      "id": "patch_2026-01-09_O12k13h1_header_button_exact_mirror_size",
       "notes": {
-        "root_cause": "The mirror-size test was correct, but the left button was resolving under tighter AppBar leading constraints; the right button was not. The resulting RenderBox sizes differed (56 vs 44) despite shared widget code.",
         "guards": [
           "dashboard_header_button_mirror_test continues to assert equality using stable keys.",
           "Header button sizing remains centralized in _HeaderIconButton to prevent drift."
         ],
-        "risk": "Low; only constants updated to match AppBar constraints."
-      }
+        "risk": "Low; only constants updated to match AppBar constraints.",
+        "root_cause": "The mirror-size test was correct, but the left button was resolving under tighter AppBar leading constraints; the right button was not. The resulting RenderBox sizes differed (56 vs 44) despite shared widget code."
+      },
+      "slice": "O12k13h1",
+      "summary": [
+        "Diagnosed failing mirror-size widget test: AppBar's leading slot constraints were forcing the Tools button subtree to resolve at 56x56 while Menu remained 44x44.",
+        "Updated _HeaderIconButton's centralized size/radius to 56/28 (matching AppBar toolbar height) so both dashboard_tools_button and dashboard_menu_button report the same size.",
+        "Kept changes localized (no key churn, no modal/ToolPicker changes); this aligns with the 'exact container equality' requirement."
+      ],
+      "title": "Hotfix: make header Tools/Menu buttons resolve to identical RenderBox size"
     },
     {
       "date": "2026-01-09",
-      "id": "patch_2026-01-09_O12k13j_currency_modal_place_context",
-      "slice": "O12k13j",
-      "title": "Fix: Currency modal receives home/destination context from dashboard tiles",
-      "summary": [
-        "Dashboard tile taps now pass eurToUsd and home/destination Place context into ToolModalBottomSheet, ensuring Currency defaults and unit labels match the selected reality for non-US/EU home/destination pairs.",
-        "Kept the change localized to DashboardBoard tile onTap, with no key churn and no ToolPicker behavior changes.",
-        "Added a widget test that inverts the default assumption (EU home, US destination) and asserts the Currency modal unit line swaps correctly when toggling realities."
-      ],
       "files_changed": [
         "app/unitana/lib/features/dashboard/widgets/dashboard_board.dart",
         "app/unitana/test/dashboard_currency_modal_context_test.dart",
         "docs/ai/context_db.json",
         "docs/ai/handoff/CURRENT_HANDOFF.md"
       ],
+      "id": "patch_2026-01-09_O12k13j_currency_modal_place_context",
       "notes": {
-        "root_cause": "DashboardBoard opened ToolModalBottomSheet from tile taps without passing home/destination context, so Currency inference fell back to a hardcoded USD/EUR pair. This broke correctness when Home was non-US or Destination was non-EU.",
         "guards": [
           "dashboard_currency_modal_context_test asserts the Currency modal unit line reflects actual home/destination currencies and swaps with the reality toggle.",
           "Currency inference continues to use device-clock-driven reality; timezones remain display-only."
         ],
-        "risk": "Low; parameters are only added at the tile invocation site and are ignored by non-Currency tools."
-      }
+        "risk": "Low; parameters are only added at the tile invocation site and are ignored by non-Currency tools.",
+        "root_cause": "DashboardBoard opened ToolModalBottomSheet from tile taps without passing home/destination context, so Currency inference fell back to a hardcoded USD/EUR pair. This broke correctness when Home was non-US or Destination was non-EU."
+      },
+      "slice": "O12k13j",
+      "summary": [
+        "Dashboard tile taps now pass eurToUsd and home/destination Place context into ToolModalBottomSheet, ensuring Currency defaults and unit labels match the selected reality for non-US/EU home/destination pairs.",
+        "Kept the change localized to DashboardBoard tile onTap, with no key churn and no ToolPicker behavior changes.",
+        "Added a widget test that inverts the default assumption (EU home, US destination) and asserts the Currency modal unit line swaps correctly when toggling realities."
+      ],
+      "title": "Fix: Currency modal receives home/destination context from dashboard tiles"
     },
     {
       "date": "2026-01-09",
+      "files_changed": [
+        "app/unitana/test/dashboard_currency_modal_context_test.dart",
+        "docs/ai/context_db.json",
+        "docs/ai/handoff/CURRENT_HANDOFF.md"
+      ],
       "id": "patch_2026-01-09_O12k13j1_currency_modal_test_dismiss",
+      "notes": {
+        "guards": [
+          "dashboard_currency_modal_context_test now dismisses the bottom sheet using ModalBarrier tap, matching the app's actual presentation model."
+        ],
+        "risk": "Very low; test-only change and docs update.",
+        "root_cause": "The Currency modal test used tester.pageBack(), which relies on finding a CupertinoNavigationBarBackButton. Tool modals use showModalBottomSheet and do not include that back button."
+      },
       "slice": "O12k13j1",
-      "title": "Test fix: Dismiss tool modal via ModalBarrier (bottom sheet), not Cupertino back",
       "summary": [
         "Fixed a widget test failure where tester.pageBack() expected a CupertinoNavigationBarBackButton, but tool modals are presented via showModalBottomSheet.",
         "Updated dashboard_currency_modal_context_test to dismiss the modal by tapping the ModalBarrier, keeping the assertion focused on currency directionality rather than navigation affordances.",
         "No production UI or logic changes; keys and tool behavior remain unchanged."
       ],
+      "title": "Test fix: Dismiss tool modal via ModalBarrier (bottom sheet), not Cupertino back"
+    },
+    {
+      "date": "2026-01-09",
       "files_changed": [
         "app/unitana/test/dashboard_currency_modal_context_test.dart",
         "docs/ai/context_db.json",
         "docs/ai/handoff/CURRENT_HANDOFF.md"
       ],
-      "notes": {
-        "root_cause": "The Currency modal test used tester.pageBack(), which relies on finding a CupertinoNavigationBarBackButton. Tool modals use showModalBottomSheet and do not include that back button.",
-        "guards": [
-          "dashboard_currency_modal_context_test now dismisses the bottom sheet using ModalBarrier tap, matching the app's actual presentation model."
-        ],
-        "risk": "Very low; test-only change and docs update."
-      }
-    },
-    {
-      "date": "2026-01-09",
       "id": "patch_2026-01-09_O12k13j2_currency_modal_test_dismiss_reliable",
+      "notes": {
+        "guards": [
+          "dashboard_currency_modal_context_test now dismisses via tapAt(10,10) which is consistently outside the bottom sheet.",
+          "GoogleFonts runtime fetching is disabled in-test, matching other interaction tests."
+        ],
+        "risk": "Very low; test-only change and docs update.",
+        "root_cause": "A ModalBarrier finder can represent the whole scrim, but tester.tap(barrier.first) uses the widget center, which may be covered by the bottom sheet; the hit test then targets sheet content rather than the scrim, so dismissal does not occur."
+      },
       "slice": "O12k13j2",
-      "title": "Test fix: dismiss bottom sheet reliably (tapAt safe barrier region) + disable runtime font fetching",
       "summary": [
         "Fixed flaky/failing dismissal in dashboard_currency_modal_context_test where tapping ModalBarrier's center could land on the bottom sheet instead of the scrim, leaving the modal open and blocking subsequent taps.",
         "Updated dismissToolModal() to tap a safe top-left coordinate (outside the sheet) with warnIfMissed:false, retrying once if the barrier remains.",
         "Aligned with existing modal interaction tests by disabling GoogleFonts runtime fetching to avoid HttpClient warnings and reduce test noise."
       ],
-      "files_changed": [
-        "app/unitana/test/dashboard_currency_modal_context_test.dart",
-        "docs/ai/context_db.json",
-        "docs/ai/handoff/CURRENT_HANDOFF.md"
-      ],
-      "notes": {
-        "root_cause": "A ModalBarrier finder can represent the whole scrim, but tester.tap(barrier.first) uses the widget center, which may be covered by the bottom sheet; the hit test then targets sheet content rather than the scrim, so dismissal does not occur.",
-        "guards": [
-          "dashboard_currency_modal_context_test now dismisses via tapAt(10,10) which is consistently outside the bottom sheet.",
-          "GoogleFonts runtime fetching is disabled in-test, matching other interaction tests."
-        ],
-        "risk": "Very low; test-only change and docs update."
-      }
+      "title": "Test fix: dismiss bottom sheet reliably (tapAt safe barrier region) + disable runtime font fetching"
     },
     {
       "date": "2026-01-09",
-      "id": "patch_2026-01-09_O12k13j3_currency_modal_test_flutter_compat",
-      "slice": "O12k13j3",
-      "title": "Test fix: remove unsupported tapAt warnIfMissed param; dismiss via barrier top-left",
-      "summary": [
-        "Fixed build break on older Flutter where WidgetTester.tapAt() does not support warnIfMissed named parameter.",
-        "Updated dashboard_currency_modal_context_test dismiss helper to tap a safe point derived from ModalBarrier top-left (fallback to a fixed point), with a single retry if the barrier remains."
-      ],
       "files_changed": [
         "app/unitana/test/dashboard_currency_modal_context_test.dart",
         "docs/ai/context_db.json",
         "docs/ai/handoff/CURRENT_HANDOFF.md"
       ],
+      "id": "patch_2026-01-09_O12k13j3_currency_modal_test_flutter_compat",
       "notes": {
-        "root_cause": "The warnIfMissed parameter was added in newer Flutter; current repo toolchain does not include it, causing analyze/test compilation failure.",
         "guards": [
           "Modal dismissal remains deterministic by avoiding center-of-barrier taps that can hit-test into the bottom sheet.",
           "Test stays key-based and place-aware (EUR/USD inversion) to catch context regressions."
         ],
-        "risk": "Very low; test-only change plus docs."
-      }
+        "risk": "Very low; test-only change plus docs.",
+        "root_cause": "The warnIfMissed parameter was added in newer Flutter; current repo toolchain does not include it, causing analyze/test compilation failure."
+      },
+      "slice": "O12k13j3",
+      "summary": [
+        "Fixed build break on older Flutter where WidgetTester.tapAt() does not support warnIfMissed named parameter.",
+        "Updated dashboard_currency_modal_context_test dismiss helper to tap a safe point derived from ModalBarrier top-left (fallback to a fixed point), with a single retry if the barrier remains."
+      ],
+      "title": "Test fix: remove unsupported tapAt warnIfMissed param; dismiss via barrier top-left"
     },
     {
       "date": "2026-01-09",
-      "id": "patch_2026-01-09_O12k13k_enable_length_tool",
-      "slice": "O12k13k",
-      "title": "Tool surface: enable Length tool (cm \u2194 ft/in) + modal support + interaction test",
-      "summary": [
-        "Enabled the Length tool under the Home & DIY lens (cm \u2194 ft/in) using the existing canonical length engine.",
-        "Extended ToolModalBottomSheet unit-label and input-mode handling to support toolId 'length' (including freeform input in the imperial direction).",
-        "Added a widget interaction test that covers conversion, history copy, and long-press edit for the Length tool.",
-        "Updated canonical docs and captured the Radio feature as a docs-only backlog item."
-      ],
       "files_changed": [
         "app/unitana/lib/features/dashboard/models/tool_definitions.dart",
         "app/unitana/lib/features/dashboard/models/tool_registry.dart",
@@ -1138,185 +1364,186 @@
         "docs/ai/context_db.json",
         "docs/ai/handoff/CURRENT_HANDOFF.md"
       ],
+      "id": "patch_2026-01-09_O12k13k_enable_length_tool",
       "notes": {
-        "root_cause": "Length existed in the ToolRegistry catalog but was disabled and lacked ToolModal UI affordances (unit labels + freeform input) because the modal special-cased only the Height tool for the canonical length engine.",
         "guards": [
           "Added a widget interaction test (length_tool_modal_interaction_test) to catch regressions in conversion, history copy, and long-press edit.",
           "ToolModal now treats 'length' the same as 'height' for unit labels and freeform input in the imperial direction."
         ],
-        "risk": "Low; additive tool enablement plus localized modal support and new test coverage."
-      }
+        "risk": "Low; additive tool enablement plus localized modal support and new test coverage.",
+        "root_cause": "Length existed in the ToolRegistry catalog but was disabled and lacked ToolModal UI affordances (unit labels + freeform input) because the modal special-cased only the Height tool for the canonical length engine."
+      },
+      "slice": "O12k13k",
+      "summary": [
+        "Enabled the Length tool under the Home & DIY lens (cm \u2194 ft/in) using the existing canonical length engine.",
+        "Extended ToolModalBottomSheet unit-label and input-mode handling to support toolId 'length' (including freeform input in the imperial direction).",
+        "Added a widget interaction test that covers conversion, history copy, and long-press edit for the Length tool.",
+        "Updated canonical docs and captured the Radio feature as a docs-only backlog item."
+      ],
+      "title": "Tool surface: enable Length tool (cm \u2194 ft/in) + modal support + interaction test"
     },
     {
       "date": "2026-01-09",
-      "id": "patch_2026-01-09_O12k13k1_length_modal_test_hotfix",
-      "slice": "O12k13k1",
-      "title": "Test hotfix: align Length modal interaction test with current Dashboard/AppState plumbing",
-      "summary": [
-        "Removed deprecated dashboard controller imports from the Length modal interaction widget test.",
-        "Aligned the test with the canonical DashboardScreen + UnitanaAppState harness used by the other tool modal tests (seeded Places + SharedPreferences mocks).",
-        "Tightened assertions to tolerate direction differences (imperial vs metric) without depending on locale-sensitive labels."
-      ],
       "files_changed": [
         "app/unitana/test/length_tool_modal_interaction_test.dart",
         "docs/ai/context_db.json",
         "docs/ai/handoff/CURRENT_HANDOFF.md"
       ],
+      "id": "patch_2026-01-09_O12k13k1_length_modal_test_hotfix",
       "notes": {
-        "root_cause": "The Length interaction test was introduced with imports targeting a removed controllers directory, causing analyzer failures even though runtime code was healthy.",
         "guards": [
           "Use the same harness pattern across tool modal tests (UnitanaAppState + seeded Places) to prevent drift as state management evolves.",
           "Assertions validate conversion shapes via keys and stable output tokens (units / numbers) rather than relying on ordering or translated strings."
         ],
-        "risk": "Low; test-only changes plus doc bookkeeping."
-      }
+        "risk": "Low; test-only changes plus doc bookkeeping.",
+        "root_cause": "The Length interaction test was introduced with imports targeting a removed controllers directory, causing analyzer failures even though runtime code was healthy."
+      },
+      "slice": "O12k13k1",
+      "summary": [
+        "Removed deprecated dashboard controller imports from the Length modal interaction widget test.",
+        "Aligned the test with the canonical DashboardScreen + UnitanaAppState harness used by the other tool modal tests (seeded Places + SharedPreferences mocks).",
+        "Tightened assertions to tolerate direction differences (imperial vs metric) without depending on locale-sensitive labels."
+      ],
+      "title": "Test hotfix: align Length modal interaction test with current Dashboard/AppState plumbing"
     },
     {
       "date": "2026-01-09",
-      "id": "patch_2026-01-09_O12k13l_weight_modal_interaction_test",
-      "slice": "O12k13l",
-      "title": "Tests: add Weight tool modal interaction coverage (convert + history copy + long-press edit)",
-      "summary": [
-        "Added a widget interaction test for the Weight tool modal that validates conversion output, history tap-to-copy, and long-press-to-edit behaviors.",
-        "Test avoids locale-sensitive text finders and validates stable output tokens via keys and invariant unit strings (kg/lb)."
-      ],
       "files_changed": [
         "app/unitana/test/weight_tool_modal_interaction_test.dart",
         "docs/ai/context_db.json",
         "docs/ai/handoff/CURRENT_HANDOFF.md"
       ],
+      "id": "patch_2026-01-09_O12k13l_weight_modal_interaction_test",
       "notes": {
-        "reason": "Phase A tool surface completion needs consistent interaction coverage across core converters; Weight lacked a regression test while other primitives (distance/speed/temp/time/area/length) already had one.",
         "guards": [
           "Uses ToolPicker lens + tool key selection rather than depending on ordering or visible text labels.",
           "Validates output via the tool_result key and invariant unit tokens (kg/lb) while tolerating direction differences based on active reality."
         ],
+        "reason": "Phase A tool surface completion needs consistent interaction coverage across core converters; Weight lacked a regression test while other primitives (distance/speed/temp/time/area/length) already had one.",
         "risk": "Low; test-only coverage plus docs bookkeeping."
-      }
+      },
+      "slice": "O12k13l",
+      "summary": [
+        "Added a widget interaction test for the Weight tool modal that validates conversion output, history tap-to-copy, and long-press-to-edit behaviors.",
+        "Test avoids locale-sensitive text finders and validates stable output tokens via keys and invariant unit strings (kg/lb)."
+      ],
+      "title": "Tests: add Weight tool modal interaction coverage (convert + history copy + long-press edit)"
     },
     {
       "date": "2026-01-09",
-      "slice": "O12k13m",
-      "id": "patch_2026-01-09_O12k13m_time_tile_24h_swap_weight_test_clipboard_units",
-      "title": "Time tile: honor 12/24 preference; Tests: tolerate units in copied weight output",
       "files_changed": [
         "app/unitana/lib/features/dashboard/widgets/dashboard_board.dart",
         "app/unitana/test/weight_tool_modal_interaction_test.dart",
         "docs/ai/context_db.json",
         "docs/ai/handoff/CURRENT_HANDOFF.md"
       ],
+      "id": "patch_2026-01-09_O12k13m_time_tile_24h_swap_weight_test_clipboard_units",
+      "notes": {
+        "reason": "User testing found Time tile did not track the hero's 12/24 preference; latest patch produced a widget-test failure due to units included in clipboard copy.",
+        "risk": "Low; Time behavior change is limited to dashboard preview label ordering. Test-only adjustment reduces brittleness without changing app behavior."
+      },
+      "slice": "O12k13m",
       "summary": [
         "Fixed Time dashboard tile preview to mirror the active place's 12/24-hour preference (Place.use24h), matching Places Hero behavior.",
         "Updated Weight modal interaction test to validate the copied numeric value even when the clipboard includes units (e.g., '22.0 lb')."
       ],
-      "notes": {
-        "reason": "User testing found Time tile did not track the hero's 12/24 preference; latest patch produced a widget-test failure due to units included in clipboard copy.",
-        "risk": "Low; Time behavior change is limited to dashboard preview label ordering. Test-only adjustment reduces brittleness without changing app behavior."
-      }
+      "title": "Time tile: honor 12/24 preference; Tests: tolerate units in copied weight output"
     },
     {
       "date": "2026-01-09",
-      "slice": "O12k13m1",
-      "id": "patch_2026-01-09_O12k13m1_test_hardening_weight_currency_units_parsing",
-      "title": "Tests: harden Weight long-press rehydrate + Currency units base parsing",
       "files_changed": [
         "app/unitana/test/weight_tool_modal_interaction_test.dart",
         "app/unitana/test/dashboard_currency_modal_context_test.dart",
         "docs/ai/context_db.json",
         "docs/ai/handoff/CURRENT_HANDOFF.md"
       ],
+      "id": "patch_2026-01-09_O12k13m1_test_hardening_weight_currency_units_parsing",
+      "notes": {
+        "reason": "Merge gates failed due to brittle test expectations when the UI includes units in rehydrated input or changes formatting of the currency units label.",
+        "risk": "Very low; test-only changes that increase resilience while preserving key-based assertions."
+      },
+      "slice": "O12k13m1",
       "summary": [
         "Weight modal interaction test now validates rehydrated input numerically (accepts '10' or '10 kg') and copies numeric output regardless of units.",
         "Currency modal context test now asserts base currency swaps (EUR home, USD destination) without assuming a specific arrow/format in the units label."
       ],
-      "notes": {
-        "reason": "Merge gates failed due to brittle test expectations when the UI includes units in rehydrated input or changes formatting of the currency units label.",
-        "risk": "Very low; test-only changes that increase resilience while preserving key-based assertions."
-      }
+      "title": "Tests: harden Weight long-press rehydrate + Currency units base parsing"
     },
     {
       "date": "2026-01-09",
-      "slice": "O12k13m2",
-      "id": "patch_2026-01-09_O12k13m2_remove_warnIfMissed_param_in_currency_test",
-      "title": "Tests: remove unsupported warnIfMissed parameter from currency modal dismissal",
       "files_changed": [
         "app/unitana/test/dashboard_currency_modal_context_test.dart",
         "docs/ai/context_db.json",
         "docs/ai/handoff/CURRENT_HANDOFF.md"
       ],
+      "id": "patch_2026-01-09_O12k13m2_remove_warnIfMissed_param_in_currency_test",
+      "notes": {
+        "reason": "flutter analyze / flutter test failed because the pinned Flutter SDK does not define the `warnIfMissed` parameter on WidgetTester.tapAt.",
+        "risk": "Very low; test-only change to restore compilation."
+      },
+      "slice": "O12k13m2",
       "summary": [
         "Removed the unsupported WidgetTester.tapAt named parameter `warnIfMissed` to maintain compatibility with the project's pinned Flutter SDK.",
         "Kept the same bottom-sheet dismissal strategy (tap a safe coordinate) without changing app behavior."
       ],
-      "notes": {
-        "reason": "flutter analyze / flutter test failed because the pinned Flutter SDK does not define the `warnIfMissed` parameter on WidgetTester.tapAt.",
-        "risk": "Very low; test-only change to restore compilation."
-      }
+      "title": "Tests: remove unsupported warnIfMissed parameter from currency modal dismissal"
     },
     {
       "date": "2026-01-09",
-      "slice": "O12k13m3",
-      "id": "patch_2026-01-09_O12k13m3_currency_modal_test_direction_agnostic",
-      "title": "Tests: make currency modal context test direction-agnostic to match hero reality semantics",
       "files_changed": [
         "app/unitana/test/dashboard_currency_modal_context_test.dart",
         "docs/ai/context_db.json",
         "docs/ai/handoff/CURRENT_HANDOFF.md"
       ],
+      "id": "patch_2026-01-09_O12k13m3_currency_modal_test_direction_agnostic",
+      "notes": {
+        "reason": "Test was failing because the app's conversion direction logic treated USD as the base currency in Home reality for the seeded PT/US pair; the test wrongly assumed EUR was always base in Home reality.",
+        "risk": "Very low; test-only assertion change. No production behavior changes."
+      },
+      "slice": "O12k13m3",
       "summary": [
         "Updated the currency modal context test to assert that toggling the Places Hero flips the ordered currency pair, without assuming which side is 'base' in a given reality.",
         "Added a helper to parse ordered ISO currency codes from the units label (with symbol fallback) to make the test resilient to label formatting changes."
       ],
-      "notes": {
-        "reason": "Test was failing because the app's conversion direction logic treated USD as the base currency in Home reality for the seeded PT/US pair; the test wrongly assumed EUR was always base in Home reality.",
-        "risk": "Very low; test-only assertion change. No production behavior changes."
-      }
+      "title": "Tests: make currency modal context test direction-agnostic to match hero reality semantics"
     },
     {
       "date": "2026-01-09",
-      "slice": "O12k13m4",
-      "id": "patch_2026-01-09_O12k13m4_remove_unused_helpers_in_currency_context_test",
-      "title": "Tests: remove unused helper declarations to clear analyzer warnings",
       "files_changed": [
         "app/unitana/test/dashboard_currency_modal_context_test.dart",
         "docs/ai/context_db.json",
         "docs/ai/handoff/CURRENT_HANDOFF.md"
       ],
+      "id": "patch_2026-01-09_O12k13m4_remove_unused_helpers_in_currency_context_test",
+      "notes": {
+        "reason": "flutter analyze reported unused_element warnings for local helper declarations in the currency modal context test.",
+        "risk": "Very low; test-only cleanup."
+      },
+      "slice": "O12k13m4",
       "summary": [
         "Removed unused baseCurrency/hasCurrency helper functions in dashboard_currency_modal_context_test.dart to eliminate flutter analyze unused_element warnings.",
         "No behavior changes; test assertions remain key-based and direction-agnostic."
       ],
-      "notes": {
-        "reason": "flutter analyze reported unused_element warnings for local helper declarations in the currency modal context test.",
-        "risk": "Very low; test-only cleanup."
-      }
+      "title": "Tests: remove unused helper declarations to clear analyzer warnings"
     },
     {
-      "id": "patch_2026-01-10_O12k13o_C1_time_tile_12_24_fix_and_test",
-      "slice": "O12k13o (C1)",
       "date": "2026-01-10",
-      "summary": "Fix Time tile 12h/24h swap to follow the active place (Home/Destination) use24h preference; add a regression test that asserts the Time tile format flips with the reality toggle; document the broader Hero cockpit strategy in CURRENT_HANDOFF.",
       "files_changed": [
         "app/unitana/lib/features/dashboard/widgets/dashboard_board.dart",
         "app/unitana/test/dashboard_time_tile_reality_switch_test.dart",
         "docs/ai/context_db.json",
         "docs/ai/handoff/CURRENT_HANDOFF.md"
       ],
+      "id": "patch_2026-01-10_O12k13o_C1_time_tile_12_24_fix_and_test",
       "notes": [
         "Bug root cause: a word-boundary regex in dashboard_board.dart contained an invisible control character instead of \\\\b, so AM/PM detection never matched and labels did not swap.",
         "Guard: widget test validates that AM/PM is primary for 12h places and secondary for 24h places, without relying on exact strings or tool ordering."
-      ]
+      ],
+      "slice": "O12k13o (C1)",
+      "summary": "Fix Time tile 12h/24h swap to follow the active place (Home/Destination) use24h preference; add a regression test that asserts the Time tile format flips with the reality toggle; document the broader Hero cockpit strategy in CURRENT_HANDOFF."
     },
     {
       "date": "2026-01-10",
-      "id": "patch_2026-01-10_O12k13p_time_tool_modal_respects_prefer24h",
-      "slice": "O12k13p",
-      "title": "Fix: Time tool modal defaults to 12h/24h based on active place (not metric)",
-      "summary": [
-        "Added an explicit prefer24h flag to ToolModalBottomSheet so Time (12h/24h) defaults follow the active Places Hero reality, independent from metric/imperial.",
-        "Wired prefer24h through DashboardScreen (ToolPicker path) and dashboard tile taps.",
-        "Strengthened time_tool_modal_interaction_test by seeding places where unitSystem and use24h intentionally diverge, and asserting the modal flips direction when switching realities."
-      ],
       "files_changed": [
         "app/unitana/lib/features/dashboard/widgets/tool_modal_bottom_sheet.dart",
         "app/unitana/lib/features/dashboard/dashboard_screen.dart",
@@ -1325,95 +1552,112 @@
         "docs/ai/context_db.json",
         "docs/ai/handoff/CURRENT_HANDOFF.md"
       ],
+      "id": "patch_2026-01-10_O12k13p_time_tool_modal_respects_prefer24h",
       "notes": {
-        "root_cause": "Time tool direction was incorrectly tied to preferMetric, which fails when a place is configured to 24h while using imperial (or 12h while using metric).",
         "guards": [
           "ToolModalBottomSheet now takes prefer24h (default false) and uses it for canonical time conversions.",
           "Widget test asserts default direction is 24h->12h for a 24h-configured imperial place, and flips to 12h->24h when switching to a 12h-configured metric place."
         ],
-        "risk": "Low; additive parameter with safe default plus test coverage."
-      }
+        "risk": "Low; additive parameter with safe default plus test coverage.",
+        "root_cause": "Time tool direction was incorrectly tied to preferMetric, which fails when a place is configured to 24h while using imperial (or 12h while using metric)."
+      },
+      "slice": "O12k13p",
+      "summary": [
+        "Added an explicit prefer24h flag to ToolModalBottomSheet so Time (12h/24h) defaults follow the active Places Hero reality, independent from metric/imperial.",
+        "Wired prefer24h through DashboardScreen (ToolPicker path) and dashboard tile taps.",
+        "Strengthened time_tool_modal_interaction_test by seeding places where unitSystem and use24h intentionally diverge, and asserting the modal flips direction when switching realities."
+      ],
+      "title": "Fix: Time tool modal defaults to 12h/24h based on active place (not metric)"
     },
     {
       "date": "2026-01-10",
-      "id": "patch_2026-01-10_O12k13q_C3a_sliver_migration_foundation",
-      "slice": "O12k13q (C3a)",
-      "title": "Dashboard: migrate to slivers foundation (no behavior change)",
-      "summary": [
-        "Replaced the DashboardScreen body SingleChildScrollView with a CustomScrollView using SliverPadding + SliverToBoxAdapter.",
-        "Kept behavior identical for now (hero and tiles still scroll together), but unlocked the next slice to introduce a compact pinned header without a risky rewrite."
-      ],
       "files_changed": [
         "app/unitana/lib/features/dashboard/dashboard_screen.dart",
         "docs/ai/context_db.json",
         "docs/ai/handoff/CURRENT_HANDOFF.md"
       ],
+      "id": "patch_2026-01-10_O12k13q_C3a_sliver_migration_foundation",
       "notes": {
-        "scope": "C3a only: structural migration to slivers; no pinned header, no hero layout changes, no new keys.",
-        "risk": "Low; scroll container type change only. Existing DashboardBoard layout, keys, and tests remain untouched."
-      }
+        "risk": "Low; scroll container type change only. Existing DashboardBoard layout, keys, and tests remain untouched.",
+        "scope": "C3a only: structural migration to slivers; no pinned header, no hero layout changes, no new keys."
+      },
+      "slice": "O12k13q (C3a)",
+      "summary": [
+        "Replaced the DashboardScreen body SingleChildScrollView with a CustomScrollView using SliverPadding + SliverToBoxAdapter.",
+        "Kept behavior identical for now (hero and tiles still scroll together), but unlocked the next slice to introduce a compact pinned header without a risky rewrite."
+      ],
+      "title": "Dashboard: migrate to slivers foundation (no behavior change)"
     },
     {
       "date": "2026-01-10",
-      "id": "patch_2026-01-10_O12k13r1_currency_modal_place_context",
-      "slice": "O12k13r1",
-      "title": "Currency modal: pass home/destination context from dashboard tiles",
-      "summary": [
-        "Fixed a regression where opening Currency from a dashboard tile lacked place context, causing the default units to fall back to USD\u2192EUR regardless of selected reality.",
-        "Dashboard tile modal invocation now passes home + destination Place objects and the live EUR\u2192USD rate into ToolModalBottomSheet so defaults align with Places Hero selection."
-      ],
       "files_changed": [
         "app/unitana/lib/features/dashboard/widgets/dashboard_board.dart",
         "docs/ai/context_db.json"
       ],
+      "id": "patch_2026-01-10_O12k13r1_currency_modal_place_context",
       "notes": {
         "tests": "Fixes dashboard_currency_modal_context_test by ensuring Currency units are derived from actual home/destination places."
-      }
+      },
+      "slice": "O12k13r1",
+      "summary": [
+        "Fixed a regression where opening Currency from a dashboard tile lacked place context, causing the default units to fall back to USD\u2192EUR regardless of selected reality.",
+        "Dashboard tile modal invocation now passes home + destination Place objects and the live EUR\u2192USD rate into ToolModalBottomSheet so defaults align with Places Hero selection."
+      ],
+      "title": "Currency modal: pass home/destination context from dashboard tiles"
     },
     {
       "date": "2026-01-10",
-      "id": "patch_2026-01-10_O12k13r2_pinned_overlay_compile_fixes",
-      "slice": "O12k13r2",
-      "title": "Pinned hero overlay: compile fixes + add shared dashboard test helper",
-      "summary": [
-        "Fixed pinned overlay compile errors by passing Place into liveData.weatherFor(...) and comparing Place.unitSystem string against \"metric\".",
-        "Added a minimal dashboard_test_helpers.dart with pumpDashboardForTest() to support pinned overlay widget tests without duplicating setup code."
-      ],
       "files_changed": [
         "app/unitana/lib/features/dashboard/dashboard_screen.dart",
         "app/unitana/test/dashboard_test_helpers.dart",
         "docs/ai/context_db.json"
       ],
+      "id": "patch_2026-01-10_O12k13r2_pinned_overlay_compile_fixes",
       "notes": {
         "tests": "Unblocks dashboard_pinned_hero_overlay_test.dart by providing the imported helper and removing compile-time type errors."
-      }
+      },
+      "slice": "O12k13r2",
+      "summary": [
+        "Fixed pinned overlay compile errors by passing Place into liveData.weatherFor(...) and comparing Place.unitSystem string against \"metric\".",
+        "Added a minimal dashboard_test_helpers.dart with pumpDashboardForTest() to support pinned overlay widget tests without duplicating setup code."
+      ],
+      "title": "Pinned hero overlay: compile fixes + add shared dashboard test helper"
     },
     {
       "date": "2026-01-10",
-      "id": "patch_2026-01-10_O12k13r8_pinned_overlay_test_determinism",
-      "slice": "O12k13r8",
-      "title": "Sev 1 test stabilization: pinned overlay deterministic + currency modal context",
-      "summary": [
-        "Added a @visibleForTesting flag on DashboardScreen to force the pinned hero overlay visible in a single targeted widget test, avoiding flaky scroll-threshold dependence.",
-        "Updated pinned overlay widget test to rely on stable keys (dashboard_item_baking) instead of visible text, and to set/clear the force-visible flag via tearDown.",
-        "Replaced currency modal context test with a key-only assertion that currency direction follows Places Hero reality (Home: EUR->USD, Destination: USD->EUR)."
-      ],
       "files_changed": [
         "app/unitana/lib/features/dashboard/dashboard_screen.dart",
         "app/unitana/test/dashboard_pinned_hero_overlay_test.dart",
         "app/unitana/test/dashboard_currency_modal_context_test.dart",
         "docs/ai/context_db.json"
       ],
+      "id": "patch_2026-01-10_O12k13r8_pinned_overlay_test_determinism",
       "notes": {
-        "why": "The overlay segments existed in the tree but were not hit-testable when the visibility threshold was not reached in widget tests (insufficient scroll extent). The hook keeps runtime behavior unchanged while stabilizing CI gates.",
-        "tests": "Stabilized pinned overlay overlay test and ensured currency direction test aligns with the global reality toggle contract."
-      }
+        "tests": "Stabilized pinned overlay overlay test and ensured currency direction test aligns with the global reality toggle contract.",
+        "why": "The overlay segments existed in the tree but were not hit-testable when the visibility threshold was not reached in widget tests (insufficient scroll extent). The hook keeps runtime behavior unchanged while stabilizing CI gates."
+      },
+      "slice": "O12k13r8",
+      "summary": [
+        "Added a @visibleForTesting flag on DashboardScreen to force the pinned hero overlay visible in a single targeted widget test, avoiding flaky scroll-threshold dependence.",
+        "Updated pinned overlay widget test to rely on stable keys (dashboard_item_baking) instead of visible text, and to set/clear the force-visible flag via tearDown.",
+        "Replaced currency modal context test with a key-only assertion that currency direction follows Places Hero reality (Home: EUR->USD, Destination: USD->EUR)."
+      ],
+      "title": "Sev 1 test stabilization: pinned overlay deterministic + currency modal context"
     },
     {
       "date": "2026-01-10",
+      "files_changed": [
+        "docs/ai/context_db.json",
+        "docs/ai/handoff/CURRENT_HANDOFF.md",
+        "docs/ai/prompts/NEXT_CHAT_PROMPT_SENIOR_REVIEW.md",
+        "docs/ai/retros/RETRO_2026-01-10_O12k13r_SEV1.md"
+      ],
       "id": "patch_2026-01-10_O12k13r9_to_r20_sev1_stabilization_series",
+      "notes": {
+        "follow_up": "If desired, backfill the series into discrete patch_log entries by extracting each changed-files zip and recording its exact file list.",
+        "why": "During the incident we produced many small hotfix zips (UI + test) to keep merge gates green. The canonical patch log in this repo snapshot ended at O12k13r8, so this entry records the remainder as a single consolidated series for traceability."
+      },
       "slice": "O12k13r9-r20",
-      "title": "Sev 1 stabilization series: pinned Hero cockpit + test determinism + modal/toolpicker hardening",
       "summary": [
         "Consolidated the remaining Sev 1 follow-on patches after O12k13r8 that were delivered as small changed-files-only bundles during active troubleshooting.",
         "Stabilized widget tests by removing reliance on lens expansion state and visible text, preferring ToolPicker search-result rows and stable keys.",
@@ -1422,92 +1666,80 @@
         "Aligned currency context expectations to the Places Hero reality contract (Home vs Destination drives currency direction), and ensured modal launches receive the correct place context.",
         "Normalized clipboard-copy behavior for unit-suffixed outputs (notably weight) to match existing numeric-only copy expectations in tests."
       ],
-      "files_changed": [
-        "docs/ai/context_db.json",
-        "docs/ai/handoff/CURRENT_HANDOFF.md",
-        "docs/ai/prompts/NEXT_CHAT_PROMPT_SENIOR_REVIEW.md",
-        "docs/ai/retros/RETRO_2026-01-10_O12k13r_SEV1.md"
-      ],
-      "notes": {
-        "why": "During the incident we produced many small hotfix zips (UI + test) to keep merge gates green. The canonical patch log in this repo snapshot ended at O12k13r8, so this entry records the remainder as a single consolidated series for traceability.",
-        "follow_up": "If desired, backfill the series into discrete patch_log entries by extracting each changed-files zip and recording its exact file list."
-      }
+      "title": "Sev 1 stabilization series: pinned Hero cockpit + test determinism + modal/toolpicker hardening"
     },
     {
       "date": "2026-01-11",
+      "files": [
+        "unitana/app/unitana/lib/features/dashboard/dashboard_screen.dart"
+      ],
       "id": "patch_2026-01-11_LINT2_pulse_swap_icon_test_safe",
+      "notes": [
+        "Uses FLUTTER_TEST environment flag and a TestWidgetsFlutterBinding runtimeType fallback to detect tests."
+      ],
       "slice": "C7-followup",
-      "title": "Make pinned details swap icon pulse test-safe (prevents pumpAndSettle timeouts)",
       "summary": [
         "Changed the pinned overlay details pill swap icon pulse to only animate when not running under widget tests and when animations are enabled.",
         "Prevents flutter_test pumpAndSettle timeouts caused by a repeating AnimationController in the dashboard pinned overlay."
       ],
-      "files": [
-        "unitana/app/unitana/lib/features/dashboard/dashboard_screen.dart"
-      ],
-      "notes": [
-        "Uses FLUTTER_TEST environment flag and a TestWidgetsFlutterBinding runtimeType fallback to detect tests."
-      ]
+      "title": "Make pinned details swap icon pulse test-safe (prevents pumpAndSettle timeouts)"
     },
     {
       "date": "2026-01-11",
-      "id": "patch_2026-01-11_H2_handoff_refresh_and_pinned_mode_api",
-      "slice": "H2",
-      "title": "Refresh handoff + restore pinned hero details mode API for dashboard screen",
-      "summary": [
-        "Updated CURRENT_HANDOFF.md to reflect the actual completed slices (C3c\u2192C7, TZ fixes, tests) and to capture current priorities and backlog.",
-        "Ensures DashboardSessionController exposes PinnedHeroDetailsMode, pinnedHeroDetailsMode, and togglePinnedHeroDetailsMode so dashboard_screen.dart compiles cleanly after recent refactors."
-      ],
       "files": [
         "unitana/app/unitana/lib/features/dashboard/models/dashboard_session_controller.dart",
         "unitana/docs/ai/handoff/CURRENT_HANDOFF.md",
         "unitana/docs/ai/context_db.json"
       ],
+      "id": "patch_2026-01-11_H2_handoff_refresh_and_pinned_mode_api",
       "notes": [
         "This slice is documentation-first (handoff accuracy) plus a small API compatibility fix based on the attached flutter analyze log."
-      ]
+      ],
+      "slice": "H2",
+      "summary": [
+        "Updated CURRENT_HANDOFF.md to reflect the actual completed slices (C3c\u2192C7, TZ fixes, tests) and to capture current priorities and backlog.",
+        "Ensures DashboardSessionController exposes PinnedHeroDetailsMode, pinnedHeroDetailsMode, and togglePinnedHeroDetailsMode so dashboard_screen.dart compiles cleanly after recent refactors."
+      ],
+      "title": "Refresh handoff + restore pinned hero details mode API for dashboard screen"
     },
     {
       "date": "2026-01-12",
-      "id": "patch_2026-01-12_T6_round15_dashboard_remove_action_key_and_test_fix",
-      "slice": "T6",
-      "title": "Stabilize dashboard tile remove action via keys (no string assertions)",
-      "summary": [
-        "Added stable keys for tile action sheet items (replace/remove) so tests can tap actions without relying on visible strings.",
-        "Updated dashboard_tool_insertion_persistence_test to tap the remove action by key (with a delete-icon fallback) to avoid missed-longpress and localization brittleness."
-      ],
       "files": [
         "unitana/app/unitana/lib/features/dashboard/widgets/dashboard_board.dart",
         "unitana/app/unitana/test/dashboard_tool_insertion_persistence_test.dart",
         "unitana/docs/ai/context_db.json"
       ],
+      "id": "patch_2026-01-12_T6_round15_dashboard_remove_action_key_and_test_fix",
       "notes": [
         "Key schema: dashboard_tile_action_replace_<itemId>, dashboard_tile_action_remove_<itemId>."
-      ]
+      ],
+      "slice": "T6",
+      "summary": [
+        "Added stable keys for tile action sheet items (replace/remove) so tests can tap actions without relying on visible strings.",
+        "Updated dashboard_tool_insertion_persistence_test to tap the remove action by key (with a delete-icon fallback) to avoid missed-longpress and localization brittleness."
+      ],
+      "title": "Stabilize dashboard tile remove action via keys (no string assertions)"
     },
     {
-      "id": "patch_2026-01-12_T6_round17_dashboard_remove_test_distance_entry_fix",
-      "slice": "T6",
-      "summary": "Fix dashboard_tool_insertion_persistence_test to target user-added Distance entry from persisted layout (no list-order dependency) and rely on remove action keys only.",
       "files_changed": [
         "app/unitana/test/dashboard_tool_insertion_persistence_test.dart",
         "docs/ai/context_db.json"
-      ]
+      ],
+      "id": "patch_2026-01-12_T6_round17_dashboard_remove_test_distance_entry_fix",
+      "slice": "T6",
+      "summary": "Fix dashboard_tool_insertion_persistence_test to target user-added Distance entry from persisted layout (no list-order dependency) and rely on remove action keys only."
     },
     {
-      "id": "patch_2026-01-12_T6_round20_dashboard_item_hit_test_fix",
-      "slice": "T6",
-      "summary": "Make dashboard_item_<id> key hit-testable by moving it onto a RenderBox-backed wrapper (SizedBox) and simplify the persistence removal test to long-press the keyed item reliably.",
       "files_changed": [
         "app/unitana/lib/features/dashboard/widgets/dashboard_board.dart",
         "app/unitana/test/dashboard_tool_insertion_persistence_test.dart",
         "docs/ai/context_db.json"
-      ]
+      ],
+      "id": "patch_2026-01-12_T6_round20_dashboard_item_hit_test_fix",
+      "slice": "T6",
+      "summary": "Make dashboard_item_<id> key hit-testable by moving it onto a RenderBox-backed wrapper (SizedBox) and simplify the persistence removal test to long-press the keyed item reliably."
     },
     {
-      "id": "patch_2026-01-13_S5_volume_pressure_tools",
-      "slice": "S5",
-      "summary": "Enable Volume and Pressure tools in the picker, wire converters + default directions, and add targeted modal interaction widget tests.",
       "files_changed": [
         "app/unitana/lib/features/dashboard/models/canonical_tools.dart",
         "app/unitana/lib/features/dashboard/models/tool_lens_map.dart",
@@ -1517,13 +1749,12 @@
         "app/unitana/test/volume_tool_modal_interaction_test.dart",
         "app/unitana/test/pressure_tool_modal_interaction_test.dart",
         "docs/ai/context_db.json"
-      ]
+      ],
+      "id": "patch_2026-01-13_S5_volume_pressure_tools",
+      "slice": "S5",
+      "summary": "Enable Volume and Pressure tools in the picker, wire converters + default directions, and add targeted modal interaction widget tests."
     },
     {
-      "id": "patch_2026-01-13_S5b_volume_pressure_tests_value_first",
-      "title": "Hotfix: Volume/Pressure modal tests match value-first history strings",
-      "slice": "S5b",
-      "sev": "Sev1-followup",
       "changes": [
         "Adjust volume and pressure widget tests to assert value-first strings (unit implied by icon/output unit)",
         "No runtime behavior changes; tests only"
@@ -1532,13 +1763,13 @@
         "app/unitana/test/volume_tool_modal_interaction_test.dart",
         "app/unitana/test/pressure_tool_modal_interaction_test.dart",
         "docs/ai/context_db.json"
-      ]
+      ],
+      "id": "patch_2026-01-13_S5b_volume_pressure_tests_value_first",
+      "sev": "Sev1-followup",
+      "slice": "S5b",
+      "title": "Hotfix: Volume/Pressure modal tests match value-first history strings"
     },
     {
-      "id": "patch_2026-01-13_S6_shoe_sizes_tool_us_eu",
-      "title": "Add Shoe Sizes tool (EU \u2194 US M) with UK/JP hints + modal test",
-      "slice": "S6",
-      "sev": "Sev1-hardening",
       "changes": [
         "Enable Shoe Sizes in Tool Registry and wire it into ToolDefinitions + canonical tool ids.",
         "Add EU \u2194 US (men) lookup conversion (nearest match) with UK/JP hint values; keep value-first output.",
@@ -1552,13 +1783,13 @@
         "app/unitana/lib/features/dashboard/widgets/tool_modal_bottom_sheet.dart",
         "app/unitana/test/shoe_sizes_tool_modal_interaction_test.dart",
         "docs/ai/context_db.json"
-      ]
+      ],
+      "id": "patch_2026-01-13_S6_shoe_sizes_tool_us_eu",
+      "sev": "Sev1-hardening",
+      "slice": "S6",
+      "title": "Add Shoe Sizes tool (EU \u2194 US M) with UK/JP hints + modal test"
     },
     {
-      "id": "patch_2026-01-13_S6b_wind_overflow_history_copy_hotfix",
-      "title": "Fix Wind/Gust pill overflow, align Wind copy; switch history long-press to copy input; restore persistence test robustness",
-      "slice": "S6b",
-      "sev": "Sev1-hardening",
       "changes": [
         "Wind/Gust details: make wind lines value-first (gust implied via suffix), tighten typography/spacing to fit locked pill heights, and label the pill \"Wind / Gust\" for parity with \"Sunrise / Sunset\".",
         "Tool modal history: tap now confirms \"Copied result\"; long-press now copies the original input to the clipboard and confirms \"Copied input\" (no longer mutates the entry field). Add concise helper copy next to the History header.",
@@ -1572,13 +1803,13 @@
         "app/unitana/test/dashboard_tool_insertion_persistence_test.dart",
         "app/unitana/test/weight_tool_modal_interaction_test.dart",
         "docs/ai/context_db.json"
-      ]
+      ],
+      "id": "patch_2026-01-13_S6b_wind_overflow_history_copy_hotfix",
+      "sev": "Sev1-hardening",
+      "slice": "S6b",
+      "title": "Fix Wind/Gust pill overflow, align Wind copy; switch history long-press to copy input; restore persistence test robustness"
     },
     {
-      "id": "patch_2026-01-13_S6c_tool_modal_swap_and_history_panes",
-      "title": "Tool modals: move swap icon next to unit display, align vertically, add swap pulse, and expand history pane for terminal feel",
-      "slice": "S6c",
-      "sev": "Sev1-quality",
       "changes": [
         "Tool modal header row: relocate swap control directly adjacent to the unit pair label (vertically aligned), reinforcing the relationship between units and swap.",
         "Swap control: add subtle pulse/flash affordance consistent with hero pill swap indicator.",
@@ -1587,13 +1818,13 @@
       "files_changed": [
         "app/unitana/lib/features/dashboard/widgets/tool_modal_bottom_sheet.dart",
         "docs/ai/context_db.json"
-      ]
+      ],
+      "id": "patch_2026-01-13_S6c_tool_modal_swap_and_history_panes",
+      "sev": "Sev1-quality",
+      "slice": "S6c",
+      "title": "Tool modals: move swap icon next to unit display, align vertically, add swap pulse, and expand history pane for terminal feel"
     },
     {
-      "id": "patch_2026-01-13_S6d_wind_pill_bounds_lock_and_analyze_fix",
-      "title": "Lock Wind/Sun pill bounds to prevent jitter/overflow; fix analyze failure in dashboard persistence test",
-      "slice": "S6d",
-      "sev": "Sev1-hardening",
       "changes": [
         "Places hero Wind/Sun details pill: enforce fixed height (compact 44, expanded 92) and internal scale-down so Sun and Wind modes never change bounds and never overflow in mini/pinned constraints.",
         "Reduce compact vertical spacing in Wind/Sun pill rows; keep value-first copy and Wind/Gust parity.",
@@ -1603,47 +1834,44 @@
         "app/unitana/lib/features/dashboard/widgets/places_hero_v2.dart",
         "app/unitana/test/dashboard_tool_insertion_persistence_test.dart",
         "docs/ai/context_db.json"
-      ]
+      ],
+      "id": "patch_2026-01-13_S6d_wind_pill_bounds_lock_and_analyze_fix",
+      "sev": "Sev1-hardening",
+      "slice": "S6d",
+      "title": "Lock Wind/Sun pill bounds to prevent jitter/overflow; fix analyze failure in dashboard persistence test"
     },
     {
-      "id": "patch_2026-01-13_S6e_tool_modal_swap_history_fix",
-      "slice": "S6",
-      "summary": "Fix tool modal compile regression by restoring ToolModalBottomSheet structure; keep swap control visually tied to unit display with pulsing icon, resize history pane, and change history interactions to copy result/input (no more 'Editing value').",
       "files_changed": [
         "app/unitana/lib/features/dashboard/widgets/tool_modal_bottom_sheet.dart",
         "docs/ai/context_db.json"
-      ]
+      ],
+      "id": "patch_2026-01-13_S6e_tool_modal_swap_history_fix",
+      "slice": "S6",
+      "summary": "Fix tool modal compile regression by restoring ToolModalBottomSheet structure; keep swap control visually tied to unit display with pulsing icon, resize history pane, and change history interactions to copy result/input (no more 'Editing value')."
     },
     {
       "date": "2026-01-13",
-      "id": "patch_2026-01-13_S6i_tool_modal_clipboard_contract_tests",
-      "slice": "S6i",
-      "title": "Tools: stabilize history clipboard contract + fix Shoe Sizes default direction",
-      "summary": [
-        "Tool modals: long-press on history now guarantees clipboard-only (no input field restore), trims trailing .0/.00 for clipboard friendliness (e.g., 10.00 -> 10), and guards against accidental controller mutation regressions.",
-        "Shoe Sizes: default direction is now stable US M -> EU regardless of active reality; users can swap direction manually.",
-        "Widget tests: scope tool modal interactions to the modal scrollable so history taps are always hit-testable on small test surfaces."
-      ],
       "files_changed": [
         "app/unitana/lib/features/dashboard/widgets/tool_modal_bottom_sheet.dart",
         "app/unitana/test/currency_tool_modal_interaction_test.dart",
         "app/unitana/test/temperature_tool_modal_interaction_test.dart",
         "docs/ai/context_db.json"
       ],
+      "id": "patch_2026-01-13_S6i_tool_modal_clipboard_contract_tests",
       "notes": {
         "reason": "Fix failing widget tests and lock the tool history gesture contract (tap copies result, long-press copies input) without reintroducing input-field restore/edit regressions.",
         "risk": "Low; behavior is additive safeguards and default-direction tweak for Shoe Sizes only."
-      }
+      },
+      "slice": "S6i",
+      "summary": [
+        "Tool modals: long-press on history now guarantees clipboard-only (no input field restore), trims trailing .0/.00 for clipboard friendliness (e.g., 10.00 -> 10), and guards against accidental controller mutation regressions.",
+        "Shoe Sizes: default direction is now stable US M -> EU regardless of active reality; users can swap direction manually.",
+        "Widget tests: scope tool modal interactions to the modal scrollable so history taps are always hit-testable on small test surfaces."
+      ],
+      "title": "Tools: stabilize history clipboard contract + fix Shoe Sizes default direction"
     },
     {
       "date": "2026-01-13",
-      "id": "patch_2026-01-13_S6k_tool_modal_scroll_tests_hotfix",
-      "slice": "S6k",
-      "title": "Tools: stabilize modal scroll + fix test scrollable finders",
-      "summary": [
-        "Tool modal: increased cacheExtent on the modal body ListView so history widgets build reliably on small test surfaces (prevents 'history not found' flake from lazy sliver construction).",
-        "Widget tests: use the Scrollable descendant inside the keyed ListView when calling scrollUntilVisible (prevents ListView\u2192Scrollable cast failure)."
-      ],
       "files_changed": [
         "app/unitana/lib/features/dashboard/widgets/tool_modal_bottom_sheet.dart",
         "app/unitana/test/temperature_tool_modal_interaction_test.dart",
@@ -1651,94 +1879,93 @@
         "docs/ai/context_db.json",
         "docs/ai/handoff/CURRENT_HANDOFF.md"
       ],
+      "id": "patch_2026-01-13_S6k_tool_modal_scroll_tests_hotfix",
       "notes": {
         "reason": "Fix failing widget tests after tool modal refactor; remove patch log duplication found in context_db.json.",
         "risk": "Low; cacheExtent increase is localized to modal and only affects offscreen build caching."
-      }
+      },
+      "slice": "S6k",
+      "summary": [
+        "Tool modal: increased cacheExtent on the modal body ListView so history widgets build reliably on small test surfaces (prevents 'history not found' flake from lazy sliver construction).",
+        "Widget tests: use the Scrollable descendant inside the keyed ListView when calling scrollUntilVisible (prevents ListView\u2192Scrollable cast failure)."
+      ],
+      "title": "Tools: stabilize modal scroll + fix test scrollable finders"
     },
     {
       "date": "2026-01-13",
-      "id": "patch_2026-01-13_S6l_tool_modal_test_scroll_robustness",
-      "slice": "S6l",
-      "title": "Tools: make modal widget tests resilient to nested scrollables",
-      "summary": [
-        "Widget tests: stop assuming the modal contains a single Scrollable; use ensureVisible and a small drag loop to bring History rows into the hit-testable viewport.",
-        "Stabilizes Temperature + Currency modal regression tests across Flutter versions by avoiding brittle Scrollable descendant counting and lazy-build variance."
-      ],
       "files_changed": [
         "app/unitana/test/currency_tool_modal_interaction_test.dart",
         "app/unitana/test/temperature_tool_modal_interaction_test.dart",
         "docs/ai/context_db.json"
       ],
+      "id": "patch_2026-01-13_S6l_tool_modal_test_scroll_robustness",
       "notes": {
         "reason": "Fix the latest widget test failures reported in error.log: history row not found due to lazy build, and scrollable finder returning multiple nested Scrollables.",
         "risk": "Low; test-only behavior changes plus documentation update."
-      }
+      },
+      "slice": "S6l",
+      "summary": [
+        "Widget tests: stop assuming the modal contains a single Scrollable; use ensureVisible and a small drag loop to bring History rows into the hit-testable viewport.",
+        "Stabilizes Temperature + Currency modal regression tests across Flutter versions by avoiding brittle Scrollable descendant counting and lazy-build variance."
+      ],
+      "title": "Tools: make modal widget tests resilient to nested scrollables"
     },
     {
       "date": "2026-01-14",
+      "files_changed": [
+        "app/unitana/test/temperature_tool_modal_interaction_test.dart",
+        "docs/ai/context_db.json"
+      ],
       "id": "patch_2026-01-14_S6m_temperature_copy_notice_assertion",
+      "notes": {
+        "reason": "Fix failing widget test expecting \"Copied result\" when the notice text is not present/varies at runtime in test runs.",
+        "risk": "Low; test-only assertion change plus documentation update."
+      },
       "slice": "S6m",
-      "title": "Tests: stabilize Temperature copy confirmation assertion",
       "summary": [
         "Widget tests: stop hard-coding the exact notice copy string for History row copy; assert on the modal notice surface and a more resilient \"Copied\" confirmation.",
         "Keeps the behavioral contract (tap copies result, long-press copies input) while avoiding flakiness from notice text iteration."
       ],
+      "title": "Tests: stabilize Temperature copy confirmation assertion"
+    },
+    {
+      "date": "2026-01-14",
       "files_changed": [
         "app/unitana/test/temperature_tool_modal_interaction_test.dart",
         "docs/ai/context_db.json"
       ],
-      "notes": {
-        "reason": "Fix failing widget test expecting \"Copied result\" when the notice text is not present/varies at runtime in test runs.",
-        "risk": "Low; test-only assertion change plus documentation update."
-      }
-    },
-    {
-      "date": "2026-01-14",
       "id": "patch_2026-01-14_S6n_temperature_notice_pump_stabilization",
+      "notes": {
+        "reason": "Fix failing Temperature regression test where notice widget key is not found because pumpAndSettle can advance time past the notice auto-dismiss.",
+        "risk": "Low; test-only change plus documentation update."
+      },
       "slice": "S6n",
-      "title": "Tests: prevent pumpAndSettle from skipping past Temperature copy notice",
       "summary": [
         "Widget tests: replace pumpAndSettle after History copy gestures with bounded pump steps so the 2s auto-dismiss timer cannot elapse during settling.",
         "Eliminates a flaky false-negative where the notice card is removed before assertions run on small surfaces."
       ],
+      "title": "Tests: prevent pumpAndSettle from skipping past Temperature copy notice"
+    },
+    {
+      "date": "2026-01-14",
       "files_changed": [
         "app/unitana/test/temperature_tool_modal_interaction_test.dart",
         "docs/ai/context_db.json"
       ],
-      "notes": {
-        "reason": "Fix failing Temperature regression test where notice widget key is not found because pumpAndSettle can advance time past the notice auto-dismiss.",
-        "risk": "Low; test-only change plus documentation update."
-      }
-    },
-    {
-      "date": "2026-01-14",
       "id": "patch_2026-01-14_S6o_temperature_clipboard_channel_assertion",
+      "notes": {
+        "reason": "Fix persistent widget test failure where the notice surface key is not present at assertion time; Clipboard channel interception is the most stable contract-level check.",
+        "risk": "Low; test-only changes plus documentation update."
+      },
       "slice": "S6o",
-      "title": "Tests: assert Temperature copy behavior via Clipboard channel",
       "summary": [
         "Widget tests: intercept SystemChannels.platform Clipboard.setData calls and assert copy behavior without depending on transient notice UI timing.",
         "Replaces flaky notice-card assertions in the Temperature tool modal regression test with deterministic clipboard write expectations."
       ],
-      "files_changed": [
-        "app/unitana/test/temperature_tool_modal_interaction_test.dart",
-        "docs/ai/context_db.json"
-      ],
-      "notes": {
-        "reason": "Fix persistent widget test failure where the notice surface key is not present at assertion time; Clipboard channel interception is the most stable contract-level check.",
-        "risk": "Low; test-only changes plus documentation update."
-      }
+      "title": "Tests: assert Temperature copy behavior via Clipboard channel"
     },
     {
       "date": "2026-01-14",
-      "id": "patch_2026-01-14_S7a_platform_icon_audit_execution",
-      "slice": "S7a",
-      "title": "Platform icon audit: make icon guard runnable from monorepo root and app root",
-      "summary": [
-        "Fixes app/unitana/tools/icon_audit.sh and verify.sh path resolution so they correctly locate the Flutter root when run from any working directory.",
-        "Adds monorepo wrappers tools/icon_audit.sh and tools/verify.sh to keep the documented commands stable and prevent future drift.",
-        "Updates PLATFORM_ICON_AUDIT.md to document both monorepo-root and app-root invocation."
-      ],
       "files_changed": [
         "app/unitana/tools/icon_audit.sh",
         "app/unitana/tools/verify.sh",
@@ -1747,477 +1974,483 @@
         "docs/ai/reference/PLATFORM_ICON_AUDIT.md",
         "docs/ai/context_db.json"
       ],
+      "id": "patch_2026-01-14_S7a_platform_icon_audit_execution",
       "notes": {
-        "reason": "Icon audit scripts existed in app/unitana/tools but were path-broken (double app/unitana) and the monorepo root tools/ scripts had drifted; this slice makes the guard executable and aligns docs + wrappers.",
-        "non_negotiables": "No widget API changes; no UI layout impact; guard is lightweight and build-free."
-      }
+        "non_negotiables": "No widget API changes; no UI layout impact; guard is lightweight and build-free.",
+        "reason": "Icon audit scripts existed in app/unitana/tools but were path-broken (double app/unitana) and the monorepo root tools/ scripts had drifted; this slice makes the guard executable and aligns docs + wrappers."
+      },
+      "slice": "S7a",
+      "summary": [
+        "Fixes app/unitana/tools/icon_audit.sh and verify.sh path resolution so they correctly locate the Flutter root when run from any working directory.",
+        "Adds monorepo wrappers tools/icon_audit.sh and tools/verify.sh to keep the documented commands stable and prevent future drift.",
+        "Updates PLATFORM_ICON_AUDIT.md to document both monorepo-root and app-root invocation."
+      ],
+      "title": "Platform icon audit: make icon guard runnable from monorepo root and app root"
     },
     {
       "date": "2026-01-14",
+      "files_changed": [
+        "docs/ai/reference/MULTI_UNIT_UX_CONTRACT.md",
+        "docs/ai/context_db.json"
+      ],
       "id": "patch_2026-01-14_S7b_multi_unit_ux_contract",
+      "notes": {
+        "non_negotiables": "No widget API changes; stable keys remain required; tests still assert clipboard behavior via channel interception.",
+        "risk": "Low; documentation + context metadata only."
+      },
       "slice": "S7b",
-      "title": "Docs: multi-unit conversion UX contract (pills + compact selector + optional More units)",
       "summary": [
         "Adds a canonical UX contract for multi-unit tools to prevent \"From/To\" form sprawl and keep modals one-thought-wide.",
         "Records the selector strategy decision (unit pills open a compact selector; secondary outputs behind a More units sub-sheet).",
         "Dedupes the accidental duplicate S7a patch_log entry."
       ],
-      "files_changed": [
-        "docs/ai/reference/MULTI_UNIT_UX_CONTRACT.md",
-        "docs/ai/context_db.json"
-      ],
-      "notes": {
-        "non_negotiables": "No widget API changes; stable keys remain required; tests still assert clipboard behavior via channel interception.",
-        "risk": "Low; documentation + context metadata only."
-      }
+      "title": "Docs: multi-unit conversion UX contract (pills + compact selector + optional More units)"
     },
     {
       "date": "2026-01-14",
-      "id": "patch_2026-01-14_S7c_volume_pressure_multi_unit_pills",
-      "slice": "S7c",
-      "title": "Medium: multi-unit unit pills + selector for Volume and Pressure",
-      "summary": [
-        "Upgrades Volume and Pressure tool modals from fixed dual-unit labels to unit pills that open a compact selector (From/To), while keeping other tools on the existing dual-unit pattern.",
-        "Expands conversion support for Volume (mL, L, pt, qt, gal) and Pressure (kPa, psi, bar, atm) via a narrow multi-unit converter path.",
-        "Keeps swap behavior stable; swap now swaps the selected units for these tools without affecting other tools."
-      ],
       "files_changed": [
         "app/unitana/lib/features/dashboard/widgets/tool_modal_bottom_sheet.dart",
         "app/unitana/lib/features/dashboard/models/tool_definitions.dart",
         "docs/ai/context_db.json"
       ],
+      "id": "patch_2026-01-14_S7c_volume_pressure_multi_unit_pills",
       "notes": {
         "non_negotiables": "No public widget API churn; stable keys preserved for existing tests (tool_units_*, tool_swap_*).",
         "risk": "Medium; touches tool modal UI and conversion routing for two tools. Other tools remain unchanged."
-      }
+      },
+      "slice": "S7c",
+      "summary": [
+        "Upgrades Volume and Pressure tool modals from fixed dual-unit labels to unit pills that open a compact selector (From/To), while keeping other tools on the existing dual-unit pattern.",
+        "Expands conversion support for Volume (mL, L, pt, qt, gal) and Pressure (kPa, psi, bar, atm) via a narrow multi-unit converter path.",
+        "Keeps swap behavior stable; swap now swaps the selected units for these tools without affecting other tools."
+      ],
+      "title": "Medium: multi-unit unit pills + selector for Volume and Pressure"
     },
     {
       "date": "2026-01-14",
-      "id": "patch_2026-01-14_S7d_volume_pressure_tests_prompt_marker",
-      "slice": "S7d",
-      "title": "Fix: stabilize Volume/Pressure modal tests after multi-unit pills",
-      "summary": [
-        "Updates Volume and Pressure modal widget tests to tolerate the optional prompt marker prefix (e.g. \"> \") used in history/result rendering.",
-        "Updates expectations to accept the post-multi-unit result format that includes the input unit (e.g. \"10 L \u2192 2.6 gal\", \"10 kPa \u2192 1.5 psi\").",
-        "Keeps backward-compatible acceptors so older builds or default-unit flips do not break the tests."
-      ],
       "files_changed": [
         "app/unitana/test/volume_tool_modal_interaction_test.dart",
         "app/unitana/test/pressure_tool_modal_interaction_test.dart",
         "docs/ai/context_db.json"
       ],
+      "id": "patch_2026-01-14_S7d_volume_pressure_tests_prompt_marker",
       "notes": [
         "Test-only change; no production widget code or public APIs modified."
-      ]
+      ],
+      "slice": "S7d",
+      "summary": [
+        "Updates Volume and Pressure modal widget tests to tolerate the optional prompt marker prefix (e.g. \"> \") used in history/result rendering.",
+        "Updates expectations to accept the post-multi-unit result format that includes the input unit (e.g. \"10 L \u2192 2.6 gal\", \"10 kPa \u2192 1.5 psi\").",
+        "Keeps backward-compatible acceptors so older builds or default-unit flips do not break the tests."
+      ],
+      "title": "Fix: stabilize Volume/Pressure modal tests after multi-unit pills"
     },
     {
       "date": "2026-01-14",
-      "id": "patch_2026-01-14_S7h_dashboard_drag_drop_reorder_jiggle",
-      "slice": "S7h",
-      "title": "Dashboard: drag-and-drop widget reordering in edit mode (jiggle + anchors)",
-      "summary": [
-        "Adds a subtle jiggle animation to dashboard tiles while in edit mode.",
-        "Introduces drag handles on editable tiles and enables drag-and-drop reordering across occupied tiles and empty add-slots.",
-        "Persists reordering via per-tile anchor indices; default tool tiles now support persisted anchor overrides when reordered."
-      ],
       "files_changed": [
         "app/unitana/lib/features/dashboard/widgets/dashboard_board.dart",
         "app/unitana/lib/features/dashboard/models/dashboard_layout_controller.dart",
         "docs/ai/context_db.json"
       ],
+      "id": "patch_2026-01-14_S7h_dashboard_drag_drop_reorder_jiggle",
       "notes": {
         "non_negotiables": "No public widget API changes; existing long-press actions and stable Keys preserved.",
         "risk": "Medium; modifies dashboard edit-mode interactions + introduces new persistence key for default tool anchors."
-      }
+      },
+      "slice": "S7h",
+      "summary": [
+        "Adds a subtle jiggle animation to dashboard tiles while in edit mode.",
+        "Introduces drag handles on editable tiles and enables drag-and-drop reordering across occupied tiles and empty add-slots.",
+        "Persists reordering via per-tile anchor indices; default tool tiles now support persisted anchor overrides when reordered."
+      ],
+      "title": "Dashboard: drag-and-drop widget reordering in edit mode (jiggle + anchors)"
     },
     {
       "date": "2026-01-14",
-      "id": "patch_2026-01-14_S7i_dashboard_board_named_param_comma_hotfix",
-      "slice": "S7i",
-      "title": "Hotfix: dashboard board compile error (named-parameter section trailing comma)",
-      "summary": [
-        "Fixes a Dart syntax error in DashboardBoard._buildTile caused by a trailing comma after the named-parameter section.",
-        "Restores green gates for the S7h drag-and-drop dashboard reorder slice without changing behavior."
-      ],
       "files_changed": [
         "app/unitana/lib/features/dashboard/widgets/dashboard_board.dart",
         "docs/ai/context_db.json"
       ],
+      "id": "patch_2026-01-14_S7i_dashboard_board_named_param_comma_hotfix",
       "notes": {
-        "root_cause": "Dart does not allow a comma after the closing '}' of the named-parameter section; trailing commas belong inside the braces.",
-        "risk": "Low; syntax-only change."
-      }
+        "risk": "Low; syntax-only change.",
+        "root_cause": "Dart does not allow a comma after the closing '}' of the named-parameter section; trailing commas belong inside the braces."
+      },
+      "slice": "S7i",
+      "summary": [
+        "Fixes a Dart syntax error in DashboardBoard._buildTile caused by a trailing comma after the named-parameter section.",
+        "Restores green gates for the S7h drag-and-drop dashboard reorder slice without changing behavior."
+      ],
+      "title": "Hotfix: dashboard board compile error (named-parameter section trailing comma)"
     },
     {
       "date": "2026-01-14",
+      "files_changed": [
+        "app/unitana/lib/features/dashboard/widgets/dashboard_board.dart",
+        "docs/ai/context_db.json"
+      ],
       "id": "patch_2026-01-14_S7j_drag_drop_green_gates_hotfix",
+      "notes": {
+        "risk": "Low; behavior unchanged aside from jiggle being finite instead of continuous.",
+        "why": "flutter analyze treated deprecation infos as issues; dashboard persistence tests timed out due to an always-animating jiggle controller in edit mode."
+      },
       "slice": "S7j",
-      "title": "Hotfix: drag-and-drop dashboard (remove deprecated DragTarget callbacks, finite shake for test settle)",
       "summary": [
         "Replaces deprecated DragTarget onWillAccept/onAccept with onWillAcceptWithDetails/onAcceptWithDetails and cleans builder args to satisfy analyzer.",
         "Updates edit-mode jiggle to a finite entry shake (no repeating ticker) so widget tests using pumpAndSettle can complete reliably.",
         "Replaces deprecated Color.withOpacity usage with withAlpha equivalents."
       ],
-      "files_changed": [
-        "app/unitana/lib/features/dashboard/widgets/dashboard_board.dart",
-        "docs/ai/context_db.json"
-      ],
-      "notes": {
-        "why": "flutter analyze treated deprecation infos as issues; dashboard persistence tests timed out due to an always-animating jiggle controller in edit mode.",
-        "risk": "Low; behavior unchanged aside from jiggle being finite instead of continuous."
-      }
+      "title": "Hotfix: drag-and-drop dashboard (remove deprecated DragTarget callbacks, finite shake for test settle)"
     },
     {
       "date": "2026-01-14",
-      "id": "patch_2026-01-14_S7k_dashboard_reorder_continuous_jiggle_drag_handle",
-      "slice": "S7k",
-      "title": "Dashboard edit-mode polish: continuous jiggle, immediate drag handle, tests updated to avoid pumpAndSettle in edit mode",
-      "summary": [
-        "Restores a continuous (home-screen style) jiggle while dashboard edit mode is active.",
-        "Makes the reorder control an immediate drag handle (no long-press required) with a larger hit target and clearer hand icon.",
-        "Updates the dashboard persistence widget tests to use bounded pumps while edit mode is active (continuous animation means pumpAndSettle will not converge)."
-      ],
       "files_changed": [
         "app/unitana/lib/features/dashboard/widgets/dashboard_board.dart",
         "app/unitana/test/dashboard_tool_insertion_persistence_test.dart",
         "docs/ai/context_db.json"
       ],
+      "id": "patch_2026-01-14_S7k_dashboard_reorder_continuous_jiggle_drag_handle",
       "notes": {
-        "ux": "Matches iOS/Android launcher behavior: once in edit mode, tiles keep gently moving and drag starts immediately from the handle.",
+        "risk": "Low-medium; touch/scroll gesture interactions affected only in edit mode.",
         "testing": "Avoid pumpAndSettle after edit-mode entry; use bounded pump loops instead to prevent timeouts with continuous tickers.",
-        "risk": "Low-medium; touch/scroll gesture interactions affected only in edit mode."
-      }
+        "ux": "Matches iOS/Android launcher behavior: once in edit mode, tiles keep gently moving and drag starts immediately from the handle."
+      },
+      "slice": "S7k",
+      "summary": [
+        "Restores a continuous (home-screen style) jiggle while dashboard edit mode is active.",
+        "Makes the reorder control an immediate drag handle (no long-press required) with a larger hit target and clearer hand icon.",
+        "Updates the dashboard persistence widget tests to use bounded pumps while edit mode is active (continuous animation means pumpAndSettle will not converge)."
+      ],
+      "title": "Dashboard edit-mode polish: continuous jiggle, immediate drag handle, tests updated to avoid pumpAndSettle in edit mode"
     },
     {
       "date": "2026-01-14",
-      "id": "patch_2026-01-14_S7l_dashboard_drag_unbounded_width_hotfix",
-      "slice": "S7l",
-      "title": "Dashboard: fix drag overlay infinite-width crash",
-      "summary": [
-        "UnitanaTile: stop forcing width=double.infinity when parent constraints are unbounded (e.g., drag feedback overlay); use bounded width when available, otherwise allow shrink-wrap.",
-        "Prevents RenderBox layout exception during drag start so reorder gesture can proceed."
-      ],
       "files_changed": [
         "app/unitana/lib/features/dashboard/widgets/unitana_tile.dart",
         "docs/ai/context_db.json"
       ],
+      "id": "patch_2026-01-14_S7l_dashboard_drag_unbounded_width_hotfix",
       "notes": {
         "reason": "Dragging tiles builds a feedback widget in an Overlay with unbounded constraints; hard-coding infinite width triggered a RenderFittedBox layout crash.",
         "risk": "Low; only affects width behavior under unbounded constraints and preserves existing bounded layout."
-      }
+      },
+      "slice": "S7l",
+      "summary": [
+        "UnitanaTile: stop forcing width=double.infinity when parent constraints are unbounded (e.g., drag feedback overlay); use bounded width when available, otherwise allow shrink-wrap.",
+        "Prevents RenderBox layout exception during drag start so reorder gesture can proceed."
+      ],
+      "title": "Dashboard: fix drag overlay infinite-width crash"
     },
     {
-      "id": "S7o",
       "date": "2026-01-15",
-      "title": "Fix lint: curly_braces_in_flow_control_structures in places_hero_v2.dart",
       "files": [
         "app/unitana/lib/features/dashboard/widgets/places_hero_v2.dart",
         "docs/ai/context_db.json"
       ],
+      "id": "S7o",
       "notes": [
         "Replaced single-line if returns with braced blocks to satisfy analyzer lint without behavior changes."
-      ]
+      ],
+      "title": "Fix lint: curly_braces_in_flow_control_structures in places_hero_v2.dart"
     },
     {
-      "id": "S7p",
       "date": "2026-01-15",
-      "title": "Weather refresh status UX: provider-agnostic label, header timestamp, and minute-ticking age",
       "files": [
         "app/unitana/lib/features/dashboard/widgets/data_refresh_status_label.dart",
         "app/unitana/lib/features/dashboard/widgets/places_hero_v2.dart",
         "app/unitana/lib/features/dashboard/dashboard_screen.dart",
         "docs/ai/context_db.json"
       ],
+      "id": "S7p",
       "notes": [
         "Adds DataRefreshStatusLabel: provider-agnostic 'Updated X ago' (or 'Updating\u2026', 'Stale (\u2026)') with a safe 60s UI ticker.",
         "Moves refresh messaging out of the hero marquee visual surface (no longer covering the animation); renders a small right-rail label instead.",
         "Adds a subtle dashboard header-line status (under AppBar, above the board) to show last refresh without changing AppBar height.",
         "Optionally triggers an automatic refresh when live weather is enabled and data is missing/stale, with a 30s guard to avoid spam."
-      ]
+      ],
+      "title": "Weather refresh status UX: provider-agnostic label, header timestamp, and minute-ticking age"
     },
     {
-      "id": "S7y",
       "date": "2026-01-16",
-      "title": "Hero right-rail refresh badge regression fix and Wind/Gust centering",
       "files": [
         "app/unitana/lib/features/dashboard/widgets/places_hero_v2.dart",
         "docs/ai/context_db.json"
       ],
+      "id": "S7y",
       "notes": [
         "Removes the hero-level right-rail refresh badge under the marquee so the marquee and detail pill keep full space; dashboard header status remains the single source of truth.",
         "Centers Wind/Gust content within the swappable details pill while keeping Sunrise/Sunset left-aligned.",
         "Removes redundant \"gust\" suffix from gust line formatting (pill + left block) for cleaner readability.",
         "Sunrise/Sunset rows remain timezone-label free; timezone is implied by the main hero clock line."
-      ]
+      ],
+      "title": "Hero right-rail refresh badge regression fix and Wind/Gust centering"
     },
     {
-      "id": "S7z",
       "date": "2026-01-16",
-      "title": "Weather Summary: add minimal smoke test for tile open + core labels",
       "files": [
         "app/unitana/test/weather_summary_tile_open_smoke_test.dart",
         "docs/ai/context_db.json"
       ],
+      "id": "S7z",
       "notes": [
         "Adds a widget smoke test that taps the Weather Summary dashboard tile, opens the read-only sheet, and asserts core labels for both places without depending on network.",
         "Uses stable tile keys via SharedPreferences seeding to keep persistence and test behavior aligned."
-      ]
+      ],
+      "title": "Weather Summary: add minimal smoke test for tile open + core labels"
     },
     {
-      "id": "S7z1",
       "date": "2026-01-16",
-      "title": "Test fix: Weather Summary refresh label assertion is non-flaky",
       "files": [
         "app/unitana/test/weather_summary_tile_open_smoke_test.dart",
         "docs/ai/context_db.json"
       ],
+      "id": "S7z1",
       "notes": [
         "Allows either 'Not updated yet' or 'Updated X ago' to satisfy the refresh label assertion, preventing flake when live refresh updates lastRefreshedAt during sheet open.",
         "Makes place header checks resilient to dot spacing and typography differences."
-      ]
+      ],
+      "title": "Test fix: Weather Summary refresh label assertion is non-flaky"
     },
     {
-      "id": "S8a",
       "date": "2026-01-16",
-      "title": "Tools: Distance adopts multi-unit pills (m, km, mi, ft, in)",
       "files": [
         "app/unitana/lib/features/dashboard/widgets/tool_modal_bottom_sheet.dart",
         "app/unitana/lib/features/dashboard/models/tool_definitions.dart",
         "docs/ai/context_db.json"
       ],
+      "id": "S8a",
       "notes": [
         "Distance tool now uses From/To unit pills with compact selector sheet, matching the Volume/Pressure/Weight UX contract.",
         "Adds distance unit set and conversion mapping (meters base) without changing public widget APIs."
-      ]
+      ],
+      "title": "Tools: Distance adopts multi-unit pills (m, km, mi, ft, in)"
     },
     {
-      "id": "S8a1",
       "date": "2026-01-16",
-      "title": "Test fix: Distance tool modal expects multi-unit Row, not Text",
       "files": [
         "app/unitana/test/distance_tool_modal_interaction_test.dart",
         "docs/ai/context_db.json"
       ],
+      "id": "S8a1",
       "notes": [
         "Updates widget test to read From/To unit labels via stable keys instead of casting the units label to Text.",
         "Prevents type cast failures after Distance switched to pill-based unit selection."
-      ]
+      ],
+      "title": "Test fix: Distance tool modal expects multi-unit Row, not Text"
     },
     {
-      "id": "S8b",
       "date": "2026-01-16",
-      "title": "Platform icon audit: monorepo wrappers for icon_audit and verify",
       "files": [
         "tools/icon_audit.sh",
         "tools/verify.sh",
         "docs/ai/context_db.json"
       ],
+      "id": "S8b",
       "notes": [
         "Adds monorepo-root wrappers that delegate to app/unitana/tools scripts, matching the PLATFORM_ICON_AUDIT doc path.",
         "Ensures icon audit is accessible from repo root and can be included in standard verification flows."
-      ]
+      ],
+      "title": "Platform icon audit: monorepo wrappers for icon_audit and verify"
     },
     {
-      "id": "S8c",
       "date": "2026-01-16",
-      "title": "Weather Summary sheet: add top-right Close (X) action",
       "files": [
         "app/unitana/lib/features/dashboard/widgets/weather_summary_bottom_sheet.dart",
         "docs/ai/context_db.json"
       ],
+      "id": "S8c",
       "notes": [
         "Adds a top-right Close icon button for the read-only Weather Summary sheet with stable key 'weather_summary_close'.",
         "Keeps weather refresh UX unchanged; close affordance is purely navigational."
-      ]
+      ],
+      "title": "Weather Summary sheet: add top-right Close (X) action"
     },
     {
-      "id": "P0.2",
       "date": "2026-01-16",
-      "title": "Test: dashboard reorder persists across breakpoints",
       "files": [
         "app/unitana/test/dashboard_reorder_persistence_breakpoints_test.dart",
         "docs/ai/context_db.json"
       ],
+      "id": "P0.2",
       "notes": [
         "Adds a widget test that reorders tiles in edit mode, exits edit mode, rebuilds at a different width, and confirms persisted order.",
         "Targets known regression zone: persistence across breakpoints and layout reflow."
-      ]
+      ],
+      "title": "Test: dashboard reorder persists across breakpoints"
     },
     {
-      "id": "P0.2a",
       "date": "2026-01-16",
-      "title": "Test fix: remove invalid package import from dashboard reorder test",
       "files": [
         "app/unitana/test/dashboard_reorder_persistence_breakpoints_test.dart",
         "docs/ai/context_db.json"
       ],
+      "id": "P0.2a",
       "notes": [
         "Widget tests cannot import from package:unitana/test; inlines the small dashboard seed helper into the test."
-      ]
+      ],
+      "title": "Test fix: remove invalid package import from dashboard reorder test"
     },
     {
-      "id": "P0.2b",
       "date": "2026-01-16",
-      "title": "Test fix: drag handle finder avoids semantics dependency",
       "files": [
         "app/unitana/test/dashboard_reorder_persistence_breakpoints_test.dart",
         "docs/ai/context_db.json"
       ],
+      "id": "P0.2b",
       "notes": [
         "Semantics labels under Draggable can be inconsistent in widget tests; finder moved toward a visual handle-based target."
-      ]
+      ],
+      "title": "Test fix: drag handle finder avoids semantics dependency"
     },
     {
-      "id": "P0.2c",
       "date": "2026-01-16",
-      "title": "Test fix: locate edit-mode drag handle via Stack ancestor",
       "files": [
         "app/unitana/test/dashboard_reorder_persistence_breakpoints_test.dart",
         "docs/ai/context_db.json"
       ],
+      "id": "P0.2c",
       "notes": [
         "Drag handle renders as a sibling overlay in the tile Stack; finder updated to search within the Stack ancestor rather than tile subtree."
-      ]
+      ],
+      "title": "Test fix: locate edit-mode drag handle via Stack ancestor"
     },
     {
-      "id": "P0.3",
       "date": "2026-01-16",
-      "title": "Test: edit mode drag-handle hit testing guard",
       "files": [
         "app/unitana/test/dashboard_edit_drag_handle_hit_testing_test.dart",
         "docs/ai/context_db.json"
       ],
+      "id": "P0.3",
       "notes": [
         "Adds a widget test that verifies drag reorder starts only from the drag handle in edit mode, and tile body interactions do not open sheets or persist reorder changes."
-      ]
+      ],
+      "title": "Test: edit mode drag-handle hit testing guard"
     },
     {
-      "id": "P0.3a",
       "date": "2026-01-17",
-      "title": "Combined patch: P0.3 drag-handle hit-testing test + context_db update",
       "files": [
         "app/unitana/test/dashboard_edit_drag_handle_hit_testing_test.dart",
         "docs/ai/context_db.json"
       ],
+      "id": "P0.3a",
       "notes": [
         "Packages P0.3 test and context_db update together for changed-files-only patch workflow."
-      ]
+      ],
+      "title": "Combined patch: P0.3 drag-handle hit-testing test + context_db update"
     },
     {
-      "id": "P0.4",
       "date": "2026-01-17",
-      "title": "Tool modal clipboard contract smoke test",
       "files": [
         "app/unitana/test/tool_modal_clipboard_contract_smoke_test.dart",
         "docs/ai/context_db.json"
       ],
+      "id": "P0.4",
       "notes": [
         "Adds widget test validating history tap copies result, long-press copies input, and notice surface renders expected labels."
-      ]
+      ],
+      "title": "Tool modal clipboard contract smoke test"
     },
     {
-      "id": "P0.5",
       "date": "2026-01-17",
-      "title": "Tool modal history lazy-build + nested scroll smoke test",
       "files": [
         "app/unitana/test/tool_modal_history_lazy_build_smoke_test.dart",
         "docs/ai/context_db.json"
       ],
+      "id": "P0.5",
       "notes": [
         {
-          "type": "test",
-          "text": "Adds a widget test that generates a full (10-item) tool history and scrolls the history ListView until the oldest entry is visible, asserting no overflow or nested-scroll exceptions."
+          "text": "Adds a widget test that generates a full (10-item) tool history and scrolls the history ListView until the oldest entry is visible, asserting no overflow or nested-scroll exceptions.",
+          "type": "test"
         }
-      ]
+      ],
+      "title": "Tool modal history lazy-build + nested scroll smoke test"
     },
     {
-      "id": "P0.5a",
       "date": "2026-01-17",
-      "title": "Test fix: target inner history ListView (avoid outer scroll ListView ancestor match)",
       "files": [
         "app/unitana/test/tool_modal_history_lazy_build_smoke_test.dart",
         "docs/ai/context_db.json"
       ],
+      "id": "P0.5a",
       "notes": [
         "Updates the test to locate the inner history ListView as a descendant of the outer tool scroll view (tool_scroll_<toolId>), avoiding ambiguous ListView ancestor matches in widget tests."
-      ]
+      ],
+      "title": "Test fix: target inner history ListView (avoid outer scroll ListView ancestor match)"
     },
     {
-      "id": "P0.5b",
       "date": "2026-01-17",
-      "title": "Test fix: tool modal history scrollUntilVisible targets Scrollable under inner ListView",
       "files": [
         "app/unitana/test/tool_modal_history_lazy_build_smoke_test.dart",
         "docs/ai/context_db.json"
       ],
+      "id": "P0.5b",
       "notes": [
         "flutter_test scrollUntilVisible requires a Scrollable finder; ListView is not a Scrollable and caused a cast error.",
         "Finder now targets the Scrollable child under the inner history ListView."
-      ]
+      ],
+      "title": "Test fix: tool modal history scrollUntilVisible targets Scrollable under inner ListView"
     },
     {
-      "id": "P0.5c",
       "date": "2026-01-17",
-      "title": "Tool modal: key the history ListView for stable widget tests",
       "files": [
         "app/unitana/lib/features/dashboard/widgets/tool_modal_bottom_sheet.dart",
         "app/unitana/test/tool_modal_history_lazy_build_smoke_test.dart",
         "docs/ai/context_db.json"
       ],
+      "id": "P0.5c",
       "notes": [
         "Adds ValueKey(tool_history_list_<toolId>) to the history ListView.builder.",
         "Updates P0.5 history lazy-build test to scroll using the keyed history list descendant Scrollable."
-      ]
+      ],
+      "title": "Tool modal: key the history ListView for stable widget tests"
     },
     {
-      "id": "P1.8",
       "date": "2026-01-17",
-      "title": "Currency backend MVP: Frankfurter EUR\u2192USD + 12h TTL cache (non-chatty)",
       "files": [
         "app/unitana/lib/data/frankfurter_client.dart",
         "app/unitana/lib/features/dashboard/models/dashboard_live_data.dart",
         "app/unitana/test/frankfurter_client_test.dart",
         "docs/ai/context_db.json"
       ],
+      "id": "P1.8",
       "notes": [
         "Adds FrankfurterClient and CurrencyBackend (mock/frankfurter) with build/runtime gating.",
         "Loads cached EUR\u2192USD rate from SharedPreferences and refreshes on a 12h TTL (manual refresh remains non-chatty).",
         "Removes simulated EUR\u2192USD drift in refreshAll; demo mode uses stable 1.10 unless a debug override is set.",
         "Adds unit tests for FrankfurterClient JSON parsing and error handling."
-      ]
+      ],
+      "title": "Currency backend MVP: Frankfurter EUR\u2192USD + 12h TTL cache (non-chatty)"
     },
     {
-      "id": "P1.9",
       "date": "2026-01-17",
-      "title": "Tool tile reality flip audit: ensure conversion tiles track active place (Pressure fix) + docs",
       "files": [
         "app/unitana/lib/features/dashboard/widgets/dashboard_board.dart",
         "app/unitana/test/dashboard_core_conversion_tiles_reality_switch_audit_test.dart",
         "docs/ai/handoff/CURRENT_HANDOFF.md",
         "docs/ai/context_db.json"
       ],
+      "id": "P1.9",
       "notes": [
         "Audits core conversion tiles to ensure they update their displayed unit system when the hero reality flips.",
         "Adds a widget test that iterates core conversion tiles and asserts unit labels change with Destination/Home.",
         "Updates AI docs to reflect the audit and current priorities."
-      ]
+      ],
+      "title": "Tool tile reality flip audit: ensure conversion tiles track active place (Pressure fix) + docs"
     },
     {
-      "id": "P1.9a",
       "date": "2026-01-17",
-      "title": "QA hardening: fix hit-test warning in reality switch audit test",
       "files": [
         "app/unitana/test/dashboard_core_conversion_tiles_reality_switch_audit_test.dart",
         "docs/ai/context_db.json"
       ],
+      "id": "P1.9a",
       "notes": [
         "Adjusts test tapping to target hit-testable surfaces and avoid RenderBox warnings."
-      ]
+      ],
+      "title": "QA hardening: fix hit-test warning in reality switch audit test"
     },
     {
-      "id": "P1.10",
       "date": "2026-01-17",
-      "title": "Hero currency quadrant: remove duplicate wind/gust lines; add currency mini-card + contract updates",
       "files": [
         "app/unitana/lib/features/dashboard/widgets/places_hero_v2.dart",
         "app/unitana/test/dashboard_places_hero_v2_test.dart",
@@ -2225,21 +2458,16 @@
         "docs/ai/context_db.json",
         "docs/ai/handoff/CURRENT_HANDOFF.md"
       ],
+      "id": "P1.10",
       "notes": [
         "Bottom-left hero quadrant is now dedicated to Currency; wind/gust only appear inside the right-side Details pill.",
         "Introduces `hero_currency_card` + `hero_currency_primary_line` stable keys and updates the PlacesHeroV2 contract spec.",
         "Extends PlacesHeroV2 widget test to assert currency card presence and absence of legacy wind/gust keys."
-      ]
+      ],
+      "title": "Hero currency quadrant: remove duplicate wind/gust lines; add currency mini-card + contract updates"
     },
     {
-      "id": "P1.11",
       "date": "2026-01-17",
-      "title": "Hero env pill (AQI/Pollen) above currency",
-      "summary": [
-        "Adds a swappable env pill in the Places Hero left rail, occupying the reclaimed space above the currency card.",
-        "Env pill is provider-agnostic and uses placeholders until an air-quality backend is selected.",
-        "Introduces stable keys for env pill content and updates hero regression test."
-      ],
       "files_changed": [
         "app/unitana/lib/features/dashboard/models/dashboard_session_controller.dart",
         "app/unitana/lib/features/dashboard/widgets/places_hero_v2.dart",
@@ -2251,151 +2479,774 @@
         "dart format .",
         "flutter analyze",
         "flutter test"
-      ]
+      ],
+      "id": "P1.11",
+      "summary": [
+        "Adds a swappable env pill in the Places Hero left rail, occupying the reclaimed space above the currency card.",
+        "Env pill is provider-agnostic and uses placeholders until an air-quality backend is selected.",
+        "Introduces stable keys for env pill content and updates hero regression test."
+      ],
+      "title": "Hero env pill (AQI/Pollen) above currency"
     },
     {
-      "id": "P1.11a",
       "date": "2026-01-18",
-      "title": "Fix Env pill unconstrained layout on compact hero surfaces",
       "files_changed": [
         "app/unitana/lib/features/dashboard/widgets/places_hero_v2.dart",
         "docs/ai/context_db.json"
       ],
+      "id": "P1.11a",
       "notes": [
         "Env pill header no longer forces infinite width; prevents RenderBox not laid out errors when the pill is wrapped in FittedBox on small hero heights."
-      ]
+      ],
+      "title": "Fix Env pill unconstrained layout on compact hero surfaces"
     },
     {
-      "id": "P1.11b",
       "date": "2026-01-18",
-      "title": "Align Env pill width with currency card",
       "files_changed": [
         "app/unitana/lib/features/dashboard/widgets/places_hero_v2.dart",
         "docs/ai/context_db.json"
       ],
+      "id": "P1.11b",
       "notes": [
         "Env pill and currency card now expand to the same bounded width in normal hero layouts; compact layouts remain safe under FittedBox (unbounded width)."
-      ]
+      ],
+      "title": "Align Env pill width with currency card"
     },
     {
-      "id": "P1.11d",
       "date": "2026-01-18",
-      "title": "Fix Env pill width by forcing expansion under bounded constraints",
       "files_changed": [
         "app/unitana/lib/features/dashboard/widgets/places_hero_v2.dart",
         "docs/ai/context_db.json"
       ],
+      "id": "P1.11d",
       "notes": [
         "Env pill now explicitly sets its container width to expand when the layout provides a bounded width, preventing shrink-wrapping that made it appear narrower than the currency card.",
         "Unbounded-width (compact/FittedBox) layouts remain unchanged to avoid layout exceptions."
-      ]
+      ],
+      "title": "Fix Env pill width by forcing expansion under bounded constraints"
     },
     {
-      "id": "P1.11k",
       "date": "2026-01-17",
-      "title": "Sev1: Rebuild Places Hero body into top/bottom bands; restore readable Env/Currency tiles and add middle anim bay",
       "files_changed": [
         "app/unitana/lib/features/dashboard/widgets/places_hero_v2.dart",
         "app/unitana/test/dashboard_places_hero_v2_test.dart",
         "docs/ai/context_db.json"
       ],
+      "id": "P1.11k",
       "notes": [
         "Hero body is now banded: top band holds temperature (left) and marquee (right); bottom band holds Env+Currency stack (left), a dedicated middle animation slot, and the Sunrise/Sunset (and Wind/Gust) pill (right).",
         "Env and Currency pills now expand to the full left-column width and split the available bottom-band height without global FittedBox scaling, restoring readability on phone surfaces.",
         "Added a widget test asserting Env/Currency width parity and guarding against the postage-stamp regression; also asserts the middle anim slot has a meaningful footprint."
-      ]
+      ],
+      "title": "Sev1: Rebuild Places Hero body into top/bottom bands; restore readable Env/Currency tiles and add middle anim bay"
     },
     {
-      "id": "P1.11af",
       "date": "2026-01-18",
-      "title": "Sev1: Restore Places Hero compile stability by wiring primary+secondary into Currency card and adding safe rate fallback",
       "files_changed": [
         "app/unitana/lib/features/dashboard/widgets/places_hero_v2.dart",
         "docs/ai/context_db.json"
       ],
+      "id": "P1.11af",
       "notes": [
         "Fixed breaking signature drift by ensuring the left Env/Currency stack passes both primary and secondary Place objects into the currency card, matching _currencyLines() requirements.",
         "Added a safe fallback when eurToUsd is null so the hero can render deterministically while the rate is still loading.",
         "Removed an unused local (sideWidth) introduced during earlier layout iterations to keep analyze clean."
-      ]
+      ],
+      "title": "Sev1: Restore Places Hero compile stability by wiring primary+secondary into Currency card and adding safe rate fallback"
     },
     {
-      "id": "P1.11aw",
       "date": "2026-01-19",
-      "title": "Sev1: Preserve hero left-rail readability by shrinking right pill under tight widths",
       "files_changed": [
         "app/unitana/lib/features/dashboard/widgets/places_hero_v2.dart",
         "docs/ai/context_db.json"
       ],
+      "id": "P1.11aw",
       "notes": [
         "Fixed phone-surface regression where Env/Currency rail collapsed to ~92px by allowing the right pill to shrink first when total width is constrained.",
         "Maintains the test contract that left-rail tiles remain readable (>=150px) while keeping layout deterministic across breakpoints."
-      ]
+      ],
+      "title": "Sev1: Preserve hero left-rail readability by shrinking right pill under tight widths"
     },
     {
-      "id": "P1.11aw",
       "date": "2026-01-19",
-      "title": "Sev1: Preserve hero left-rail readability by shrinking right pill under tight widths",
       "files_changed": [
         "app/unitana/lib/features/dashboard/widgets/places_hero_v2.dart",
         "docs/ai/context_db.json"
       ],
-      "notes": [
-        "Fixes phone-surface regression where the left Env/Currency rail collapsed to ~92px by allowing the right pill to shrink first when total width is insufficient.",
-        "Ensures the left rail meets the readability contract (>=150px in compact mode) while keeping layout deterministic in widget tests."
-      ]
-    },
-    {
       "id": "P1.11ay",
-      "date": "2026-01-19",
-      "title": "Sev1: Enforce minimum touch-height for hero Env/Currency tiles on normal surfaces",
-      "files_changed": [
-        "app/unitana/lib/features/dashboard/widgets/places_hero_v2.dart",
-        "docs/ai/context_db.json"
-      ],
       "notes": [
         "Adds a minHeight (44dp) guard for the hero Env pill and Currency card when not in micro-mode, fixing the widget-test regression where the Env tile collapsed below the readability/tap target contract on phone surfaces.",
         "Min-height is applied only when the parent allows it (unbounded height or >=44dp), preserving the micro-mode overflow guarantees under pathological constraints."
-      ]
+      ],
+      "title": "Sev1: Enforce minimum touch-height for hero Env/Currency tiles on normal surfaces"
     },
     {
-      "id": "P1.11az",
       "date": "2026-01-19",
-      "title": "Hero bands: enforce bottom band min height in compact so Env/Currency meet 44dp contract",
       "files": [
         "app/unitana/lib/features/dashboard/widgets/places_hero_v2.dart"
       ],
+      "id": "P1.11az",
       "notes": [
         "In compact hero layout with bounded height, reserve >=94dp for the bottom band (Env+gap+Currency) so each tile can meet the 44dp touch-target contract.",
         "Top row shrinks first; bottom row stays deterministic."
-      ]
+      ],
+      "title": "Hero bands: enforce bottom band min height in compact so Env/Currency meet 44dp contract"
     },
     {
-      "id": "P1.12e_hotfix",
       "date": "2026-01-20",
-      "title": "Hero bands: fix syntax regression in places_hero_v2.dart (topRow duplicate Row)",
+      "files_changed": [
+        "app/unitana/lib/features/dashboard/widgets/places_hero_v2.dart",
+        "docs/ai/context_db.json",
+        "docs/ai/handoff/CURRENT_HANDOFF.md"
+      ],
+      "id": "P1.12h5",
+      "notes": [
+        "Locked in a stable, test-green hero layout after Sev1; bottom band/pills meet touch-target contract where possible and degrade to micro mode under pathological constraints.",
+        "Established the red-box region structure for Temps (top-left), Marquee (top-right), Env/Currency (left stack), Sunrise/Sunset & Wind/Gust (bottom-right)."
+      ],
+      "title": "Hero stabilization: compact pill sizing + layout contract (green baseline)"
+    },
+    {
+      "date": "2026-01-20",
       "files_changed": [
         "app/unitana/lib/features/dashboard/widgets/places_hero_v2.dart",
         "docs/ai/context_db.json"
       ],
+      "id": "P1.14c5",
       "notes": [
-        "Fixes a parse error introduced during P1.12e where topRow was mistakenly declared twice (\"final topRow = Row(final topRow = Row(\") causing dart format/analyze to fail.",
-        "Removes an unused rightMin variable to keep analyze clean."
+        "Ensured the marquee condition label renders once (no duplication) with a stable flag flow.",
+        "Right-aligned blinking swap indicator in Env pill for clear tap affordance; kept visible in micro mode.",
+        "Added coin iconography to currency tile; tightened text sizing to anticipate longer strings; formatting supports up to 2 decimals and trims trailing zeros.",
+        "Bottom-aligned marquee within its slot and nudged height slightly south without resizing hero region."
+      ],
+      "title": "Hero polish: right-aligned Env swap, coin icon on currency, smaller Env/Currency text, marquee nudged south"
+    },
+    {
+      "date": "2026-01-24",
+      "files_touched": [
+        "app/unitana/lib/features/dashboard/models/dashboard_live_data.dart",
+        "docs/ai/handoff/CURRENT_HANDOFF.md",
+        "docs/ai/prompts/NEXT_CHAT_PROMPT.md",
+        "docs/ai/context_db.json"
+      ],
+      "gates": {
+        "dart_format": "expected-pass",
+        "flutter_analyze": "expected-pass",
+        "flutter_test": "expected-pass"
+      },
+      "id": "P1.23b_fix_dashboard_live_data_parse",
+      "summary": "Fix Dart parse error cascade in DashboardLiveDataController by removing stray brace in _loadDevOverrides; update AI docs for current state and handoff prep."
+    },
+    {
+      "date": "2026-01-30",
+      "files_changed": [
+        "docs/ai/handoff/CURRENT_HANDOFF.md",
+        "docs/ai/prompts/NEXT_CHAT_PROMPT.md",
+        "docs/ai/prompts/NEXT_CHAT_PROMPT_SENIOR_REVIEW.md",
+        "docs/ai/retros/RETRO_P1.23_HERO_MINI_HERO.md",
+        "docs/ai/context_db.json"
+      ],
+      "id": "P1.23_rollup_hero_minihero_regressions",
+      "notes": [
+        "Rollup entry: extended iteration on Places Hero V2 + mini-hero readout resulted in repeated UI regressions and design drift.",
+        "Escalated to senior team for top-to-bottom audit, stabilization to green, hardening (tests + docs cleanup), and subsequent design lock.",
+        "Known current blocker: a flutter test fails with unbounded-height flex/layout exception in places_hero_v2.dart (see CURRENT_HANDOFF for details)."
+      ],
+      "title": "P1.23 rollup: Hero/Mini-Hero stabilization + escalation"
+    },
+    {
+      "date": "2026-01-30",
+      "id": "P1.23_rollup_senior_handoff",
+      "notes": [
+        "Escalation: repeated hero/mini-hero UI regressions; feature work paused.",
+        "Known remaining failure in this snapshot: flutter test layout exception (unbounded height flex) in PlacesHeroV2; see CURRENT_HANDOFF.md.",
+        "Senior plan: restore green, add golden/widget tests for hero + mini-hero, then harden docs and lock design."
+      ],
+      "title": "P1.23: rollup + senior takeover handoff"
+    },
+    {
+      "date": "2026-01-30",
+      "files_changed": [
+        "app/unitana/lib/features/dashboard/widgets/places_hero_v2.dart",
+        "app/unitana/lib/features/dashboard/dashboard_screen.dart",
+        "app/unitana/test/dashboard_pinned_mini_hero_readout_presence_test.dart",
+        "app/unitana/test/dashboard_places_hero_v2_timeline_date_invariants_test.dart",
+        "app/unitana/test/places_hero_v2_unbounded_height_smoke_test.dart",
+        "app/unitana/test/goldens/places_hero_v2_goldens_test.dart",
+        "docs/ai/design_lock/HERO_MINI_HERO_CONTRACT.md",
+        "docs/ai/handoff/CURRENT_HANDOFF.md",
+        "docs/ai/prompts/NEXT_CHAT_PROMPT.md",
+        "docs/ai/context_db.json"
+      ],
+      "id": "P1.23b_senior_stabilization_hero_lock_scaffolding",
+      "notes": [
+        "Guards PlacesHeroV2 against Flutter's unbounded-height flex failure by adding a bounded-height fallback path in LayoutBuilder and by removing Expanded usage when height is unbounded inside _HeroBandsBody.",
+        "Adds stable key for pinned mini-hero readout container to support a presence regression test.",
+        "Adds constraint smoke test (unbounded height) plus presence/invariant widget tests; adds golden-test scaffolding behind UNITANA_GOLDENS=1 to avoid breaking CI until baselines are generated.",
+        "Creates a canonical hero/mini-hero design contract under docs/ai/design_lock."
+      ],
+      "title": "P1.23b: Senior stabilization + hero lock scaffolding"
+    },
+    {
+      "date": "2026-01-31",
+      "files_changed": [
+        "app/unitana/lib/features/dashboard/widgets/places_hero_v2.dart",
+        "app/unitana/lib/features/dashboard/widgets/dashboard_board.dart",
+        "docs/ai/prompts/NEXT_CHAT_PROMPT.md",
+        "docs/ai/design_lock/HERO_MINI_HERO_CONTRACT.md",
+        "docs/ai/handoff/CURRENT_HANDOFF.md",
+        "docs/ai/context_db.json"
+      ],
+      "id": "P1.28_sev1_bounds_and_mock_seeding",
+      "notes": [
+        "Fixes the recurring unbounded-height flex failure by tightly bounding the bottom band height (SizedBox height) instead of minHeight-only constraints; avoids CrossAxisAlignment.stretch coupling.",
+        "Adds a defensive unbounded-height guardrail in _LeftEnvCurrencyStack to render without Expanded/Flexible when height is infinite.",
+        "Restores deterministic mock/demo data by calling DashboardLiveData.ensureSeeded([home, dest]) in DashboardBoard before tiles read per-place snapshots; this re-enables AQI, Pollen, and SunTimes in mock mode.",
+        "Aligns details pill title separator to '\u2022' and preserves legacy segment key compatibility for tests."
+      ],
+      "title": "P1.28: Bound bottom band + restore deterministic mock data"
+    },
+    {
+      "date": "2026-01-31",
+      "files_changed": [
+        "app/unitana/lib/features/dashboard/widgets/places_hero_v2.dart",
+        "app/unitana/lib/features/dashboard/dashboard_screen.dart",
+        "docs/ai/handoff/CURRENT_HANDOFF.md",
+        "docs/ai/context_db.json"
+      ],
+      "id": "P1.29_sev1_compact_overflow_and_analyze_clean",
+      "notes": [
+        "Fixes recurring RenderFlex bottom overflow on 320\u00d7568 by reducing vertical-only padding in PlacesHeroV2 compact mode (saves ~12px without changing normal geometry).",
+        "Removes unused secondaryZone variable in PlacesHeroV2 and unused _tzAbbrev helper in DashboardScreen to keep flutter analyze clean.",
+        "Replaces deprecated RichText.textScaleFactor with textScaler to eliminate deprecated_member_use warning."
+      ],
+      "title": "P1.29: Fix 320\u00d7568 overflow + clean flutter analyze warnings"
+    },
+    {
+      "date": "2026-01-31",
+      "files": [
+        "app/unitana/lib/features/dashboard/dashboard_screen.dart",
+        "app/unitana/lib/features/dashboard/widgets/places_hero_v2.dart",
+        "docs/ai/handoff/CURRENT_HANDOFF.md",
+        "docs/ai/context_db.json"
+      ],
+      "id": "P1.30",
+      "summary": "Remove dashboard header refresh label (Updated just now) to prevent small-phone RenderFlex overflow; further reduce PlacesHeroV2 compact vertical padding/gap for 320\u00d7568 stability."
+    },
+    {
+      "date": "2026-01-31",
+      "files": [
+        "app/unitana/lib/features/dashboard/widgets/places_hero_v2.dart",
+        "app/unitana/test/dashboard_places_hero_v2_test.dart",
+        "docs/ai/context_db.json",
+        "docs/ai/handoff/CURRENT_HANDOFF.md",
+        "docs/ai/prompts/NEXT_CHAT_PROMPT.md"
+      ],
+      "id": "P1.31",
+      "summary": "Fix lingering ~0.22px RenderFlex overflow by keeping PlacesHeroV2 compact spacing whole-numbered; stabilize Liquids tool modal history test by ensuring visibility on the InkWell tap target before tapping."
+    },
+    {
+      "date": "2026-01-31",
+      "files_changed": [
+        "app/unitana/lib/features/dashboard/dashboard_screen.dart",
+        "docs/ai/handoff/CURRENT_HANDOFF.md",
+        "docs/ai/context_db.json"
+      ],
+      "id": "P1.33",
+      "summary": "Reserve layout space for pinned hero overlay so it never obscures first-row tiles or breaks hit-testing; fixes Liquids tile tap failures in widget tests when pinned overlay becomes visible."
+    },
+    {
+      "date": "2026-01-31",
+      "files_changed": [
+        "app/unitana/test/goldens/places_hero_v2_goldens_test.dart",
+        "app/unitana/test/goldens/pinned_mini_hero_goldens_test.dart",
+        "app/unitana/test/goldens/README.md",
+        "docs/ai/design_lock/HERO_MINI_HERO_CONTRACT.md",
+        "docs/ai/handoff/CURRENT_HANDOFF.md",
+        "docs/ai/context_db.json"
+      ],
+      "id": "P1.39",
+      "summary": "Hardening: extend gated golden coverage and workflow. Standardize golden test determinism (devicePixelRatio=1.0), add pinned mini-hero golden states, and document golden generation in test/goldens/README and hero contract."
+    },
+    {
+      "date": "2026-01-31",
+      "files_changed": [
+        "app/unitana/test/goldens/places_hero_v2_goldens_test.dart",
+        "app/unitana/test/goldens/pinned_mini_hero_goldens_test.dart",
+        "app/unitana/test/goldens/README.md",
+        "docs/ai/design_lock/HERO_MINI_HERO_CONTRACT.md",
+        "docs/ai/handoff/CURRENT_HANDOFF.md",
+        "docs/ai/context_db.json"
+      ],
+      "id": "P1.40",
+      "summary": "Hardening: simplify goldens execution. Golden tests now run automatically when --update-goldens is used (autoUpdateGoldenFiles) while remaining gated by default; baselines are stored under test/goldens/goldens and docs updated accordingly."
+    },
+    {
+      "date": "2026-01-31",
+      "files_changed": [
+        "docs/ai/handoff/CURRENT_HANDOFF.md",
+        "docs/ai/context_db.json"
+      ],
+      "id": "P1.40a",
+      "summary": "Planning/docs: define P0 onboarding wizard redesign (3-step flow) with unified Dracula-style scaffold and updated bottom navigation; define P0 scroll transition hardening strategy for pinned mini-hero; refresh handoff and context."
+    },
+    {
+      "date": "2026-01-31",
+      "files_changed": [
+        "app/unitana/lib/features/first_run/first_run_screen.dart",
+        "app/unitana/lib/features/dashboard/widgets/places_hero_v2.dart",
+        "docs/ai/design_lock/HERO_MINI_HERO_CONTRACT.md",
+        "docs/ai/handoff/CURRENT_HANDOFF.md",
+        "docs/ai/context_db.json"
+      ],
+      "id": "P0.01a",
+      "summary": "Fix build issues after onboarding wizard patch (duplicate ColorScheme getter; mounted-return lint); make AQI/Pollen pill tap feedback consistent (Material ripple like Sun/Wind pill); center-align currency line in micro layout; update hero design contract and handoff docs."
+    },
+    {
+      "date": "2026-02-01",
+      "files_changed": [
+        "app/unitana/lib/features/dashboard/widgets/places_hero_v2.dart",
+        "docs/ai/design_lock/HERO_MINI_HERO_CONTRACT.md",
+        "docs/ai/context_db.json"
+      ],
+      "id": "P0.01c",
+      "notes": [
+        "Centers PlacesHeroV2 reality toggle labels (flag emoji + city) in both segments to match the mini toggle and reduce visual bias.",
+        "Removes an unused local that triggered flutter analyze warnings.",
+        "Updates the HERO+MINI-HERO design contract to lock toggle typography and centering behavior."
+      ],
+      "title": "P0: Hero reality toggle centering + analyze cleanup + design lock update"
+    },
+    {
+      "date": "2026-02-01",
+      "files_changed": [
+        "app/unitana/lib/features/dashboard/dashboard_screen.dart",
+        "app/unitana/test/dashboard_pinned_hero_transition_no_jump_test.dart",
+        "docs/ai/handoff/CURRENT_HANDOFF.md",
+        "docs/ai/context_db.json",
+        "docs/ai/design_lock/HERO_MINI_HERO_CONTRACT.md"
+      ],
+      "id": "P0.02",
+      "notes": [
+        "Replaces boolean pinned-overlay insertion with an AnimationController that animates both reserved spacer height and overlay opacity/slide, eliminating single-frame scroll 'pops'.",
+        "Adds a widget test to guard against reintroducing abrupt pinned-hero jumps when crossing the scroll threshold."
+      ],
+      "title": "P0: Pinned mini-hero scroll transition hardening (no jump)"
+    },
+    {
+      "date": "2026-02-01",
+      "files": [
+        "app/unitana/lib/features/dashboard/widgets/places_hero_collapsing_header.dart",
+        "app/unitana/lib/features/dashboard/dashboard_screen.dart",
+        "app/unitana/lib/features/dashboard/widgets/pinned_mini_hero_readout.dart",
+        "app/unitana/test/dashboard_pinned_hero_transition_no_jump_test.dart",
+        "app/unitana/test/dashboard_pinned_hero_overlay_test.dart",
+        "app/unitana/test/dashboard_pinned_mini_hero_readout_presence_test.dart",
+        "app/unitana/test/dashboard_pinned_overlay_pills_single_row_test.dart",
+        "app/unitana/test/dashboard_pinned_overlay_smallest_size_smoke_test.dart"
+      ],
+      "id": "P0.03",
+      "notes": [
+        "Mini hero is always in the tree; visibility is via opacity and pointer gating to avoid interaction overlap.",
+        "Pinned header reserved height is 148.0; keep this in sync with golden expectations and small-device constraints.",
+        "Seed demo live data before rendering header to keep hero/mini content aligned on first frame."
+      ],
+      "summary": "Switch pinned mini-hero behavior to a true collapsing SliverPersistentHeader; fade/scale hero out and fade mini bar in (no jump), unify keys, adjust pinned height and padding, update tests."
+    },
+    {
+      "date": "2026-02-01",
+      "files": [
+        "app/unitana/lib/features/dashboard/dashboard_screen.dart",
+        "app/unitana/lib/features/dashboard/widgets/dashboard_board.dart",
+        "app/unitana/test/... (dashboard add-slot interaction tests)",
+        "docs/ai/design_lock/HERO_MINI_HERO_CONTRACT.md",
+        "docs/ai/handoff/CURRENT_HANDOFF.md",
+        "docs/ai/context_db.json"
+      ],
+      "id": "P0.03c",
+      "notes": [
+        "Addresses failing tests: multiple widgets with the same GlobalKey (hero keys) and missed taps on offscreen add-slot tiles.",
+        "DashboardBoard includePlacesHero defaults to true for backward compatibility; DashboardScreen sets false for the current dashboard implementation."
+      ],
+      "summary": "Fix collapsing-header regressions: prevent duplicate PlacesHero instances by disabling hero tile inside DashboardBoard when SliverPersistentHeader is used; update dashboard widget tests to ensureVisible() before tapping add-slot tiles."
+    },
+    {
+      "date": "2026-02-01",
+      "files": [
+        "app/unitana/lib/features/dashboard/widgets/places_hero_collapsing_header.dart",
+        "app/unitana/test/dashboard_test_helpers.dart",
+        "app/unitana/test/dashboard_* (currency, insert/remove, reorder, tool modal tests)",
+        "docs/ai/handoff/CURRENT_HANDOFF.md",
+        "docs/ai/context_db.json"
+      ],
+      "id": "P0.03d",
+      "notes": [
+        "Fixes failing widget tests caused by pinned SliverPersistentHeader occluding tap targets and by PlacesHeroV2 being laid out under shrinking header constraints.",
+        "ensureVisibleAligned uses Scrollable.ensureVisible(alignment: 0.85) so targets land away from the top edge under pinned headers.",
+        "Reorder test drag uses a constant horizontal offset to avoid layout-dependent handle positions."
+      ],
+      "summary": "Stabilize collapsing-header tests: render PlacesHeroV2 at full height (clipped) to prevent intermediate-height RenderFlex overflows; keep pinned toggle + readout in a single row; add ensureVisibleAligned() helper for pinned-sliver occlusion and update widget tests accordingly; use horizontal-only drag delta in reorder persistence test."
+    },
+    {
+      "id": "P0.03f",
+      "date": "2026-02-01",
+      "summary": "Test stability cleanup: align Places ordering contract and make reorder test resilient to collapsing-header layout shifts.",
+      "notes": [
+        "DashboardScreen now treats places[0]=Home and places[1]=Destination (wizard contract). Updated PlacesHeroV2 widget test seed data accordingly so Destination defaults to metric expectations.",
+        "Reorder persistence breakpoint test now asserts relative reading order (top-to-bottom then left-to-right) instead of assuming both tiles remain on the same row; prevents false negatives when header/spacing changes alter tile row packing.",
+        "Fix dart analyzer lints in tool modal interaction tests by renaming non-lowerCamelCase locals (pressureTile, shoeSizesTile)."
+      ],
+      "files": [
+        "app/unitana/test/dashboard_places_hero_v2_test.dart",
+        "app/unitana/test/dashboard_reorder_persistence_breakpoints_test.dart",
+        "app/unitana/test/pressure_tool_modal_interaction_test.dart",
+        "app/unitana/test/shoe_sizes_tool_modal_interaction_test.dart",
+        "docs/ai/handoff/CURRENT_HANDOFF.md",
+        "docs/ai/context_db.json"
       ]
     },
     {
-      "id": "P1.14c3",
-      "date": "2026-01-21",
-      "title": "Hero pills: keep 44dp touch contract, add currency icon, and format currency up to 2 decimals",
+      "id": "P0.03i",
+      "date": "2026-02-01",
+      "summary": "Restore pinned mini-hero legibility: stack toggle above readout and increase collapsed header height.",
+      "notes": [
+        "Pinned mini bar is vertical again (segmented toggle above full-width readout) to match goldens and avoid unreadable side-by-side shrink.",
+        "Increase pinned header collapsed height to 176dp to prevent clipping of the stacked mini bar on compact devices.",
+        "Ensure hero file version removes stray unused locals (analyzer cleanliness).",
+        "Update design lock + handoff notes to reflect the pinned layout invariant."
+      ],
+      "files": [
+        "app/unitana/lib/features/dashboard/widgets/places_hero_collapsing_header.dart",
+        "app/unitana/lib/features/dashboard/dashboard_screen.dart",
+        "app/unitana/lib/features/dashboard/widgets/places_hero_v2.dart",
+        "docs/ai/design_lock/HERO_MINI_HERO_CONTRACT.md",
+        "docs/ai/handoff/CURRENT_HANDOFF.md",
+        "docs/ai/context_db.json"
+      ]
+    },
+    {
+      "patch_id": "P0.04a_wizard_titles_dashboard_refresh_spacing",
+      "date": "2026-02-02",
+      "summary": "Onboarding wizard polish: Roboto Slab titles, slide2 subtitle option 2, Create Profile CTA, consistent footer spacing; dashboard refresh row tightened and top whitespace reduced."
+    },
+    {
+      "patch_id": "P0.04a_wizard_titles_dashboard_refresh_spacing",
+      "date": "2026-02-02",
+      "summary": "Onboarding wizard: Roboto Slab titles, slide2 subtitle, Create Profile CTA, footer CTA height matched. Dashboard: reduced top whitespace above refresh status and tightened spacing between Updated label and refresh icon.",
+      "files_changed": [
+        "app/unitana/lib/features/first_run/first_run_screen.dart",
+        "app/unitana/lib/features/dashboard/dashboard_screen.dart",
+        "docs/ai/handoff/CURRENT_HANDOFF.md",
+        "docs/ai/context_db.json"
+      ]
+    },
+    {
+      "id": "patch_2026-02-01_P0_transition_red_tests",
+      "date": "2026-02-01",
+      "title": "Transition: collapsing header + wizard polish (build currently red)",
+      "slice": "P0",
+      "summary": [
+        "Collapsing SliverPersistentHeader used to morph PlacesHeroV2 into pinned mini-hero readout for smoother scroll transitions.",
+        "Onboarding wizard consolidated to 3 steps; titles align with dashboard profile font and Dracula palette discipline.",
+        "Current blocker: duplicate hero-related test keys during collapse; resolve before golden updates."
+      ],
+      "notes": {
+        "build_state": "red (flutter test)",
+        "top_failures": [
+          "duplicate keys: places_hero_segment_home, hero_marquee_slot, places_hero_clock_detail",
+          "duplicate key: hero_env_pill",
+          "pinned header occludes tap target in weather_summary_tile_open_smoke_test"
+        ]
+      }
+    },
+    {
+      "id": "patch_2026-02-02_P0_keys_wizard_polish",
+      "date": "2026-02-02",
+      "title": "P0 green: collapsing header key hygiene + wizard hardening + dashboard UI polish",
+      "slice": "P0",
+      "summary": "Stabilized duplicate key failures via includeTestKeys gating; restored wizard unit/clock controls; fixed repeated slide regressions; polished dashboard refresh cluster and env pill swap alignment.",
+      "notes": [
+        "Do not emit canonical keys in preview surfaces",
+        "Slide 2 pills must remain compact; no scroll"
+      ]
+    },
+    {
+      "id": "patch_2026-02-03_goldens_regression_harness",
+      "date": "2026-02-03",
+      "title": "Regression harness: gated goldens + first-run regression tests",
+      "slice": "P0/P1",
+      "summary": "Added golden harness (UNITANA_GOLDENS=1) and first-run regression tests to lock wizard/dashboard interactions; fixed citypicker interaction regressions.",
+      "notes": [
+        "Goldens may be outdated; update intentionally",
+        "Keep tests pinned-header aware"
+      ]
+    },
+    {
+      "id": "patch_2026-02-03_P1_profiles_switcher",
+      "date": "2026-02-03",
+      "title": "P1: Multi-profile persistence + profile switcher edit mode",
+      "slice": "P1",
+      "summary": "Introduced UnitanaProfile, persisted profile list + active id, added profile switcher sheet and edit flow; added regression invariants.",
+      "notes": [
+        "Ensure per-profile namespacing stays consistent",
+        "Avoid state bleed across profiles"
+      ]
+    },
+    {
+      "id": "patch_2026-02-05_P1_appstate_legacy_setters",
+      "date": "2026-02-05",
+      "title": "P1: AppState legacy setters cleanup and test stabilization",
+      "slice": "P1",
+      "summary": "Fixed AppState legacy setter usage and stabilized profile switcher tests after refactors; reduced remaining analyzer warnings without behavior drift.",
+      "notes": [
+        "Prefer minimal diffs; keep repo green"
+      ]
+    },
+    {
+      "id": "patch_2026-02-05_P1_modal_menu_close_controls",
+      "date": "2026-02-05",
+      "title": "P1: Dashboard menu modal sizing + close controls + codex workflow update",
+      "slice": "P1",
+      "summary": "Reduced dashboard menu sheet height to bounded mode, added top-right close controls across dashboard/menu-related sheets, and updated AI docs to codex-first direct-edit workflow.",
+      "notes": [
+        "Main menu now uses a bounded height factor (0.82) instead of near-fullscreen layout.",
+        "Close buttons added to menu, profile switcher, dev tools, weather, clock, and reset confirmation sheets.",
+        "Kept behavior stable; full format/analyze/test gates pass."
+      ]
+    }
+  ],
+  "patches": [
+    {
+      "date": "2026-01-19",
       "files_changed": [
         "app/unitana/lib/features/dashboard/widgets/places_hero_v2.dart",
         "docs/ai/context_db.json"
       ],
+      "id": "P1.11ay_sev1_min_height_env_currency",
       "notes": [
-        "Enforce 44dp minimum touch target for Env and Currency tiles across compact and non-compact surfaces (prevents regression in phone-surface tests).",
-        "Slightly reduce font sizes for Env and Currency primary text to free visual space while preserving readability and future-proofing for longer AQI/Pollen + units strings.",
-        "Add coin iconography to the currency primary line without changing existing keys (keeps tests stable).",
-        "Update currency formatting to show up to 2 decimals (trim trailing zeros) for both the sample amount and approximate conversion."
+        "Adds a minHeight (44dp) guard for the hero Env pill and Currency card when not in micro-mode, fixing the widget-test regression where the Env tile collapsed below the readability/tap target contract on phone surfaces.",
+        "Min-height is applied only when the parent allows it (unbounded height or >=44dp), preserving the micro-mode overflow guarantees under pathological constraints."
+      ],
+      "title": "Sev1: Enforce minimum touch-height for hero Env/Currency tiles on normal surfaces"
+    },
+    {
+      "date": "2026-01-19",
+      "files": [
+        "app/unitana/lib/features/dashboard/widgets/places_hero_v2.dart",
+        "app/unitana/test/dashboard_places_hero_v2_test.dart"
+      ],
+      "id": "P1.11bf2",
+      "notes": [
+        "Removed the middle animation bay from Places hero to reclaim width budget (Option 3 decision).",
+        "Replaced brittle clamp-based width allocation with deterministic two-column sizing: left rail pinned to >=150dp (unless physically impossible), right rail receives remaining width to prioritize Sunrise/Wind readability.",
+        "Separated horizontal column gap from internal Env/Currency stack gap to stabilize vertical touch-target math.",
+        "Updated phone-surface hero test: removed middle-bay assertions; added priority width assertion for the Sunrise pill."
+      ],
+      "title": "Option 3: remove middle hero bay; deterministic left/right widths; eliminate clamp crash"
+    },
+    {
+      "date": "2026-01-20",
+      "files_changed": [
+        "app/unitana/lib/features/dashboard/widgets/places_hero_v2.dart",
+        "docs/ai/context_db.json"
+      ],
+      "id": "P1.14c5_hero_polish_env_swap_currency_icon",
+      "notes": [
+        "Ensured the marquee condition label renders once (no duplication) with a stable flag flow.",
+        "Right-aligned blinking swap indicator in Env pill for clear tap affordance; kept visible in micro mode.",
+        "Added coin iconography to currency tile; tightened text sizing to anticipate longer strings; formatting supports up to 2 decimals and trims trailing zeros.",
+        "Bottom-aligned marquee within its slot and nudged height slightly south without resizing hero region."
+      ],
+      "title": "Hero polish: Env swap affordance, currency iconography, typography tightening, marquee single-label"
+    },
+    {
+      "date": "2026-01-20",
+      "files_changed": [
+        "app/unitana/lib/data/open_meteo_air_quality_client.dart",
+        "app/unitana/lib/features/dashboard/models/dashboard_live_data.dart",
+        "app/unitana/lib/features/dashboard/models/dashboard_session_controller.dart",
+        "app/unitana/lib/features/dashboard/dashboard_screen.dart",
+        "app/unitana/lib/features/dashboard/widgets/places_hero_v2.dart",
+        "docs/ai/context_db.json",
+        "docs/ai/handoff/CURRENT_HANDOFF.md"
+      ],
+      "id": "P1.15a_env_data_swap_persistence",
+      "notes": [
+        "Env pill now renders live AQI and a compact pollen index for both selected cities when coordinates are available; otherwise shows '--' placeholders.",
+        "Normal mode displays dual values as 'A: ... \u2022 B: ...'; micro mode collapses to a single safe line (e.g., 'AQI 42/55', 'Pol 3.2/1.1') with the swap affordance always visible and right-aligned.",
+        "Tap swaps AQI <-> Pollen, and the selected mode is persisted via shared preferences.",
+        "Air quality data is fetched from Open-Meteo Air Quality API under the existing weather network gate; tests remain deterministic via seeding and micro-first layout."
+      ],
+      "title": "P1.15a: Wire Env data (AQI + Pollen) + swap persistence (micro-safe)"
+    },
+    {
+      "date": "2026-01-21",
+      "files_changed": [
+        "app/unitana/lib/features/dashboard/widgets/places_hero_v2.dart",
+        "app/unitana/lib/features/dashboard/models/dashboard_session_controller.dart",
+        "docs/ai/handoff/CURRENT_HANDOFF.md",
+        "docs/ai/context_db.json"
+      ],
+      "id": "P1.15b_hero_semantics_sun_env_clarity",
+      "notes": [
+        "Sunrise/Sunset pill shows two lines with explicit time zones: \u201c\ud83c\udf05 07:52 WET (00:52 MST)\u201d and \u201c\ud83c\udf07 17:29 WET (10:29 MST)\u201d.",
+        "Env (AQI/Pollen) now represents the selected city only to avoid cross-city ambiguity; swap toggles AQI <-> Pollen and persists.",
+        "Currency pill keeps 2dp support and clarifies symbols; no hero proportion changes."
+      ],
+      "title": "P1.15b: Hero semantics clarity (Sunrise/Sunset format, Env single-city, currency symbol)"
+    },
+    {
+      "date": "2026-01-21",
+      "files_changed": [
+        "app/unitana/lib/features/dashboard/widgets/places_hero_v2.dart",
+        "docs/ai/context_db.json",
+        "docs/ai/handoff/CURRENT_HANDOFF.md"
+      ],
+      "id": "P1.16a_marquee_height_budget",
+      "notes": [
+        "Allocates a small vertical budget increase to the marquee animation region.",
+        "Maintains hero region proportions contract; micro gating untouched."
+      ],
+      "title": "P1.16a: Marquee height budget (slightly taller without hero relayout)"
+    },
+    {
+      "date": "2026-01-21",
+      "files_changed": [
+        "app/unitana/lib/features/dashboard/widgets/places_hero_v2.dart",
+        "docs/ai/context_db.json",
+        "docs/ai/handoff/CURRENT_HANDOFF.md"
+      ],
+      "id": "P1.16b_details_pill_alignment_unification",
+      "notes": [
+        "Unifies line metrics/spacing so swapping Wind/Gust <-> Sunrise/Sunset feels like a clean \u201cflip\u201d rather than a jump."
+      ],
+      "title": "P1.16b: Details pill alignment unification (Wind/Gust and Sunrise/Sunset swap stability)"
+    },
+    {
+      "date": "2026-01-21",
+      "files_changed": [
+        "app/unitana/lib/features/dashboard/models/dashboard_session_controller.dart",
+        "app/unitana/lib/features/dashboard/widgets/tool_modal_bottom_sheet.dart",
+        "docs/ai/context_db.json",
+        "docs/ai/handoff/CURRENT_HANDOFF.md"
+      ],
+      "id": "P1.16c_tool_modal_clear_history",
+      "notes": [
+        "Adds a bottom-right Clear history link under the tool modal terminal.",
+        "Uses a modal-bottom-sheet confirmation (Cancel/Clear).",
+        "Clearing history resets the tool result line and clears the input."
+      ],
+      "title": "P1.16c: Tool modal clear history link (confirm + reset)"
+    },
+    {
+      "date": "2026-01-21",
+      "files_changed": [
+        "app/unitana/lib/features/dashboard/widgets/tool_modal_bottom_sheet.dart",
+        "app/unitana/lib/features/dashboard/widgets/places_hero_v2.dart",
+        "docs/ai/context_db.json",
+        "docs/ai/handoff/CURRENT_HANDOFF.md"
+      ],
+      "id": "P1.17a_clear_history_style_aqi_dot",
+      "notes": [
+        "\u201cClear History\u201d link is de-underlined, title-cased, and uses a distinct accent color from base Dracula neutrals.",
+        "Introduces a simple AQI severity-to-color dot mapping hook (uses standard US AQI breakpoints)."
+      ],
+      "title": "P1.17a: Clear History styling + AQI dot mapping scaffold"
+    },
+    {
+      "date": "2026-01-21",
+      "files_changed": [
+        "app/unitana/lib/features/dashboard/dashboard_screen.dart",
+        "app/unitana/lib/features/dashboard/models/dashboard_session_controller.dart",
+        "docs/ai/context_db.json",
+        "docs/ai/handoff/CURRENT_HANDOFF.md"
+      ],
+      "id": "P1.18a_pinned_minihero_tri_pills",
+      "notes": [
+        "Pinned hero overlay adds a three-pill mini hero row; each segment supports swap affordance and persisted modes.",
+        "Sets the stage for later aesthetic refinement without impacting main hero stability."
+      ],
+      "title": "P1.18a: Pinned mini-hero tri-pills (size + flip affordances)"
+    },
+    {
+      "date": "2026-01-21",
+      "files_changed": [
+        "app/unitana/lib/features/dashboard/dashboard_screen.dart",
+        "docs/ai/context_db.json",
+        "docs/ai/handoff/CURRENT_HANDOFF.md"
+      ],
+      "id": "P1.18b_minihero_terminal_no_pills",
+      "notes": [
+        "Replaces mini-hero pills with a single outlined terminal-style bar divided into three tappable segments.",
+        "Segments: left (Wind/Gust <-> Sunrise/Sunset), middle (AQI <-> Pollen), right (Time/Temp <-> Currency).",
+        "Keeps blinking swap affordance and persists mode selections."
+      ],
+      "title": "P1.18b: Mini-hero terminal bar (remove pills, terminal-style segments)"
+    },
+    {
+      "date": "2026-01-21",
+      "files_changed": [
+        "app/unitana/lib/features/dashboard/dashboard_screen.dart",
+        "app/unitana/lib/features/dashboard/widgets/data_refresh_status_label.dart",
+        "docs/ai/context_db.json",
+        "docs/ai/handoff/CURRENT_HANDOFF.md"
+      ],
+      "id": "P1.18b_hotfix1_compile_refresh_label",
+      "notes": [
+        "Removes duplicate local declarations introduced during mini-hero terminal refactor.",
+        "Imports Dracula palette and uses Dracula purple for the \u201cUpdated \u2026\u201d label; background pill disabled in header per contract."
+      ],
+      "title": "P1.18b hotfix1: Fix dashboard compile errors + restore purple floating refresh label"
+    },
+    {
+      "date": "2026-01-24",
+      "files_changed": [
+        "app/unitana/lib/features/dashboard/dashboard_screen.dart",
+        "app/unitana/lib/features/dashboard/widgets/places_hero_v2.dart",
+        "docs/ai/context_db.json",
+        "docs/ai/handoff/CURRENT_HANDOFF.md",
+        "docs/ai/prompts/NEXT_CHAT_PROMPT.md"
+      ],
+      "id": "P1.23a_compile_unblock_hero_helpers",
+      "notes": [
+        "Fixes a pinned-readout compile blocker by replacing undefined `base` with `baseStyle`.",
+        "Repairs PlacesHeroV2 compile errors: removes Provider `context.watch` assumptions, uses passed-in controllers, and adds missing helper functions/widgets (wind/gust/temp/currency lines, flag emoji, clocks header).",
+        "Aligns PlacesHeroV2 with current live-data model by computing ZoneTime via `TimezoneUtils.nowInZone(..., nowUtc: liveData.nowUtc)` and converting sun times from UTC.",
+        "Updates handoff and next-chat prompt to reflect the actual blockers in this repo snapshot."
+      ],
+      "title": "P1.23a: Unblock builds (pinned readout + PlacesHeroV2 helper restoration)"
+    },
+    {
+      "date": "2026-01-31",
+      "files_changed": [
+        "app/unitana/lib/features/first_run/first_run_screen.dart",
+        "app/unitana/lib/features/dashboard/widgets/places_hero_v2.dart",
+        "docs/ai/design_lock/HERO_MINI_HERO_CONTRACT.md",
+        "docs/ai/handoff/CURRENT_HANDOFF.md",
+        "docs/ai/context_db.json"
+      ],
+      "id": "P0.01a",
+      "notes": [
+        "Fixes a build-break in first-run wizard screen caused by duplicate `ColorScheme get cs` getters; wraps `if (!mounted) return;` in a block to satisfy lint.",
+        "Makes AQI/Pollen pill interaction feedback consistent with the Sun/Wind pill by ensuring a Material ancestor for the InkWell ripple.",
+        "Centers currency rate line in micro layout to match normal layout and maintain visual rhythm."
+      ],
+      "title": "P0: Build fix + hero tap feedback + currency centering"
+    },
+    {
+      "id": "P1.25",
+      "date": "2026-02-05",
+      "title": "P1: Modal ergonomics + codex workflow cleanup",
+      "files_changed": [
+        "app/unitana/lib/features/dashboard/dashboard_screen.dart",
+        "docs/ai/handoff/CURRENT_HANDOFF.md",
+        "docs/ai/prompts/NEXT_CHAT_PROMPT.md",
+        "docs/ai/context_db.json"
+      ],
+      "notes": [
+        "Bounded dashboard menu sheet height to prevent near-fullscreen takeover on phones.",
+        "Added top-right close controls to dashboard/menu sheets for consistent dismissal affordance.",
+        "Updated AI docs to codex-first direct edit workflow (zip patches only when explicitly requested)."
       ]
     }
   ],
@@ -2407,76 +3258,6 @@
     "tagline": "travel-first decoder ring; dual reality side-by-side"
   },
   "schema_version": "1.0",
-  "patches": [
-    {
-      "id": "P1.11ay_sev1_min_height_env_currency",
-      "date": "2026-01-19",
-      "title": "Sev1: Enforce minimum touch-height for hero Env/Currency tiles on normal surfaces",
-      "files_changed": [
-        "app/unitana/lib/features/dashboard/widgets/places_hero_v2.dart",
-        "docs/ai/context_db.json"
-      ],
-      "notes": [
-        "Adds a minHeight (44dp) guard for the hero Env pill and Currency card when not in micro-mode, fixing the widget-test regression where the Env tile collapsed below the readability/tap target contract on phone surfaces.",
-        "Min-height is applied only when the parent allows it (unbounded height or >=44dp), preserving the micro-mode overflow guarantees under pathological constraints."
-      ]
-    },
-    {
-      "id": "P1.11bf2",
-      "title": "Option 3: remove middle hero bay; deterministic left/right widths; eliminate clamp crash",
-      "date": "2026-01-19",
-      "files": [
-        "app/unitana/lib/features/dashboard/widgets/places_hero_v2.dart",
-        "app/unitana/test/dashboard_places_hero_v2_test.dart"
-      ],
-      "notes": [
-        "Removed the middle animation bay from Places hero to reclaim width budget (Option 3 decision).",
-        "Replaced brittle clamp-based width allocation with deterministic two-column sizing: left rail pinned to >=150dp (unless physically impossible), right rail receives remaining width to prioritize Sunrise/Wind readability.",
-        "Separated horizontal column gap from internal Env/Currency stack gap to stabilize vertical touch-target math.",
-        "Updated phone-surface hero test: removed middle-bay assertions; added priority width assertion for the Sunrise pill."
-      ]
-    },
-    {
-      "id": "P1.12e1",
-      "date": "2026-01-20",
-      "title": "Hero bands: always reserve bottom touch targets; remove 120dp left fallback; keep Sunrise width >= left",
-      "files": [
-        "app/unitana/lib/features/dashboard/widgets/places_hero_v2.dart"
-      ],
-      "notes": [
-        "Fixes phone-surface regression where the top row consumed intrinsic height and starved the bottom band, shrinking the Env pill below 44dp (test expected >=44).",
-        "Bottom band reservation is now enforced whenever total hero height can accommodate the two 44dp tiles plus stack gap, even if the top row must compress.",
-        "Replaces the previous tight-width fallback that allowed left rail to drop to 120dp; left rail is pinned to 150dp when feasible and the right rail receives remaining width.",
-        "Ensures Sunrise/Wind lane never receives less width than the left rail when there is sufficient width budget, preserving the readability priority contract."
-      ]
-    },
-    {
-      "id": "P1.12f1",
-      "date": "2026-01-20",
-      "title": "Hero tiles: micro-first thresholds to prevent RenderFlex overflow under 124x26 constraints",
-      "files": [
-        "app/unitana/lib/features/dashboard/widgets/places_hero_v2.dart",
-        "docs/ai/context_db.json"
-      ],
-      "notes": [
-        "Fixes Sev1 test failures where Env and Currency were still building a 2-line Column under pathological inner constraints (w=124, h=26), causing RenderFlex bottom overflows.",
-        "Raises micro-mode trigger to innerH < 32dp or innerW < 96dp so the tiles degrade to the single-line micro layout before any multi-line Column is constructed.",
-        "Keeps stable keys intact; only the mode-selection threshold changes."
-      ]
-    },
-    {
-      "id": "P1.13c1",
-      "date": "2026-01-20",
-      "title": "Hero env/currency: raise micro threshold + remove compact inner gap to eliminate sub-pixel overflow",
-      "files": [
-        "app/unitana/lib/features/dashboard/widgets/places_hero_v2.dart",
-        "docs/ai/context_db.json"
-      ],
-      "notes": [
-        "Fixes RenderFlex overflow in Env pill under inner constraints (w\u2248124, h\u224830) by widening the micro-mode threshold to innerH < 36dp.",
-        "Removes the last 1dp compact-only inner gap in Env pill to avoid edge-of-metrics overflows.",
-        "Applies the same micro threshold to Currency for symmetry; stable keys preserved."
-      ]
-    }
-  ]
+  "last_patch_id": "patch_2026-02-05_P1_modal_menu_close_controls",
+  "last_patch_date": "2026-02-05"
 }

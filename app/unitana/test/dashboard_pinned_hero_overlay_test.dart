@@ -4,104 +4,45 @@ import 'package:flutter_test/flutter_test.dart';
 import 'dashboard_test_helpers.dart';
 
 void main() {
-  testWidgets('Pinned hero overlay is present and reacts to toggles', (
+  Future<void> pumpStable(WidgetTester tester) async {
+    // Avoid pumpAndSettle; dashboard has live elements.
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 120));
+    await tester.pump(const Duration(milliseconds: 120));
+  }
+
+  testWidgets('Pinned header shows compact reality toggle after scroll', (
     tester,
   ) async {
-    await pumpDashboardForTest(tester, surfaceSize: const Size(390, 640));
+    await pumpDashboardHarness(tester);
+    await pumpStable(tester);
 
-    expect(find.byKey(const ValueKey('dashboard_pinned_hero')), findsOneWidget);
-
-    final segHome = find
-        .byKey(const ValueKey('dashboard_pinned_segment_home'))
-        .hitTestable();
-    final segDest = find
-        .byKey(const ValueKey('dashboard_pinned_segment_destination'))
-        .hitTestable();
-
-    // Overlay exists in the tree but is not interactive until you scroll.
-    expect(segHome, findsNothing);
-    expect(segDest, findsNothing);
-
-    final scrollable = find.byType(CustomScrollView);
-    expect(scrollable, findsOneWidget);
-
-    for (var i = 0; i < 14; i++) {
-      await tester.drag(scrollable, const Offset(0, -200));
-      await tester.pumpAndSettle();
-      if (segHome.evaluate().isNotEmpty && segDest.evaluate().isNotEmpty) {
-        break;
-      }
-    }
-
-    expect(segHome, findsOneWidget);
-    expect(segDest, findsOneWidget);
-
-    await tester.tap(segHome);
-    await tester.pumpAndSettle();
-
-    await tester.tap(segDest);
-    await tester.pumpAndSettle();
-
-    // Smoke: pinned pills render (keys are stable, text is not asserted).
+    // Controls exist, but start fully transparent.
     expect(
-      find.byKey(const ValueKey('dashboard_pinned_time_temp_pill')),
+      find.byKey(const ValueKey('dashboard_pinned_segment_dest')),
       findsOneWidget,
     );
     expect(
-      find.byKey(const ValueKey('dashboard_pinned_currency_pill')),
+      find.byKey(const ValueKey('dashboard_pinned_segment_home')),
       findsOneWidget,
     );
     expect(
-      find.byKey(const ValueKey('dashboard_pinned_details_pill')),
+      find.byKey(const ValueKey('dashboard_pinned_mini_hero_readout')),
       findsOneWidget,
     );
-  });
 
-  testWidgets('Pinned overlay Details pill toggles after scroll', (
-    tester,
-  ) async {
-    await pumpDashboardForTest(tester, surfaceSize: const Size(390, 640));
-
-    final detailsPill = find.byKey(
-      const ValueKey('dashboard_pinned_details_pill'),
+    final miniOpacityFinder = find.byKey(
+      const ValueKey('dashboard_collapsing_header_mini_layer'),
     );
-    final sunContent = find.byKey(
-      const ValueKey('dashboard_pinned_details_sun'),
-    );
-    final windContent = find.byKey(
-      const ValueKey('dashboard_pinned_details_wind'),
-    );
+    expect(miniOpacityFinder, findsOneWidget);
 
-    // Overlay exists in the tree but is not interactive until you scroll.
-    expect(detailsPill.hitTestable(), findsNothing);
+    final before = tester.widget<Opacity>(miniOpacityFinder);
+    expect(before.opacity, equals(0));
 
-    final scrollable = find.byType(CustomScrollView);
-    expect(scrollable, findsOneWidget);
+    await tester.drag(find.byType(Scrollable).first, const Offset(0, -800));
+    await pumpStable(tester);
 
-    for (var i = 0; i < 14; i++) {
-      await tester.drag(scrollable, const Offset(0, -200));
-      await tester.pumpAndSettle();
-      if (detailsPill.hitTestable().evaluate().isNotEmpty) {
-        break;
-      }
-    }
-
-    expect(detailsPill.hitTestable(), findsOneWidget);
-
-    // Defaults to wind.
-    expect(windContent, findsOneWidget);
-    expect(sunContent, findsNothing);
-
-    await tester.tap(detailsPill.hitTestable());
-    await tester.pumpAndSettle();
-
-    expect(sunContent, findsOneWidget);
-    expect(windContent, findsNothing);
-
-    await tester.tap(detailsPill.hitTestable());
-    await tester.pumpAndSettle();
-
-    expect(windContent, findsOneWidget);
-    expect(sunContent, findsNothing);
+    final after = tester.widget<Opacity>(miniOpacityFinder);
+    expect(after.opacity, greaterThan(0.5));
   });
 }

@@ -4,7 +4,6 @@ import '../../app/app_state.dart';
 import '../../data/city_repository.dart';
 import '../../models/place.dart';
 import '../../common/feedback/unitana_toast.dart';
-import '../../utils/timezone_utils.dart';
 import '../first_run/first_run_screen.dart';
 import 'models/dashboard_live_data.dart';
 import 'models/dashboard_layout_controller.dart';
@@ -13,7 +12,9 @@ import 'models/dashboard_exceptions.dart';
 import 'models/tool_definitions.dart';
 import 'widgets/dashboard_board.dart';
 import 'widgets/data_refresh_status_label.dart';
+import 'widgets/places_hero_collapsing_header.dart';
 import 'widgets/tool_modal_bottom_sheet.dart';
+import '../../theme/dracula_palette.dart';
 
 /// Developer-only time-of-day override for weather scene previews.
 ///
@@ -33,12 +34,13 @@ class DashboardScreen extends StatefulWidget {
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
-  late final DashboardSessionController _session;
+  static const double _kMenuSheetHeightFactor = 0.82;
+
+  late DashboardSessionController _session;
   late final DashboardLiveDataController _liveData;
-  late final DashboardLayoutController _layout;
+  late DashboardLayoutController _layout;
 
   late final ScrollController _scrollController;
-  double _scrollOffset = 0;
 
   DateTime? _lastAutoWeatherRefreshAttemptAt;
 
@@ -50,19 +52,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   void initState() {
     super.initState();
-    _session = DashboardSessionController();
     _liveData = DashboardLiveDataController();
     _liveData.loadDevSettings();
-    _layout = DashboardLayoutController();
-    _layout.load();
+    _bindProfileScopedControllers();
 
     _scrollController = ScrollController();
-    _scrollController.addListener(() {
-      final next = _scrollController.offset;
-      if (next == _scrollOffset) return;
-      setState(() {
-        _scrollOffset = next;
-      });
+
+    // Kick off an initial refresh so the hero is never stuck showing placeholders.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _refreshAllNow();
     });
   }
 
@@ -73,6 +71,29 @@ class _DashboardScreenState extends State<DashboardScreen> {
     _liveData.dispose();
     _layout.dispose();
     super.dispose();
+  }
+
+  void _bindProfileScopedControllers() {
+    final namespace = state.activePrefsNamespace;
+    _session = DashboardSessionController(prefsNamespace: namespace);
+    _session.loadPersisted();
+    _layout = DashboardLayoutController(prefsNamespace: namespace);
+    _layout.load();
+  }
+
+  Future<void> _switchActiveProfileAndReload(String profileId) async {
+    await state.switchToProfile(profileId);
+    if (!mounted) return;
+
+    _session.dispose();
+    _layout.dispose();
+    _bindProfileScopedControllers();
+
+    setState(() {
+      _isEditingWidgets = false;
+      _focusTileId = null;
+    });
+    await _refreshAllNow();
   }
 
   Future<void> _resetAndRestart() async {
@@ -251,12 +272,28 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   controller: scrollController,
                   padding: const EdgeInsets.only(bottom: 8),
                   children: [
-                    ListTile(
-                      key: const ValueKey('devtools_weather_title'),
-                      leading: const Icon(Icons.wb_sunny_outlined),
-                      title: const Text('Weather'),
-                      subtitle: Text(
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(12, 2, 6, 2),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.wb_sunny_outlined),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              'Weather',
+                              key: const ValueKey('devtools_weather_title'),
+                              style: Theme.of(context).textTheme.titleLarge,
+                            ),
+                          ),
+                          _sheetCloseButton(sheetContext),
+                        ],
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                      child: Text(
                         'Source: ${backendLabel(selectedBackend)}\nForce hero weather scenes during development',
+                        style: Theme.of(context).textTheme.bodyMedium,
                       ),
                     ),
                     const Divider(height: 24),
@@ -458,10 +495,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       children: [
                         const Icon(Icons.schedule),
                         const SizedBox(width: 10),
-                        Text(
-                          'Clock Override',
-                          style: Theme.of(context).textTheme.titleLarge,
+                        Expanded(
+                          child: Text(
+                            'Clock Override',
+                            style: Theme.of(context).textTheme.titleLarge,
+                          ),
                         ),
+                        _sheetCloseButton(sheetContext),
                       ],
                     ),
                     const SizedBox(height: 4),
@@ -575,10 +615,28 @@ class _DashboardScreenState extends State<DashboardScreen> {
             shrinkWrap: true,
             padding: const EdgeInsets.only(bottom: 8),
             children: [
-              ListTile(
-                leading: const Icon(Icons.developer_mode),
-                title: const Text('Developer Tools'),
-                subtitle: const Text('Temporary tools for development and QA'),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(12, 2, 6, 2),
+                child: Row(
+                  children: [
+                    const Icon(Icons.developer_mode),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        'Developer Tools',
+                        style: Theme.of(sheetContext).textTheme.titleLarge,
+                      ),
+                    ),
+                    _sheetCloseButton(sheetContext),
+                  ],
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                child: Text(
+                  'Temporary tools for development and QA',
+                  style: Theme.of(sheetContext).textTheme.bodyMedium,
+                ),
               ),
               ListTile(
                 key: const ValueKey('devtools_reset_restart'),
@@ -630,9 +688,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Reset Dashboard Defaults',
-                  style: Theme.of(sheetContext).textTheme.titleLarge,
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'Reset Dashboard Defaults',
+                        style: Theme.of(sheetContext).textTheme.titleLarge,
+                      ),
+                    ),
+                    _sheetCloseButton(sheetContext),
+                  ],
                 ),
                 const SizedBox(height: 6),
                 Text(
@@ -761,6 +826,102 @@ class _DashboardScreenState extends State<DashboardScreen> {
     UnitanaToast.showInfo(context, '$label: coming soon');
   }
 
+  Future<void> _openEditProfileWizard() async {
+    if (!mounted) return;
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => FirstRunScreen(state: widget.state, editMode: true),
+      ),
+    );
+  }
+
+  Future<void> _openProfileSwitcherSheet() async {
+    if (!mounted) return;
+
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      isScrollControlled: true,
+      builder: (sheetContext) {
+        final maxH = MediaQuery.of(sheetContext).size.height *
+            _kMenuSheetHeightFactor;
+        final titleStyle = Theme.of(sheetContext).textTheme.titleLarge;
+        return SafeArea(
+          child: SizedBox(
+            height: maxH,
+            child: ListView(
+              key: const Key('profile_switcher_sheet'),
+              padding: const EdgeInsets.only(bottom: 8),
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 2, 6, 2),
+                  child: Row(
+                    children: [
+                      Expanded(child: Text('Profiles', style: titleStyle)),
+                      _sheetCloseButton(sheetContext),
+                    ],
+                  ),
+                ),
+                ListTile(
+                  key: const Key('profile_switcher_active_profile'),
+                  leading: const Icon(Icons.person),
+                  title: Text(widget.state.profileName),
+                  subtitle: Text(_profilePlacesSummary()),
+                  trailing: IconButton(
+                    key: const Key('profile_switcher_edit_profile'),
+                    tooltip: 'Edit profile',
+                    icon: const Icon(Icons.edit),
+                    onPressed: () {
+                      Navigator.of(sheetContext).pop();
+                      Future.microtask(_openEditProfileWizard);
+                    },
+                  ),
+                  onTap: () {
+                    Navigator.of(sheetContext).pop();
+                  },
+                ),
+                ...state.profiles
+                    .where((p) => p.id != state.activeProfileId)
+                    .map(
+                      (profile) => ListTile(
+                        key: ValueKey('profile_switcher_profile_${profile.id}'),
+                        leading: const Icon(Icons.person_outline),
+                        title: Text(profile.name),
+                        subtitle: Text(_profilePlacesSummaryFor(profile)),
+                        onTap: () async {
+                          Navigator.of(sheetContext).pop();
+                          await _switchActiveProfileAndReload(profile.id);
+                        },
+                      ),
+                    ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  String _profilePlacesSummary() {
+    return _profilePlacesSummaryFor(widget.state.activeProfile);
+  }
+
+  String _profilePlacesSummaryFor(UnitanaProfile profile) {
+    final places = profile.places;
+    final living = places
+        .where((p) => p.type == PlaceType.living)
+        .cast<Place?>()
+        .firstWhere((p) => p != null, orElse: () => null);
+    final visiting = places
+        .where((p) => p.type == PlaceType.visiting)
+        .cast<Place?>()
+        .firstWhere((p) => p != null, orElse: () => null);
+
+    final a = living?.cityName ?? 'Home';
+    final b = visiting?.cityName ?? 'Destination';
+    return '$a ↔ $b';
+  }
+
   void _openToolPickerFromMenu() {
     if (!mounted) return;
     _openToolPickerAndRun(context);
@@ -773,6 +934,38 @@ class _DashboardScreenState extends State<DashboardScreen> {
       _isEditingWidgets = true;
       _focusTileId = focusTileId;
     });
+  }
+
+  String _nextProfileId() {
+    final existing = state.profiles.map((p) => p.id).toSet();
+    var n = 1;
+    while (existing.contains('profile_$n')) {
+      n += 1;
+    }
+    return 'profile_$n';
+  }
+
+  Future<void> _createAndOpenNewProfileWizard() async {
+    final profile = UnitanaProfile(
+      id: _nextProfileId(),
+      name: 'New Profile',
+      places: const <Place>[],
+      defaultPlaceId: null,
+    );
+
+    await state.createProfile(profile);
+    if (!mounted) return;
+    await _switchActiveProfileAndReload(profile.id);
+    if (!mounted) return;
+    await _openEditProfileWizard();
+  }
+
+  Widget _sheetCloseButton(BuildContext context) {
+    return IconButton(
+      icon: const Icon(Icons.close_rounded),
+      tooltip: 'Close',
+      onPressed: () => Navigator.of(context).maybePop(),
+    );
   }
 
   Future<void> _exitEditWidgetsCancel() async {
@@ -818,8 +1011,34 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) return;
+
       await _liveData.refreshAll(places: places);
     });
+  }
+
+  Future<void> _refreshAllNow() async {
+    if (!mounted) return;
+    final places = state.places;
+    await _liveData.refreshAll(places: places);
+  }
+
+  /// Pick the current Home place from the app state.
+  ///
+  /// Contract: the wizard stores places in [home, destination] order.
+  /// If that ever changes, update this helper (and its companion below)
+  /// in one place so hero + mini hero stay consistent.
+  Place? _pickHome(List<Place> places) {
+    if (places.isEmpty) return null;
+    return places.first;
+  }
+
+  /// Pick the current Destination place from the app state.
+  ///
+  /// Returns null when the user has not configured a second place yet,
+  /// which intentionally hides the pinned mini hero readout.
+  Place? _pickDestination(List<Place> places) {
+    if (places.length < 2) return null;
+    return places[1];
   }
 
   @override
@@ -857,13 +1076,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 softWrap: false,
                 textAlign: TextAlign.center,
                 style:
-                    GoogleFonts.robotoSlab(
-                      textStyle: Theme.of(context).textTheme.titleLarge,
-                    ).copyWith(
-                      fontSize: 28,
-                      height: 1.0,
-                      fontWeight: FontWeight.w800,
-                    ),
+                    (Theme.of(context).textTheme.titleLarge ??
+                            const TextStyle())
+                        .merge(GoogleFonts.robotoSlab())
+                        .copyWith(
+                          fontSize: 28,
+                          height: 1.0,
+                          fontWeight: FontWeight.w800,
+                        ),
               ),
             ),
             actions: [
@@ -890,75 +1110,105 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     onTap: () {
                       showModalBottomSheet<void>(
                         context: context,
+                        isScrollControlled: true,
                         showDragHandle: true,
                         builder: (sheetContext) {
                           // Bottom sheets are particularly prone to small-phone
                           // overflows when built as a natural-height Column.
                           // Use a scrollable list so the sheet can adapt to
                           // tight viewports without RenderFlex overflow.
+                          final maxH = MediaQuery.of(sheetContext).size.height *
+                              _kMenuSheetHeightFactor;
                           return SafeArea(
-                            child: ListView(
-                              shrinkWrap: true,
-                              padding: const EdgeInsets.only(bottom: 8),
-                              children: [
-                                ListTile(
-                                  leading: const Icon(Icons.edit),
-                                  title: const Text('Edit widgets'),
-                                  onTap: () {
-                                    Navigator.of(sheetContext).pop();
-                                    Future.microtask(() {
-                                      if (!mounted) return;
-                                      _enterEditWidgets();
-                                    });
-                                  },
-                                ),
-                                ListTile(
-                                  leading: const Icon(Icons.switch_account),
-                                  title: const Text('Switch profile'),
-                                  onTap: () {
-                                    Navigator.of(sheetContext).pop();
-                                    _comingSoon(context, 'Switch profile');
-                                  },
-                                ),
-                                ListTile(
-                                  leading: const Icon(Icons.person_add_alt_1),
-                                  title: const Text('Add profile'),
-                                  onTap: () {
-                                    Navigator.of(sheetContext).pop();
-                                    _comingSoon(context, 'Add profile');
-                                  },
-                                ),
-                                ListTile(
-                                  leading: const Icon(Icons.settings),
-                                  title: const Text('Settings'),
-                                  onTap: () {
-                                    Navigator.of(sheetContext).pop();
-                                    _comingSoon(context, 'Settings');
-                                  },
-                                ),
-                                ListTile(
-                                  key: const ValueKey(
-                                    'dashboard_menu_reset_defaults',
+                            child: SizedBox(
+                              height: maxH,
+                              child: ListView(
+                                padding: const EdgeInsets.only(bottom: 8),
+                                children: [
+                                  Padding(
+                                    padding:
+                                        const EdgeInsets.fromLTRB(12, 2, 6, 2),
+                                    child: Row(
+                                      children: [
+                                        Expanded(
+                                          child: Text(
+                                            'Menu',
+                                            style: Theme.of(
+                                              sheetContext,
+                                            ).textTheme.titleLarge,
+                                          ),
+                                        ),
+                                        _sheetCloseButton(sheetContext),
+                                      ],
+                                    ),
                                   ),
-                                  leading: const Icon(Icons.restore),
-                                  title: const Text('Reset Dashboard Defaults'),
-                                  onTap: () {
-                                    Navigator.of(sheetContext).pop();
-                                    Future.microtask(_resetDashboardDefaults);
-                                  },
-                                ),
-                                ListTile(
-                                  key: const ValueKey(
-                                    'dashboard_menu_developer_tools',
+                                  ListTile(
+                                    leading: const Icon(Icons.edit),
+                                    title: const Text('Edit widgets'),
+                                    onTap: () {
+                                      Navigator.of(sheetContext).pop();
+                                      Future.microtask(() {
+                                        if (!mounted) return;
+                                        _enterEditWidgets();
+                                      });
+                                    },
                                   ),
-                                  leading: const Icon(Icons.developer_mode),
-                                  title: const Text('Developer Tools'),
-                                  onTap: () {
-                                    Navigator.of(sheetContext).pop();
-                                    Future.microtask(_openDeveloperToolsSheet);
-                                  },
-                                ),
-                              ],
+                                  ListTile(
+                                    leading: const Icon(Icons.switch_account),
+                                    title: const Text('Switch profile'),
+                                    onTap: () {
+                                      Navigator.of(sheetContext).pop();
+                                      Future.microtask(
+                                        _openProfileSwitcherSheet,
+                                      );
+                                    },
+                                  ),
+                                  ListTile(
+                                    leading: const Icon(Icons.person_add_alt_1),
+                                    title: const Text('Add profile'),
+                                    onTap: () {
+                                      Navigator.of(sheetContext).pop();
+                                      Future.microtask(
+                                        _createAndOpenNewProfileWizard,
+                                      );
+                                    },
+                                  ),
+                                  ListTile(
+                                    leading: const Icon(Icons.settings),
+                                    title: const Text('Settings'),
+                                    onTap: () {
+                                      Navigator.of(sheetContext).pop();
+                                      _comingSoon(context, 'Settings');
+                                    },
+                                  ),
+                                  ListTile(
+                                    key: const ValueKey(
+                                      'dashboard_menu_reset_defaults',
+                                    ),
+                                    leading: const Icon(Icons.restore),
+                                    title: const Text(
+                                      'Reset Dashboard Defaults',
+                                    ),
+                                    onTap: () {
+                                      Navigator.of(sheetContext).pop();
+                                      Future.microtask(_resetDashboardDefaults);
+                                    },
+                                  ),
+                                  ListTile(
+                                    key: const ValueKey(
+                                      'dashboard_menu_developer_tools',
+                                    ),
+                                    leading: const Icon(Icons.developer_mode),
+                                    title: const Text('Developer Tools'),
+                                    onTap: () {
+                                      Navigator.of(sheetContext).pop();
+                                      Future.microtask(
+                                        _openDeveloperToolsSheet,
+                                      );
+                                    },
+                                  ),
+                                ],
+                              ),
                             ),
                           );
                         },
@@ -977,90 +1227,108 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
               final availableWidth = width - padding.horizontal;
 
-              // Sticky hero (Option A, compact overlay): we preserve the hero
-              // tile and grid indexing for persistence, but we surface a
-              // compact, always-actionable reality toggle once the hero has
-              // scrolled mostly out of view.
+              // Grid geometry (kept in sync with DashboardBoard)
               const gridGap = 12.0;
               const tileHeightRatio = 0.78;
               final cols = availableWidth >= 520 ? 3 : 2;
               final tileW = (availableWidth - (cols - 1) * gridGap) / cols;
               final tileH = tileW * tileHeightRatio;
               final heroHeight = (2 * tileH) + gridGap;
-
-              const pinnedHeight = 104.0;
-              final showPinned =
-                  (DashboardScreen.debugForcePinnedHeroVisible) ||
-                  (!_isEditingWidgets &&
-                      _scrollOffset > (heroHeight - pinnedHeight * 0.75));
-
-              // C3a: sliver migration foundation.
+              // Collapsing pinned header: PlacesHeroV2 -> mini hero.
               //
-              // Keep behavior identical to SingleChildScrollView for now
-              // (hero and tiles scroll together). This unlocks a pinned header
-              // in a later slice without increasing current layout risk.
-              return Stack(
-                children: [
-                  CustomScrollView(
-                    controller: _scrollController,
-                    slivers: [
-                      SliverPadding(
-                        padding: padding,
-                        sliver: SliverToBoxAdapter(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              // Single, unified refresh indicator.
-                              // Contract: visible under the city header, never
-                              // inside the hero marquee.
-                              Align(
-                                alignment: Alignment.center,
-                                child: Padding(
-                                  padding: const EdgeInsets.only(bottom: 10),
-                                  child: DataRefreshStatusLabel(
-                                    liveData: _liveData,
-                                    compact: false,
-                                    showBackground: true,
-                                  ),
-                                ),
+              // NOTE: With a sliver persistent header, this becomes scroll-continuous.
+              // There is no overlay insertion and no spacer threshold that can "pop".
+              const pinnedHeight = 176.0;
+
+              final home = _pickHome(state.places);
+              final destination = _pickDestination(state.places);
+
+              // Seed deterministic demo/live data so the header does not show a
+              // one-frame placeholder during fast scroll.
+              _liveData.ensureSeeded([
+                if (home != null) home,
+                if (destination != null) destination,
+              ]);
+
+              return CustomScrollView(
+                controller: _scrollController,
+                slivers: [
+                  SliverPadding(
+                    padding: EdgeInsets.only(
+                      left: padding.left,
+                      right: padding.right,
+                      top: 0,
+                    ),
+                    sliver: SliverToBoxAdapter(
+                      child: Align(
+                        alignment: Alignment.center,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            DataRefreshStatusLabel(
+                              key: const ValueKey(
+                                'dashboard_refresh_status_label',
                               ),
-                              DashboardBoard(
-                                state: state,
-                                session: _session,
-                                liveData: _liveData,
-                                layout: _layout,
-                                availableWidth: availableWidth,
-                                isEditing: _isEditingWidgets,
-                                focusActionTileId: _focusTileId,
-                                onEnteredEditMode: (tileId) {
-                                  if (_isEditingWidgets) return;
-                                  _enterEditWidgets(focusTileId: tileId);
-                                },
-                                onConsumedFocusTileId: () {
-                                  if (_focusTileId == null) return;
-                                  setState(() {
-                                    _focusTileId = null;
-                                  });
-                                },
+                              liveData: _liveData,
+                              compact: true,
+                              showBackground: false,
+                              hideWhenUnavailable: false,
+                            ),
+                            const SizedBox(width: 0),
+                            IconButton(
+                              tooltip: 'Refresh',
+                              onPressed: _refreshAllNow,
+                              icon: const Icon(Icons.refresh_rounded, size: 16),
+                              color: DraculaPalette.purple.withAlpha(220),
+                              padding: EdgeInsets.zero,
+                              visualDensity: VisualDensity.compact,
+                              constraints: const BoxConstraints(
+                                minWidth: 24,
+                                minHeight: 24,
                               ),
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
                       ),
-                    ],
+                    ),
                   ),
-                  Positioned(
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    child: _PinnedHeroOverlay(
-                      key: const ValueKey('dashboard_pinned_hero'),
-                      visible: showPinned,
-                      height: pinnedHeight,
-                      horizontalPadding: padding.horizontal / 2,
-                      places: state.places,
-                      session: _session,
-                      liveData: _liveData,
+                  SliverPadding(
+                    padding: EdgeInsets.symmetric(horizontal: padding.left),
+                    sliver: SliverPersistentHeader(
+                      pinned: true,
+                      delegate: PlacesHeroCollapsingHeaderDelegate(
+                        expandedHeight: heroHeight,
+                        collapsedHeight: pinnedHeight,
+                        horizontalPadding: padding.left,
+                        home: home,
+                        destination: destination,
+                        session: _session,
+                        liveData: _liveData,
+                      ),
+                    ),
+                  ),
+                  const SliverToBoxAdapter(child: SizedBox(height: 12)),
+                  SliverPadding(
+                    padding: EdgeInsets.only(
+                      left: padding.left,
+                      right: padding.right,
+                      bottom: padding.bottom,
+                    ),
+                    sliver: SliverToBoxAdapter(
+                      child: DashboardBoard(
+                        state: state,
+                        session: _session,
+                        liveData: _liveData,
+                        layout: _layout,
+                        availableWidth: availableWidth,
+                        isEditing: _isEditingWidgets,
+                        includePlacesHero: false,
+                        focusActionTileId: _focusTileId,
+                        onEnteredEditMode: (focusId) =>
+                            _enterEditWidgets(focusTileId: focusId),
+                        onConsumedFocusTileId: () =>
+                            setState(() => _focusTileId = null),
+                      ),
                     ),
                   ),
                 ],
@@ -1069,569 +1337,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
         );
       },
-    );
-  }
-}
-
-class _PinnedHeroOverlay extends StatelessWidget {
-  final bool visible;
-  final double height;
-  final double horizontalPadding;
-  final List<Place> places;
-  final DashboardSessionController session;
-  final DashboardLiveDataController liveData;
-
-  const _PinnedHeroOverlay({
-    super.key,
-    required this.visible,
-    required this.height,
-    required this.horizontalPadding,
-    required this.places,
-    required this.session,
-    required this.liveData,
-  });
-
-  Place? _pickHome(List<Place> places) {
-    for (final p in places) {
-      if (p.type == PlaceType.living) return p;
-    }
-    return places.isEmpty ? null : places.last;
-  }
-
-  Place? _pickDestination(List<Place> places) {
-    for (final p in places) {
-      if (p.type == PlaceType.visiting) return p;
-    }
-    return places.isEmpty ? null : places.first;
-  }
-
-  String _flagEmoji(String countryCode) {
-    final code = countryCode.trim().toUpperCase();
-    if (code.length != 2) return '';
-    final a = code.codeUnitAt(0);
-    final b = code.codeUnitAt(1);
-    if (a < 65 || a > 90 || b < 65 || b > 90) return '';
-    return String.fromCharCode(0x1F1E6 + (a - 65)) +
-        String.fromCharCode(0x1F1E6 + (b - 65));
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final home = _pickHome(places);
-    final dest = _pickDestination(places);
-
-    if (home == null || dest == null) {
-      return const SizedBox.shrink();
-    }
-
-    final isHome = session.reality == DashboardReality.home;
-    final active = isHome ? home : dest;
-    // Primary/secondary are only for the pinned overlay cockpit row.
-    // Primary is the active "reality" place.
-    final primary = active;
-    final secondary = isHome ? dest : home;
-
-    final homeLabel = '${_flagEmoji(home.countryCode)} ${home.cityName}'.trim();
-    final destLabel = '${_flagEmoji(dest.countryCode)} ${dest.cityName}'.trim();
-
-    final bar = Material(
-      elevation: 1,
-      color: cs.surface.withAlpha(242),
-      child: Container(
-        constraints: BoxConstraints(minHeight: height),
-        padding: EdgeInsets.symmetric(
-          horizontal: horizontalPadding,
-          vertical: 8,
-        ),
-        decoration: BoxDecoration(
-          border: Border(
-            bottom: BorderSide(color: cs.outlineVariant, width: 1),
-          ),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _CompactRealityToggle(
-              key: const ValueKey('dashboard_pinned_reality_toggle'),
-              isHome: isHome,
-              homeLabel: homeLabel,
-              destLabel: destLabel,
-              onPickHome: () => session.setReality(DashboardReality.home),
-              onPickDestination: () =>
-                  session.setReality(DashboardReality.destination),
-            ),
-            const SizedBox(height: 8),
-            _PinnedCockpitRow(
-              session: session,
-              primary: primary,
-              secondary: secondary,
-              liveData: liveData,
-            ),
-          ],
-        ),
-      ),
-    );
-
-    return AnimatedSlide(
-      duration: const Duration(milliseconds: 160),
-      curve: Curves.easeOut,
-      offset: visible ? Offset.zero : const Offset(0, -0.08),
-      child: AnimatedOpacity(
-        duration: const Duration(milliseconds: 140),
-        curve: Curves.easeOut,
-        opacity: visible ? 1 : 0,
-        child: IgnorePointer(ignoring: !visible, child: bar),
-      ),
-    );
-  }
-}
-
-class _PinnedCockpitRow extends StatelessWidget {
-  final DashboardSessionController session;
-  final Place primary;
-  final Place secondary;
-  final DashboardLiveDataController liveData;
-
-  const _PinnedCockpitRow({
-    required this.session,
-    required this.primary,
-    required this.secondary,
-    required this.liveData,
-  });
-
-  List<String> _currencyLines({
-    required String fromCode,
-    required String toCode,
-    required double eurToUsd,
-  }) {
-    // Mirrors PlacesHeroV2 formatting, but kept local to avoid a cross-widget
-    // dependency for pinned overlay rendering.
-    if (fromCode.toUpperCase() == 'EUR' && toCode.toUpperCase() == 'USD') {
-      final approx = (10 * eurToUsd).round();
-      return ['€10≈\$$approx', '1€≈\$${eurToUsd.toStringAsFixed(2)}'];
-    }
-    if (fromCode.toUpperCase() == 'USD' && toCode.toUpperCase() == 'EUR') {
-      final inv = eurToUsd == 0 ? 0 : 1 / eurToUsd;
-      final approx = (10 * inv).round();
-      return ['\$10≈€$approx', '1\$≈€${inv.toStringAsFixed(2)}'];
-    }
-    // Fallback for future pairs.
-    final approx = (10 * eurToUsd).round();
-    return [
-      '${fromCode.toUpperCase()}10≈${toCode.toUpperCase()}$approx',
-      '1${fromCode.toUpperCase()}≈${toCode.toUpperCase()}${eurToUsd.toStringAsFixed(2)}',
-    ];
-  }
-
-  String _currencyForPlace(Place place) {
-    // Lightweight and intentionally limited for the MVP.
-    // We can expand this into a richer mapping or ISO currency lookup later.
-    switch (place.countryCode.toUpperCase()) {
-      case 'US':
-        return 'USD';
-      default:
-        return 'EUR';
-    }
-  }
-
-  List<String> _windLines({required double windKmh, required double gustKmh}) {
-    final windMph = windKmh * 0.621371;
-    final gustMph = gustKmh * 0.621371;
-
-    final useImperial = primary.unitSystem.toLowerCase() == 'imperial';
-    if (useImperial) {
-      return [
-        '${windMph.round()} mph (${windKmh.round()} km/h)',
-        '${gustMph.round()} mph (${gustKmh.round()} km/h) gust',
-      ];
-    }
-    return [
-      '${windKmh.round()} km/h (${windMph.round()} mph)',
-      '${gustKmh.round()} km/h (${gustMph.round()} mph) gust',
-    ];
-  }
-
-  String _timeLine() {
-    final zt = TimezoneUtils.nowInZone(
-      primary.timeZoneId,
-      nowUtc: liveData.nowUtc,
-    );
-    final primaryTime = TimezoneUtils.formatClock(zt, use24h: primary.use24h);
-    final secondaryTime = TimezoneUtils.formatClock(
-      zt,
-      use24h: !primary.use24h,
-    );
-    return '$primaryTime ($secondaryTime)';
-  }
-
-  String _tempLine() {
-    final weather = liveData.weatherFor(primary);
-    final tempC = weather?.temperatureC.round();
-    if (tempC == null) return 'Temp —';
-    final tempF = (tempC * 9 / 5 + 32).round();
-
-    final useImperial = primary.unitSystem.toLowerCase() == 'imperial';
-    if (useImperial) {
-      return '$tempF°F ($tempC°C)';
-    }
-    return '$tempC°C ($tempF°F)';
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-
-    final baseText = Theme.of(context).textTheme.labelMedium?.copyWith(
-      color: cs.onSurface.withAlpha(225),
-      fontWeight: FontWeight.w700,
-    );
-    final secondaryText = Theme.of(context).textTheme.labelSmall?.copyWith(
-      color: cs.onSurface.withAlpha(205),
-      fontWeight: FontWeight.w700,
-    );
-
-    // Pinned hero pills must never truncate with ellipsis. When space is tight
-    // we scale down text to keep full content readable.
-    Widget scaleLine(String text, TextStyle? style, {Key? key}) {
-      return SizedBox(
-        width: double.infinity,
-        child: FittedBox(
-          fit: BoxFit.scaleDown,
-          alignment: Alignment.centerLeft,
-          child: Text(
-            text,
-            key: key,
-            maxLines: 1,
-            softWrap: false,
-            style: style,
-          ),
-        ),
-      );
-    }
-
-    Widget pill({
-      required Key key,
-      required IconData icon,
-      required Widget child,
-      VoidCallback? onTap,
-      Widget? trailing,
-    }) {
-      final content = Row(
-        children: [
-          Icon(icon, size: 16, color: cs.onSurface.withAlpha(210)),
-          const SizedBox(width: 8),
-          Expanded(child: child),
-          if (trailing != null) ...[const SizedBox(width: 8), trailing],
-        ],
-      );
-
-      final pillBody = Container(
-        key: key,
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
-        decoration: BoxDecoration(
-          color: cs.surfaceContainerHighest.withAlpha(89),
-          borderRadius: BorderRadius.circular(999),
-          border: Border.all(color: cs.outlineVariant.withAlpha(179), width: 1),
-        ),
-        child: content,
-      );
-
-      if (onTap == null) return pillBody;
-      return InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(999),
-        child: pillBody,
-      );
-    }
-
-    final timeLine = _timeLine();
-    final tempLine = _tempLine();
-
-    final from = _currencyForPlace(primary);
-    final to = _currencyForPlace(secondary);
-    final currencyLines = _currencyLines(
-      fromCode: from,
-      toCode: to,
-      eurToUsd: liveData.eurToUsd,
-    );
-
-    final weather = liveData.weatherFor(primary);
-    final windLines = _windLines(
-      windKmh: weather?.windKmh ?? 0,
-      gustKmh: weather?.gustKmh ?? 0,
-    );
-
-    final sun = liveData.sunFor(primary);
-    String sunRise = '—';
-    String sunSet = '—';
-    if (sun != null) {
-      final riseZt = TimezoneUtils.nowInZone(
-        primary.timeZoneId,
-        nowUtc: sun.sunriseUtc,
-      );
-      final setZt = TimezoneUtils.nowInZone(
-        primary.timeZoneId,
-        nowUtc: sun.sunsetUtc,
-      );
-      sunRise = TimezoneUtils.formatClock(riseZt, use24h: primary.use24h);
-      sunSet = TimezoneUtils.formatClock(setZt, use24h: primary.use24h);
-    }
-
-    final isSun = session.pinnedHeroDetailsMode == PinnedHeroDetailsMode.sun;
-
-    Widget detailsBody;
-    if (isSun) {
-      detailsBody = Column(
-        key: const ValueKey('dashboard_pinned_details_sun'),
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          scaleLine(sunRise, baseText),
-          const SizedBox(height: 1),
-          scaleLine(sunSet, secondaryText),
-        ],
-      );
-    } else {
-      detailsBody = Column(
-        key: const ValueKey('dashboard_pinned_details_wind'),
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          scaleLine(windLines[0], baseText),
-          const SizedBox(height: 1),
-          scaleLine(windLines[1], secondaryText),
-        ],
-      );
-    }
-
-    final swap = _PulseSwapIcon(color: cs.primary.withAlpha(230));
-
-    Widget timeTempPill() {
-      return pill(
-        key: const ValueKey('dashboard_pinned_time_temp_pill'),
-        icon: Icons.schedule_rounded,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            scaleLine(timeLine, baseText),
-            const SizedBox(height: 1),
-            scaleLine(tempLine, secondaryText),
-          ],
-        ),
-      );
-    }
-
-    Widget currencyPill() {
-      return pill(
-        key: const ValueKey('dashboard_pinned_currency_pill'),
-        icon: Icons.currency_exchange_rounded,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            scaleLine(currencyLines[0], baseText),
-            const SizedBox(height: 1),
-            scaleLine(currencyLines[1], secondaryText),
-          ],
-        ),
-      );
-    }
-
-    Widget detailsPill() {
-      return pill(
-        key: const ValueKey('dashboard_pinned_details_pill'),
-        icon: isSun ? Icons.wb_sunny_rounded : Icons.air_rounded,
-        onTap: session.togglePinnedHeroDetailsMode,
-        trailing: swap,
-        child: SizedBox(
-          height: 34,
-          child: AnimatedSwitcher(
-            duration: const Duration(milliseconds: 160),
-            switchInCurve: Curves.easeOut,
-            switchOutCurve: Curves.easeOut,
-            transitionBuilder: (child, anim) =>
-                FadeTransition(opacity: anim, child: child),
-            child: detailsBody,
-          ),
-        ),
-      );
-    }
-
-    // Contract: pinned mini-hero cockpit must stay single-row only (no stacking).
-    return Row(
-      key: const ValueKey('dashboard_pinned_cockpit_row'),
-      children: [
-        Expanded(flex: 4, child: timeTempPill()),
-        const SizedBox(width: 10),
-        Expanded(flex: 3, child: currencyPill()),
-        const SizedBox(width: 10),
-        Expanded(flex: 5, child: detailsPill()),
-      ],
-    );
-  }
-}
-
-class _PulseSwapIcon extends StatefulWidget {
-  final Color color;
-
-  const _PulseSwapIcon({required this.color});
-
-  @override
-  State<_PulseSwapIcon> createState() => _PulseSwapIconState();
-}
-
-class _PulseSwapIconState extends State<_PulseSwapIcon>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _controller;
-  late final Animation<double> _opacity;
-
-  bool get _isTest {
-    // Prefer the compile-time flag when present.
-    if (bool.fromEnvironment('FLUTTER_TEST')) return true;
-    // Fall back to a binding type-name check (works across runners).
-    final binding = WidgetsBinding.instance;
-    return binding.runtimeType.toString().contains('TestWidgetsFlutterBinding');
-  }
-
-  void _syncAnimation() {
-    final disableAnimations =
-        MediaQuery.maybeOf(context)?.disableAnimations ?? false;
-    final tickerEnabled = TickerMode.of(context);
-    final shouldAnimate = !_isTest && !disableAnimations && tickerEnabled;
-
-    if (shouldAnimate) {
-      if (!_controller.isAnimating) {
-        _controller.repeat();
-      }
-    } else {
-      if (_controller.isAnimating) {
-        _controller.stop();
-      }
-    }
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 3000),
-    );
-
-    _opacity = TweenSequence<double>([
-      TweenSequenceItem(tween: Tween(begin: 0.55, end: 1.0), weight: 40),
-      TweenSequenceItem(tween: Tween(begin: 1.0, end: 0.55), weight: 60),
-    ]).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    _syncAnimation();
-  }
-
-  @override
-  void didUpdateWidget(covariant _PulseSwapIcon oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    _syncAnimation();
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return FadeTransition(
-      opacity: _opacity,
-      child: Icon(Icons.swap_horiz_rounded, size: 18, color: widget.color),
-    );
-  }
-}
-
-class _CompactRealityToggle extends StatelessWidget {
-  final bool isHome;
-  final String homeLabel;
-  final String destLabel;
-  final VoidCallback onPickHome;
-  final VoidCallback onPickDestination;
-
-  const _CompactRealityToggle({
-    super.key,
-    required this.isHome,
-    required this.homeLabel,
-    required this.destLabel,
-    required this.onPickHome,
-    required this.onPickDestination,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final bg = cs.surfaceContainerHighest.withAlpha(77);
-    final border = cs.outlineVariant.withAlpha(179);
-
-    Widget segment({
-      required bool selected,
-      required String text,
-      required VoidCallback onTap,
-      required Key key,
-    }) {
-      return Expanded(
-        child: InkWell(
-          key: key,
-          borderRadius: BorderRadius.circular(999),
-          onTap: onTap,
-          child: Container(
-            height: 34,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: selected ? cs.primaryContainer.withAlpha(140) : bg,
-              borderRadius: BorderRadius.circular(999),
-              border: Border.all(color: border, width: 1),
-            ),
-            child: Text(
-              text,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                fontWeight: FontWeight.w800,
-                color: cs.onSurface.withAlpha(230),
-              ),
-            ),
-          ),
-        ),
-      );
-    }
-
-    return Container(
-      padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: border, width: 1),
-      ),
-      child: Row(
-        children: [
-          segment(
-            key: const ValueKey('dashboard_pinned_segment_destination'),
-            selected: !isHome,
-            text: destLabel,
-            onTap: onPickDestination,
-          ),
-          const SizedBox(width: 6),
-          segment(
-            key: const ValueKey('dashboard_pinned_segment_home'),
-            selected: isHome,
-            text: homeLabel,
-            onTap: onPickHome,
-          ),
-        ],
-      ),
     );
   }
 }
@@ -1648,9 +1353,6 @@ class _HeaderIconButton extends StatelessWidget {
     required this.onTap,
   });
 
-  // AppBar's toolbar height is typically 56. Using the same square size here
-  // ensures the leading and actions slots resolve to identical tap targets and
-  // avoids constraint-driven size drift between the left and right buttons.
   static const double _size = 56;
   static const double _radius = 28;
 

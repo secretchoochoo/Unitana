@@ -1,0 +1,90 @@
+import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:unitana/app/app_state.dart';
+import 'package:unitana/app/storage.dart';
+import 'package:unitana/features/dashboard/models/dashboard_layout_controller.dart';
+import 'package:unitana/features/dashboard/models/tool_definitions.dart';
+import 'package:unitana/models/place.dart';
+
+Place _place({
+  required String id,
+  required PlaceType type,
+  required String city,
+  required String country,
+}) {
+  return Place(
+    id: id,
+    type: type,
+    name: city,
+    cityName: city,
+    countryCode: country,
+    timeZoneId: 'UTC',
+    unitSystem: 'metric',
+    use24h: true,
+  );
+}
+
+void main() {
+  setUp(() {
+    SharedPreferences.setMockInitialValues(<String, Object>{});
+  });
+
+  test('switchToProfile persists active profile and can be restored', () async {
+    final storage = UnitanaStorage();
+    final state = UnitanaAppState(storage);
+    await state.load();
+
+    const p2 = UnitanaProfile(
+      id: 'profile_2',
+      name: 'Trip',
+      places: <Place>[],
+      defaultPlaceId: null,
+    );
+
+    await state.createProfile(
+      p2.copyWith(
+        places: <Place>[
+          _place(
+            id: 'home_2',
+            type: PlaceType.living,
+            city: 'Lisbon',
+            country: 'PT',
+          ),
+          _place(
+            id: 'visit_2',
+            type: PlaceType.visiting,
+            city: 'Denver',
+            country: 'US',
+          ),
+        ],
+        defaultPlaceId: 'visit_2',
+      ),
+    );
+    expect(state.activeProfileId, 'profile_2');
+
+    await state.switchToProfile('profile_1');
+    expect(state.activeProfileId, 'profile_1');
+
+    final prefs = await SharedPreferences.getInstance();
+    expect(prefs.getString('active_profile_id_v1'), 'profile_1');
+    expect(prefs.getString('profiles_v1'), isNotNull);
+
+    final restored = UnitanaAppState(storage);
+    await restored.load();
+    expect(restored.activeProfileId, 'profile_1');
+    expect(restored.profiles.length, 2);
+  });
+
+  test('dashboard layout persistence is namespaced by profile id', () async {
+    final tool = ToolDefinitions.registry.first;
+
+    final homeLayout = DashboardLayoutController(prefsNamespace: 'profile_1');
+    await homeLayout.load();
+    await homeLayout.addTool(tool);
+    expect(homeLayout.items, isNotEmpty);
+
+    final tripLayout = DashboardLayoutController(prefsNamespace: 'profile_2');
+    await tripLayout.load();
+    expect(tripLayout.items, isEmpty);
+  });
+}

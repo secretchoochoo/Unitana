@@ -13,8 +13,8 @@ import 'package:unitana/theme/app_theme.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  // Prevent runtime font fetching in widget tests.
-  GoogleFonts.config.allowRuntimeFetching = false;
+  // Allow runtime font fetching in widget/golden tests so GoogleFonts can resolve
+  GoogleFonts.config.allowRuntimeFetching = true;
 
   UnitanaAppState buildSeededState() {
     final storage = UnitanaStorage();

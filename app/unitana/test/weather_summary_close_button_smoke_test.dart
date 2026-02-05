@@ -10,6 +10,8 @@ import 'package:unitana/features/dashboard/dashboard_screen.dart';
 import 'package:unitana/models/place.dart';
 import 'package:unitana/theme/app_theme.dart';
 
+import 'dashboard_test_helpers.dart';
+
 void main() {
   testWidgets('Weather Summary sheet can be closed via top-right X', (
     WidgetTester tester,
@@ -76,6 +78,8 @@ void main() {
 
       final tileKey = const ValueKey('dashboard_item_weather_summary_test');
       expect(find.byKey(tileKey), findsOneWidget);
+
+      await ensureVisibleAligned(tester, find.byKey(tileKey));
 
       await tester.tap(find.byKey(tileKey));
       await tester.pump();

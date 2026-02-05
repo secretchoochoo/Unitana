@@ -89,6 +89,25 @@ class CityRepository {
       break;
     }
 
+    // The v1 JSON dataset intentionally omitted coordinates for many
+    // entries. Live weather providers (Open-Meteo) require lat/lon.
+    //
+    // If we matched a city but it has no coordinates, fall back to the
+    // curated list when possible so live weather works for the default
+    // onboarding cities (Denver/Lisbon/etc.) without editing the large JSON.
+    if (best != null && (best.lat == null || best.lon == null)) {
+      City? curated;
+      for (final c in kCuratedCities) {
+        if (_norm(c.cityName) != nameN) continue;
+        if (ccN != null && _norm(c.countryCode) != ccN) continue;
+        if (a1N != null && _norm(c.admin1Code ?? '') != a1N) continue;
+        if (c.lat == null || c.lon == null) continue;
+        curated = c;
+        break;
+      }
+      if (curated != null) return curated;
+    }
+
     return best;
   }
 

@@ -9,6 +9,8 @@ import 'package:unitana/features/dashboard/dashboard_screen.dart';
 import 'package:unitana/models/place.dart';
 import 'package:unitana/theme/app_theme.dart';
 
+import 'dashboard_test_helpers.dart';
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -69,7 +71,7 @@ void main() {
     tester,
   ) async {
     SharedPreferences.setMockInitialValues({});
-    GoogleFonts.config.allowRuntimeFetching = false;
+    GoogleFonts.config.allowRuntimeFetching = true;
 
     await tester.binding.setSurfaceSize(const Size(390, 844));
     addTearDown(() async => tester.binding.setSurfaceSize(null));
@@ -80,6 +82,8 @@ void main() {
     // Add Shoe Sizes via the + slot.
     final addSlot = firstAddSlotFinder();
     expect(addSlot, findsWidgets);
+
+    await ensureVisibleAligned(tester, addSlot.first);
 
     await tester.tap(addSlot.first);
     await tester.pumpAndSettle(const Duration(milliseconds: 250));
@@ -102,7 +106,9 @@ void main() {
     expect(find.text('Shoe Sizes'), findsOneWidget);
 
     // Open the Shoe Sizes modal.
-    await tester.tap(find.text('Shoe Sizes'));
+    final shoeSizesTile = find.text('Shoe Sizes');
+    await ensureVisibleAligned(tester, shoeSizesTile);
+    await tester.tap(shoeSizesTile, warnIfMissed: false);
     await tester.pumpAndSettle(const Duration(milliseconds: 250));
 
     final inputField = find.byKey(const ValueKey('tool_input_shoe_sizes'));

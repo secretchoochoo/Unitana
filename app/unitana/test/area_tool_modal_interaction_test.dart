@@ -14,9 +14,9 @@ import 'package:unitana/theme/app_theme.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  // Prevent runtime font fetching in widget tests (avoids incidental HttpClient
-  // creation and keeps the suite deterministic).
-  GoogleFonts.config.allowRuntimeFetching = false;
+  // Allow runtime font fetching in widget/golden tests so GoogleFonts can resolve
+  // required font files without bundled assets.
+  GoogleFonts.config.allowRuntimeFetching = true;
 
   const arrow = '→';
 

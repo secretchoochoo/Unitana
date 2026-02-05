@@ -8,9 +8,9 @@ import 'dashboard_test_helpers.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  // Prevent runtime font fetching in widget tests (avoids incidental HttpClient
-  // creation and keeps the suite deterministic).
-  GoogleFonts.config.allowRuntimeFetching = false;
+  // Allow runtime font fetching in widget/golden tests so GoogleFonts can resolve
+  // required font files during tests (avoids bundling font assets in-repo).
+  GoogleFonts.config.allowRuntimeFetching = true;
 
   const arrow = '→';
 

@@ -54,3 +54,73 @@ class Place {
     );
   }
 }
+
+/// A saved dashboard configuration (name + places + defaults).
+///
+/// Stored in SharedPreferences under `profiles_v1` as a JSON list.
+/// Active profile id is stored under `active_profile_id_v1`.
+class UnitanaProfile {
+  final String id;
+  final String name;
+  final List<Place> places;
+  final String? defaultPlaceId;
+
+  const UnitanaProfile({
+    required this.id,
+    required this.name,
+    required this.places,
+    required this.defaultPlaceId,
+  });
+
+  UnitanaProfile copyWith({
+    String? id,
+    String? name,
+    List<Place>? places,
+    String? defaultPlaceId,
+  }) {
+    return UnitanaProfile(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      places: places ?? this.places,
+      defaultPlaceId: defaultPlaceId ?? this.defaultPlaceId,
+    );
+  }
+
+  Map<String, dynamic> toJson() => <String, dynamic>{
+    'id': id,
+    'name': name,
+    'defaultPlaceId': defaultPlaceId,
+    'places': places.map((p) => p.toJson()).toList(),
+  };
+
+  static UnitanaProfile? fromJson(dynamic raw) {
+    if (raw is! Map) return null;
+    final id = raw['id'];
+    final name = raw['name'];
+    if (id is! String || id.trim().isEmpty) return null;
+    if (name is! String || name.trim().isEmpty) return null;
+
+    final placesRaw = raw['places'];
+    final places = <Place>[];
+    if (placesRaw is List) {
+      for (final entry in placesRaw) {
+        try {
+          final decoded = Place.fromJson(entry);
+          places.add(decoded);
+        } catch (_) {
+          // Skip bad entries.
+        }
+      }
+    }
+
+    final defaultId = raw['defaultPlaceId'];
+    return UnitanaProfile(
+      id: id.trim(),
+      name: name.trim(),
+      places: places,
+      defaultPlaceId: defaultId is String && defaultId.trim().isNotEmpty
+          ? defaultId.trim()
+          : null,
+    );
+  }
+}

@@ -27,7 +27,7 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('first_run_nav_next')));
     await tester.pumpAndSettle();
 
-    expect(find.byKey(const ValueKey('first_run_step_home')), findsOneWidget);
+    expect(find.byKey(const ValueKey('first_run_step_places')), findsOneWidget);
     expect(find.byKey(const ValueKey('first_run_step_welcome')), findsNothing);
 
     await tester.tap(find.byKey(const ValueKey('first_run_nav_prev')));
