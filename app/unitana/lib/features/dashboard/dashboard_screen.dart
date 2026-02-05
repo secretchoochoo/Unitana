@@ -1136,14 +1136,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                     ),
                                     child: Row(
                                       children: [
-                                        Expanded(
-                                          child: Text(
-                                            'Menu',
-                                            style: Theme.of(
-                                              sheetContext,
-                                            ).textTheme.titleLarge,
-                                          ),
-                                        ),
+                                        const Spacer(),
                                         _sheetCloseButton(sheetContext),
                                       ],
                                     ),
