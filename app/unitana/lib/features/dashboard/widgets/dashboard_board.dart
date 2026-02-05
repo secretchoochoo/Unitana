@@ -1571,7 +1571,22 @@ class _ToolPickerSheetState extends State<ToolPickerSheet> {
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-            child: Text('Choose a tool', style: theme.textTheme.titleMedium),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'Choose a tool',
+                    style: theme.textTheme.titleMedium,
+                  ),
+                ),
+                IconButton(
+                  key: const ValueKey('toolpicker_close'),
+                  tooltip: 'Close',
+                  icon: const Icon(Icons.close_rounded),
+                  onPressed: () => Navigator.of(context).maybePop(),
+                ),
+              ],
+            ),
           ),
           _recentShortcut(context),
           _searchField(context),

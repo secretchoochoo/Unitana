@@ -843,8 +843,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
       showDragHandle: true,
       isScrollControlled: true,
       builder: (sheetContext) {
-        final maxH = MediaQuery.of(sheetContext).size.height *
-            _kMenuSheetHeightFactor;
+        final maxH =
+            MediaQuery.of(sheetContext).size.height * _kMenuSheetHeightFactor;
         final titleStyle = Theme.of(sheetContext).textTheme.titleLarge;
         return SafeArea(
           child: SizedBox(
@@ -1117,17 +1117,23 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           // overflows when built as a natural-height Column.
                           // Use a scrollable list so the sheet can adapt to
                           // tight viewports without RenderFlex overflow.
-                          final maxH = MediaQuery.of(sheetContext).size.height *
+                          final maxH =
+                              MediaQuery.of(sheetContext).size.height *
                               _kMenuSheetHeightFactor;
                           return SafeArea(
-                            child: SizedBox(
-                              height: maxH,
+                            child: ConstrainedBox(
+                              constraints: BoxConstraints(maxHeight: maxH),
                               child: ListView(
+                                shrinkWrap: true,
                                 padding: const EdgeInsets.only(bottom: 8),
                                 children: [
                                   Padding(
-                                    padding:
-                                        const EdgeInsets.fromLTRB(12, 2, 6, 2),
+                                    padding: const EdgeInsets.fromLTRB(
+                                      12,
+                                      2,
+                                      6,
+                                      2,
+                                    ),
                                     child: Row(
                                       children: [
                                         Expanded(
