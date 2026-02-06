@@ -92,8 +92,9 @@ class PlacesHeroCollapsingHeaderDelegate
             alignment: Alignment.topCenter,
             child: RepaintBoundary(
               child: IgnorePointer(
-                // Prevent ambiguous taps during crossfade.
-                ignoring: t < 0.55,
+                // Keep interaction handoff aligned with the hero layer.
+                // This avoids a dead zone where the mini is visible but untappable.
+                ignoring: t < 0.35,
                 child: Opacity(
                   key: const ValueKey('dashboard_collapsing_header_mini_layer'),
                   opacity: miniOpacity,
@@ -161,60 +162,65 @@ class _PinnedBar extends StatelessWidget {
     if (home == null || destination == null) {
       return const SizedBox.shrink();
     }
+    return AnimatedBuilder(
+      animation: Listenable.merge(<Listenable>[session, liveData]),
+      builder: (context, _) {
+        final cs = Theme.of(context).colorScheme;
+        final isHome = session.reality == DashboardReality.home;
 
-    final cs = Theme.of(context).colorScheme;
-    final isHome = session.reality == DashboardReality.home;
-
-    final homeLabel = '${_flagEmoji(home!.countryCode)} ${home!.cityName}'
-        .trim();
-    final destLabel =
-        '${_flagEmoji(destination!.countryCode)} ${destination!.cityName}'
+        final homeLabel = '${_flagEmoji(home!.countryCode)} ${home!.cityName}'
             .trim();
+        final destLabel =
+            '${_flagEmoji(destination!.countryCode)} ${destination!.cityName}'
+                .trim();
 
-    return Material(
-      elevation: 1,
-      color: cs.surface.withAlpha(242),
-      child: Container(
-        constraints: BoxConstraints(minHeight: height),
-        padding: EdgeInsets.fromLTRB(
-          horizontalPadding,
-          8,
-          horizontalPadding,
-          8,
-        ),
-        decoration: BoxDecoration(
-          border: Border(
-            bottom: BorderSide(color: cs.outlineVariant, width: 1),
-          ),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Align(
-              alignment: Alignment.center,
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 420),
-                child: CompactRealityToggle(
-                  key: const ValueKey('dashboard_pinned_reality_toggle'),
-                  isHome: isHome,
-                  homeLabel: homeLabel,
-                  destLabel: destLabel,
-                  onPickHome: () => session.setReality(DashboardReality.home),
-                  onPickDestination: () =>
-                      session.setReality(DashboardReality.destination),
-                ),
+        return Material(
+          elevation: 1,
+          color: cs.surface.withAlpha(242),
+          child: Container(
+            constraints: BoxConstraints(minHeight: height),
+            padding: EdgeInsets.fromLTRB(
+              horizontalPadding,
+              8,
+              horizontalPadding,
+              8,
+            ),
+            decoration: BoxDecoration(
+              border: Border(
+                bottom: BorderSide(color: cs.outlineVariant, width: 1),
               ),
             ),
-            const SizedBox(height: 8),
-            PinnedMiniHeroReadout(
-              key: const ValueKey('dashboard_pinned_mini_hero_readout'),
-              primary: isHome ? home! : destination!,
-              secondary: isHome ? destination! : home!,
-              liveData: liveData,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Align(
+                  alignment: Alignment.center,
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 420),
+                    child: CompactRealityToggle(
+                      key: const ValueKey('dashboard_pinned_reality_toggle'),
+                      isHome: isHome,
+                      homeLabel: homeLabel,
+                      destLabel: destLabel,
+                      onPickHome: () =>
+                          session.setReality(DashboardReality.home),
+                      onPickDestination: () =>
+                          session.setReality(DashboardReality.destination),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                PinnedMiniHeroReadout(
+                  key: const ValueKey('dashboard_pinned_mini_hero_readout'),
+                  primary: isHome ? home! : destination!,
+                  secondary: isHome ? destination! : home!,
+                  liveData: liveData,
+                ),
+              ],
             ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 }

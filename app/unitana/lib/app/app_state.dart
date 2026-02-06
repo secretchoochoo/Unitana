@@ -33,6 +33,18 @@ class UnitanaAppState extends ChangeNotifier {
     );
   }
 
+  bool _profileIsSetupComplete(UnitanaProfile profile) {
+    final places = profile.places;
+    final hasLiving = places.any((p) => p.type == PlaceType.living);
+    final hasVisiting = places.any((p) => p.type == PlaceType.visiting);
+    return hasLiving && hasVisiting;
+  }
+
+  bool get isActiveProfileSetupComplete =>
+      _profileIsSetupComplete(activeProfile);
+
+  bool get hasAnySetupCompleteProfile => _profiles.any(_profileIsSetupComplete);
+
   // Namespacing token for per-profile persisted settings.
   String get activePrefsNamespace => _activeProfileId;
 
@@ -78,6 +90,24 @@ class UnitanaAppState extends ChangeNotifier {
               loadedProfiles.any((p) => p.id == loadedActiveId))
           ? loadedActiveId
           : loadedProfiles.first.id;
+
+      // Recovery guard: if the active profile is an incomplete draft but at
+      // least one complete profile exists, reactivate a complete profile so
+      // app boot does not force onboarding for returning users.
+      if (!isActiveProfileSetupComplete) {
+        UnitanaProfile? fallback;
+        for (final profile in _profiles) {
+          if (_profileIsSetupComplete(profile)) {
+            fallback = profile;
+            break;
+          }
+        }
+        if (fallback != null) {
+          _activeProfileId = fallback.id;
+          await storage.saveActiveProfileId(_activeProfileId);
+        }
+      }
+
       // Keep legacy keys in sync with the active profile for older flows.
       await _persistLegacyActive();
       notifyListeners();
@@ -188,6 +218,44 @@ class UnitanaAppState extends ChangeNotifier {
     final idx = _profiles.indexWhere((p) => p.id == id);
     if (idx < 0) return;
     _profiles[idx] = profile;
+    await _persistProfiles();
+    notifyListeners();
+  }
+
+  Future<void> reorderProfiles(List<String> orderedProfileIds) async {
+    if (orderedProfileIds.isEmpty) return;
+    if (orderedProfileIds.length != _profiles.length) return;
+
+    final currentIds = _profiles.map((p) => p.id).toSet();
+    final nextIds = orderedProfileIds.toSet();
+    if (currentIds.length != nextIds.length) return;
+    if (!currentIds.containsAll(nextIds)) return;
+
+    final byId = <String, UnitanaProfile>{for (final p in _profiles) p.id: p};
+    _profiles = orderedProfileIds
+        .map((id) => byId[id])
+        .whereType<UnitanaProfile>()
+        .toList(growable: false);
+
+    await _persistProfiles();
+    notifyListeners();
+  }
+
+  Future<void> deleteProfile(String id) async {
+    final targetId = id.trim();
+    if (targetId.isEmpty) return;
+    if (_profiles.length <= 1) return;
+
+    final idx = _profiles.indexWhere((p) => p.id == targetId);
+    if (idx < 0) return;
+
+    final wasActive = _activeProfileId == targetId;
+    _profiles.removeAt(idx);
+
+    if (wasActive) {
+      _activeProfileId = _profiles.first.id;
+    }
+
     await _persistProfiles();
     notifyListeners();
   }

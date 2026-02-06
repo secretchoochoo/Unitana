@@ -21,10 +21,15 @@ Future<void> _pumpFor(WidgetTester tester, Duration duration) async {
 }
 
 Future<void> _enterEditMode(WidgetTester tester) async {
+  // If we're already editing, no-op.
+  if (find.byKey(const Key('dashboard_edit_done')).evaluate().isNotEmpty) {
+    return;
+  }
+
   await tester.tap(find.byKey(const Key('dashboard_menu_button')));
   await tester.pumpAndSettle(const Duration(milliseconds: 250));
 
-  await tester.tap(find.text('Edit widgets'));
+  await tester.tap(find.text('Edit Widgets'));
   await _pumpFor(tester, const Duration(milliseconds: 260));
 
   expect(find.byKey(const Key('dashboard_edit_done')), findsOneWidget);
@@ -69,7 +74,10 @@ void main() {
     await tester.dragFrom(areaRect.center, const Offset(0, -140));
     await _pumpFor(tester, const Duration(milliseconds: 250));
 
-    await tester.tap(find.byKey(const Key('dashboard_edit_done')));
+    await tester.tap(
+      find.byKey(const Key('dashboard_edit_done')),
+      warnIfMissed: false,
+    );
     await _pumpFor(tester, const Duration(milliseconds: 280));
 
     final anchorsAfterBodyDrag = await _readDefaultAnchors();
@@ -87,7 +95,7 @@ void main() {
         .first;
     final handleIcon = find.descendant(
       of: areaStack,
-      matching: find.byIcon(Icons.pan_tool_alt_rounded),
+      matching: find.byIcon(Icons.drag_indicator_rounded),
     );
     expect(handleIcon, findsOneWidget);
 
@@ -96,7 +104,10 @@ void main() {
     await tester.dragFrom(start, target - start);
     await _pumpFor(tester, const Duration(milliseconds: 360));
 
-    await tester.tap(find.byKey(const Key('dashboard_edit_done')));
+    await tester.tap(
+      find.byKey(const Key('dashboard_edit_done')),
+      warnIfMissed: false,
+    );
     await _pumpFor(tester, const Duration(milliseconds: 300));
 
     final anchorsAfterHandleDrag = await _readDefaultAnchors();

@@ -5,6 +5,8 @@ import 'hero_alive_marquee.dart';
 import 'pulse_swap_icon.dart';
 
 import '../../../models/place.dart';
+import '../../../data/cities.dart' show kCurrencySymbols;
+import '../../../data/country_currency_map.dart';
 import '../../../theme/theme_extensions.dart';
 import '../../../theme/dracula_palette.dart';
 import '../../../utils/timezone_utils.dart';
@@ -65,10 +67,6 @@ class PlacesHeroV2 extends StatelessWidget {
         final primaryWeather = primary == null
             ? null
             : liveData.weatherFor(primary);
-        final secondaryWeather = secondary == null
-            ? null
-            : liveData.weatherFor(secondary);
-
         final primarySun = primary == null ? null : liveData.sunFor(primary);
 
         final primaryWindLine = _windLine(primary, primaryWeather);
@@ -163,11 +161,10 @@ class PlacesHeroV2 extends StatelessWidget {
                             primary: primary,
                             primaryWeather: primaryWeather,
                             secondary: secondary,
-                            secondaryWeather: secondaryWeather,
                             primaryEnv: primary == null
                                 ? null
                                 : liveData.envFor(primary),
-                            eurToUsd: liveData.eurToUsd,
+                            liveData: liveData,
                             envMode: session.heroEnvPillMode,
                             onToggleEnvMode: session.toggleHeroEnvPillMode,
                             sun: primarySun,
@@ -509,9 +506,8 @@ class _HeroBandsBody extends StatelessWidget {
   final Place? primary;
   final WeatherSnapshot? primaryWeather;
   final Place? secondary;
-  final WeatherSnapshot? secondaryWeather;
   final EnvSnapshot? primaryEnv;
-  final double? eurToUsd;
+  final DashboardLiveDataController liveData;
   final HeroEnvPillMode envMode;
   final VoidCallback onToggleEnvMode;
 
@@ -537,8 +533,7 @@ class _HeroBandsBody extends StatelessWidget {
     required this.primaryWeather,
     required this.secondary,
     required this.primaryEnv,
-    required this.secondaryWeather,
-    required this.eurToUsd,
+    required this.liveData,
     required this.envMode,
     required this.onToggleEnvMode,
     required this.sun,
@@ -608,8 +603,6 @@ class _HeroBandsBody extends StatelessWidget {
               child: _LeftTempBand(
                 primary: primary,
                 primaryWeather: primaryWeather,
-                secondary: secondary,
-                secondaryWeather: secondaryWeather,
                 compact: compact,
                 includeTestKeys: includeTestKeys,
               ),
@@ -641,7 +634,7 @@ class _HeroBandsBody extends StatelessWidget {
                 primary: primary,
                 secondary: secondary,
                 primaryEnv: primaryEnv,
-                eurToUsd: eurToUsd,
+                liveData: liveData,
                 envMode: envMode,
                 onToggleEnvMode: onToggleEnvMode,
                 compact: compact,
@@ -724,16 +717,12 @@ class _HeroBandsBody extends StatelessWidget {
 class _LeftTempBand extends StatelessWidget {
   final Place? primary;
   final WeatherSnapshot? primaryWeather;
-  final Place? secondary;
-  final WeatherSnapshot? secondaryWeather;
   final bool compact;
   final bool includeTestKeys;
 
   const _LeftTempBand({
     required this.primary,
     required this.primaryWeather,
-    required this.secondary,
-    required this.secondaryWeather,
     required this.compact,
     this.includeTestKeys = true,
   });
@@ -750,8 +739,8 @@ class _LeftTempBand extends StatelessWidget {
                     ? '--°F'
                     : '--°C'));
 
-    final secondaryTemp = (secondary != null && secondaryWeather != null)
-        ? _formatTemp(secondary!, secondaryWeather!)
+    final secondaryTemp = (primary != null && primaryWeather != null)
+        ? _formatAltTemp(primary!, primaryWeather!)
         : '';
 
     final primaryTempStyle =
@@ -808,7 +797,7 @@ class _LeftEnvCurrencyStack extends StatelessWidget {
   final Place? primary;
   final Place? secondary;
   final EnvSnapshot? primaryEnv;
-  final double? eurToUsd;
+  final DashboardLiveDataController liveData;
   final HeroEnvPillMode envMode;
   final VoidCallback onToggleEnvMode;
   final bool compact;
@@ -819,7 +808,7 @@ class _LeftEnvCurrencyStack extends StatelessWidget {
     required this.primary,
     required this.secondary,
     required this.primaryEnv,
-    required this.eurToUsd,
+    required this.liveData,
     required this.envMode,
     required this.onToggleEnvMode,
     required this.compact,
@@ -834,7 +823,6 @@ class _LeftEnvCurrencyStack extends StatelessWidget {
         // Guardrail: avoid flex children when the incoming height is unbounded.
         // This can happen in sliver measurement paths and some widget-test setups.
         if (!c.hasBoundedHeight) {
-          final safeRate = eurToUsd ?? 1.10;
           final innerGap = gap < 2.0 ? 2.0 : (gap > 10.0 ? 10.0 : gap);
           return Column(
             mainAxisSize: MainAxisSize.min,
@@ -857,7 +845,7 @@ class _LeftEnvCurrencyStack extends StatelessWidget {
                 child: _HeroCurrencyCard(
                   primary: primary,
                   secondary: secondary,
-                  eurToUsd: safeRate,
+                  liveData: liveData,
                   compact: compact,
                   dense: true,
                   includeTestKeys: includeTestKeys,
@@ -873,8 +861,6 @@ class _LeftEnvCurrencyStack extends StatelessWidget {
           double.infinity,
         );
         final dense = tileH < (compact ? 66.0 : 86.0);
-        // Keep rendering deterministic even if the currency rate hasn't loaded.
-        final safeRate = eurToUsd ?? 1.10;
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -894,7 +880,7 @@ class _LeftEnvCurrencyStack extends StatelessWidget {
               child: _HeroCurrencyCard(
                 primary: primary,
                 secondary: secondary,
-                eurToUsd: safeRate,
+                liveData: liveData,
                 compact: compact,
                 dense: dense,
                 includeTestKeys: includeTestKeys,
@@ -1251,7 +1237,7 @@ class _HeroEnvPill extends StatelessWidget {
 class _HeroCurrencyCard extends StatelessWidget {
   final Place? primary;
   final Place? secondary;
-  final double eurToUsd;
+  final DashboardLiveDataController liveData;
   final bool compact;
   final bool dense;
   final bool includeTestKeys;
@@ -1259,7 +1245,7 @@ class _HeroCurrencyCard extends StatelessWidget {
   const _HeroCurrencyCard({
     required this.primary,
     required this.secondary,
-    required this.eurToUsd,
+    required this.liveData,
     required this.compact,
     required this.dense,
     this.includeTestKeys = true,
@@ -1273,7 +1259,12 @@ class _HeroCurrencyCard extends StatelessWidget {
     final currencyLines = _currencyLines(
       primary: primary,
       secondary: secondary,
-      eurToUsd: eurToUsd,
+      pairRate: (primary == null || secondary == null)
+          ? null
+          : liveData.currencyRate(
+              fromCode: _currencyCodeForPlace(primary),
+              toCode: _currencyCodeForPlace(secondary),
+            ),
     );
 
     final radius = (layout?.radiusCard ?? 20.0) - 6;
@@ -2054,6 +2045,16 @@ String _formatTemp(Place place, WeatherSnapshot weather) {
   return '$c°C';
 }
 
+String _formatAltTemp(Place place, WeatherSnapshot weather) {
+  final c = weather.temperatureC.round();
+  final useImperial = place.unitSystem.toLowerCase() == 'imperial';
+  if (useImperial) {
+    return '$c°C';
+  }
+  final f = (c * 9 / 5 + 32).round();
+  return '$f°F';
+}
+
 String _windLine(Place? place, WeatherSnapshot? weather) {
   // Contract: iconography is applied at render time so we never duplicate
   // emojis when this value is displayed in multiple contexts.
@@ -2079,59 +2080,87 @@ String _gustLine(Place? place, WeatherSnapshot? weather) {
 }
 
 String _currencyCodeForPlace(Place? place) {
-  final cc = (place?.countryCode ?? '').toUpperCase();
-  if (cc == 'US') return 'USD';
-  // MVP assumption: non-US defaults to EUR (works for Portugal/most EU demo).
-  return 'EUR';
+  return currencyCodeForCountryCode(place?.countryCode);
 }
 
 String _currencySymbol(String code) {
-  switch (code.toUpperCase()) {
-    case 'EUR':
-      return '€';
-    case 'USD':
-      return r'$';
+  final normalized = code.trim().toUpperCase();
+  return kCurrencySymbols[normalized] ?? normalized;
+}
+
+bool _currencyUsesSuffixSymbol(String code) {
+  switch (code.trim().toUpperCase()) {
+    case 'AED':
+    case 'BHD':
+    case 'DZD':
+    case 'IQD':
+    case 'IRR':
+    case 'JOD':
+    case 'KWD':
+    case 'MAD':
+    case 'OMR':
+    case 'QAR':
+    case 'SAR':
+    case 'TND':
+      return true;
     default:
-      return code.toUpperCase();
+      return false;
   }
+}
+
+String _formattedCurrencyToken(String code, double amount) {
+  final symbol = _currencySymbol(code);
+  final digits = _fmtCurrencyAmount(amount);
+  final token = _currencyUsesSuffixSymbol(code)
+      ? '$digits$symbol'
+      : '$symbol$digits';
+  // Isolate each token to avoid mixed RTL/LTR reordering artifacts.
+  return '\u2066$token\u2069';
 }
 
 (String, String) _currencyLines({
   required Place? primary,
   required Place? secondary,
-  required double eurToUsd,
+  required double? pairRate,
 }) {
   final from = _currencyCodeForPlace(primary);
   final to = _currencyCodeForPlace(secondary);
 
   if (from.toUpperCase() == to.toUpperCase()) {
-    final sym = _currencySymbol(from);
-    return ('${sym}1≈${sym}1.00', 'Rate: same currency');
+    return (
+      '${_formattedCurrencyToken(from, 1)}≈${_formattedCurrencyToken(from, 1)}',
+      'Rate: same currency',
+    );
   }
 
-  if (eurToUsd == 0) {
-    return ('${_currencySymbol(from)}1≈${_currencySymbol(to)}—', 'Rate: —');
+  if (pairRate == null || pairRate <= 0) {
+    final left = _formattedCurrencyToken(from, 1);
+    final right = '\u2066${_currencySymbol(to)}—\u2069';
+    return ('$left≈$right', 'Rate: —');
   }
 
-  double rate;
-  if (from.toUpperCase() == 'EUR' && to.toUpperCase() == 'USD') {
-    rate = eurToUsd;
-  } else if (from.toUpperCase() == 'USD' && to.toUpperCase() == 'EUR') {
-    rate = 1 / eurToUsd;
-  } else {
-    // MVP: we only know EUR<->USD right now, but keep output stable.
-    rate = eurToUsd;
-  }
+  final base = _displayBaseAmountForPair(pairRate);
+  final converted = base * pairRate;
+  final left = _formattedCurrencyToken(from, base);
+  final right = _formattedCurrencyToken(to, converted);
+  final leftRate = _formattedCurrencyToken(from, 1);
+  final rightRate = _formattedCurrencyToken(to, pairRate);
 
-  final leftSym = _currencySymbol(from);
-  final rightSym = _currencySymbol(to);
+  return ('$left≈$right', 'Rate: $leftRate = $rightRate');
+}
 
-  return (
-    // Use adjacent string literal concatenation to avoid ambiguous `$sym1` parsing
-    // and to keep the analyzer quiet about interpolation braces.
-    '$leftSym'
-        '1≈$rightSym${rate.toStringAsFixed(2)}',
-    'Rate: $leftSym'
-        '1 = $rightSym${rate.toStringAsFixed(4)}',
-  );
+double _displayBaseAmountForPair(double pairRate) {
+  if (pairRate < 0.0002) return 10000;
+  if (pairRate < 0.002) return 1000;
+  if (pairRate < 0.02) return 100;
+  if (pairRate < 0.2) return 10;
+  return 1;
+}
+
+String _fmtCurrencyAmount(double value) {
+  if (value >= 100) return value.toStringAsFixed(0);
+  if (value >= 10) return value.toStringAsFixed(1);
+  if (value >= 1) return value.toStringAsFixed(2);
+  if (value >= 0.1) return value.toStringAsFixed(2);
+  return value.toStringAsFixed(3);
 }

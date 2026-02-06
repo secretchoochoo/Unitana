@@ -21,6 +21,8 @@ class UnitanaTile extends StatelessWidget {
   ///
   /// When null, the tile falls back to the app's default accent behavior.
   final Color? accentColor;
+  final bool compactValues;
+  final double valuesTopInset;
 
   const UnitanaTile({
     super.key,
@@ -35,6 +37,8 @@ class UnitanaTile extends StatelessWidget {
     this.backgroundGradient,
     this.accentColor,
     this.interactionKey,
+    this.compactValues = false,
+    this.valuesTopInset = 0,
   });
 
   @override
@@ -109,7 +113,10 @@ class UnitanaTile extends StatelessWidget {
           final iconRadius = isMicro ? 8.0 : (isCompact ? 9.0 : 12.0);
           final iconSize = isMicro ? 13.0 : (isCompact ? 15.0 : 18.0);
 
-          final primarySize = isMicro ? 16.0 : (isCompact ? 18.0 : 28.0);
+          final primarySizeBase = isMicro ? 16.0 : (isCompact ? 18.0 : 28.0);
+          final primarySize = compactValues
+              ? (primarySizeBase * 0.82)
+              : primarySizeBase;
 
           final hasSecondary = safeSecondary.trim().isNotEmpty && !isMicro;
           final hasFooter = safeFooter.trim().isNotEmpty;
@@ -286,6 +293,9 @@ class UnitanaTile extends StatelessWidget {
                         final effectiveMidGap = hasSecondary
                             ? math.min(midGap, math.max(0.0, mainH * 0.12))
                             : 0.0;
+                        final editExtraGap = compactValues
+                            ? math.min(6.0, math.max(2.0, mainH * 0.08))
+                            : 0.0;
 
                         return Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -297,6 +307,7 @@ class UnitanaTile extends StatelessWidget {
                                 // footer pill has a little more breathing
                                 // room on compact tiles.
                                 padding: EdgeInsets.only(
+                                  top: valuesTopInset,
                                   bottom: isMicro
                                       ? 1.0
                                       : (isCompact ? 2.0 : 3.0),
@@ -310,7 +321,9 @@ class UnitanaTile extends StatelessWidget {
                                       child: Center(child: buildPrimary()),
                                     ),
                                     if (hasSecondary) ...[
-                                      SizedBox(height: effectiveMidGap),
+                                      SizedBox(
+                                        height: effectiveMidGap + editExtraGap,
+                                      ),
                                       Flexible(
                                         fit: FlexFit.tight,
                                         flex: 2,

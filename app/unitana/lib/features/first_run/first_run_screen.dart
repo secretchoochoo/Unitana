@@ -15,11 +15,19 @@ import 'package:unitana/models/place.dart';
 import 'package:unitana/theme/dracula_palette.dart';
 import 'package:unitana/widgets/city_picker.dart';
 
+enum FirstRunExitAction { saved, cancelled }
+
 class FirstRunScreen extends StatefulWidget {
   final UnitanaAppState state;
   final bool editMode;
+  final bool allowCancel;
 
-  const FirstRunScreen({super.key, required this.state, this.editMode = false});
+  const FirstRunScreen({
+    super.key,
+    required this.state,
+    this.editMode = false,
+    this.allowCancel = false,
+  });
 
   @override
   State<FirstRunScreen> createState() => _FirstRunScreenState();
@@ -336,7 +344,7 @@ class _FirstRunScreenState extends State<FirstRunScreen> {
     if (!mounted) return;
 
     if (widget.editMode) {
-      Navigator.of(context).pop();
+      Navigator.of(context).pop(FirstRunExitAction.saved);
       return;
     }
 
@@ -356,99 +364,122 @@ class _FirstRunScreenState extends State<FirstRunScreen> {
     return 'Unitana';
   }
 
+  void _cancelAndClose() {
+    if (!widget.allowCancel) return;
+    Navigator.of(context).pop(FirstRunExitAction.cancelled);
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: null,
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 14, 20, 14),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: PageView(
-                  controller: _pageCtrl,
-                  physics: const PageScrollPhysics(),
-                  onPageChanged: (idx) {
-                    if (_isRevertingSwipe) {
-                      _isRevertingSwipe = false;
-                      return;
-                    }
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop) return;
+        if (!widget.allowCancel) return;
+        _cancelAndClose();
+      },
+      child: Scaffold(
+        appBar: null,
+        body: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 14, 20, 14),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (widget.allowCancel)
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: IconButton(
+                      key: const Key('first_run_cancel_button'),
+                      tooltip: 'Cancel',
+                      onPressed: _cancelAndClose,
+                      icon: const Icon(Icons.close_rounded),
+                    ),
+                  ),
+                Expanded(
+                  child: PageView(
+                    controller: _pageCtrl,
+                    physics: const PageScrollPhysics(),
+                    onPageChanged: (idx) {
+                      if (_isRevertingSwipe) {
+                        _isRevertingSwipe = false;
+                        return;
+                      }
 
-                    if (!_canGoToStep(idx)) {
-                      _isRevertingSwipe = true;
-                      WidgetsBinding.instance.addPostFrameCallback((_) {
-                        if (!mounted) return;
-                        _pageCtrl.animateToPage(
-                          _page,
-                          duration: _kAnim,
-                          curve: Curves.easeOutCubic,
-                        );
+                      if (!_canGoToStep(idx)) {
+                        _isRevertingSwipe = true;
+                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                          if (!mounted) return;
+                          _pageCtrl.animateToPage(
+                            _page,
+                            duration: _kAnim,
+                            curve: Curves.easeOutCubic,
+                          );
+                        });
+                        return;
+                      }
+
+                      setState(() {
+                        _page = idx;
+                        if (idx > _maxVisited) _maxVisited = idx;
                       });
-                      return;
-                    }
 
-                    setState(() {
-                      _page = idx;
-                      if (idx > _maxVisited) _maxVisited = idx;
-                    });
-
-                    if (idx >= 1 && _hasBothCities) {
-                      WidgetsBinding.instance.addPostFrameCallback((_) {
-                        if (!mounted) return;
-                        _refreshPreview();
-                      });
-                    }
-                  },
-                  children: [
-                    KeyedSubtree(
-                      key: const Key('first_run_step_welcome'),
-                      child: _welcomeStep(context),
-                    ),
-                    KeyedSubtree(
-                      key: const Key('first_run_step_places'),
-                      child: _placesStep(context),
-                    ),
-                    KeyedSubtree(
-                      key: const Key('first_run_step_confirm'),
-                      child: _confirmStep(context),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 10),
-              _buildPagerControls(context),
-              const SizedBox(height: 10),
-              SizedBox(
-                height: _kFooterCtaHeight,
-                child: Center(
-                  child: AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 180),
-                    switchInCurve: Curves.easeOut,
-                    switchOutCurve: Curves.easeIn,
-                    child: _page == _pageCount - 1
-                        ? ConstrainedBox(
-                            constraints: const BoxConstraints(
-                              maxWidth: _kFooterCtaWidth,
-                              minHeight: _kFooterCtaHeight,
-                            ),
-                            child: FilledButton.icon(
-                              key: const Key('first_run_finish_button'),
-                              onPressed: _saveAndFinish,
-                              icon: const Icon(Icons.check),
-                              label: Text(
-                                widget.editMode
-                                    ? 'Save Changes'
-                                    : 'Create Profile',
-                              ),
-                            ),
-                          )
-                        : const SizedBox.shrink(),
+                      if (idx >= 1 && _hasBothCities) {
+                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                          if (!mounted) return;
+                          _refreshPreview();
+                        });
+                      }
+                    },
+                    children: [
+                      KeyedSubtree(
+                        key: const Key('first_run_step_welcome'),
+                        child: _welcomeStep(context),
+                      ),
+                      KeyedSubtree(
+                        key: const Key('first_run_step_places'),
+                        child: _placesStep(context),
+                      ),
+                      KeyedSubtree(
+                        key: const Key('first_run_step_confirm'),
+                        child: _confirmStep(context),
+                      ),
+                    ],
                   ),
                 ),
-              ),
-            ],
+                const SizedBox(height: 10),
+                _buildPagerControls(context),
+                const SizedBox(height: 10),
+                SizedBox(
+                  height: _kFooterCtaHeight,
+                  child: Center(
+                    child: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 180),
+                      switchInCurve: Curves.easeOut,
+                      switchOutCurve: Curves.easeIn,
+                      child: _page == _pageCount - 1
+                          ? ConstrainedBox(
+                              constraints: const BoxConstraints(
+                                maxWidth: _kFooterCtaWidth,
+                                minHeight: _kFooterCtaHeight,
+                              ),
+                              child: FilledButton.icon(
+                                key: const Key('first_run_finish_button'),
+                                onPressed: _saveAndFinish,
+                                icon: const Icon(Icons.check),
+                                label: Text(
+                                  widget.editMode
+                                      ? 'Save Changes'
+                                      : 'Create Profile',
+                                ),
+                              ),
+                            )
+                          : const SizedBox.shrink(),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

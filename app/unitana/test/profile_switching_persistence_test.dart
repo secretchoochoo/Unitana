@@ -34,6 +34,26 @@ void main() {
     final state = UnitanaAppState(storage);
     await state.load();
 
+    // Seed profile_1 as a complete profile so round-trip persistence can
+    // assert the selected active profile survives restart.
+    await state.overwritePlaces(
+      newPlaces: <Place>[
+        _place(
+          id: 'home_1',
+          type: PlaceType.living,
+          city: 'Porto',
+          country: 'PT',
+        ),
+        _place(
+          id: 'visit_1',
+          type: PlaceType.visiting,
+          city: 'Chicago',
+          country: 'US',
+        ),
+      ],
+      defaultId: 'visit_1',
+    );
+
     const p2 = UnitanaProfile(
       id: 'profile_2',
       name: 'Trip',

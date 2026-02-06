@@ -338,7 +338,7 @@ class OpenMeteoSceneKeyMapper {
       case 0:
         return 'Clear';
       case 1:
-        return 'Mainly clear';
+        return 'Mostly clear';
       case 2:
         return 'Partly cloudy';
       case 3:
@@ -501,6 +501,10 @@ class DashboardLiveDataController extends ChangeNotifier {
   double? _debugEurToUsd;
 
   double _eurToUsd = 1.10;
+  final Map<String, double> _eurBaseRates = <String, double>{
+    'EUR': 1.0,
+    'USD': 1.10,
+  };
   bool _isRefreshing = false;
   Object? _lastError;
   DateTime? _lastRefreshedAt;
@@ -512,6 +516,9 @@ class DashboardLiveDataController extends ChangeNotifier {
   final OpenMeteoClient _openMeteo;
   final OpenMeteoAirQualityClient _openMeteoAirQuality;
   final FrankfurterClient _frankfurter;
+  final bool allowLiveRefreshInTestHarness;
+  final Duration refreshDebounceDuration;
+  final Duration simulatedNetworkLatency;
 
   DashboardLiveDataController({
     CityRepository? cityRepository,
@@ -519,6 +526,9 @@ class DashboardLiveDataController extends ChangeNotifier {
     OpenMeteoClient? openMeteoClient,
     OpenMeteoAirQualityClient? openMeteoAirQualityClient,
     FrankfurterClient? frankfurterClient,
+    this.allowLiveRefreshInTestHarness = false,
+    this.refreshDebounceDuration = const Duration(milliseconds: 250),
+    this.simulatedNetworkLatency = const Duration(milliseconds: 350),
   }) : _cityRepository = cityRepository ?? CityRepository.instance,
        _weatherApi = weatherApiClient ?? WeatherApiClient.fromEnvironment(),
        _openMeteo = openMeteoClient ?? OpenMeteoClient(),
@@ -541,6 +551,25 @@ class DashboardLiveDataController extends ChangeNotifier {
   }
 
   double get eurToUsd => _debugEurToUsd ?? _eurToUsd;
+
+  /// Returns the conversion rate for [fromCode] -> [toCode].
+  ///
+  /// Contract:
+  /// - Always returns 1.0 for same-currency conversions.
+  /// - Uses live EUR-base rates when available.
+  /// - Falls back to deterministic mock rates so currency UI never blanks.
+  double? currencyRate({required String fromCode, required String toCode}) {
+    final from = fromCode.trim().toUpperCase();
+    final to = toCode.trim().toUpperCase();
+    if (from.isEmpty || to.isEmpty) return null;
+    if (from == to) return 1.0;
+
+    final rates = _effectiveEurBaseRates();
+    final fromRate = rates[from] ?? _mockEurRateForCode(from);
+    final toRate = rates[to] ?? _mockEurRateForCode(to);
+    if (fromRate <= 0 || toRate <= 0) return null;
+    return toRate / fromRate;
+  }
 
   /// Effective UTC "now" used by the dashboard.
   ///
@@ -735,6 +764,7 @@ class DashboardLiveDataController extends ChangeNotifier {
     final cachedRate = prefs.getDouble(_kCachedEurToUsdRate);
     if (cachedRate != null && cachedRate > 0) {
       _eurToUsd = cachedRate;
+      _eurBaseRates['USD'] = cachedRate;
     }
     final cachedAt = prefs.getInt(_kCachedEurToUsdUpdatedAt);
     if (cachedAt != null && cachedAt > 0) {
@@ -1013,7 +1043,7 @@ class DashboardLiveDataController extends ChangeNotifier {
     // layout and overflow contracts. Do not schedule debounce timers or
     // simulate network latency in that environment, otherwise tests end with
     // pending timers and spurious failures.
-    if (_isTestHarness()) {
+    if (_isTestHarness() && !allowLiveRefreshInTestHarness) {
       _debounce?.cancel();
       _isRefreshing = true;
       _lastError = null;
@@ -1028,14 +1058,14 @@ class DashboardLiveDataController extends ChangeNotifier {
     // Debounce repeated taps so we don't overlap refresh flows.
     _debounce?.cancel();
     final completer = Completer<void>();
-    _debounce = Timer(const Duration(milliseconds: 250), () async {
+    _debounce = Timer(refreshDebounceDuration, () async {
       try {
         _isRefreshing = true;
         _lastError = null;
         _notify();
 
         // Simulate a short network latency.
-        await Future<void>.delayed(const Duration(milliseconds: 350));
+        await Future<void>.delayed(simulatedNetworkLatency);
         if (_useWeatherApi || _useOpenMeteo) {
           // Load city metadata (lat/lon) once for best-effort query precision.
           await _cityRepository.load();
@@ -1101,13 +1131,20 @@ class DashboardLiveDataController extends ChangeNotifier {
                 );
 
                 await _maybeRefreshEnvForPlace(
-                  placeId: p.id,
+                  place: p,
                   latitude: lat,
                   longitude: lon,
                 );
+                _envByPlaceId.putIfAbsent(p.id, () => _seedEnv(p));
               } else {
                 if (lat == null || lon == null) {
-                  // Without coordinates, Open-Meteo cannot be queried. Keep previous value.
+                  // Without coordinates, Open-Meteo cannot be queried.
+                  // Keep prior snapshots when present, or seed deterministic
+                  // fallbacks so critical hero states never go blank.
+                  _ensureFallbackSnapshotsForPlace(
+                    p,
+                    nowUtc: DateTime.now().toUtc(),
+                  );
                   continue;
                 }
 
@@ -1154,13 +1191,19 @@ class DashboardLiveDataController extends ChangeNotifier {
                 );
 
                 await _maybeRefreshEnvForPlace(
-                  placeId: p.id,
+                  place: p,
                   latitude: lat,
                   longitude: lon,
                 );
+                _envByPlaceId.putIfAbsent(p.id, () => _seedEnv(p));
               }
             } catch (_) {
-              // Keep the last stable value for this place; refresh continues.
+              // Keep last stable values when present; otherwise seed
+              // deterministic fallbacks so no critical pill goes blank.
+              _ensureFallbackSnapshotsForPlace(
+                p,
+                nowUtc: DateTime.now().toUtc(),
+              );
             }
           }
         } else {
@@ -1180,6 +1223,7 @@ class DashboardLiveDataController extends ChangeNotifier {
 
         if (!currencyNetworkEnabled) {
           _eurToUsd = 1.10;
+          _eurBaseRates['USD'] = _eurToUsd;
         }
       } catch (e) {
         _lastError = e;
@@ -1190,6 +1234,12 @@ class DashboardLiveDataController extends ChangeNotifier {
       }
     });
     return completer.future;
+  }
+
+  void _ensureFallbackSnapshotsForPlace(Place p, {required DateTime nowUtc}) {
+    _weatherByPlaceId.putIfAbsent(p.id, () => _seedWeather(p));
+    _sunByPlaceId.putIfAbsent(p.id, () => _seedSunTimes(p, nowUtc));
+    _envByPlaceId.putIfAbsent(p.id, () => _seedEnv(p));
   }
 
   static double _pollenIndexFromGrains(double grains) {
@@ -1204,7 +1254,7 @@ class DashboardLiveDataController extends ChangeNotifier {
   }
 
   Future<void> _maybeRefreshEnvForPlace({
-    required String placeId,
+    required Place place,
     required double? latitude,
     required double? longitude,
   }) async {
@@ -1215,17 +1265,20 @@ class DashboardLiveDataController extends ChangeNotifier {
         latitude: latitude,
         longitude: longitude,
       );
+      final prev = _envByPlaceId[place.id];
+      final seeded = _seedEnv(place);
       final pollenGrains = current.maxPollenGrains();
       final pollenIndex = pollenGrains == null
-          ? null
+          ? (prev?.pollenIndex ?? seeded.pollenIndex)
           : _pollenIndexFromGrains(pollenGrains);
 
-      _envByPlaceId[placeId] = EnvSnapshot(
-        usAqi: current.usAqi,
+      _envByPlaceId[place.id] = EnvSnapshot(
+        usAqi: current.usAqi ?? prev?.usAqi ?? seeded.usAqi,
         pollenIndex: pollenIndex,
       );
     } catch (_) {
-      // Best-effort only. Keep the last stable values.
+      // Best-effort only. Keep the last stable values, or seed if missing.
+      _envByPlaceId.putIfAbsent(place.id, () => _seedEnv(place));
     }
   }
 
@@ -1242,7 +1295,15 @@ class DashboardLiveDataController extends ChangeNotifier {
       double? rate;
       switch (_currencyBackend) {
         case CurrencyBackend.frankfurter:
-          rate = await _frankfurter.fetchEurToUsd();
+          final fetched = await _frankfurter.fetchLatestRates(base: 'EUR');
+          if (fetched != null && fetched.isNotEmpty) {
+            _eurBaseRates
+              ..clear()
+              ..addAll(fetched);
+            rate = fetched['USD'];
+          } else {
+            rate = await _frankfurter.fetchEurToUsd();
+          }
           break;
         case CurrencyBackend.mock:
           rate = null;
@@ -1252,6 +1313,7 @@ class DashboardLiveDataController extends ChangeNotifier {
       if (rate == null || rate <= 0) return;
 
       _eurToUsd = rate;
+      _eurBaseRates['USD'] = rate;
       _lastCurrencyRefreshedAt = now;
 
       final prefs = await SharedPreferences.getInstance();
@@ -1259,6 +1321,63 @@ class DashboardLiveDataController extends ChangeNotifier {
       await prefs.setInt(_kCachedEurToUsdUpdatedAt, now.millisecondsSinceEpoch);
     } catch (_) {
       // Best-effort only. Keep the last stable value.
+    }
+  }
+
+  Map<String, double> _effectiveEurBaseRates() {
+    final rates = <String, double>{..._eurBaseRates};
+    final debugRate = _debugEurToUsd;
+    if (debugRate != null && debugRate > 0) {
+      rates['USD'] = debugRate;
+    }
+    rates['EUR'] = 1.0;
+    return rates;
+  }
+
+  double _mockEurRateForCode(String code) {
+    switch (code) {
+      case 'USD':
+        return 1.10;
+      case 'JPY':
+        return 160.0;
+      case 'GBP':
+        return 0.86;
+      case 'CHF':
+        return 0.95;
+      case 'CAD':
+        return 1.48;
+      case 'AUD':
+        return 1.66;
+      case 'NZD':
+        return 1.80;
+      case 'CNY':
+        return 7.90;
+      case 'INR':
+        return 90.0;
+      case 'KRW':
+        return 1450.0;
+      case 'VND':
+        return 27000.0;
+      case 'IDR':
+        return 17000.0;
+      case 'BRL':
+        return 5.90;
+      case 'MXN':
+        return 19.0;
+      case 'RUB':
+        return 100.0;
+      case 'TRY':
+        return 37.0;
+      case 'ZAR':
+        return 21.0;
+      default:
+        // Deterministic fallback for less-common currencies.
+        final hash = code.codeUnits.fold<int>(
+          0,
+          (sum, u) => ((sum * 131) + u) & 0x7fffffff,
+        );
+        final scaled = 0.35 + ((hash % 9650) / 1000.0); // 0.35..9.999
+        return scaled;
     }
   }
 

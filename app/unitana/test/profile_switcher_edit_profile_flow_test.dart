@@ -13,29 +13,30 @@ void main() {
     await tester.tap(find.byKey(const Key('dashboard_menu_button')));
     await tester.pumpAndSettle();
 
-    // Tap "Switch profile" (ensure it's visible in scrollable sheet).
-    final switchTile = find.widgetWithText(ListTile, 'Switch profile');
-    await ensureVisibleAligned(tester, switchTile);
-    await tester.tap(switchTile);
+    final profilesTile = find.widgetWithText(ListTile, 'Profiles');
+    await ensureVisibleAligned(tester, profilesTile);
+    await tester.tap(profilesTile);
     await tester.pumpAndSettle();
 
-    // Some builds open a profile switcher sheet; ensure we can tap Edit profile regardless of key drift.
-    final editByKey = find.byKey(
-      const ValueKey('profile_switcher_edit_profile'),
+    expect(find.byKey(const Key('profiles_board_screen')), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('profiles_board_edit_mode')));
+    await tester.pumpAndSettle();
+
+    final editFinder = find.byKey(
+      const ValueKey('profiles_board_edit_profile_1'),
     );
-    final editByText = find.widgetWithText(ListTile, 'Edit profile');
-
-    final Finder editFinder = editByKey.evaluate().isNotEmpty
-        ? editByKey
-        : editByText;
     expect(editFinder, findsOneWidget);
-
-    await ensureVisibleAligned(tester, editFinder);
     await tester.tap(editFinder);
     await tester.pumpAndSettle();
 
     // Confirm we landed in the wizard (edit mode currently opens at Step 1).
     expect(find.byKey(const Key('first_run_step_welcome')), findsOneWidget);
+    expect(find.byKey(const Key('first_run_cancel_button')), findsOneWidget);
+
+    // Cancel should return to the profiles board.
+    await tester.tap(find.byKey(const Key('first_run_cancel_button')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('profiles_board_screen')), findsOneWidget);
 
     // Regression invariant: Step 3 must not show the redundant top preview toggle row.
     expect(

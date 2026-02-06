@@ -85,13 +85,13 @@ void main() {
     await tester.tap(find.byKey(const Key('dashboard_menu_button')));
     await tester.pumpAndSettle();
 
-    final switchTile = find.widgetWithText(ListTile, 'Switch profile');
-    await ensureVisibleAligned(tester, switchTile);
-    await tester.tap(switchTile);
+    final profilesTile = find.widgetWithText(ListTile, 'Profiles');
+    await ensureVisibleAligned(tester, profilesTile);
+    await tester.tap(profilesTile);
     await tester.pumpAndSettle();
 
     final tripProfile = find.byKey(
-      const ValueKey('profile_switcher_profile_profile_2'),
+      const ValueKey('profiles_board_tile_profile_2'),
     );
     await ensureVisibleAligned(tester, tripProfile);
     await tester.tap(tripProfile);

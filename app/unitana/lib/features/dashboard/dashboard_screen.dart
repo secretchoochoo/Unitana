@@ -13,6 +13,7 @@ import 'models/tool_definitions.dart';
 import 'widgets/dashboard_board.dart';
 import 'widgets/data_refresh_status_label.dart';
 import 'widgets/places_hero_collapsing_header.dart';
+import 'widgets/profiles_board_screen.dart';
 import 'widgets/tool_modal_bottom_sheet.dart';
 import '../../theme/dracula_palette.dart';
 
@@ -35,6 +36,9 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen> {
   static const double _kMenuSheetHeightFactor = 0.82;
+  static const double _kEditAppBarActionFontSize = 14;
+  static const double _kAppBarTitleMaxFontSize = 28;
+  static const double _kAppBarTitleMinFontSize = 18;
 
   late DashboardSessionController _session;
   late final DashboardLiveDataController _liveData;
@@ -48,6 +52,65 @@ class _DashboardScreenState extends State<DashboardScreen> {
   String? _focusTileId;
 
   UnitanaAppState get state => widget.state;
+
+  TextStyle _baseAppBarTitleStyle(BuildContext context) {
+    return (Theme.of(context).textTheme.titleLarge ?? const TextStyle())
+        .merge(GoogleFonts.robotoSlab())
+        .copyWith(height: 1.0, fontWeight: FontWeight.w800);
+  }
+
+  double _measureTextWidth(String text, TextStyle style) {
+    final painter = TextPainter(
+      text: TextSpan(text: text, style: style),
+      maxLines: 1,
+      textDirection: TextDirection.ltr,
+    )..layout();
+    return painter.width;
+  }
+
+  double _estimatedEditActionsWidth(BuildContext context) {
+    final actionStyle =
+        (Theme.of(context).textTheme.labelLarge ??
+                const TextStyle(fontSize: _kEditAppBarActionFontSize))
+            .copyWith(fontSize: _kEditAppBarActionFontSize);
+    final cancelWidth = _measureTextWidth('Cancel', actionStyle);
+    final doneWidth = _measureTextWidth('Done', actionStyle);
+
+    // button internal horizontal padding (6 + 6) for both buttons
+    const buttonPadding = 24.0;
+    // trailing outer padding on "Done" segment
+    const trailingPad = 4.0;
+    // small cushion so title doesn't visually crowd controls
+    const safety = 8.0;
+
+    return cancelWidth + doneWidth + (buttonPadding * 2) + trailingPad + safety;
+  }
+
+  double _resolveAppBarTitleFontSize(BuildContext context, String profileName) {
+    final width = MediaQuery.of(context).size.width;
+
+    // Leading reserves the tools button slot (72) + left inset cushion.
+    const leftReserve = 88.0;
+    // Right reserve depends on whether edit controls are shown.
+    final rightReserve = _isEditingWidgets
+        ? _estimatedEditActionsWidth(context)
+        : 88.0;
+
+    final maxTitleWidth = width - leftReserve - rightReserve;
+    if (maxTitleWidth <= 80) return _kAppBarTitleMinFontSize;
+
+    final base = _baseAppBarTitleStyle(context);
+    var size = _kAppBarTitleMaxFontSize;
+    while (size > _kAppBarTitleMinFontSize) {
+      final style = base.copyWith(fontSize: size);
+      if (_measureTextWidth(profileName, style) <= maxTitleWidth) {
+        break;
+      }
+      size -= 1;
+    }
+    if (size < _kAppBarTitleMinFontSize) return _kAppBarTitleMinFontSize;
+    return size;
+  }
 
   @override
   void initState() {
@@ -801,6 +864,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
       preferMetric: _preferMetricForReality(),
       prefer24h: _prefer24hForReality(),
       eurToUsd: _liveData.eurToUsd,
+      currencyRateForPair: (fromCode, toCode) =>
+          _liveData.currencyRate(fromCode: fromCode, toCode: toCode),
       home: home,
       destination: destination,
       canAddWidget: true,
@@ -826,100 +891,88 @@ class _DashboardScreenState extends State<DashboardScreen> {
     UnitanaToast.showInfo(context, '$label: coming soon');
   }
 
-  Future<void> _openEditProfileWizard() async {
+  Future<void> _openEditProfileWizard({
+    bool reopenSwitcherOnCancel = false,
+    String? discardProfileIdOnCancel,
+    String? returnToProfileIdOnCancel,
+  }) async {
     if (!mounted) return;
-    await Navigator.of(context).push(
+    final result = await Navigator.of(context).push<FirstRunExitAction>(
       MaterialPageRoute(
-        builder: (_) => FirstRunScreen(state: widget.state, editMode: true),
+        builder: (_) => FirstRunScreen(
+          state: widget.state,
+          editMode: true,
+          allowCancel: true,
+        ),
       ),
     );
-  }
 
-  Future<void> _openProfileSwitcherSheet() async {
+    if (result != FirstRunExitAction.cancelled) return;
     if (!mounted) return;
 
-    await showModalBottomSheet<void>(
-      context: context,
-      showDragHandle: true,
-      isScrollControlled: true,
-      builder: (sheetContext) {
-        final maxH =
-            MediaQuery.of(sheetContext).size.height * _kMenuSheetHeightFactor;
-        final titleStyle = Theme.of(sheetContext).textTheme.titleLarge;
-        return SafeArea(
-          child: SizedBox(
-            height: maxH,
-            child: ListView(
-              key: const Key('profile_switcher_sheet'),
-              padding: const EdgeInsets.only(bottom: 8),
-              children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(12, 2, 6, 2),
-                  child: Row(
-                    children: [
-                      Expanded(child: Text('Profiles', style: titleStyle)),
-                      _sheetCloseButton(sheetContext),
-                    ],
-                  ),
-                ),
-                ListTile(
-                  key: const Key('profile_switcher_active_profile'),
-                  leading: const Icon(Icons.person),
-                  title: Text(widget.state.profileName),
-                  subtitle: Text(_profilePlacesSummary()),
-                  trailing: IconButton(
-                    key: const Key('profile_switcher_edit_profile'),
-                    tooltip: 'Edit profile',
-                    icon: const Icon(Icons.edit),
-                    onPressed: () {
-                      Navigator.of(sheetContext).pop();
-                      Future.microtask(_openEditProfileWizard);
-                    },
-                  ),
-                  onTap: () {
-                    Navigator.of(sheetContext).pop();
-                  },
-                ),
-                ...state.profiles
-                    .where((p) => p.id != state.activeProfileId)
-                    .map(
-                      (profile) => ListTile(
-                        key: ValueKey('profile_switcher_profile_${profile.id}'),
-                        leading: const Icon(Icons.person_outline),
-                        title: Text(profile.name),
-                        subtitle: Text(_profilePlacesSummaryFor(profile)),
-                        onTap: () async {
-                          Navigator.of(sheetContext).pop();
-                          await _switchActiveProfileAndReload(profile.id);
-                        },
-                      ),
-                    ),
-              ],
-            ),
-          ),
-        );
-      },
+    if (discardProfileIdOnCancel != null &&
+        discardProfileIdOnCancel.trim().isNotEmpty) {
+      await state.deleteProfile(discardProfileIdOnCancel);
+      if (!mounted) return;
+      final fallback = returnToProfileIdOnCancel;
+      if (fallback != null && fallback.trim().isNotEmpty) {
+        await _switchActiveProfileAndReload(fallback);
+      }
+      if (!mounted) return;
+    }
+
+    if (reopenSwitcherOnCancel) {
+      await _openProfilesBoard();
+    }
+  }
+
+  Future<void> _editProfileFromBoard(String profileId) async {
+    final prevActive = state.activeProfileId;
+    final target = profileId.trim();
+    if (target.isEmpty) return;
+    final switched = target != prevActive;
+
+    if (switched) {
+      await _switchActiveProfileAndReload(target);
+      if (!mounted) return;
+    }
+
+    await _openEditProfileWizard(reopenSwitcherOnCancel: false);
+    if (!mounted) return;
+
+    if (switched) {
+      await _switchActiveProfileAndReload(prevActive);
+    }
+  }
+
+  Future<void> _openProfilesBoard() async {
+    if (!mounted) return;
+
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute(
+        builder: (_) => ProfilesBoardScreen(
+          state: state,
+          onSwitchProfile: (profileId) async {
+            await _switchActiveProfileAndReload(profileId);
+          },
+          onEditProfile: _editProfileFromBoard,
+          onAddProfile: () async {
+            await _createAndOpenNewProfileWizard(reopenOnCancel: false);
+          },
+          onDeleteProfile: (profileId) async {
+            final before = state.activeProfileId;
+            await state.deleteProfile(profileId);
+            if (!mounted) return;
+            final after = state.activeProfileId;
+            if (before != after) {
+              await _switchActiveProfileAndReload(after);
+              return;
+            }
+            await _refreshAllNow();
+          },
+        ),
+      ),
     );
-  }
-
-  String _profilePlacesSummary() {
-    return _profilePlacesSummaryFor(widget.state.activeProfile);
-  }
-
-  String _profilePlacesSummaryFor(UnitanaProfile profile) {
-    final places = profile.places;
-    final living = places
-        .where((p) => p.type == PlaceType.living)
-        .cast<Place?>()
-        .firstWhere((p) => p != null, orElse: () => null);
-    final visiting = places
-        .where((p) => p.type == PlaceType.visiting)
-        .cast<Place?>()
-        .firstWhere((p) => p != null, orElse: () => null);
-
-    final a = living?.cityName ?? 'Home';
-    final b = visiting?.cityName ?? 'Destination';
-    return '$a ↔ $b';
   }
 
   void _openToolPickerFromMenu() {
@@ -945,7 +998,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return 'profile_$n';
   }
 
-  Future<void> _createAndOpenNewProfileWizard() async {
+  Future<void> _createAndOpenNewProfileWizard({
+    bool reopenOnCancel = true,
+  }) async {
+    final previousProfileId = state.activeProfileId;
     final profile = UnitanaProfile(
       id: _nextProfileId(),
       name: 'New Profile',
@@ -957,7 +1013,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
     if (!mounted) return;
     await _switchActiveProfileAndReload(profile.id);
     if (!mounted) return;
-    await _openEditProfileWizard();
+    await _openEditProfileWizard(
+      reopenSwitcherOnCancel: reopenOnCancel,
+      discardProfileIdOnCancel: profile.id,
+      returnToProfileIdOnCancel: previousProfileId,
+    );
   }
 
   Widget _sheetCloseButton(BuildContext context) {
@@ -1046,6 +1106,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final profileName = state.profileName.trim().isEmpty
         ? 'My Places'
         : state.profileName.trim();
+    final titleFontSize = _resolveAppBarTitleFontSize(context, profileName);
 
     return AnimatedBuilder(
       animation: Listenable.merge([_session, _liveData, _layout]),
@@ -1066,39 +1127,48 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 onTap: _openToolPickerFromMenu,
               ),
             ),
-            title: FittedBox(
-              fit: BoxFit.scaleDown,
-              alignment: Alignment.center,
-              child: Text(
-                profileName,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                softWrap: false,
-                textAlign: TextAlign.center,
-                style:
-                    (Theme.of(context).textTheme.titleLarge ??
-                            const TextStyle())
-                        .merge(GoogleFonts.robotoSlab())
-                        .copyWith(
-                          fontSize: 28,
-                          height: 1.0,
-                          fontWeight: FontWeight.w800,
-                        ),
-              ),
+            title: Text(
+              profileName,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              softWrap: false,
+              textAlign: TextAlign.center,
+              style: _baseAppBarTitleStyle(
+                context,
+              ).copyWith(fontSize: titleFontSize),
             ),
             actions: [
               if (_isEditingWidgets) ...[
-                IconButton(
+                TextButton(
                   key: const Key('dashboard_edit_cancel'),
-                  icon: const Icon(Icons.close),
-                  tooltip: 'Cancel',
                   onPressed: _exitEditWidgetsCancel,
+                  style: TextButton.styleFrom(
+                    visualDensity: VisualDensity.compact,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    padding: const EdgeInsets.symmetric(horizontal: 6),
+                    minimumSize: const Size(0, 36),
+                  ),
+                  child: const Text(
+                    'Cancel',
+                    style: TextStyle(fontSize: _kEditAppBarActionFontSize),
+                  ),
                 ),
-                IconButton(
-                  key: const Key('dashboard_edit_done'),
-                  icon: const Icon(Icons.check),
-                  tooltip: 'Done',
-                  onPressed: _exitEditWidgetsDone,
+                Padding(
+                  padding: const EdgeInsets.only(right: 4),
+                  child: TextButton(
+                    key: const Key('dashboard_edit_done'),
+                    onPressed: _exitEditWidgetsDone,
+                    style: TextButton.styleFrom(
+                      visualDensity: VisualDensity.compact,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      padding: const EdgeInsets.symmetric(horizontal: 6),
+                      minimumSize: const Size(0, 36),
+                    ),
+                    child: const Text(
+                      'Done',
+                      style: TextStyle(fontSize: _kEditAppBarActionFontSize),
+                    ),
+                  ),
                 ),
               ] else
                 Padding(
@@ -1143,7 +1213,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                   ),
                                   ListTile(
                                     leading: const Icon(Icons.edit),
-                                    title: const Text('Edit widgets'),
+                                    title: const Text('Edit Widgets'),
                                     onTap: () {
                                       Navigator.of(sheetContext).pop();
                                       Future.microtask(() {
@@ -1154,22 +1224,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                   ),
                                   ListTile(
                                     leading: const Icon(Icons.switch_account),
-                                    title: const Text('Switch profile'),
+                                    title: const Text('Profiles'),
                                     onTap: () {
                                       Navigator.of(sheetContext).pop();
-                                      Future.microtask(
-                                        _openProfileSwitcherSheet,
-                                      );
-                                    },
-                                  ),
-                                  ListTile(
-                                    leading: const Icon(Icons.person_add_alt_1),
-                                    title: const Text('Add profile'),
-                                    onTap: () {
-                                      Navigator.of(sheetContext).pop();
-                                      Future.microtask(
-                                        _createAndOpenNewProfileWizard,
-                                      );
+                                      Future.microtask(_openProfilesBoard);
                                     },
                                   ),
                                   ListTile(

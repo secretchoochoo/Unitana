@@ -102,6 +102,20 @@ void main() {
       expect(nextRect.bottom, lessThanOrEqualTo(screen.bottom));
     });
 
+    testWidgets('Initial first-run flow does not expose cancel', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+
+      SharedPreferences.setMockInitialValues({});
+      await bootstrapApp(tester);
+
+      expect(find.byType(Scaffold), findsOneWidget);
+      expect(find.byKey(const Key('first_run_cancel_button')), findsNothing);
+    });
+
     testWidgets('Step 2 preview is stacked under the preview toggle', (
       tester,
     ) async {

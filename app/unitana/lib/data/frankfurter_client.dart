@@ -30,15 +30,8 @@ class FrankfurterClient {
       return null;
     }
 
-    final dynamic decoded = jsonDecode(resp.body);
-    if (decoded is! Map<String, dynamic>) {
-      return null;
-    }
-
-    final rates = decoded['rates'];
-    if (rates is! Map) {
-      return null;
-    }
+    final rates = _parseRates(resp.body);
+    if (rates == null) return null;
 
     final usd = rates['USD'];
     if (usd is num) {
@@ -49,5 +42,52 @@ class FrankfurterClient {
     }
 
     return null;
+  }
+
+  /// Fetch latest rates quoted against [base] (e.g. EUR base gives EUR->XXX).
+  ///
+  /// Returns null on non-200 responses or unexpected payloads.
+  Future<Map<String, double>?> fetchLatestRates({
+    String base = 'EUR',
+    Uri? endpointOverride,
+  }) async {
+    final normalizedBase = base.trim().toUpperCase();
+    if (normalizedBase.isEmpty) return null;
+
+    final uri =
+        endpointOverride ??
+        Uri.parse('https://api.frankfurter.app/latest?from=$normalizedBase');
+    final resp = await _client.get(
+      uri,
+      headers: const {'accept': 'application/json'},
+    );
+    if (resp.statusCode != 200) {
+      return null;
+    }
+
+    final parsed = _parseRates(resp.body);
+    if (parsed == null) return null;
+
+    final out = <String, double>{normalizedBase: 1.0};
+    parsed.forEach((code, value) {
+      final cc = code.trim().toUpperCase();
+      if (cc.isEmpty) return;
+      if (value <= 0) return;
+      out[cc] = value;
+    });
+    return out;
+  }
+
+  Map<String, dynamic>? _parseRates(String body) {
+    final dynamic decoded = jsonDecode(body);
+    if (decoded is! Map<String, dynamic>) {
+      return null;
+    }
+
+    final rates = decoded['rates'];
+    if (rates is! Map<String, dynamic>) {
+      return null;
+    }
+    return rates;
   }
 }

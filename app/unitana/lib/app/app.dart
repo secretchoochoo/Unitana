@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import '../features/dashboard/dashboard_screen.dart';
 import '../features/first_run/first_run_screen.dart';
-import '../models/place.dart';
 import '../theme/app_theme.dart';
 import 'app_state.dart';
 import 'storage.dart';
@@ -65,9 +64,6 @@ class _HomeRouter extends StatelessWidget {
   }
 
   static bool _isSetupComplete(UnitanaAppState state) {
-    final places = state.places;
-    final hasLiving = places.any((p) => p.type == PlaceType.living);
-    final hasVisiting = places.any((p) => p.type == PlaceType.visiting);
-    return hasLiving && hasVisiting;
+    return state.isActiveProfileSetupComplete;
   }
 }

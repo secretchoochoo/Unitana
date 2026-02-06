@@ -9,6 +9,7 @@ import 'package:google_fonts/google_fonts.dart';
 /// - Fixed height to avoid layout jitter.
 /// - Ellipsis for long labels.
 /// - Stadium shapes for consistent tap targets.
+/// - Segment order matches PlacesHeroV2: destination (left), home (right).
 class CompactRealityToggle extends StatelessWidget {
   final bool isHome;
   final String homeLabel;
@@ -83,17 +84,17 @@ class CompactRealityToggle extends StatelessWidget {
       child: Row(
         children: [
           segment(
-            selected: isHome,
-            text: homeLabel,
-            onTap: onPickHome,
-            key: homeSegmentKey,
-          ),
-          const SizedBox(width: 6),
-          segment(
             selected: !isHome,
             text: destLabel,
             onTap: onPickDestination,
             key: destSegmentKey,
+          ),
+          const SizedBox(width: 6),
+          segment(
+            selected: isHome,
+            text: homeLabel,
+            onTap: onPickHome,
+            key: homeSegmentKey,
           ),
         ],
       ),

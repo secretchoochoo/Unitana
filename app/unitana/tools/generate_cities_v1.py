@@ -91,6 +91,8 @@ class GeoRow:
     admin1: str
     tz: str
     population: int
+    lat: float
+    lon: float
 
 
 def _read_country_info(path: Path) -> Dict[str, Country]:
@@ -160,6 +162,8 @@ def _iter_geonames_cities(zip_path: Path) -> Iterable[GeoRow]:
                 # 10 admin1
                 # 14 population
                 # 17 timezone
+                # 4 latitude
+                # 5 longitude
                 try:
                     geonameid = int(parts[0])
                 except ValueError:
@@ -171,6 +175,11 @@ def _iter_geonames_cities(zip_path: Path) -> Iterable[GeoRow]:
                 country = parts[8].strip()
                 admin1 = parts[10].strip()
                 tz = parts[17].strip()
+                try:
+                    lat = float(parts[4])
+                    lon = float(parts[5])
+                except ValueError:
+                    continue
                 try:
                     population = int(parts[14])
                 except ValueError:
@@ -192,6 +201,8 @@ def _iter_geonames_cities(zip_path: Path) -> Iterable[GeoRow]:
                     admin1=admin1,
                     tz=tz,
                     population=population,
+                    lat=lat,
+                    lon=lon,
                 )
 
 
@@ -273,6 +284,8 @@ def build_asset(geonames_dir: Path, output_path: Path) -> None:
             "countryName": "United States",
             "iso3": "USA",
             "continent": "NA",
+            "lat": 39.7392,
+            "lon": -104.9903,
         },
         {
             "id": "new_york_us",
@@ -287,6 +300,8 @@ def build_asset(geonames_dir: Path, output_path: Path) -> None:
             "countryName": "United States",
             "iso3": "USA",
             "continent": "NA",
+            "lat": 40.71427,
+            "lon": -74.00597,
         },
         {
             "id": "los_angeles_us",
@@ -301,6 +316,8 @@ def build_asset(geonames_dir: Path, output_path: Path) -> None:
             "countryName": "United States",
             "iso3": "USA",
             "continent": "NA",
+            "lat": 34.05223,
+            "lon": -118.24368,
         },
         {
             "id": "chicago_us",
@@ -315,6 +332,8 @@ def build_asset(geonames_dir: Path, output_path: Path) -> None:
             "countryName": "United States",
             "iso3": "USA",
             "continent": "NA",
+            "lat": 41.85003,
+            "lon": -87.65005,
         },
         {
             "id": "miami_us",
@@ -329,6 +348,8 @@ def build_asset(geonames_dir: Path, output_path: Path) -> None:
             "countryName": "United States",
             "iso3": "USA",
             "continent": "NA",
+            "lat": 25.77427,
+            "lon": -80.19366,
         },
         {
             "id": "toronto_ca",
@@ -343,6 +364,8 @@ def build_asset(geonames_dir: Path, output_path: Path) -> None:
             "countryName": "Canada",
             "iso3": "CAN",
             "continent": "NA",
+            "lat": 43.70011,
+            "lon": -79.4163,
         },
         {
             "id": "vancouver_ca",
@@ -357,6 +380,8 @@ def build_asset(geonames_dir: Path, output_path: Path) -> None:
             "countryName": "Canada",
             "iso3": "CAN",
             "continent": "NA",
+            "lat": 49.24966,
+            "lon": -123.11934,
         },
         {
             "id": "london_gb",
@@ -369,6 +394,8 @@ def build_asset(geonames_dir: Path, output_path: Path) -> None:
             "countryName": "United Kingdom",
             "iso3": "GBR",
             "continent": "EU",
+            "lat": 51.50853,
+            "lon": -0.12574,
         },
         {
             "id": "lisbon_pt",
@@ -381,6 +408,8 @@ def build_asset(geonames_dir: Path, output_path: Path) -> None:
             "countryName": "Portugal",
             "iso3": "PRT",
             "continent": "EU",
+            "lat": 38.71667,
+            "lon": -9.13333,
         },
         {
             "id": "tokyo_jp",
@@ -393,6 +422,8 @@ def build_asset(geonames_dir: Path, output_path: Path) -> None:
             "countryName": "Japan",
             "iso3": "JPN",
             "continent": "AS",
+            "lat": 35.6895,
+            "lon": 139.69171,
         },
     ]
 
@@ -420,6 +451,8 @@ def build_asset(geonames_dir: Path, output_path: Path) -> None:
                 "currencyCode": currency,
                 "defaultUnitSystem": _default_unit_system(r.country),
                 "defaultUse24h": _default_use_24h(r.country),
+                "lat": round(r.lat, 6),
+                "lon": round(r.lon, 6),
                 **({"countryName": country_name} if country_name else {}),
                 **({"iso3": iso3} if iso3 else {}),
                 **({"admin1Code": r.admin1} if r.admin1 else {}),
@@ -429,6 +462,7 @@ def build_asset(geonames_dir: Path, output_path: Path) -> None:
         )
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
+    _validate_asset_records(out)
     output_path.write_text(json.dumps(out, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
 
     print(f"Wrote {output_path}")
@@ -436,6 +470,54 @@ def build_asset(geonames_dir: Path, output_path: Path) -> None:
     print(f"Missing capitals: {len(missing_capitals)}")
     if missing_capitals:
         print("Sample:", missing_capitals[:15])
+
+
+def _validate_asset_records(rows: List[dict]) -> None:
+    required_fields = [
+        "id",
+        "cityName",
+        "countryCode",
+        "timeZoneId",
+        "currencyCode",
+        "defaultUnitSystem",
+        "defaultUse24h",
+        "lat",
+        "lon",
+    ]
+
+    for i, row in enumerate(rows):
+        for field in required_fields:
+            if field not in row:
+                raise ValueError(f"row {i} missing required field: {field}")
+
+        for field in ("id", "cityName", "countryCode", "timeZoneId", "currencyCode"):
+            value = row.get(field)
+            if not isinstance(value, str) or not value.strip():
+                raise ValueError(f"row {i} invalid string field {field}: {value!r}")
+
+        cc = row["countryCode"].strip().upper()
+        cur = row["currencyCode"].strip().upper()
+        if len(cc) != 2:
+            raise ValueError(f"row {i} invalid countryCode: {cc!r}")
+        if len(cur) != 3:
+            raise ValueError(f"row {i} invalid currencyCode: {cur!r}")
+
+        unit = row.get("defaultUnitSystem")
+        if unit not in {"metric", "imperial"}:
+            raise ValueError(f"row {i} invalid defaultUnitSystem: {unit!r}")
+
+        use24 = row.get("defaultUse24h")
+        if not isinstance(use24, bool):
+            raise ValueError(f"row {i} invalid defaultUse24h: {use24!r}")
+
+        lat = row.get("lat")
+        lon = row.get("lon")
+        if not isinstance(lat, (float, int)) or not isinstance(lon, (float, int)):
+            raise ValueError(f"row {i} invalid coordinates: lat={lat!r} lon={lon!r}")
+        if not (-90 <= float(lat) <= 90):
+            raise ValueError(f"row {i} latitude out of range: {lat!r}")
+        if not (-180 <= float(lon) <= 180):
+            raise ValueError(f"row {i} longitude out of range: {lon!r}")
 
 
 def main() -> None:

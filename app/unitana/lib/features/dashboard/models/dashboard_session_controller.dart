@@ -27,6 +27,8 @@ class ConversionRecord {
   ///
   /// History ownership remains canonical by [toolId].
   final String? lensId;
+  final String? fromUnit;
+  final String? toUnit;
   final String inputLabel;
   final String outputLabel;
   final DateTime timestamp;
@@ -34,6 +36,8 @@ class ConversionRecord {
   const ConversionRecord({
     required this.toolId,
     this.lensId,
+    this.fromUnit,
+    this.toUnit,
     required this.inputLabel,
     required this.outputLabel,
     required this.timestamp,

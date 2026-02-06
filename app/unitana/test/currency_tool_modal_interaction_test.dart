@@ -65,21 +65,29 @@ void main() {
     await tester.pumpAndSettle();
 
     // Modal should open.
-    final unitsFinder = find.byKey(
-      const ValueKey('tool_units_currency_convert'),
+    final fromBtn = find.byKey(
+      const ValueKey('tool_unit_from_currency_convert'),
     );
-    expect(unitsFinder, findsOneWidget);
+    final toBtn = find.byKey(const ValueKey('tool_unit_to_currency_convert'));
+    expect(fromBtn, findsOneWidget);
+    expect(toBtn, findsOneWidget);
 
-    final unitsLabel = tester.widget<Text>(unitsFinder).data ?? '';
-    expect(unitsLabel, contains(arrow));
+    String readCode(Finder button) {
+      final codeText = find.descendant(
+        of: button,
+        matching: find.byWidgetPredicate(
+          (w) =>
+              w is Text &&
+              RegExp(r'^[A-Z]{3}$').hasMatch((w.data ?? '').trim()),
+        ),
+      );
+      expect(codeText, findsOneWidget);
+      return (tester.widget<Text>(codeText).data ?? '').trim();
+    }
 
-    // Determine direction from the units label (order matters).
-    final codes = RegExp(
-      r'\b[A-Z]{3}\b',
-    ).allMatches(unitsLabel).map((m) => m.group(0)!).toList();
-    expect(codes.length, 2);
-    final from = codes[0];
-    final to = codes[1];
+    final from = readCode(fromBtn);
+    final to = readCode(toBtn);
+    expect('$from$arrow$to', contains(arrow));
 
     // MVP currency engine uses a fixed fallback EUR↔USD rate when live rates
     // are not provided.

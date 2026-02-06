@@ -4,6 +4,8 @@ import 'package:google_fonts/google_fonts.dart';
 
 import 'package:unitana/features/dashboard/models/dashboard_live_data.dart';
 import 'package:unitana/models/place.dart';
+import 'package:unitana/data/cities.dart' show kCurrencySymbols;
+import 'package:unitana/data/country_currency_map.dart';
 import 'package:unitana/theme/dracula_palette.dart';
 import 'package:unitana/utils/timezone_utils.dart';
 
@@ -110,46 +112,74 @@ class PinnedMiniHeroReadout extends StatelessWidget {
   }
 
   String _currencyCodeForPlace(Place p) {
-    final cc = p.countryCode.toUpperCase();
-    if (cc == 'US') return 'USD';
-    return 'EUR';
+    return currencyCodeForCountryCode(p.countryCode);
   }
 
   String _currencySymbol(String code) {
-    switch (code.toUpperCase()) {
-      case 'EUR':
-        return '€';
-      case 'USD':
-        return r'$';
+    final normalized = code.trim().toUpperCase();
+    return kCurrencySymbols[normalized] ?? normalized;
+  }
+
+  bool _currencyUsesSuffixSymbol(String code) {
+    switch (code.trim().toUpperCase()) {
+      case 'AED':
+      case 'BHD':
+      case 'DZD':
+      case 'IQD':
+      case 'IRR':
+      case 'JOD':
+      case 'KWD':
+      case 'MAD':
+      case 'OMR':
+      case 'QAR':
+      case 'SAR':
+      case 'TND':
+        return true;
       default:
-        return code.toUpperCase();
+        return false;
     }
+  }
+
+  String _formattedCurrencyToken(String code, double amount) {
+    final symbol = _currencySymbol(code);
+    final digits = _fmtCurrencyAmount(amount);
+    final token = _currencyUsesSuffixSymbol(code)
+        ? '$digits$symbol'
+        : '$symbol$digits';
+    return '\u2066$token\u2069';
   }
 
   String _currencyLine() {
     final from = _currencyCodeForPlace(primary);
     final to = _currencyCodeForPlace(secondary);
-    final rate = liveData.eurToUsd;
+    final rate = liveData.currencyRate(fromCode: from, toCode: to);
 
     if (from == to) {
-      final sym = _currencySymbol(from);
-      return '${sym}1≈${sym}1.00';
+      return '${_formattedCurrencyToken(from, 1)}≈${_formattedCurrencyToken(from, 1)}';
     }
 
-    if (rate == 0) {
-      return '${_currencySymbol(from)}1≈${_currencySymbol(to)}—';
+    if (rate == null || rate <= 0) {
+      return '${_formattedCurrencyToken(from, 1)}≈\u2066${_currencySymbol(to)}—\u2069';
     }
+    final base = _displayBaseAmountForPair(rate);
+    final converted = base * rate;
+    return '${_formattedCurrencyToken(from, base)}≈${_formattedCurrencyToken(to, converted)}';
+  }
 
-    // MVP contract: we only track EUR<->USD.
-    if (from == 'EUR' && to == 'USD') {
-      return '€1≈\$${rate.toStringAsFixed(2)}';
-    }
-    if (from == 'USD' && to == 'EUR') {
-      final inv = 1 / rate;
-      return '\$1≈€${inv.toStringAsFixed(2)}';
-    }
+  double _displayBaseAmountForPair(double pairRate) {
+    if (pairRate < 0.0002) return 10000;
+    if (pairRate < 0.002) return 1000;
+    if (pairRate < 0.02) return 100;
+    if (pairRate < 0.2) return 10;
+    return 1;
+  }
 
-    return '${_currencySymbol(from)}1≈${_currencySymbol(to)}—';
+  String _fmtCurrencyAmount(double value) {
+    if (value >= 100) return value.toStringAsFixed(0);
+    if (value >= 10) return value.toStringAsFixed(1);
+    if (value >= 1) return value.toStringAsFixed(2);
+    if (value >= 0.1) return value.toStringAsFixed(2);
+    return value.toStringAsFixed(3);
   }
 
   @override

@@ -1,238 +1,130 @@
 {
   "backlog": [
     {
-      "id": "P0_onboarding_wizard_redesign_3step",
+      "id": "PACK_A_city_data_platform_foundation",
+      "title": "Pack A (P0): City data platform foundation (canonical geo/time/currency defaults)",
+      "summary": "Design and implement a canonical city dataset model that fully supports product needs: lat/lon, timezone, country, currency, and default units/clock behavior for all in-scope cities. Include schema validation and tooling so missing/invalid records fail early.",
       "notes": [
-        "Step 1: Welcome to Unitana with Dracula discipline (white-first) and restrained accents.",
-        "Step 2: Home+Destination pickers plus mini hero preview and enum-driven toggle.",
-        "Step 3: Name plus Places Hero V2 preview and enum-driven toggle; confirm creates dashboard.",
-        "Update bottom navigation buttons to match 3 steps (Step1 proceed, Step2 back/next, Step3 back/confirm).",
-        "Add widget tests for compact overflow and add gated wizard goldens (compact + one common phone size)."
+        "Define canonical schema and ownership: city core fields, country mapping, currency mapping, unit defaults.",
+        "Ensure every in-scope city has: lat, lon, timezone ID, country code, currency code, unit defaults, 12/24h default.",
+        "Add validation tests/scripts that fail CI for missing required fields.",
+        "Produce migration/normalization path for existing city data.",
+        "Document schema contract in docs/ai/design_lock and docs/ai/reference."
       ],
-      "summary": "Rebuild FirstRun wizard to match dashboard look-and-feel with a unified scaffold and 3-step flow (Welcome; Pick Home+Destination with mini preview; Name with main hero preview + confirm). Update bottom navigation for fewer pages; add compact constraints and gated goldens.",
-      "title": "P0: Onboarding wizard redesign (3-step, dashboard-aligned)"
+      "priority": "P0"
     },
     {
-      "id": "P0_scroll_transition_hardening_pinned_mini_hero",
+      "id": "PACK_B_live_data_e2e_weather_time_air",
+      "title": "Pack B (P0): Live weather/time/AQI/pollen end-to-end for every city",
+      "summary": "Complete and harden the live data pipeline so every city can resolve weather condition, temperature, time, AQI, and pollen data from configured providers with robust fallback and error handling.",
       "notes": [
-        "Use a single AnimationController; animate reserved spacer height and overlay opacity/offset from the same value.",
-        "Preserve the 'reserve space' behavior so first-row tiles remain tappable and never sit under the overlay.",
-        "Add a widget test that scrolls across threshold and asserts no large unexpected position delta."
+        "Use Pack A dataset as source of truth for all provider calls and timezone display.",
+        "Guarantee non-empty details pill behavior with deterministic fallback when providers fail.",
+        "Add reliability instrumentation and cache policy for refresh/update UX.",
+        "Add resilient tests for representative global cities and provider failure modes.",
+        "Keep mock mode deterministic and aligned with contracts."
       ],
-      "summary": "Remove visible jump when pinned mini hero appears/disappears by replacing boolean layout jumps with a coordinated animation that drives reserved space and overlay transition. Add a widget regression test that catches sudden single-frame jumps.",
-      "title": "P0: Dashboard scroll transition hardening (pinned mini hero)"
+      "priority": "P0"
     },
     {
-      "id": "P0_docs_refresh_handoff_context_design_lock",
+      "id": "PACK_C_live_currency_global",
+      "title": "Pack C (P0): Live currency conversion mapped by city/country",
+      "summary": "Deliver complete currency conversion coverage by mapping each city to country/currency and wiring live exchange data with stable formatting, caching, and fallback behavior.",
       "notes": [
-        "Add docs/ai/design_lock/STABILITY_DOCTRINE.md (non-negotiables, high-risk zones, required tests).",
-        "Add docs/ai/design_lock/FIRST_RUN_WIZARD_CONTRACT.md (visual rules, step flow, preview behavior, compact constraints).",
-        "Update app/unitana/test/goldens/README.md with wizard golden workflow."
+        "Source currency from canonical city/country mapping (Pack A).",
+        "Support global city pairs with deterministic UI formatting rules.",
+        "Add cache/refresh behavior and stale-data indicators.",
+        "Add tests for high-variance currency pairs and provider outages."
       ],
-      "summary": "Update CURRENT_HANDOFF and context_db to reflect the P0 plan and wizard decisions; add wizard design lock and stability doctrine docs so future teams follow the contract-first workflow.",
-      "title": "P0: Docs refresh (handoff, context db, wizard contract)"
+      "priority": "P0"
     },
     {
-      "id": "P1.40_hardening_goldens_lock",
+      "id": "PACK_D_docs_repo_text_full_audit",
+      "title": "Pack D (P1): Full repository text/docs audit and consolidation",
+      "summary": "Audit and modernize all README/AI/docs/text artifacts across the repository for accuracy, consistency, and maintainability; validate Mermaid diagrams and consolidate redundant documentation sources.",
       "notes": [
-        "Priority: P0 (execute next).",
-        "Goldens are gated behind UNITANA_GOLDENS=1; CI remains green by default.",
-        "Baselines must be committed under app/unitana/test/goldens/*.png.",
-        "If a visual change is intentional: update HERO_MINI_HERO_CONTRACT.md first, then regenerate baselines."
+        "Audit every README.md and text doc for current-product accuracy (not template drift).",
+        "Validate and fix Mermaid diagrams so they render on GitHub.",
+        "Consolidate overlapping retros/prompts/contracts into canonical sources.",
+        "Define docs information architecture and archival strategy.",
+        "Update contributor workflow docs for Codex-first operation."
       ],
-      "summary": "Add/maintain gated golden tests as the authoritative visual lock for hero and pinned mini-hero. Generate and commit baselines; update contract to treat goldens as required for intentional visual change.",
-      "title": "P1.40 (P0): Hardening goldens lock for Places Hero V2 + pinned mini-hero"
+      "priority": "P1"
     },
     {
-      "id": "P1.41_city_data_latlon_coverage_spike",
+      "id": "PACK_E_marquee_scene_v2_16bit",
+      "title": "Pack E (P1): Marquee scene V2 facelift (readable 16-bit style)",
+      "summary": "Refactor and redesign existing weather marquee scenes from 8-bit to a more readable, cohesive 16-bit visual system while preserving current scene taxonomy and behavior contracts.",
       "notes": [
-        "Priority: P1 (execute after hardening).",
-        "Create audit report of missing/invalid coordinates.",
-        "Populate coordinates (static) and normalize precision.",
-        "Add a unit test gate to fail when in-scope cities are missing lat/lon."
+        "Focus first on readability and consistency across existing scene types.",
+        "Coordinate with external artist/design-agent workflow for scene specs and assets.",
+        "Preserve animation performance and accessibility on small devices.",
+        "After V2 facelift, run discovery for location-based variants (city/rural/beach/region)."
       ],
-      "summary": "Ensure all in-scope cities have non-null lat/lon and add a build-time validation test to prevent silent Open-Meteo skips and demo fallbacks that appear \u201clive\u201d.",
-      "title": "P1.41 (P1): City data spike: lat/lon coverage + validator gate"
+      "priority": "P1"
     },
     {
-      "id": "P1.15a_env_wiring_swap_contract",
+      "id": "PACK_F_tools_surface_completion",
+      "title": "Pack F (P1): Tools surface completion and parity cleanup",
+      "summary": "Resolve remaining \u201ccoming soon\u201d surfaces, finish key tool UX parity, and normalize unit-matrix behavior between tools and widgets.",
       "notes": [
-        "Show both city values in normal mode (e.g., A: 42 \u2022 B: 55) with compact fallback (e.g., AQI 42/55).",
-        "Include units for pollen when available; gracefully handle missing values (use '--').",
-        "Do not change hero region proportions or introduce new multi-line Columns in constrained areas.",
-        "Keep swap affordance right-aligned and visible in micro mode."
+        "Run and execute a concrete coming-soon audit with owner and ETA per tool.",
+        "Finish currency tool UX parity if any gaps remain after Pack C.",
+        "Standardize From/To unit interaction model across tools/widgets."
       ],
-      "summary": "Make Env pill data-driven for both selected cities. Tap swaps between AQI and Pollen views; formatting must be overflow-safe with micro fallbacks; mode persists.",
-      "title": "P1.15a: Wire Env data (AQI + Pollen) + swap contract"
+      "priority": "P1"
     },
     {
-      "id": "P1.15b_env_polish_icons_trends",
+      "id": "PACK_G_polish_compliance_release_readiness",
+      "title": "Pack G (P2): Polish, compliance, and release readiness",
+      "summary": "Final polish pass including About/Licenses, accessibility and interaction polish, and release readiness hardening after core platform/data packs are complete.",
       "notes": [
-        "All additions must remain single-line and micro-safe; no overflow risk.",
-        "Prefer abbreviations in compact/micro: 'AQI' and 'Pol'."
+        "About + Licenses accuracy and legal completeness.",
+        "Accessibility, haptics, and interaction consistency pass.",
+        "Release checklist and QA signoff artifacts."
       ],
-      "summary": "Add lightweight iconography per Env mode (AQI gauge / pollen flower) and optional trend hints (up/down) without adding extra lines; keep deterministic tests.",
-      "title": "P1.15b: Env polish (icons, trend hints, labels)"
+      "priority": "P2"
     },
     {
-      "id": "P1.16_currency_wiring_expand",
+      "id": "PACK_H_localization_i18n_l10n",
+      "title": "Pack H (P1): Localization and language settings",
+      "summary": "Add end-to-end localization (i18n/l10n) with a user-selectable language in Settings, localized tool/menu copy, date/time/number/currency formatting, and fallback policy.",
       "notes": [
-        "Keep existing coin icon and stable keys.",
-        "Add formatting tests for edge cases (0, large numbers, trailing zeros)."
+        "Add app-level language selection under Settings (Tools menu entry point) with persisted preference and system-default option.",
+        "Localize dashboard, wizard, tools, and error/empty-state text using ARB-based Flutter localization workflow.",
+        "Apply locale-aware formatting for dates, times, numbers, and currencies while preserving city unit/time defaults.",
+        "Define translation quality gate and fallback behavior for missing keys.",
+        "Add regression tests for locale switching and key critical paths (hero, currency, tool modal, first-run)."
       ],
-      "summary": "Verify currency values come from the real rate source and display rules are consistent across common pairs; ensure 2-decimal display and rounding are stable under tests.",
-      "title": "P1.16: Currency wiring (rates, cache, multi-pair readiness)"
+      "priority": "P1"
     },
     {
-      "id": "profiles_mvp",
+      "id": "ICEBOX_radio_feature",
+      "title": "Icebox: Optional radio feature",
+      "summary": "Keep radio playback concept parked until core platform/data and product-critical slices are complete.",
       "notes": [
-        "Profile state must own: places (home/destination), dashboard layout + per-tile config, theme/customization hooks for future modes.",
-        "Menu labels should use Title Case (e.g., \"Edit Widgets\").",
-        "Stable keys + persistence are non-negotiable; no public widget API churn unless unavoidable."
+        "Do not schedule before Packs A-G unless explicitly reprioritized."
       ],
-      "summary": "Implement real multi-profile support. \"Add Profile\" reuses onboarding wizard and results in a new profile. \"Switch Profile\" shows a tiled gallery of profiles to select, reorder, and remove.",
-      "title": "Profiles: Add Profile + Switch Profile (state + persistence)"
-    },
-    {
-      "id": "coming_soon_audit",
-      "notes": [
-        "Keep categories coherent (Travel Essentials, Food & Cooking, Health & Fitness, etc.).",
-        "Prefer tools with real cross-country unit differences and high travel frequency.",
-        "Ensure all implemented tools honor reality flip + modal defaults."
-      ],
-      "summary": "Inventory all tools currently exposed in menus that are still \"Coming Soon\". Decide what ships in MVP (implement) vs later (hide).",
-      "title": "Tools: audit \"Coming Soon\" surfaces and plan MVP fills"
-    },
-    {
-      "id": "currency_tool_ui",
-      "notes": [
-        "Choose an FX source that is free for commercial use (document license/terms).",
-        "No minute-by-minute updates; TTL caching is required.",
-        "Hero currency card should eventually open the currency tool (tap target + accessibility)."
-      ],
-      "summary": "Wire Currency into the tool surface (modal + history) and optionally a dashboard tile; keep refresh non-chatty and free-for-commercial-use compliant.",
-      "title": "Currency: complete user-facing UI (tool + widget) on top of backend"
-    },
-    {
-      "id": "new_user_wizard_pass",
-      "notes": [
-        "Do near MVP lock; avoid churn while core UI is still shifting."
-      ],
-      "summary": "Update the new user wizard to reflect the current Dracula/terminal theme and the final hero/dashboard aesthetics. Replace early mock widget examples with a live hero preview.",
-      "title": "Onboarding: final aesthetic pass and live hero preview"
-    },
-    {
-      "id": "about_licenses",
-      "notes": [
-        "Place after MVP shape stabilizes; keep simple and deterministic."
-      ],
-      "summary": "Add an About page with Unitana logo, version/build info, and a link to an OSS licenses page if required.",
-      "title": "About + Licenses pages"
-    },
-    {
-      "id": "shoe_sizes_v2_mattress",
-      "notes": [
-        "Follow the same unit-pill/compact-selector paradigm where applicable."
-      ],
-      "summary": "Expand Shoe Sizes to show system labels (US/UK/EU/JP, etc.) and add Mattress Sizes as a Travel Essentials tool.",
-      "title": "Shoe Sizes v2 + Mattress Sizes tool"
-    },
-    {
-      "id": "pollen_air_quality",
-      "notes": [
-        "If implemented as 1x2, ensure edit-mode drag, jiggle, and persistence work across breakpoints."
-      ],
-      "summary": "Explore a travel-adjacent air quality and pollen surface. Could be a 1x2 widget or independent tools.",
-      "title": "Optional: Pollen + Air Quality (tool or 1x2 widget)"
-    },
-    {
-      "id": "haptics_sound_polish",
-      "notes": [
-        "No noisy haptics; keep learning-first and non-distracting."
-      ],
-      "summary": "Add light haptics for key interactions and audit accessibility labels/focus order. Optional Dracula-friendly sound effects (default OFF).",
-      "title": "UX polish: haptics, sound, accessibility"
-    },
-    {
-      "id": "radio_lofi_playback",
-      "notes": [
-        "Later: onboarding wizard mention + Settings toggle.",
-        "Default OFF is non-negotiable for MVP; zero background work when OFF."
-      ],
-      "summary": "Optional ambient lo-fi playback feature. Default OFF; when OFF, do not start any network/audio session/background work.",
-      "title": "Radio: license-free lo-fi playback (default OFF)"
-    },
-    {
-      "id": "tool_unit_matrix_ux",
-      "notes": [
-        "Goal: no persistence schema change; selections should be key-addressable and reflected in tool widgets + history lines.",
-        "Prefer: unit pill(s) that open a Dracula-themed bottom sheet with quick presets + search, with a \"More units\" affordance only when needed.",
-        "History should record the unit pair used per entry and render value-first; avoid redundant labels."
-      ],
-      "summary": "Design a scalable unit selection model for tools (e.g., grams, liters, cubic units) that avoids a clunky From/To workflow, preserves speed, and keeps widgets consistent with modal selections.",
-      "title": "Tools: unit matrix UX (From/To without clunk) + widget parity"
-    },
-    {
-      "id": "P0_fix_duplicate_test_keys_collapsing_header",
-      "priority": "P0",
-      "status": "todo",
-      "title": "Collapsing header: eliminate duplicate test keys between expanded hero and compact layer",
-      "acceptance_criteria": [
-        "Hero-related tests no longer fail with 'Expected exactly one' for hero keys.",
-        "Compact layer uses distinct 'mini_*' keys or emits no canonical hero keys."
-      ],
-      "risk": "High (currently red build)",
-      "owner_role": "Engineering Lead"
-    },
-    {
-      "id": "P0_fix_env_pill_key_uniqueness",
-      "priority": "P0",
-      "status": "todo",
-      "title": "Hero env pill: ensure only one widget uses ValueKey('hero_env_pill') on dashboard surface",
-      "acceptance_criteria": [
-        "dashboard_places_hero_v2_test.dart no longer finds 2 hero_env_pill widgets."
-      ],
-      "risk": "Medium",
-      "owner_role": "Engineering Lead"
-    },
-    {
-      "id": "P0_tests_pinned_header_scroll_alignment",
-      "priority": "P0",
-      "status": "todo",
-      "title": "Tests: pinned-header aware scrolling and taps (ensureVisibleAligned)",
-      "acceptance_criteria": [
-        "weather_summary_tile_open_smoke_test.dart taps reliably on phone surface.",
-        "No off-screen tap warnings in dashboard modal/tile tests."
-      ],
-      "risk": "Medium",
-      "owner_role": "QA Lead"
-    },
-    {
-      "id": "P0_goldens_wizard_and_collapsing_states",
-      "priority": "P0",
-      "status": "blocked",
-      "title": "Goldens: wizard steps + dashboard expanded/collapsed header",
-      "acceptance_criteria": [
-        "Goldens updated intentionally with a documented rationale for each changed PNG."
-      ],
-      "risk": "Low",
-      "owner_role": "QA Lead",
-      "blocked_by": [
-        "P0_fix_duplicate_test_keys_collapsing_header"
-      ]
+      "priority": "ICEBOX"
     }
   ],
   "current_state": {
-    "current_slice": "P1: Profiles + regression invariants + golden harness (gated) + UI polish",
+    "current_slice": "Pack A complete; executing Pack B + Pack C, with Pack F tools-audit unblock tracked",
     "notes": [
-      "Collapsing header is pinned SliverPersistentHeader morphing PlacesHeroV2 -> pinned mini readout; no pop-in.",
-      "Wizard consolidated to 3 steps; Step 2 must fit on one screen; titles use Roboto Slab; CTA is Create Profile.",
-      "Canonical hero keys must be unique; use includeTestKeys gating to avoid duplicate finders in previews.",
-      "Goldens are gated via UNITANA_GOLDENS=1; do not update baselines unless intentional and documented.",
-      "Multi-profile support added (profiles list + active profile id) with namespaced prefs and legacy bootstrap."
+      "Codex-first workflow allows larger execution packs while keeping gates green.",
+      "Pack A city data platform foundation is complete with canonical schema + validation guards.",
+      "Radio remains explicitly iceboxed.",
+      "Profile UX phase 1 shipped: unified Profiles entry + dedicated tiled board with add/edit/delete/switch and persisted ordering."
     ],
-    "overall_health": "Green baseline with regression harness; treat new errors as highest priority.",
-    "status": "GREEN (operator switching to Codex; consult latest error.log if red)"
+    "overall_health": "Stable with full gates passing; canonical city data coverage is now enforced for all in-scope records.",
+    "status": "GREEN",
+    "focus": {
+      "now": "Pack B live weather/time/AQI/pollen E2E + Pack C live currency global + Pack F coming-soon tool activation plan",
+      "next": "Pack D docs/text full audit",
+      "later": [
+        "Pack E marquee scene V2 facelift"
+      ]
+    }
   },
   "decisions": [
     {
@@ -369,6 +261,90 @@
         "Migration/bootstrapping code must be kept",
         "Tests should cover switching and edit flow"
       ]
+    },
+    {
+      "id": "D-2026-02-05-pack-a-city-schema-lock",
+      "date": "2026-02-05",
+      "title": "Lock canonical city schema with required geo/time/currency/default fields",
+      "decision": "Require every city dataset record to include id, cityName, countryCode, timeZoneId, currencyCode, defaultUnitSystem, defaultUse24h, lat, and lon, and enforce this with generator + script + test validators.",
+      "rationale": "Pack B/C reliability depends on deterministic city metadata. Allowing missing coordinates/timezone fields causes live data failures and inconsistent fallbacks.",
+      "impacts": [
+        "GeoNames generator now emits lat/lon and performs strict validation before writing the asset.",
+        "cities_v1.json is normalized to full required-field coverage for all in-scope cities.",
+        "Schema regressions now fail via tools/validate_cities_v1.py and city_data_schema_validation_test.dart."
+      ]
+    },
+    {
+      "id": "D-2026-02-06-pinned-toggle-reality-handoff",
+      "date": "2026-02-06",
+      "title": "Align pinned mini-hero reality toggle behavior with main hero",
+      "decision": "Use destination-left/home-right ordering in compact toggles, align interaction handoff threshold during collapse, and make pinned header readout listen to session/live-data changes.",
+      "rationale": "Users saw mirrored toggle orientation and a visible-but-untappable mini-toggle state, which made reality switching feel broken and obscured selected-city temperature changes.",
+      "impacts": [
+        "Pinned toggle order now matches PlacesHeroV2.",
+        "Mini toggle is tappable as soon as it is meaningfully visible.",
+        "Pinned readout now updates immediately when reality changes."
+      ]
+    },
+    {
+      "id": "D-2026-02-06-city-label-admin-code-cleanup",
+      "date": "2026-02-06",
+      "title": "Suppress numeric admin codes in city display labels",
+      "decision": "For user-facing city labels, prefer admin1Name; if only admin1Code exists and is numeric, omit it and display City + country code.",
+      "rationale": "GeoNames admin1 numeric IDs are data-internal and not meaningful in UI (e.g., 'Porto, 17, PT').",
+      "impacts": [
+        "Wizard/place selection labels are cleaner and less confusing.",
+        "Alpha admin codes like US state abbreviations remain visible when admin1Name is missing.",
+        "Coverage audit: numeric admin1 codes appear in 27,805 records; 80 have no admin1Name and now fall back to City, CC."
+      ]
+    },
+    {
+      "id": "D-2026-02-06-country-currency-resolver",
+      "date": "2026-02-06",
+      "title": "Use canonical country->currency resolver across dashboard currency surfaces",
+      "decision": "Generate and use a canonical country->currency map from cities_v1.json for hero, pinned mini-hero, dashboard currency tile previews, and currency tool direction defaults.",
+      "rationale": "Pack C requires global city/country/currency mapping fidelity; hardcoded US/EUR assumptions break correctness for most countries.",
+      "impacts": [
+        "Currency labels and direction now follow mapped country currency codes globally.",
+        "Unsupported non-EUR/USD live conversion pairs display deterministic placeholders instead of incorrect derived rates.",
+        "Added mapping coverage tests to ensure all countries in the city dataset are represented."
+      ]
+    },
+    {
+      "id": "D-2026-02-06-currency-tool-manual-units-history-guard",
+      "date": "2026-02-06",
+      "title": "Currency tool supports manual from/to unit selection with history-pair guard",
+      "decision": "Expose manual currency from/to pickers in the Currency modal and only apply the latest currency history record on the dashboard tile when its from/to units match the active city-derived pair.",
+      "rationale": "Prevents stale or unrelated manual conversions from overwriting the hero/tile default city-pair context while still unlocking full manual global conversion flows.",
+      "impacts": [
+        "Currency modal now supports arbitrary mapped currency pair selection.",
+        "Dashboard currency tile preserves context-correct preview when latest history pair differs from active city pair.",
+        "Regression coverage added for manual from/to picker interactions."
+      ]
+    },
+    {
+      "id": "D-2026-02-06-localization-epic-added",
+      "date": "2026-02-06",
+      "title": "Add Pack H localization epic to backlog",
+      "decision": "Track full localization as a first-class epic with Settings language selection, locale-aware formatting, and translation fallback/test gates.",
+      "rationale": "The product is city/global by design; language selection and locale-correct formatting are foundational quality requirements and should not remain implicit.",
+      "impacts": [
+        "Settings surface must expose a persisted language selector.",
+        "Tool/menu text and key dashboard surfaces need ARB localization coverage.",
+        "Formatting logic must be locale-aware without breaking existing city-unit/time behavior."
+      ]
+    },
+    {
+      "id": "D-2026-02-06-profile-board-phase1",
+      "date": "2026-02-06",
+      "title": "Unify profile management behind a dedicated Profiles Board",
+      "decision": "Replace split menu actions with one Profiles entry that opens a tiled board supporting add/edit/delete/switch and persisted ordering.",
+      "rationale": "The previous switch/add split lacked delete and made edit access asymmetric (active-profile-only affordance). A single board aligns CRUD discoverability and supports iterative UX polish.",
+      "impacts": [
+        "Dashboard menu now exposes a single Profiles action.",
+        "Profile edit can target non-active profiles through temporary context switching.",
+        "Profile ordering is persisted in app state for future UX refinement."
+      ]
     }
   ],
   "design_system": {
@@ -391,7 +367,7 @@
     "Keep docs/ai small and canonical: avoid duplicate prompts and parallel copies.",
     "Prefer updating existing canonical files over creating new variants."
   ],
-  "last_updated": "2026-02-05",
+  "last_updated": "2026-02-06",
   "patch_log": [
     {
       "date": "2025-12-31",
@@ -3013,6 +2989,65 @@
         "Close buttons added to menu, profile switcher, dev tools, weather, clock, and reset confirmation sheets.",
         "Kept behavior stable; full format/analyze/test gates pass."
       ]
+    },
+    {
+      "date": "2026-02-06",
+      "id": "patch_2026-02-06_currency_manual_picker_history_guard_tools_audit",
+      "title": "Currency tool manual pair picker + history-guard semantics; tools audit checkpoint",
+      "files_changed": [
+        "app/unitana/lib/features/dashboard/models/dashboard_session_controller.dart",
+        "app/unitana/lib/features/dashboard/widgets/tool_modal_bottom_sheet.dart",
+        "app/unitana/lib/features/dashboard/widgets/dashboard_board.dart",
+        "app/unitana/test/dashboard_currency_modal_context_test.dart",
+        "app/unitana/test/currency_tool_modal_interaction_test.dart",
+        "app/unitana/test/dashboard_currency_global_mapping_test.dart",
+        "docs/ai/context_db.json",
+        "docs/ai/handoff/CURRENT_HANDOFF.md",
+        "docs/ai/prompts/NEXT_CHAT_PROMPT.md"
+      ],
+      "summary": [
+        "Added manual currency from/to selectors in the currency modal using mapped global currency codes.",
+        "Extended conversion history records with optional fromUnit/toUnit metadata and guarded dashboard tile history application to active pair matches.",
+        "Hardened currency picker widget tests to be key-driven and scroll-safe.",
+        "Audited tool registry and confirmed 14 tools remain disabled (coming-soon equivalent), keeping Pack F open."
+      ]
+    },
+    {
+      "date": "2026-02-06",
+      "id": "patch_2026-02-06_backlog_localization_epic_and_tools_audit_notes",
+      "title": "Backlog update: localization epic + tool-surface audit guidance",
+      "files_changed": [
+        "docs/ai/context_db.json",
+        "docs/ai/handoff/CURRENT_HANDOFF.md",
+        "docs/ai/prompts/NEXT_CHAT_PROMPT.md"
+      ],
+      "summary": [
+        "Added Pack H localization epic with Settings language selection and i18n/l10n quality gates.",
+        "Captured tool-surface audit guidance to evaluate coming-soon tool value and identify missing high-value tools.",
+        "Aligned next-chat prompt sequencing to keep Pack F usefulness audit explicit while B/C continue."
+      ]
+    },
+    {
+      "date": "2026-02-06",
+      "id": "patch_2026-02-06_profile_board_phase1_unified_entry",
+      "title": "Profiles Board phase 1: unified entry and tiled profile CRUD surface",
+      "files_changed": [
+        "app/unitana/lib/app/app_state.dart",
+        "app/unitana/lib/features/dashboard/dashboard_screen.dart",
+        "app/unitana/lib/features/dashboard/widgets/profiles_board_screen.dart",
+        "app/unitana/test/profile_switcher_edit_profile_flow_test.dart",
+        "app/unitana/test/profile_switcher_add_profile_cancel_flow_test.dart",
+        "app/unitana/test/profile_switcher_switch_profile_flow_test.dart",
+        "docs/ai/context_db.json",
+        "docs/ai/handoff/CURRENT_HANDOFF.md",
+        "docs/ai/prompts/NEXT_CHAT_PROMPT.md"
+      ],
+      "summary": [
+        "Added a dedicated Profiles Board route with tile-based add/edit/delete/switch interactions and manage mode.",
+        "Collapsed dashboard menu profile actions into a single Profiles entry.",
+        "Added persisted profile ordering in app state and wired drag reorder behavior on the board.",
+        "Migrated existing profile flow tests to board keys and paths."
+      ]
     }
   ],
   "patches": [
@@ -3248,6 +3283,247 @@
         "Added top-right close controls to dashboard/menu sheets for consistent dismissal affordance.",
         "Updated AI docs to codex-first direct edit workflow (zip patches only when explicitly requested)."
       ]
+    },
+    {
+      "id": "patch_2026-02-05_pack_a_city_data_foundation",
+      "date": "2026-02-05",
+      "title": "Pack A: Canonical city data schema + full coverage + validators",
+      "files_changed": [
+        "app/unitana/assets/data/cities_v1.json",
+        "app/unitana/lib/data/cities.dart",
+        "app/unitana/lib/data/city_repository.dart",
+        "app/unitana/lib/data/city_schema_validator.dart",
+        "app/unitana/test/city_data_schema_validation_test.dart",
+        "app/unitana/tools/generate_cities_v1.py",
+        "app/unitana/tools/validate_cities_v1.py",
+        "docs/ai/design_lock/CITY_DATA_SCHEMA_CONTRACT.md",
+        "docs/ai/handoff/CURRENT_HANDOFF.md",
+        "docs/ai/prompts/NEXT_CHAT_PROMPT.md",
+        "docs/ai/context_db.json"
+      ],
+      "notes": [
+        "Generator now parses/emits lat/lon from GeoNames and validates every required field before writing the asset.",
+        "Canonical city dataset regenerated with complete lat/lon/timezone/currency/default coverage for all records.",
+        "Added contract-level safeguards: shared Dart validator, Python validation script, and schema validation test to fail fast on regressions.",
+        "Updated handoff/prompt/docs to mark Pack A complete and move active execution to Pack B/C."
+      ]
+    },
+    {
+      "id": "patch_2026-02-06_pinned_mini_toggle_reality_fix",
+      "date": "2026-02-06",
+      "title": "Pack B hardening: pinned mini-hero reality toggle + temperature context fix",
+      "files_changed": [
+        "app/unitana/lib/features/dashboard/widgets/compact_reality_toggle.dart",
+        "app/unitana/lib/features/dashboard/widgets/places_hero_collapsing_header.dart",
+        "app/unitana/test/dashboard_pinned_reality_toggle_interaction_test.dart",
+        "docs/ai/context_db.json",
+        "docs/ai/handoff/CURRENT_HANDOFF.md"
+      ],
+      "notes": [
+        "Compact (mini) reality toggle now matches hero orientation (destination left, home right).",
+        "Removed visible-but-untappable mini-toggle handoff zone by aligning pointer threshold with expanded hero handoff.",
+        "Pinned bar now listens to session/live-data so selected-city temperature/readout updates immediately when toggling realities.",
+        "Added regression test for pinned toggle order + interactive reality switching."
+      ]
+    },
+    {
+      "id": "patch_2026-02-06_city_label_numeric_admin_code_cleanup",
+      "date": "2026-02-06",
+      "title": "City label cleanup: remove numeric admin codes from user-facing labels",
+      "files_changed": [
+        "app/unitana/lib/data/cities.dart",
+        "app/unitana/test/city_primary_label_format_test.dart",
+        "docs/ai/context_db.json",
+        "docs/ai/handoff/CURRENT_HANDOFF.md"
+      ],
+      "notes": [
+        "primaryLabel now prefers admin1Name; numeric-only admin1Code is suppressed.",
+        "Added focused tests for admin name preference, numeric-code suppression, and alpha-code preservation.",
+        "Audit: 27,805 records carry numeric admin1Code; UI no longer surfaces those raw numbers."
+      ]
+    },
+    {
+      "id": "patch_2026-02-06_pack_c_country_currency_mapping",
+      "date": "2026-02-06",
+      "title": "Pack C: country-currency mapping fidelity across dashboard surfaces",
+      "files_changed": [
+        "app/unitana/lib/data/country_currency_map.dart",
+        "app/unitana/lib/features/dashboard/widgets/dashboard_board.dart",
+        "app/unitana/lib/features/dashboard/widgets/pinned_mini_hero_readout.dart",
+        "app/unitana/lib/features/dashboard/widgets/places_hero_v2.dart",
+        "app/unitana/lib/features/dashboard/widgets/tool_modal_bottom_sheet.dart",
+        "app/unitana/test/country_currency_map_coverage_test.dart",
+        "app/unitana/test/dashboard_currency_global_mapping_test.dart",
+        "docs/ai/context_db.json",
+        "docs/ai/handoff/CURRENT_HANDOFF.md"
+      ],
+      "notes": [
+        "Added generated canonical country->currency map from city dataset and wired it into currency surfaces.",
+        "Currency tool units now reflect non-EUR/US countries (example: JPY <-> USD direction based on selected reality).",
+        "Unsupported non-EUR/USD live-rate pairs in hero/tile previews now render deterministic placeholders (\u2014) instead of incorrect rates."
+      ]
+    },
+    {
+      "id": "patch_2026-02-06_profile_modal_cancel_and_global_currency_rates",
+      "date": "2026-02-06",
+      "title": "Profile flow usability + Pack C global pair-rate wiring (JPY and all mapped currencies)",
+      "files_changed": [
+        "app/unitana/lib/app/app_state.dart",
+        "app/unitana/lib/data/frankfurter_client.dart",
+        "app/unitana/lib/features/dashboard/dashboard_screen.dart",
+        "app/unitana/lib/features/dashboard/models/dashboard_live_data.dart",
+        "app/unitana/lib/features/dashboard/widgets/pinned_mini_hero_readout.dart",
+        "app/unitana/lib/features/dashboard/widgets/places_hero_v2.dart",
+        "app/unitana/lib/features/dashboard/widgets/tool_modal_bottom_sheet.dart",
+        "app/unitana/lib/features/first_run/first_run_screen.dart",
+        "app/unitana/test/dashboard_currency_global_mapping_test.dart",
+        "app/unitana/test/dashboard_currency_rate_coverage_test.dart",
+        "app/unitana/test/first_run_regression_test.dart",
+        "app/unitana/test/frankfurter_client_test.dart",
+        "app/unitana/test/profile_switcher_add_profile_cancel_flow_test.dart",
+        "app/unitana/test/profile_switcher_edit_profile_flow_test.dart",
+        "docs/ai/context_db.json",
+        "docs/ai/handoff/CURRENT_HANDOFF.md",
+        "docs/ai/prompts/NEXT_CHAT_PROMPT.md"
+      ],
+      "notes": [
+        "Removed redundant 'Profiles' header text in switcher sheet and aligned switcher interaction with existing menu/tool sheet behavior.",
+        "Edit profile and add profile flows now support Cancel -> return to profile switcher; add-profile cancel discards the draft profile and restores prior active profile.",
+        "Initial first-profile onboarding remains non-cancellable (no cancel affordance).",
+        "Currency stack now supports global pair rates (not only EUR/USD): live-data controller resolves pair rates from EUR-base rates with deterministic fallback for all mapped currencies.",
+        "Hero, mini hero, and currency tool now render mapped symbols/rates for currencies like JPY instead of placeholder dashes."
+      ]
+    },
+    {
+      "id": "patch_2026-02-06_pack_b_live_data_fallback_hardening",
+      "date": "2026-02-06",
+      "title": "Pack B: live weather/env fallback hardening (no blank critical states)",
+      "files_changed": [
+        "app/unitana/lib/features/dashboard/models/dashboard_live_data.dart",
+        "app/unitana/test/dashboard_live_data_refresh_fallback_test.dart",
+        "docs/ai/context_db.json",
+        "docs/ai/handoff/CURRENT_HANDOFF.md",
+        "docs/ai/prompts/NEXT_CHAT_PROMPT.md"
+      ],
+      "notes": [
+        "DashboardLiveDataController now guarantees fallback weather/sun/env snapshots per place when live provider calls fail or coordinates are unavailable.",
+        "Added controller test knobs for deterministic failure-mode tests (test-harness live refresh opt-in + configurable debounce/latency).",
+        "Added regression tests covering WeatherAPI failure and Open-Meteo no-coordinates path to ensure critical hero states never render blank."
+      ]
+    },
+    {
+      "id": "patch_2026-02-06_pollen_fallback_currency_scale_weather_audit",
+      "date": "2026-02-06",
+      "title": "Pollen null fallback + scaled currency display for tiny-per-unit pairs + Open-Meteo mapping audit",
+      "files_changed": [
+        "app/unitana/lib/features/dashboard/models/dashboard_live_data.dart",
+        "app/unitana/lib/features/dashboard/widgets/pinned_mini_hero_readout.dart",
+        "app/unitana/lib/features/dashboard/widgets/places_hero_v2.dart",
+        "app/unitana/test/dashboard_currency_global_mapping_test.dart",
+        "app/unitana/test/dashboard_live_data_refresh_fallback_test.dart",
+        "app/unitana/test/openmeteo_scene_key_mapper_test.dart",
+        "docs/ai/context_db.json",
+        "docs/ai/handoff/CURRENT_HANDOFF.md"
+      ],
+      "notes": [
+        "When Open-Meteo AQ payload has no pollen grains, env snapshot now preserves previous/seeded pollen index instead of writing null, eliminating '--' pollen states.",
+        "Hero and mini-hero currency lines now auto-scale base units (1/10/100/1000/10000) for tiny-per-unit pairs (JPY/KRW/VND-class) so values are readable.",
+        "Open-Meteo condition label refined to 'Mostly clear' for WMO code 1 and mapper audit tests added for core WMO coverage + label expectations."
+      ]
+    },
+    {
+      "id": "patch_2026-02-06_currency_tool_scaled_default_input",
+      "date": "2026-02-06",
+      "title": "Currency tool default suggested input scales by pair magnitude",
+      "files_changed": [
+        "app/unitana/lib/features/dashboard/widgets/tool_modal_bottom_sheet.dart",
+        "app/unitana/test/dashboard_currency_global_mapping_test.dart",
+        "docs/ai/context_db.json",
+        "docs/ai/handoff/CURRENT_HANDOFF.md"
+      ],
+      "notes": [
+        "Currency tool now seeds a suggested input amount on open using the same pair-rate magnitude scaling as hero/mini currency readouts.",
+        "Tiny-per-unit pairs (example JPY->USD) default to larger human-meaningful values (example 100) instead of 1.",
+        "Added regression test ensuring scaled default input appears for JPY-class direction."
+      ]
+    },
+    {
+      "id": "patch_2026-02-06_openmeteo_mapping_audit_expansion",
+      "date": "2026-02-06",
+      "title": "Open-Meteo weather-type audit expanded to full known WMO set",
+      "files_changed": [
+        "app/unitana/test/openmeteo_scene_key_mapper_test.dart",
+        "docs/ai/context_db.json",
+        "docs/ai/handoff/CURRENT_HANDOFF.md"
+      ],
+      "notes": [
+        "Expanded Open-Meteo mapper test from representative samples to the full known WMO code set used by contract.",
+        "Added assertion that every known code has a non-generic label (no fallback 'Weather').",
+        "Keeps provider weather taxonomy coverage explicit and prevents silent mapping regressions."
+      ]
+    },
+    {
+      "id": "patch_2026-02-06_profiles_board_parity_and_currency_bidi_cleanup",
+      "date": "2026-02-06",
+      "title": "Profiles board edit-mode parity pass + currency bidi/symbol placement cleanup",
+      "files_changed": [
+        "app/unitana/lib/features/dashboard/dashboard_screen.dart",
+        "app/unitana/lib/features/dashboard/widgets/pinned_mini_hero_readout.dart",
+        "app/unitana/lib/features/dashboard/widgets/places_hero_v2.dart",
+        "app/unitana/lib/features/dashboard/widgets/profiles_board_screen.dart",
+        "app/unitana/test/dashboard_devtools_weather_menu_hardening_test.dart",
+        "app/unitana/test/dashboard_edit_drag_handle_hit_testing_test.dart",
+        "app/unitana/test/dashboard_reorder_persistence_breakpoints_test.dart",
+        "docs/ai/context_db.json",
+        "docs/ai/handoff/CURRENT_HANDOFF.md"
+      ],
+      "notes": [
+        "Profiles board now uses unified edit controls (`Manage` to enter, `X`/`✔` to exit) and keeps per-tile drag/edit/delete affordances in edit mode.",
+        "Added additional `+` profile slots to keep grid behavior closer to dashboard tile surfaces.",
+        "Dashboard menu label normalized to `Edit Widgets` for copy consistency.",
+        "Currency text rendering now isolates LTR tokens and applies suffix placement for Arabic-script currency families to prevent mixed-direction reorder defects (example IQD/AED class).",
+        "Verified full gates green after this pass: `dart format .`, `flutter analyze`, `flutter test`."
+      ]
+    },
+    {
+      "id": "patch_2026-02-06_startup_profile_recovery_and_wizard_gate",
+      "date": "2026-02-06",
+      "title": "Startup recovery for incomplete active profile + wizard gate hardening",
+      "files_changed": [
+        "app/unitana/lib/app/app.dart",
+        "app/unitana/lib/app/app_state.dart",
+        "app/unitana/test/profile_switching_persistence_test.dart",
+        "app/unitana/test/startup_profile_recovery_test.dart",
+        "docs/ai/context_db.json",
+        "docs/ai/handoff/CURRENT_HANDOFF.md"
+      ],
+      "notes": [
+        "Resolved restart defect where an incomplete active draft profile could force returning users into first-run despite existing complete profiles.",
+        "On load, app-state now auto-reactivates a setup-complete profile when active profile is incomplete and a valid fallback exists.",
+        "Added startup regression coverage for fallback activation and persisted active-profile-id restoration.",
+        "Updated profile switching persistence test to seed profile_1 as setup-complete so persistence assertions reflect intended user flow."
+      ]
+    },
+    {
+      "id": "patch_2026-02-06_dashboard_profile_edit_surface_alignment",
+      "date": "2026-02-06",
+      "title": "Dashboard/profile edit-mode visual parity and spacing hardening",
+      "files_changed": [
+        "app/unitana/lib/features/dashboard/widgets/dashboard_board.dart",
+        "app/unitana/lib/features/dashboard/widgets/profiles_board_screen.dart",
+        "app/unitana/lib/features/dashboard/widgets/unitana_tile.dart",
+        "app/unitana/test/dashboard_edit_drag_handle_hit_testing_test.dart",
+        "app/unitana/test/dashboard_reorder_persistence_breakpoints_test.dart",
+        "docs/ai/context_db.json",
+        "docs/ai/handoff/CURRENT_HANDOFF.md",
+        "docs/ai/prompts/NEXT_CHAT_PROMPT.md"
+      ],
+      "notes": [
+        "Profile tiles now use a compact two-row edit header (title row + centered icon row) to reduce crowding on long names.",
+        "Dashboard edit tiles now mirror profile-board iconography and centered icon-row placement for drag/edit/delete actions.",
+        "Removed dashboard 'Edit mode' footer pill in edit state to reclaim space and improve visual hierarchy.",
+        "Adjusted edit-mode value typography (smaller/lower with more vertical spacing) to avoid icon overlap and improve scanability."
+      ]
     }
   ],
   "project": {
@@ -3258,6 +3534,6 @@
     "tagline": "travel-first decoder ring; dual reality side-by-side"
   },
   "schema_version": "1.0",
-  "last_patch_id": "patch_2026-02-05_P1_modal_menu_close_controls",
-  "last_patch_date": "2026-02-05"
+  "last_patch_id": "patch_2026-02-06_dashboard_profile_edit_surface_alignment",
+  "last_patch_date": "2026-02-06"
 }

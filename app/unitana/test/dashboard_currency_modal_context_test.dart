@@ -60,24 +60,29 @@ void main() {
       Future<List<String>> openAndReadCodes() async {
         await openCurrencyTool();
 
-        final unitsFinder = find.byKey(
-          const ValueKey('tool_units_currency_convert'),
+        final fromBtn = find.byKey(
+          const ValueKey('tool_unit_from_currency_convert'),
         );
-        expect(unitsFinder, findsOneWidget);
-
-        final label = tester.widget<Text>(unitsFinder).data ?? '';
-
-        // Extract a 2-code pair like "EUR ↔ USD" (order matters).
-        final codes = RegExp(
-          r'\b[A-Z]{3}\b',
-        ).allMatches(label).map((m) => m.group(0)!).toList();
-        expect(
-          codes.length,
-          2,
-          reason:
-              'Expected exactly two currency codes in units label, got: $label',
+        final toBtn = find.byKey(
+          const ValueKey('tool_unit_to_currency_convert'),
         );
-        return codes;
+        expect(fromBtn, findsOneWidget);
+        expect(toBtn, findsOneWidget);
+
+        String readCode(Finder button) {
+          final codeText = find.descendant(
+            of: button,
+            matching: find.byWidgetPredicate(
+              (w) =>
+                  w is Text &&
+                  RegExp(r'^[A-Z]{3}$').hasMatch((w.data ?? '').trim()),
+            ),
+          );
+          expect(codeText, findsOneWidget);
+          return (tester.widget<Text>(codeText).data ?? '').trim();
+        }
+
+        return [readCode(fromBtn), readCode(toBtn)];
       }
 
       Future<void> closeModal() async {
@@ -85,7 +90,7 @@ void main() {
         // center of a ModalBarrier can miss if the derived offset lands inside
         // the sheet. Prefer a deterministic tap near the top-left corner.
         final unitsFinder = find.byKey(
-          const ValueKey('tool_units_currency_convert'),
+          const ValueKey('tool_unit_from_currency_convert'),
         );
 
         // If the sheet is already closed, no-op.
@@ -115,4 +120,83 @@ void main() {
       await closeModal();
     },
   );
+
+  testWidgets('Currency tool allows manual from/to currency selection', (
+    tester,
+  ) async {
+    await pumpDashboardForTest(tester);
+
+    Future<void> openCurrencyTool() async {
+      await tester.tap(find.byKey(const ValueKey('dashboard_tools_button')));
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byKey(const ValueKey('toolpicker_search')),
+        'currency',
+      );
+      await tester.pumpAndSettle(const Duration(milliseconds: 250));
+      await tester.tap(
+        find.byKey(const ValueKey('toolpicker_search_tool_currency_convert')),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    String readCode(String buttonKey) {
+      final button = find.byKey(ValueKey(buttonKey));
+      expect(button, findsOneWidget);
+      final code = find.descendant(
+        of: button,
+        matching: find.byWidgetPredicate(
+          (w) =>
+              w is Text &&
+              RegExp(r'^[A-Z]{3}$').hasMatch((w.data ?? '').trim()),
+        ),
+      );
+      expect(code, findsOneWidget);
+      return (tester.widget<Text>(code).data ?? '').trim();
+    }
+
+    Future<void> pickCurrency({
+      required String buttonKey,
+      required String side,
+      required String code,
+    }) async {
+      await tester.tap(find.byKey(ValueKey(buttonKey)));
+      await tester.pumpAndSettle();
+
+      final pickerList = find.byKey(
+        ValueKey('tool_unit_picker_currency_convert_$side'),
+      );
+      expect(pickerList, findsOneWidget);
+
+      final itemKey = ValueKey('tool_unit_item_currency_convert_${side}_$code');
+      final item = find.byKey(itemKey);
+      var found = item.evaluate().isNotEmpty;
+      for (var i = 0; i < 120 && !found; i++) {
+        await tester.drag(pickerList, const Offset(0, -220));
+        await tester.pumpAndSettle();
+        found = item.evaluate().isNotEmpty;
+      }
+      expect(item, findsOneWidget);
+      await tester.ensureVisible(item);
+      await tester.pumpAndSettle();
+      await tester.tap(item, warnIfMissed: false);
+      await tester.pumpAndSettle();
+    }
+
+    await openCurrencyTool();
+
+    await pickCurrency(
+      buttonKey: 'tool_unit_from_currency_convert',
+      side: 'from',
+      code: 'AUD',
+    );
+    await pickCurrency(
+      buttonKey: 'tool_unit_to_currency_convert',
+      side: 'to',
+      code: 'CAD',
+    );
+
+    expect(readCode('tool_unit_from_currency_convert'), 'AUD');
+    expect(readCode('tool_unit_to_currency_convert'), 'CAD');
+  });
 }

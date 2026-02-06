@@ -92,7 +92,7 @@ void main() {
     await tester.tap(find.byKey(const Key('dashboard_menu_button')));
     await tester.pump(const Duration(milliseconds: 500));
 
-    final editWidgets = find.text('Edit widgets');
+    final editWidgets = find.text('Edit Widgets');
     await ensureVisibleAligned(tester, editWidgets);
     await tester.pump(const Duration(milliseconds: 100));
 
@@ -127,7 +127,7 @@ void main() {
 
     final areaHandle = find.descendant(
       of: areaStack,
-      matching: find.byIcon(Icons.pan_tool_alt_rounded),
+      matching: find.byIcon(Icons.drag_indicator_rounded),
     );
     expect(areaHandle, findsOneWidget);
 

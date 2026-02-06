@@ -121,9 +121,18 @@ class City {
   /// Display label used in lists. Example: "Denver, CO, US" or "Lisbon, PT".
   String get primaryLabel {
     final cc = countryCode.toUpperCase();
-    final a1 = (admin1Code ?? '').trim();
-    if (a1.isEmpty) return '$cityName, $cc';
-    return '$cityName, $a1, $cc';
+    final adminName = (admin1Name ?? '').trim();
+    if (adminName.isNotEmpty) return '$cityName, $adminName, $cc';
+
+    final adminCode = (admin1Code ?? '').trim();
+    if (adminCode.isEmpty) return '$cityName, $cc';
+
+    // GeoNames admin1 codes are frequently numeric IDs ("17", "01", ...).
+    // Keep user-facing labels readable by suppressing numeric codes.
+    final numericOnly = RegExp(r'^\d+$').hasMatch(adminCode);
+    if (numericOnly) return '$cityName, $cc';
+
+    return '$cityName, $adminCode, $cc';
   }
 
   /// Secondary label used in lists. Example: "America/Denver · $ USD"
@@ -259,6 +268,8 @@ const List<City> kCuratedCities = [
     countryName: 'United States',
     iso3: 'USA',
     continent: 'NA',
+    lat: 40.71427,
+    lon: -74.00597,
   ),
   City(
     id: 'los_angeles_us',
@@ -273,6 +284,8 @@ const List<City> kCuratedCities = [
     countryName: 'United States',
     iso3: 'USA',
     continent: 'NA',
+    lat: 34.05223,
+    lon: -118.24368,
   ),
   City(
     id: 'chicago_us',
@@ -287,6 +300,8 @@ const List<City> kCuratedCities = [
     countryName: 'United States',
     iso3: 'USA',
     continent: 'NA',
+    lat: 41.85003,
+    lon: -87.65005,
   ),
   City(
     id: 'miami_us',
@@ -301,6 +316,8 @@ const List<City> kCuratedCities = [
     countryName: 'United States',
     iso3: 'USA',
     continent: 'NA',
+    lat: 25.77427,
+    lon: -80.19366,
   ),
   City(
     id: 'toronto_ca',
@@ -315,6 +332,8 @@ const List<City> kCuratedCities = [
     countryName: 'Canada',
     iso3: 'CAN',
     continent: 'NA',
+    lat: 43.70011,
+    lon: -79.4163,
   ),
   City(
     id: 'vancouver_ca',
@@ -329,6 +348,8 @@ const List<City> kCuratedCities = [
     countryName: 'Canada',
     iso3: 'CAN',
     continent: 'NA',
+    lat: 49.24966,
+    lon: -123.11934,
   ),
   City(
     id: 'london_gb',
@@ -341,6 +362,8 @@ const List<City> kCuratedCities = [
     countryName: 'United Kingdom',
     iso3: 'GBR',
     continent: 'EU',
+    lat: 51.50853,
+    lon: -0.12574,
   ),
   City(
     id: 'lisbon_pt',
@@ -383,6 +406,8 @@ const List<City> kCuratedCities = [
     countryName: 'Netherlands',
     iso3: 'NLD',
     continent: 'EU',
+    lat: 52.37403,
+    lon: 4.88969,
   ),
   City(
     id: 'tokyo_jp',
@@ -395,6 +420,8 @@ const List<City> kCuratedCities = [
     countryName: 'Japan',
     iso3: 'JPN',
     continent: 'AS',
+    lat: 35.6895,
+    lon: 139.69171,
   ),
 ];
 

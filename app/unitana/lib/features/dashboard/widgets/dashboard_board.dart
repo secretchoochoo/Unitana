@@ -4,6 +4,8 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../../../app/app_state.dart';
+import '../../../data/cities.dart' show kCurrencySymbols;
+import '../../../data/country_currency_map.dart';
 import '../../../models/place.dart';
 import '../../../common/feedback/unitana_toast.dart';
 import '../models/dashboard_board_item.dart';
@@ -536,34 +538,42 @@ class _DashboardBoardState extends State<DashboardBoard>
     (String, String) currencyPreviewLabels({
       required Place? from,
       required Place? to,
-      required double eurToUsd,
     }) {
-      // Default to EUR→USD with a stable demo base.
-      final base = 10.0;
-      final safeRate = eurToUsd <= 0 ? 1.10 : eurToUsd;
+      String currencyFor(Place? p) =>
+          currencyCodeForCountryCode(p?.countryCode);
 
-      String currencyFor(Place? p) {
-        final code = (p?.countryCode ?? '').toUpperCase();
-        if (code == 'US') return 'USD';
-        // MVP scope: default non-US to EUR.
-        return 'EUR';
-      }
-
-      String symbolFor(String c) => c == 'USD' ? r'$' : '€';
+      String symbolFor(String c) => kCurrencySymbols[c.toUpperCase()] ?? c;
 
       final fromCur = currencyFor(from);
       final toCur = currencyFor(to);
+      final rate = widget.liveData.currencyRate(
+        fromCode: fromCur,
+        toCode: toCur,
+      );
 
-      double convert(double value) {
-        if (fromCur == 'EUR' && toCur == 'USD') return value * safeRate;
-        if (fromCur == 'USD' && toCur == 'EUR') return value / safeRate;
-        // Fallback for same-currency or future currencies.
-        return value;
+      double baseFor(double? r) {
+        if (r == null || r <= 0) return 1;
+        if (r < 0.0002) return 10000;
+        if (r < 0.002) return 1000;
+        if (r < 0.02) return 100;
+        if (r < 0.2) return 10;
+        return 1;
       }
 
-      final out = convert(base);
-      final primary = '${symbolFor(fromCur)}${base.toStringAsFixed(2)}';
-      final secondary = '${symbolFor(toCur)}${out.toStringAsFixed(2)}';
+      String fmt(double value) {
+        if (value >= 100) return value.toStringAsFixed(0);
+        if (value >= 10) return value.toStringAsFixed(1);
+        if (value >= 1) return value.toStringAsFixed(2);
+        if (value >= 0.1) return value.toStringAsFixed(2);
+        return value.toStringAsFixed(3);
+      }
+
+      final base = baseFor(rate);
+      final out = fromCur == toCur ? base : (rate == null ? null : base * rate);
+      final primary = '${symbolFor(fromCur)}${fmt(base)}';
+      final secondary = out == null
+          ? '${symbolFor(toCur)}—'
+          : '${symbolFor(toCur)}${fmt(out)}';
       return (primary, secondary);
     }
 
@@ -574,15 +584,22 @@ class _DashboardBoardState extends State<DashboardBoard>
         (latest.outputLabel.contains('{') ||
             latest.outputLabel.contains('eurToUsd') ||
             latest.outputLabel.contains('toStringAsFixed'));
+    final currentFromCur = currencyCodeForCountryCode(activePlace?.countryCode);
+    final currentToCur = currencyCodeForCountryCode(
+      secondaryPlace?.countryCode,
+    );
+    final latestMatchesCurrentCurrencyPair =
+        latest != null &&
+        (latest.fromUnit ?? '').trim().toUpperCase() == currentFromCur &&
+        (latest.toUnit ?? '').trim().toUpperCase() == currentToCur;
 
     final labels = isWeatherSummary
         ? _weatherSummaryLabels(activePlace: activePlace)
-        : (isCurrency && (latest == null || currencyLabelsLookBroken))
-        ? currencyPreviewLabels(
-            from: activePlace,
-            to: secondaryPlace,
-            eurToUsd: widget.liveData.eurToUsd,
-          )
+        : (isCurrency &&
+              (latest == null ||
+                  currencyLabelsLookBroken ||
+                  !latestMatchesCurrentCurrencyPair))
+        ? currencyPreviewLabels(from: activePlace, to: secondaryPlace)
         : _pickToolLabels(tool: tool, latest: latest, activePlace: activePlace);
     final preferMetric = (activePlace?.unitSystem ?? 'metric') == 'metric';
     final prefer24h = activePlace?.use24h ?? false;
@@ -602,7 +619,9 @@ class _DashboardBoardState extends State<DashboardBoard>
           : LensAccents.iconTintFor(tool.lensId!),
       primary: primary,
       secondary: secondary,
-      footer: widget.isEditing ? 'Edit mode' : 'Convert',
+      footer: widget.isEditing ? '' : 'Convert',
+      compactValues: widget.isEditing,
+      valuesTopInset: widget.isEditing ? 16 : 0,
       onLongPress: canEdit
           ? () {
               if (!widget.isEditing) {
@@ -632,6 +651,8 @@ class _DashboardBoardState extends State<DashboardBoard>
                 preferMetric: preferMetric,
                 prefer24h: prefer24h,
                 eurToUsd: widget.liveData.eurToUsd,
+                currencyRateForPair: (fromCode, toCode) => widget.liveData
+                    .currencyRate(fromCode: fromCode, toCode: toCode),
                 home: home,
                 destination: destination,
               );
@@ -657,44 +678,60 @@ class _DashboardBoardState extends State<DashboardBoard>
           : LensAccents.iconTintFor(tool.lensId!),
       primary: primary,
       secondary: secondary,
-      footer: 'Move',
+      footer: '',
+      compactValues: true,
+      valuesTopInset: 16,
     );
 
     final stack = Stack(
       children: [
         tile,
         Positioned(
-          top: 8,
+          top: 38,
           left: 8,
-          child: Draggable<_DragTilePayload>(
-            data: payload,
-            dragAnchorStrategy: pointerDragAnchorStrategy,
-            feedback: Material(
-              color: Colors.transparent,
-              child: Opacity(opacity: 0.9, child: previewTile),
-            ),
-            childWhenDragging: const _EditDragHandle(isDragging: true),
-            child: const _EditDragHandle(),
-          ),
-        ),
-        Positioned(
-          top: 8,
           right: 8,
-          child: _EditRemoveBadge(
-            onTap: () async {
-              final ok = await _confirmRemoveTile(context, tool.title);
-              if (!ok) {
-                return;
-              }
-              if (!context.mounted) {
-                return;
-              }
-              if (isDefaultTile) {
-                await widget.layout.hideDefaultTool(tool.id);
-              } else {
-                await widget.layout.removeItem(item.id);
-              }
-            },
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Draggable<_DragTilePayload>(
+                data: payload,
+                dragAnchorStrategy: pointerDragAnchorStrategy,
+                feedback: Material(
+                  color: Colors.transparent,
+                  child: Opacity(opacity: 0.9, child: previewTile),
+                ),
+                childWhenDragging: const _EditIconButton(
+                  icon: Icons.drag_indicator_rounded,
+                  isDragging: true,
+                ),
+                child: const _EditIconButton(
+                  icon: Icons.drag_indicator_rounded,
+                ),
+              ),
+              const SizedBox(width: 2),
+              _EditIconButton(
+                icon: Icons.edit_rounded,
+                onTap: () => _showTileActions(context, item),
+              ),
+              const SizedBox(width: 2),
+              _EditIconButton(
+                icon: Icons.delete_outline_rounded,
+                onTap: () async {
+                  final ok = await _confirmRemoveTile(context, tool.title);
+                  if (!ok) {
+                    return;
+                  }
+                  if (!context.mounted) {
+                    return;
+                  }
+                  if (isDefaultTile) {
+                    await widget.layout.hideDefaultTool(tool.id);
+                  } else {
+                    await widget.layout.removeItem(item.id);
+                  }
+                },
+              ),
+            ],
           ),
         ),
       ],
@@ -1005,23 +1042,13 @@ class _DashboardBoardState extends State<DashboardBoard>
     var a = latest?.inputLabel ?? tool.defaultPrimary;
     var b = latest?.outputLabel ?? tool.defaultSecondary;
 
-    // Currency is place-aware (EUR ↔ USD MVP) and should follow the selected
+    // Currency is place-aware and should follow the selected
     // reality (Home vs Destination), not the unit-system heuristic.
-    //
-    // Until Place carries explicit currency codes, we map by country:
-    // - US => USD-first
-    // - otherwise => EUR-first
     if (tool.id == 'currency_convert') {
-      final cc = (activePlace?.countryCode ?? '').toUpperCase();
-      final wantsUsdFirst = cc == 'US';
-
-      bool hasUsd(String v) => v.contains(r'$');
-      bool hasEur(String v) => v.contains('€');
-
-      if (wantsUsdFirst) {
-        if (hasEur(a) && hasUsd(b)) return (b, a);
-      } else {
-        if (hasUsd(a) && hasEur(b)) return (b, a);
+      final code = currencyCodeForCountryCode(activePlace?.countryCode);
+      final symbol = kCurrencySymbols[code] ?? code;
+      if (!a.contains(symbol) && b.contains(symbol)) {
+        return (b, a);
       }
     }
 
@@ -1608,63 +1635,43 @@ class _ToolPickerSheetState extends State<ToolPickerSheet> {
   }
 }
 
-class _EditDragHandle extends StatelessWidget {
+class _EditIconButton extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback? onTap;
   final bool isDragging;
 
-  const _EditDragHandle({this.isDragging = false});
+  const _EditIconButton({
+    required this.icon,
+    this.onTap,
+    this.isDragging = false,
+  });
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final bg = isDragging
-        ? scheme.surfaceContainerHighest.withAlpha(115)
-        : scheme.surfaceContainerHighest.withAlpha(166);
-    final fg = scheme.onSurfaceVariant.withAlpha(isDragging ? 153 : 217);
+    final fg = scheme.onSurface.withAlpha(isDragging ? 150 : 220);
 
-    return MouseRegion(
-      cursor: isDragging
-          ? SystemMouseCursors.grabbing
-          : SystemMouseCursors.grab,
-      child: Semantics(
-        label: 'Drag to reorder',
-        button: true,
-        child: SizedBox(
-          width: 44,
-          height: 44,
-          child: Container(
-            alignment: Alignment.center,
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-            decoration: BoxDecoration(
-              color: bg,
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: scheme.outlineVariant.withAlpha(153)),
-            ),
-            child: Icon(Icons.pan_tool_alt_rounded, size: 18, color: fg),
-          ),
-        ),
-      ),
+    final button = SizedBox(
+      width: 32,
+      height: 32,
+      child: Center(child: Icon(icon, size: 18, color: fg)),
     );
-  }
-}
 
-class _EditRemoveBadge extends StatelessWidget {
-  final VoidCallback onTap;
+    if (onTap == null) {
+      return MouseRegion(
+        cursor: isDragging
+            ? SystemMouseCursors.grabbing
+            : SystemMouseCursors.grab,
+        child: button,
+      );
+    }
 
-  const _EditRemoveBadge({required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
     return Material(
-      color: scheme.surfaceContainerHighest.withValues(alpha: 0.92),
-      shape: const CircleBorder(),
+      color: Colors.transparent,
       child: InkWell(
+        borderRadius: BorderRadius.circular(10),
         onTap: onTap,
-        customBorder: const CircleBorder(),
-        child: Padding(
-          padding: const EdgeInsets.all(6),
-          child: Icon(Icons.close, size: 18, color: scheme.error),
-        ),
+        child: button,
       ),
     );
   }

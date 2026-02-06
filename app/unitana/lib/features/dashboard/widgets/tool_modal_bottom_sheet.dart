@@ -7,6 +7,8 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../common/widgets/unitana_notice_card.dart';
+import '../../../data/cities.dart' show kCurrencySymbols;
+import '../../../data/country_currency_map.dart';
 import '../../../theme/dracula_palette.dart';
 import '../../../models/place.dart';
 
@@ -44,6 +46,7 @@ class ToolModalBottomSheet extends StatefulWidget {
   /// This is passed from the dashboard so we can keep the tool surface
   /// frontend-complete while Weather and full FX wiring remain deferred.
   final double? eurToUsd;
+  final double? Function(String fromCode, String toCode)? currencyRateForPair;
 
   /// Optional context for inferring Currency direction.
   ///
@@ -62,6 +65,7 @@ class ToolModalBottomSheet extends StatefulWidget {
     required this.preferMetric,
     this.prefer24h = false,
     this.eurToUsd,
+    this.currencyRateForPair,
     this.home,
     this.destination,
     this.canAddWidget = false,
@@ -75,6 +79,7 @@ class ToolModalBottomSheet extends StatefulWidget {
     required bool preferMetric,
     bool prefer24h = false,
     double? eurToUsd,
+    double? Function(String fromCode, String toCode)? currencyRateForPair,
     Place? home,
     Place? destination,
     bool canAddWidget = false,
@@ -90,6 +95,7 @@ class ToolModalBottomSheet extends StatefulWidget {
         preferMetric: preferMetric,
         prefer24h: prefer24h,
         eurToUsd: eurToUsd,
+        currencyRateForPair: currencyRateForPair,
         home: home,
         destination: destination,
         canAddWidget: canAddWidget,
@@ -151,9 +157,6 @@ class _TerminalLine extends StatelessWidget {
   }
 }
 
-// MVP currency support: EUR ↔ USD.
-enum _Currency { eur, usd }
-
 class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
   // MVP: Currency tool supports EUR ↔ USD, using a live/demo EUR→USD rate.
   // We infer a default direction from home vs destination when context is
@@ -181,11 +184,14 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
   // keyed by tool id and stores the rendered labels.
   String? _fromUnitOverride;
   String? _toUnitOverride;
+  String? _currencyFromOverride;
+  String? _currencyToOverride;
 
   bool get _isMultiUnitTool =>
       widget.tool.canonicalToolId == CanonicalToolId.volume ||
       widget.tool.canonicalToolId == CanonicalToolId.pressure ||
       widget.tool.canonicalToolId == CanonicalToolId.weight;
+  bool get _supportsUnitPicker => _isMultiUnitTool || _isCurrencyTool;
 
   List<String> get _multiUnitChoices {
     switch (widget.tool.canonicalToolId) {
@@ -198,6 +204,16 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
       default:
         return const <String>[];
     }
+  }
+
+  List<String> get _currencyChoices {
+    final out = kCountryToCurrencyCode.values
+        .map((v) => v.trim().toUpperCase())
+        .where((v) => v.isNotEmpty)
+        .toSet()
+        .toList();
+    out.sort();
+    return out;
   }
 
   /// Inline result display line (separate from the History list).
@@ -214,6 +230,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
 
     if (_isCurrencyTool) {
       _forward = _defaultCurrencyForward();
+      _seedCurrencySuggestedInput();
     }
 
     if (_isMultiUnitTool) {
@@ -248,7 +265,12 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
       return;
     }
 
-    setState(() => _forward = !_forward);
+    setState(() {
+      _forward = !_forward;
+      if (_isCurrencyTool && _controller.text.trim().isEmpty) {
+        _seedCurrencySuggestedInput(force: true);
+      }
+    });
   }
 
   void _seedMultiUnitOverrides() {
@@ -277,11 +299,56 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
     return unit.replaceAll(RegExp(r'[^a-zA-Z0-9]+'), '_');
   }
 
+  String? _currencySymbolOrNull(String code) {
+    final raw = kCurrencySymbols[code.toUpperCase()];
+    if (raw == null) return null;
+    final symbol = raw.trim();
+    if (symbol.isEmpty) return null;
+    if (symbol.toUpperCase() == code.toUpperCase()) return null;
+    return symbol;
+  }
+
+  bool get _hasCustomUnitSelection {
+    if (_isCurrencyTool) {
+      return _currencyFromOverride != null || _currencyToOverride != null;
+    }
+    if (!_isMultiUnitTool) return false;
+    final defaults = _defaultMultiUnitPair();
+    return _fromUnitOverride != defaults.$1 || _toUnitOverride != defaults.$2;
+  }
+
+  (String, String) _defaultMultiUnitPair() {
+    switch (widget.tool.canonicalToolId) {
+      case CanonicalToolId.volume:
+        return _forward ? ('L', 'gal') : ('gal', 'L');
+      case CanonicalToolId.pressure:
+        return _forward ? ('kPa', 'psi') : ('psi', 'kPa');
+      case CanonicalToolId.weight:
+        return _forward ? ('kg', 'lb') : ('lb', 'kg');
+      default:
+        return ('', '');
+    }
+  }
+
+  void _resetUnitSelectionToDefaults() {
+    setState(() {
+      if (_isCurrencyTool) {
+        _currencyFromOverride = null;
+        _currencyToOverride = null;
+        _seedCurrencySuggestedInput(force: true);
+      } else if (_isMultiUnitTool) {
+        _seedMultiUnitOverrides();
+      }
+    });
+  }
+
   Future<void> _pickUnit({required bool isFrom}) async {
-    final choices = _multiUnitChoices;
+    final choices = _isCurrencyTool ? _currencyChoices : _multiUnitChoices;
     if (choices.isEmpty) return;
 
-    final current = isFrom ? _fromUnitOverride : _toUnitOverride;
+    final current = _isCurrencyTool
+        ? (isFrom ? _fromCurrencyCode : _toCurrencyCode)
+        : (isFrom ? _fromUnitOverride : _toUnitOverride);
 
     final selected = await showModalBottomSheet<String>(
       context: context,
@@ -292,11 +359,31 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
             mainAxisSize: MainAxisSize.min,
             children: [
               const SizedBox(height: 8),
-              Text(
-                isFrom ? 'From Unit' : 'To Unit',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w800,
-                  color: DraculaPalette.foreground,
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 8, 0),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        _isCurrencyTool
+                            ? (isFrom ? 'From Currency' : 'To Currency')
+                            : (isFrom ? 'From Unit' : 'To Unit'),
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(
+                              fontWeight: FontWeight.w800,
+                              color: DraculaPalette.foreground,
+                            ),
+                      ),
+                    ),
+                    IconButton(
+                      key: ValueKey(
+                        'tool_unit_picker_close_${widget.tool.id}_${isFrom ? 'from' : 'to'}',
+                      ),
+                      tooltip: 'Close',
+                      onPressed: () => Navigator.of(context).pop(),
+                      icon: const Icon(Icons.close_rounded),
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(height: 8),
@@ -320,6 +407,24 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                                 fontWeight: FontWeight.w700,
                               ),
                         ),
+                        subtitle: _isCurrencyTool
+                            ? Builder(
+                                builder: (_) {
+                                  final symbol = _currencySymbolOrNull(u);
+                                  if (symbol == null) {
+                                    return const SizedBox.shrink();
+                                  }
+                                  return Text(
+                                    symbol,
+                                    style: Theme.of(context).textTheme.bodySmall
+                                        ?.copyWith(
+                                          color: DraculaPalette.comment,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                  );
+                                },
+                              )
+                            : null,
                         trailing: (u == current)
                             ? Icon(
                                 Icons.check_rounded,
@@ -340,7 +445,16 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
     if (selected == null || !mounted) return;
 
     setState(() {
-      if (isFrom) {
+      if (_isCurrencyTool) {
+        final oldFrom = _fromCurrencyCode;
+        final oldTo = _toCurrencyCode;
+        final nextFrom = isFrom ? selected : oldFrom;
+        final nextTo = isFrom ? oldTo : selected;
+        _currencyFromOverride = nextFrom;
+        _currencyToOverride = nextTo;
+        _forward = true;
+        _seedCurrencySuggestedInput(force: true);
+      } else if (isFrom) {
         _fromUnitOverride = selected;
       } else {
         _toUnitOverride = selected;
@@ -473,35 +587,49 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
       widget.tool.canonicalToolId == 'currency' ||
       widget.tool.id == 'currency_convert';
 
-  _Currency _currencyForPlace(Place? place) {
-    final cc = (place?.countryCode ?? '').trim().toUpperCase();
-    if (cc == 'US') return _Currency.usd;
-    // MVP assumption: non-US defaults to EUR.
-    return _Currency.eur;
+  String _currencyCodeForPlace(Place? place) =>
+      currencyCodeForCountryCode(place?.countryCode);
+
+  String get _homeCurrencyCode => _currencyCodeForPlace(widget.home);
+  String get _destinationCurrencyCode =>
+      _currencyCodeForPlace(widget.destination);
+
+  String get _baseFromCurrencyCode =>
+      _currencyFromOverride ?? _homeCurrencyCode;
+  String get _baseToCurrencyCode =>
+      _currencyToOverride ?? _destinationCurrencyCode;
+
+  String get _fromCurrencyCode =>
+      _forward ? _baseFromCurrencyCode : _baseToCurrencyCode;
+  String get _toCurrencyCode =>
+      _forward ? _baseToCurrencyCode : _baseFromCurrencyCode;
+
+  String _currencySymbol(String code) =>
+      kCurrencySymbols[code.toUpperCase()] ?? code.toUpperCase();
+
+  void _seedCurrencySuggestedInput({bool force = false}) {
+    if (!force && _controller.text.trim().isNotEmpty) return;
+    final pairRate = widget.currencyRateForPair?.call(
+      _fromCurrencyCode,
+      _toCurrencyCode,
+    );
+    final base = _currencyDisplayBaseAmount(pairRate);
+    _controller.text = _fmtSeedAmount(base);
   }
 
-  _Currency get _homeCurrency {
-    final home = _currencyForPlace(widget.home);
-    final dest = _currencyForPlace(widget.destination);
-    // If inference collapses to a single currency (US -> US, or unknown -> unknown),
-    // fall back to a stable EUR ↔ USD pair.
-    if (home == dest) return _Currency.usd;
-    return home;
+  double _currencyDisplayBaseAmount(double? pairRate) {
+    if (pairRate == null || pairRate <= 0) return 1;
+    if (pairRate < 0.0002) return 10000;
+    if (pairRate < 0.002) return 1000;
+    if (pairRate < 0.02) return 100;
+    if (pairRate < 0.2) return 10;
+    return 1;
   }
 
-  _Currency get _destinationCurrency {
-    final home = _currencyForPlace(widget.home);
-    final dest = _currencyForPlace(widget.destination);
-    if (home == dest) return _Currency.eur;
-    return dest;
+  String _fmtSeedAmount(double value) {
+    if (value == value.roundToDouble()) return value.toStringAsFixed(0);
+    return value.toStringAsFixed(1);
   }
-
-  _Currency get _fromCurrency =>
-      _forward ? _homeCurrency : _destinationCurrency;
-  _Currency get _toCurrency => _forward ? _destinationCurrency : _homeCurrency;
-
-  String _currencyCode(_Currency c) => c == _Currency.usd ? 'USD' : 'EUR';
-  String _currencySymbol(_Currency c) => c == _Currency.usd ? r'$' : '€';
 
   bool _defaultCurrencyForward() {
     // When the active reality is Destination, default to converting Destination
@@ -512,7 +640,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
   String get _fromUnit {
     switch (widget.tool.id) {
       case 'currency_convert':
-        return _currencyCode(_fromCurrency);
+        return _fromCurrencyCode;
       case 'distance':
         return _forward ? 'km' : 'mi';
       case 'speed':
@@ -544,7 +672,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
   String get _toUnit {
     switch (widget.tool.id) {
       case 'currency_convert':
-        return _currencyCode(_toCurrency);
+        return _toCurrencyCode;
       case 'distance':
         return _forward ? 'mi' : 'km';
       case 'speed':
@@ -592,24 +720,31 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
           ? 1.10
           : widget.eurToUsd!;
 
-      final from = _fromCurrency;
-      final to = _toCurrency;
+      final from = _fromCurrencyCode;
+      final to = _toCurrencyCode;
 
       double out;
       if (from == to) {
         out = value;
-      } else if (from == _Currency.eur && to == _Currency.usd) {
-        out = value * rate;
-      } else if (from == _Currency.usd && to == _Currency.eur) {
-        out = value / rate;
       } else {
-        // Future currency expansion; for now, fall back to a no-op.
-        out = value;
+        final pairRate = widget.currencyRateForPair?.call(from, to);
+        if (pairRate != null && pairRate > 0) {
+          out = value * pairRate;
+        } else if (from == 'EUR' && to == 'USD') {
+          out = value * rate;
+        } else if (from == 'USD' && to == 'EUR') {
+          out = value / rate;
+        } else {
+          // Deterministic fallback when pair data is unavailable.
+          out = value;
+        }
       }
 
       final record = ConversionRecord(
         toolId: widget.tool.id,
         lensId: widget.tool.lensId,
+        fromUnit: from,
+        toUnit: to,
         inputLabel: '${_currencySymbol(from)}${value.toStringAsFixed(2)}',
         outputLabel: '${_currencySymbol(to)}${out.toStringAsFixed(2)}',
         timestamp: DateTime.now(),
@@ -649,6 +784,8 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
     final record = ConversionRecord(
       toolId: widget.tool.id,
       lensId: widget.tool.lensId,
+      fromUnit: _fromUnit,
+      toUnit: _toUnit,
       inputLabel: '$input $_fromUnit',
       outputLabel: result,
       timestamp: DateTime.now(),
@@ -903,7 +1040,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
 
                                     Widget buildUnitsAndSwap() {
                                       final Widget unitsWidget =
-                                          _isMultiUnitTool
+                                          _supportsUnitPicker
                                           ? Row(
                                               key: ValueKey(
                                                 'tool_units_${widget.tool.id}',
@@ -1174,6 +1311,32 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                                       );
                                     }
 
+                                    Widget buildResetDefaultsButton() {
+                                      return Align(
+                                        alignment: Alignment.centerLeft,
+                                        child: TextButton.icon(
+                                          key: ValueKey(
+                                            'tool_units_reset_${widget.tool.id}',
+                                          ),
+                                          style: TextButton.styleFrom(
+                                            visualDensity:
+                                                VisualDensity.compact,
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 4,
+                                            ),
+                                          ),
+                                          onPressed: _hasCustomUnitSelection
+                                              ? _resetUnitSelectionToDefaults
+                                              : null,
+                                          icon: const Icon(
+                                            Icons.restart_alt_rounded,
+                                            size: 18,
+                                          ),
+                                          label: const Text('Reset Defaults'),
+                                        ),
+                                      );
+                                    }
+
                                     return Column(
                                       crossAxisAlignment:
                                           CrossAxisAlignment.start,
@@ -1197,6 +1360,10 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                                             ],
                                           ],
                                         ),
+                                        if (_supportsUnitPicker) ...[
+                                          const SizedBox(height: 4),
+                                          buildResetDefaultsButton(),
+                                        ],
                                         if (canAdd && isNarrow) ...[
                                           const SizedBox(height: 10),
                                           Align(
