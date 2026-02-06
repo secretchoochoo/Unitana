@@ -69,9 +69,6 @@ class PlacesHeroV2 extends StatelessWidget {
             : liveData.weatherFor(primary);
         final primarySun = primary == null ? null : liveData.sunFor(primary);
 
-        final primaryWindLine = _windLine(primary, primaryWeather);
-        final primaryGustLine = _gustLine(primary, primaryWeather);
-
         // Night heuristic: allow dev override first, else prefer sun info, else fallback to hour-based.
         final debugOverride = liveData.debugWeatherOverride;
         bool? forcedIsNight;
@@ -178,8 +175,6 @@ class PlacesHeroV2 extends StatelessWidget {
                             detailsMode: session.heroDetailsPillMode,
                             onToggleDetailsMode:
                                 session.toggleHeroDetailsPillMode,
-                            windLine: primaryWindLine,
-                            gustLine: primaryGustLine,
                             compact: isCompact,
                             gap: gap,
                             includeTestKeys: includeTestKeys,
@@ -521,8 +516,6 @@ class _HeroBandsBody extends StatelessWidget {
   final bool? secondaryUse24h;
   final HeroDetailsPillMode detailsMode;
   final VoidCallback onToggleDetailsMode;
-  final String windLine;
-  final String gustLine;
 
   final bool compact;
   final double gap;
@@ -546,8 +539,6 @@ class _HeroBandsBody extends StatelessWidget {
     required this.secondaryUse24h,
     required this.detailsMode,
     required this.onToggleDetailsMode,
-    required this.windLine,
-    required this.gustLine,
     required this.compact,
     required this.gap,
     this.includeTestKeys = true,
@@ -653,8 +644,8 @@ class _HeroBandsBody extends StatelessWidget {
                 secondaryUse24h: secondaryUse24h,
                 detailsMode: detailsMode,
                 onToggleDetailsMode: onToggleDetailsMode,
-                windLine: windLine,
-                gustLine: gustLine,
+                primaryPlace: primary,
+                primaryWeather: primaryWeather,
                 compact: compact,
                 includeTestKeys: includeTestKeys,
               ),
@@ -1715,8 +1706,8 @@ class _RightDetailsPill extends StatelessWidget {
   final bool? secondaryUse24h;
   final HeroDetailsPillMode detailsMode;
   final VoidCallback onToggleDetailsMode;
-  final String windLine;
-  final String gustLine;
+  final Place? primaryPlace;
+  final WeatherSnapshot? primaryWeather;
   final bool compact;
   final bool includeTestKeys;
 
@@ -1728,8 +1719,8 @@ class _RightDetailsPill extends StatelessWidget {
     required this.secondaryUse24h,
     required this.detailsMode,
     required this.onToggleDetailsMode,
-    required this.windLine,
-    required this.gustLine,
+    required this.primaryPlace,
+    required this.primaryWeather,
     required this.compact,
     this.includeTestKeys = true,
   });
@@ -1753,8 +1744,8 @@ class _RightDetailsPill extends StatelessWidget {
                 secondaryUse24h: secondaryUse24h,
                 detailsMode: detailsMode,
                 onToggleDetailsMode: onToggleDetailsMode,
-                windLine: windLine,
-                gustLine: gustLine,
+                primaryPlace: primaryPlace,
+                primaryWeather: primaryWeather,
                 compact: compact,
                 includeTestKeys: includeTestKeys,
               ),
@@ -1774,8 +1765,8 @@ class _SunTimesPill extends StatelessWidget {
   final bool? secondaryUse24h;
   final HeroDetailsPillMode detailsMode;
   final VoidCallback onToggleDetailsMode;
-  final String windLine;
-  final String gustLine;
+  final Place? primaryPlace;
+  final WeatherSnapshot? primaryWeather;
   final bool compact;
   final bool includeTestKeys;
 
@@ -1787,8 +1778,8 @@ class _SunTimesPill extends StatelessWidget {
     required this.secondaryUse24h,
     required this.detailsMode,
     required this.onToggleDetailsMode,
-    required this.windLine,
-    required this.gustLine,
+    required this.primaryPlace,
+    required this.primaryWeather,
     required this.compact,
     this.includeTestKeys = true,
   });
@@ -1936,6 +1927,25 @@ class _SunTimesPill extends StatelessWidget {
     Widget windContent() {
       // Wind/gust are not unit conversions; they are two related readings.
       // Use iconography to differentiate the two lines without extra labels.
+      final useImperial =
+          (primaryPlace?.unitSystem.toLowerCase() ?? 'metric') == 'imperial';
+
+      InlineSpan measureSpan(String icon, double? kmh) {
+        final row = _windMeasureRow(kmh, useImperial: useImperial);
+        final secondaryStyle = rowStyle.copyWith(
+          fontSize: (rowStyle.fontSize ?? 14) * (compact ? 0.72 : 0.78),
+          fontWeight: FontWeight.w600,
+          color: cs.onSurface.withAlpha(170),
+        );
+        return TextSpan(
+          children: [
+            TextSpan(text: '$icon ${row.primary}', style: rowStyle),
+            if (row.secondary != null)
+              TextSpan(text: ' • ${row.secondary}', style: secondaryStyle),
+          ],
+        );
+      }
+
       return Column(
         key: includeTestKeys
             ? const ValueKey('hero_details_wind_content')
@@ -1945,12 +1955,12 @@ class _SunTimesPill extends StatelessWidget {
         children: [
           SizedBox(height: compact ? 0 : 2),
           _ScaleDownRichText(
-            span: TextSpan(text: '🌬 $windLine', style: rowStyle),
+            span: measureSpan('🌬', primaryWeather?.windKmh),
             textKey: includeTestKeys ? const ValueKey('hero_wind_row') : null,
           ),
           SizedBox(height: compact ? 0 : 1),
           _ScaleDownRichText(
-            span: TextSpan(text: '💨 $gustLine', style: rowStyle),
+            span: measureSpan('💨', primaryWeather?.gustKmh),
             textKey: includeTestKeys ? const ValueKey('hero_gust_row') : null,
           ),
         ],
@@ -2055,28 +2065,36 @@ String _formatAltTemp(Place place, WeatherSnapshot weather) {
   return '$f°F';
 }
 
-String _windLine(Place? place, WeatherSnapshot? weather) {
-  // Contract: iconography is applied at render time so we never duplicate
-  // emojis when this value is displayed in multiple contexts.
-  if (weather == null) return '—';
-  final kmh = weather.windKmh;
-  final useImperial = (place?.unitSystem.toLowerCase() == 'imperial');
-  if (useImperial) {
-    final mph = (kmh * 0.621371).round();
-    return '$mph mph';
-  }
-  return '${kmh.round()} km/h';
+@immutable
+class _WindMeasureRow {
+  final String primary;
+  final String? secondary;
+  const _WindMeasureRow({required this.primary, required this.secondary});
 }
 
-String _gustLine(Place? place, WeatherSnapshot? weather) {
-  if (weather == null) return '—';
-  final kmh = weather.gustKmh;
-  final useImperial = (place?.unitSystem.toLowerCase() == 'imperial');
-  if (useImperial) {
-    final mph = (kmh * 0.621371).round();
-    return '$mph mph';
+String _fmtOneDecimal(double value) {
+  final rounded = value.toStringAsFixed(1);
+  if (rounded.endsWith('.0')) {
+    return rounded.substring(0, rounded.length - 2);
   }
-  return '${kmh.round()} km/h';
+  return rounded;
+}
+
+_WindMeasureRow _windMeasureRow(double? kmh, {required bool useImperial}) {
+  if (kmh == null) {
+    return const _WindMeasureRow(primary: '—', secondary: null);
+  }
+
+  final mph = kmh * 0.621371;
+  if (useImperial) {
+    final primary = '${mph.round()} mph';
+    final secondary = '${_fmtOneDecimal(kmh)} km/h';
+    return _WindMeasureRow(primary: primary, secondary: secondary);
+  }
+
+  final primary = '${kmh.round()} km/h';
+  final secondary = '${_fmtOneDecimal(mph)} mph';
+  return _WindMeasureRow(primary: primary, secondary: secondary);
 }
 
 String _currencyCodeForPlace(Place? place) {

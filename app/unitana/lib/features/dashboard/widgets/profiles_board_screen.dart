@@ -6,6 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../app/app_state.dart';
 import '../../../models/place.dart';
 import '../../../theme/dracula_palette.dart';
+import 'destructive_confirmation_sheet.dart';
 
 class ProfilesBoardScreen extends StatefulWidget {
   final UnitanaAppState state;
@@ -28,7 +29,7 @@ class ProfilesBoardScreen extends StatefulWidget {
 }
 
 class _ProfilesBoardScreenState extends State<ProfilesBoardScreen> {
-  static const int _kAddTileCount = 5;
+  static const int _kMinAddTileCount = 4;
   static const double _kEditAppBarActionFontSize = 14;
 
   bool _editMode = false;
@@ -59,6 +60,16 @@ class _ProfilesBoardScreenState extends State<ProfilesBoardScreen> {
     return a.toSet().containsAll(b) && b.toSet().containsAll(a);
   }
 
+  int _addTileCountFor(int profileCount) {
+    // Keep at least two full rows of add slots, and keep total grid cells even
+    // so the 2-column board does not end with an orphan final tile.
+    var addCount = _kMinAddTileCount;
+    if ((profileCount + addCount).isOdd) {
+      addCount += 1;
+    }
+    return addCount;
+  }
+
   void _moveDraggedBeforeTarget({
     required String draggedId,
     required String targetId,
@@ -82,22 +93,11 @@ class _ProfilesBoardScreenState extends State<ProfilesBoardScreen> {
 
   Future<void> _confirmDelete(UnitanaProfile profile) async {
     if (widget.state.profiles.length <= 1) return;
-    final approved = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete profile?'),
-        content: Text('Delete "${profile.name}"? This cannot be undone.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
+    final approved = await showDestructiveConfirmationSheet(
+      context,
+      title: 'Delete profile?',
+      message: 'Delete "${profile.name}"? This cannot be undone.',
+      confirmLabel: 'Delete',
     );
     if (approved != true) return;
     await widget.onDeleteProfile(profile.id);
@@ -164,6 +164,7 @@ class _ProfilesBoardScreenState extends State<ProfilesBoardScreen> {
             .map((id) => byId[id])
             .whereType<UnitanaProfile>()
             .toList(growable: false);
+        final addTileCount = _addTileCountFor(ordered.length);
 
         if (ordered.length != widget.state.profiles.length) {
           _syncOrderFromState();
@@ -248,7 +249,7 @@ class _ProfilesBoardScreenState extends State<ProfilesBoardScreen> {
                           crossAxisSpacing: 12,
                           childAspectRatio: 0.9,
                         ),
-                    itemCount: ordered.length + _kAddTileCount,
+                    itemCount: ordered.length + addTileCount,
                     itemBuilder: (context, index) {
                       if (index >= ordered.length) {
                         final addSlot = index - ordered.length;

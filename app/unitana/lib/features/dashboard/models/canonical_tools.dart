@@ -20,6 +20,7 @@ class CanonicalToolId {
   static const String pressure = 'pressure';
   static const String shoeSizes = 'shoe_sizes';
   static const String weather = 'weather';
+  static const String dataStorage = 'data_storage';
 
   static const List<String> all = <String>[
     time,
@@ -35,6 +36,7 @@ class CanonicalToolId {
     pressure,
     shoeSizes,
     weather,
+    dataStorage,
   ];
 }
 

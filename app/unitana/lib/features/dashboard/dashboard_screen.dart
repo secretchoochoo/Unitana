@@ -39,6 +39,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   static const double _kEditAppBarActionFontSize = 14;
   static const double _kAppBarTitleMaxFontSize = 28;
   static const double _kAppBarTitleMinFontSize = 18;
+  static const double _kRefreshClusterVisualNudgeX = 10;
 
   late DashboardSessionController _session;
   late final DashboardLiveDataController _liveData;
@@ -1212,17 +1213,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                     ),
                                   ),
                                   ListTile(
-                                    leading: const Icon(Icons.edit),
-                                    title: const Text('Edit Widgets'),
-                                    onTap: () {
-                                      Navigator.of(sheetContext).pop();
-                                      Future.microtask(() {
-                                        if (!mounted) return;
-                                        _enterEditWidgets();
-                                      });
-                                    },
-                                  ),
-                                  ListTile(
                                     leading: const Icon(Icons.switch_account),
                                     title: const Text('Profiles'),
                                     onTap: () {
@@ -1317,35 +1307,78 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       top: 0,
                     ),
                     sliver: SliverToBoxAdapter(
-                      child: Align(
+                      child: Stack(
                         alignment: Alignment.center,
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            DataRefreshStatusLabel(
-                              key: const ValueKey(
-                                'dashboard_refresh_status_label',
+                        children: [
+                          Padding(
+                            // Keep center cluster off the edge controls while
+                            // preserving true center alignment with the title.
+                            padding: const EdgeInsets.symmetric(horizontal: 72),
+                            child: Transform.translate(
+                              offset: const Offset(
+                                _kRefreshClusterVisualNudgeX,
+                                0,
                               ),
-                              liveData: _liveData,
-                              compact: true,
-                              showBackground: false,
-                              hideWhenUnavailable: false,
-                            ),
-                            const SizedBox(width: 0),
-                            IconButton(
-                              tooltip: 'Refresh',
-                              onPressed: _refreshAllNow,
-                              icon: const Icon(Icons.refresh_rounded, size: 16),
-                              color: DraculaPalette.purple.withAlpha(220),
-                              padding: EdgeInsets.zero,
-                              visualDensity: VisualDensity.compact,
-                              constraints: const BoxConstraints(
-                                minWidth: 24,
-                                minHeight: 24,
+                              child: Align(
+                                alignment: Alignment.center,
+                                child: FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  alignment: Alignment.center,
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      DataRefreshStatusLabel(
+                                        key: const ValueKey(
+                                          'dashboard_refresh_status_label',
+                                        ),
+                                        liveData: _liveData,
+                                        compact: true,
+                                        showBackground: false,
+                                        hideWhenUnavailable: false,
+                                      ),
+                                      const SizedBox(width: 0),
+                                      IconButton(
+                                        tooltip: 'Refresh',
+                                        onPressed: _refreshAllNow,
+                                        icon: const Icon(
+                                          Icons.refresh_rounded,
+                                          size: 16,
+                                        ),
+                                        color: DraculaPalette.purple.withAlpha(
+                                          220,
+                                        ),
+                                        padding: EdgeInsets.zero,
+                                        visualDensity: VisualDensity.compact,
+                                        constraints: const BoxConstraints(
+                                          minWidth: 24,
+                                          minHeight: 24,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
                               ),
                             ),
-                          ],
-                        ),
+                          ),
+                          if (!_isEditingWidgets)
+                            Align(
+                              alignment: Alignment.centerRight,
+                              child: TextButton(
+                                key: const Key('dashboard_edit_mode'),
+                                onPressed: _enterEditWidgets,
+                                style: TextButton.styleFrom(
+                                  visualDensity: VisualDensity.compact,
+                                  tapTargetSize:
+                                      MaterialTapTargetSize.shrinkWrap,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 6,
+                                  ),
+                                  minimumSize: const Size(0, 32),
+                                ),
+                                child: const Text('✏ Edit'),
+                              ),
+                            ),
+                        ],
                       ),
                     ),
                   ),

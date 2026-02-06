@@ -1,0 +1,1154 @@
+diff --git a/app/unitana/lib/features/dashboard/dashboard_screen.dart b/app/unitana/lib/features/dashboard/dashboard_screen.dart
+index d4038ca..3580257 100644
+--- a/app/unitana/lib/features/dashboard/dashboard_screen.dart
++++ b/app/unitana/lib/features/dashboard/dashboard_screen.dart
+@@ -39,6 +39,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
+   static const double _kEditAppBarActionFontSize = 14;
+   static const double _kAppBarTitleMaxFontSize = 28;
+   static const double _kAppBarTitleMinFontSize = 18;
++  static const double _kRefreshClusterVisualNudgeX = 10;
+ 
+   late DashboardSessionController _session;
+   late final DashboardLiveDataController _liveData;
+@@ -1211,17 +1212,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
+                                       ],
+                                     ),
+                                   ),
+-                                  ListTile(
+-                                    leading: const Icon(Icons.edit),
+-                                    title: const Text('Edit Widgets'),
+-                                    onTap: () {
+-                                      Navigator.of(sheetContext).pop();
+-                                      Future.microtask(() {
+-                                        if (!mounted) return;
+-                                        _enterEditWidgets();
+-                                      });
+-                                    },
+-                                  ),
+                                   ListTile(
+                                     leading: const Icon(Icons.switch_account),
+                                     title: const Text('Profiles'),
+@@ -1317,35 +1307,78 @@ class _DashboardScreenState extends State<DashboardScreen> {
+                       top: 0,
+                     ),
+                     sliver: SliverToBoxAdapter(
+-                      child: Align(
++                      child: Stack(
+                         alignment: Alignment.center,
+-                        child: Row(
+-                          mainAxisSize: MainAxisSize.min,
+-                          children: [
+-                            DataRefreshStatusLabel(
+-                              key: const ValueKey(
+-                                'dashboard_refresh_status_label',
++                        children: [
++                          Padding(
++                            // Keep center cluster off the edge controls while
++                            // preserving true center alignment with the title.
++                            padding: const EdgeInsets.symmetric(horizontal: 72),
++                            child: Transform.translate(
++                              offset: const Offset(
++                                _kRefreshClusterVisualNudgeX,
++                                0,
++                              ),
++                              child: Align(
++                                alignment: Alignment.center,
++                                child: FittedBox(
++                                  fit: BoxFit.scaleDown,
++                                  alignment: Alignment.center,
++                                  child: Row(
++                                    mainAxisSize: MainAxisSize.min,
++                                    children: [
++                                      DataRefreshStatusLabel(
++                                        key: const ValueKey(
++                                          'dashboard_refresh_status_label',
++                                        ),
++                                        liveData: _liveData,
++                                        compact: true,
++                                        showBackground: false,
++                                        hideWhenUnavailable: false,
++                                      ),
++                                      const SizedBox(width: 0),
++                                      IconButton(
++                                        tooltip: 'Refresh',
++                                        onPressed: _refreshAllNow,
++                                        icon: const Icon(
++                                          Icons.refresh_rounded,
++                                          size: 16,
++                                        ),
++                                        color: DraculaPalette.purple.withAlpha(
++                                          220,
++                                        ),
++                                        padding: EdgeInsets.zero,
++                                        visualDensity: VisualDensity.compact,
++                                        constraints: const BoxConstraints(
++                                          minWidth: 24,
++                                          minHeight: 24,
++                                        ),
++                                      ),
++                                    ],
++                                  ),
++                                ),
+                               ),
+-                              liveData: _liveData,
+-                              compact: true,
+-                              showBackground: false,
+-                              hideWhenUnavailable: false,
+                             ),
+-                            const SizedBox(width: 0),
+-                            IconButton(
+-                              tooltip: 'Refresh',
+-                              onPressed: _refreshAllNow,
+-                              icon: const Icon(Icons.refresh_rounded, size: 16),
+-                              color: DraculaPalette.purple.withAlpha(220),
+-                              padding: EdgeInsets.zero,
+-                              visualDensity: VisualDensity.compact,
+-                              constraints: const BoxConstraints(
+-                                minWidth: 24,
+-                                minHeight: 24,
++                          ),
++                          if (!_isEditingWidgets)
++                            Align(
++                              alignment: Alignment.centerRight,
++                              child: TextButton(
++                                key: const Key('dashboard_edit_mode'),
++                                onPressed: _enterEditWidgets,
++                                style: TextButton.styleFrom(
++                                  visualDensity: VisualDensity.compact,
++                                  tapTargetSize:
++                                      MaterialTapTargetSize.shrinkWrap,
++                                  padding: const EdgeInsets.symmetric(
++                                    horizontal: 6,
++                                  ),
++                                  minimumSize: const Size(0, 32),
++                                ),
++                                child: const Text('✏ Edit'),
+                               ),
+                             ),
+-                          ],
+-                        ),
++                        ],
+                       ),
+                     ),
+                   ),
+diff --git a/app/unitana/lib/features/dashboard/models/canonical_tools.dart b/app/unitana/lib/features/dashboard/models/canonical_tools.dart
+index dd4f450..4a78880 100644
+--- a/app/unitana/lib/features/dashboard/models/canonical_tools.dart
++++ b/app/unitana/lib/features/dashboard/models/canonical_tools.dart
+@@ -20,6 +20,7 @@ class CanonicalToolId {
+   static const String pressure = 'pressure';
+   static const String shoeSizes = 'shoe_sizes';
+   static const String weather = 'weather';
++  static const String dataStorage = 'data_storage';
+ 
+   static const List<String> all = <String>[
+     time,
+@@ -35,6 +36,7 @@ class CanonicalToolId {
+     pressure,
+     shoeSizes,
+     weather,
++    dataStorage,
+   ];
+ }
+ 
+diff --git a/app/unitana/lib/features/dashboard/models/dashboard_live_data.dart b/app/unitana/lib/features/dashboard/models/dashboard_live_data.dart
+index fce273c..a9dd8cb 100644
+--- a/app/unitana/lib/features/dashboard/models/dashboard_live_data.dart
++++ b/app/unitana/lib/features/dashboard/models/dashboard_live_data.dart
+@@ -519,6 +519,7 @@ class DashboardLiveDataController extends ChangeNotifier {
+   final bool allowLiveRefreshInTestHarness;
+   final Duration refreshDebounceDuration;
+   final Duration simulatedNetworkLatency;
++  final Duration currencyRetryBackoffDuration;
+ 
+   DashboardLiveDataController({
+     CityRepository? cityRepository,
+@@ -529,6 +530,7 @@ class DashboardLiveDataController extends ChangeNotifier {
+     this.allowLiveRefreshInTestHarness = false,
+     this.refreshDebounceDuration = const Duration(milliseconds: 250),
+     this.simulatedNetworkLatency = const Duration(milliseconds: 350),
++    this.currencyRetryBackoffDuration = const Duration(minutes: 2),
+   }) : _cityRepository = cityRepository ?? CityRepository.instance,
+        _weatherApi = weatherApiClient ?? WeatherApiClient.fromEnvironment(),
+        _openMeteo = openMeteoClient ?? OpenMeteoClient(),
+@@ -638,7 +640,6 @@ class DashboardLiveDataController extends ChangeNotifier {
+       'currency_eur_to_usd_updated_at_v1';
+ 
+   static const Duration _currencyTtl = Duration(hours: 12);
+-
+   static WeatherBackend _backendFromEnv() {
+     if (!_envWeatherNetworkEnabled) return WeatherBackend.mock;
+     switch (_envWeatherProvider.toLowerCase()) {
+@@ -684,6 +685,8 @@ class DashboardLiveDataController extends ChangeNotifier {
+   WeatherBackend _weatherBackend = _backendFromEnv();
+   CurrencyBackend _currencyBackend = _currencyBackendFromEnv();
+   DateTime? _lastCurrencyRefreshedAt;
++  DateTime? _lastCurrencyErrorAt;
++  Object? _lastCurrencyError;
+   bool _devSettingsLoaded = false;
+   WeatherBackend get weatherBackend => _weatherBackend;
+ 
+@@ -696,6 +699,21 @@ class DashboardLiveDataController extends ChangeNotifier {
+   bool get currencyNetworkAllowed => _currencyNetworkAllowed;
+ 
+   DateTime? get lastCurrencyRefreshedAt => _lastCurrencyRefreshedAt;
++  DateTime? get lastCurrencyErrorAt => _lastCurrencyErrorAt;
++  Object? get lastCurrencyError => _lastCurrencyError;
++
++  bool get isCurrencyStale {
++    final last = _lastCurrencyRefreshedAt;
++    if (last == null) return true;
++    return DateTime.now().difference(last) > _currencyTtl;
++  }
++
++  bool get shouldRetryCurrencyNow {
++    if (!currencyNetworkEnabled) return false;
++    final errAt = _lastCurrencyErrorAt;
++    if (errAt == null) return isCurrencyStale;
++    return DateTime.now().difference(errAt) >= currencyRetryBackoffDuration;
++  }
+ 
+   /// Whether live network weather is enabled (and allowed) for this build.
+   bool get weatherNetworkEnabled =>
+@@ -1285,12 +1303,15 @@ class DashboardLiveDataController extends ChangeNotifier {
+   Future<void> _maybeRefreshCurrency() async {
+     if (!currencyNetworkEnabled) return;
+ 
+-    // TTL-based refresh so we don't create a chatty background dependency.
+     final now = DateTime.now();
+-    final last = _lastCurrencyRefreshedAt;
+-    final stale = last == null || now.difference(last) > _currencyTtl;
++    final stale = isCurrencyStale;
+     if (!stale) return;
+ 
++    final errAt = _lastCurrencyErrorAt;
++    if (errAt != null && now.difference(errAt) < currencyRetryBackoffDuration) {
++      return;
++    }
++
+     try {
+       double? rate;
+       switch (_currencyBackend) {
+@@ -1315,12 +1336,16 @@ class DashboardLiveDataController extends ChangeNotifier {
+       _eurToUsd = rate;
+       _eurBaseRates['USD'] = rate;
+       _lastCurrencyRefreshedAt = now;
++      _lastCurrencyError = null;
++      _lastCurrencyErrorAt = null;
+ 
+       final prefs = await SharedPreferences.getInstance();
+       await prefs.setDouble(_kCachedEurToUsdRate, rate);
+       await prefs.setInt(_kCachedEurToUsdUpdatedAt, now.millisecondsSinceEpoch);
+-    } catch (_) {
++    } catch (e) {
+       // Best-effort only. Keep the last stable value.
++      _lastCurrencyError = e;
++      _lastCurrencyErrorAt = now;
+     }
+   }
+ 
+diff --git a/app/unitana/lib/features/dashboard/models/tool_definitions.dart b/app/unitana/lib/features/dashboard/models/tool_definitions.dart
+index b60b825..2ad50be 100644
+--- a/app/unitana/lib/features/dashboard/models/tool_definitions.dart
++++ b/app/unitana/lib/features/dashboard/models/tool_definitions.dart
+@@ -167,6 +167,16 @@ class ToolDefinitions {
+     defaultSecondary: '6:30 PM',
+   );
+ 
++  static const dataStorage = ToolDefinition(
++    id: 'data_storage',
++    canonicalToolId: CanonicalToolId.dataStorage,
++    lensId: ActivityLensId.travelEssentials,
++    title: 'Data Storage',
++    icon: Icons.sd_storage_rounded,
++    defaultPrimary: '1 GB',
++    defaultSecondary: '1024 MB',
++  );
++
+   static const currencyConvert = ToolDefinition(
+     id: 'currency_convert',
+     canonicalToolId: CanonicalToolId.currency,
+@@ -239,6 +249,7 @@ class ToolDefinitions {
+     speed,
+     temperature,
+     time,
++    dataStorage,
+     currencyConvert,
+     shoeSizes,
+     weight,
+@@ -258,6 +269,7 @@ class ToolDefinitions {
+     'speed': speed,
+     'temperature': temperature,
+     'time': time,
++    'data_storage': dataStorage,
+     'currency_convert': currencyConvert,
+     'shoe_sizes': shoeSizes,
+     'weight': weight,
+@@ -366,6 +378,12 @@ class ToolConverters {
+           toUnit: toUnit,
+           input: input,
+         );
++      case CanonicalToolId.dataStorage:
++        return _convertDataStorageWithUnits(
++          fromUnit: fromUnit,
++          toUnit: toUnit,
++          input: input,
++        );
+       default:
+         // Fallback to the dual-unit engine when no multi-unit mapping exists.
+         return convert(toolId: toolId, forward: true, input: input);
+@@ -476,6 +494,32 @@ class ToolConverters {
+     return '${_fmt(out)} $toUnit';
+   }
+ 
++  static String? _convertDataStorageWithUnits({
++    required String fromUnit,
++    required String toUnit,
++    required String input,
++  }) {
++    final value = double.tryParse(input.trim());
++    if (value == null) return null;
++
++    // Normalize into bytes (binary multiples for practical storage math).
++    const bytesPer = <String, double>{
++      'B': 1.0,
++      'KB': 1024.0,
++      'MB': 1024.0 * 1024.0,
++      'GB': 1024.0 * 1024.0 * 1024.0,
++      'TB': 1024.0 * 1024.0 * 1024.0 * 1024.0,
++    };
++
++    final fromFactor = bytesPer[fromUnit];
++    final toFactor = bytesPer[toUnit];
++    if (fromFactor == null || toFactor == null) return null;
++
++    final bytes = value * fromFactor;
++    final out = bytes / toFactor;
++    return '${_fmt(out)} $toUnit';
++  }
++
+   /// Converts between 24h and 12h time representations.
+   ///
+   /// `forward == true` means 24h -> 12h.
+diff --git a/app/unitana/lib/features/dashboard/models/tool_registry.dart b/app/unitana/lib/features/dashboard/models/tool_registry.dart
+index d343c44..34d0b33 100644
+--- a/app/unitana/lib/features/dashboard/models/tool_registry.dart
++++ b/app/unitana/lib/features/dashboard/models/tool_registry.dart
+@@ -91,6 +91,7 @@ class ToolRegistry {
+       toolId: 'jet_lag_delta',
+       label: 'Jet Lag Delta',
+       icon: Icons.airline_seat_recline_normal,
++      isEnabled: true,
+       lenses: <String>[ActivityLensId.travelEssentials],
+       presetsByLens: <String, Map<String, Object?>>{
+         ActivityLensId.travelEssentials: <String, Object?>{
+@@ -102,6 +103,7 @@ class ToolRegistry {
+       toolId: 'data_storage',
+       label: 'Data Storage',
+       icon: Icons.sd_storage_rounded,
++      isEnabled: true,
+       lenses: <String>[ActivityLensId.travelEssentials],
+     ),
+     ToolRegistryTool(
+@@ -217,6 +219,7 @@ class ToolRegistry {
+       toolId: 'world_clock_delta',
+       label: 'World Clock Delta',
+       icon: Icons.public_rounded,
++      isEnabled: true,
+       lenses: <String>[ActivityLensId.weatherTime],
+     ),
+ 
+diff --git a/app/unitana/lib/features/dashboard/widgets/dashboard_board.dart b/app/unitana/lib/features/dashboard/widgets/dashboard_board.dart
+index 1562664..c726720 100644
+--- a/app/unitana/lib/features/dashboard/widgets/dashboard_board.dart
++++ b/app/unitana/lib/features/dashboard/widgets/dashboard_board.dart
+@@ -1333,6 +1333,12 @@ class _ToolPickerSheetState extends State<ToolPickerSheet> {
+           : ToolDefinitions.liquids;
+     }
+ 
++    // Activation bundle (Pack F): these remain distinct discovery entries,
++    // but currently reuse the mature Time modal.
++    if (tool.toolId == 'world_clock_delta' || tool.toolId == 'jet_lag_delta') {
++      return ToolDefinitions.time;
++    }
++
+     return null;
+   }
+ 
+diff --git a/app/unitana/lib/features/dashboard/widgets/profiles_board_screen.dart b/app/unitana/lib/features/dashboard/widgets/profiles_board_screen.dart
+index 34a232f..c9415a4 100644
+--- a/app/unitana/lib/features/dashboard/widgets/profiles_board_screen.dart
++++ b/app/unitana/lib/features/dashboard/widgets/profiles_board_screen.dart
+@@ -28,7 +28,7 @@ class ProfilesBoardScreen extends StatefulWidget {
+ }
+ 
+ class _ProfilesBoardScreenState extends State<ProfilesBoardScreen> {
+-  static const int _kAddTileCount = 5;
++  static const int _kMinAddTileCount = 4;
+   static const double _kEditAppBarActionFontSize = 14;
+ 
+   bool _editMode = false;
+@@ -59,6 +59,16 @@ class _ProfilesBoardScreenState extends State<ProfilesBoardScreen> {
+     return a.toSet().containsAll(b) && b.toSet().containsAll(a);
+   }
+ 
++  int _addTileCountFor(int profileCount) {
++    // Keep at least two full rows of add slots, and keep total grid cells even
++    // so the 2-column board does not end with an orphan final tile.
++    var addCount = _kMinAddTileCount;
++    if ((profileCount + addCount).isOdd) {
++      addCount += 1;
++    }
++    return addCount;
++  }
++
+   void _moveDraggedBeforeTarget({
+     required String draggedId,
+     required String targetId,
+@@ -164,6 +174,7 @@ class _ProfilesBoardScreenState extends State<ProfilesBoardScreen> {
+             .map((id) => byId[id])
+             .whereType<UnitanaProfile>()
+             .toList(growable: false);
++        final addTileCount = _addTileCountFor(ordered.length);
+ 
+         if (ordered.length != widget.state.profiles.length) {
+           _syncOrderFromState();
+@@ -248,7 +259,7 @@ class _ProfilesBoardScreenState extends State<ProfilesBoardScreen> {
+                           crossAxisSpacing: 12,
+                           childAspectRatio: 0.9,
+                         ),
+-                    itemCount: ordered.length + _kAddTileCount,
++                    itemCount: ordered.length + addTileCount,
+                     itemBuilder: (context, index) {
+                       if (index >= ordered.length) {
+                         final addSlot = index - ordered.length;
+diff --git a/app/unitana/lib/features/dashboard/widgets/tool_modal_bottom_sheet.dart b/app/unitana/lib/features/dashboard/widgets/tool_modal_bottom_sheet.dart
+index 194b264..d75c221 100644
+--- a/app/unitana/lib/features/dashboard/widgets/tool_modal_bottom_sheet.dart
++++ b/app/unitana/lib/features/dashboard/widgets/tool_modal_bottom_sheet.dart
+@@ -190,7 +190,8 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
+   bool get _isMultiUnitTool =>
+       widget.tool.canonicalToolId == CanonicalToolId.volume ||
+       widget.tool.canonicalToolId == CanonicalToolId.pressure ||
+-      widget.tool.canonicalToolId == CanonicalToolId.weight;
++      widget.tool.canonicalToolId == CanonicalToolId.weight ||
++      widget.tool.canonicalToolId == CanonicalToolId.dataStorage;
+   bool get _supportsUnitPicker => _isMultiUnitTool || _isCurrencyTool;
+ 
+   List<String> get _multiUnitChoices {
+@@ -201,6 +202,8 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
+         return const <String>['kPa', 'psi', 'bar', 'atm'];
+       case CanonicalToolId.weight:
+         return const <String>['g', 'kg', 'oz', 'lb', 'st'];
++      case CanonicalToolId.dataStorage:
++        return const <String>['B', 'KB', 'MB', 'GB', 'TB'];
+       default:
+         return const <String>[];
+     }
+@@ -287,6 +290,10 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
+         _fromUnitOverride = _forward ? 'kg' : 'lb';
+         _toUnitOverride = _forward ? 'lb' : 'kg';
+         return;
++      case CanonicalToolId.dataStorage:
++        _fromUnitOverride = _forward ? 'GB' : 'MB';
++        _toUnitOverride = _forward ? 'MB' : 'GB';
++        return;
+       default:
+         _fromUnitOverride = null;
+         _toUnitOverride = null;
+@@ -325,6 +332,8 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
+         return _forward ? ('kPa', 'psi') : ('psi', 'kPa');
+       case CanonicalToolId.weight:
+         return _forward ? ('kg', 'lb') : ('lb', 'kg');
++      case CanonicalToolId.dataStorage:
++        return _forward ? ('GB', 'MB') : ('MB', 'GB');
+       default:
+         return ('', '');
+     }
+@@ -575,6 +584,9 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
+       case 'weight':
+         // kg <-> lb
+         return preferMetric;
++      case 'data_storage':
++        // GB <-> MB
++        return true;
+       case 'time':
+         // 24h <-> 12h
+         return prefer24h;
+@@ -664,6 +676,8 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
+       case 'weight':
+       case 'body_weight':
+         return _fromUnitOverride ?? (_forward ? 'kg' : 'lb');
++      case 'data_storage':
++        return _fromUnitOverride ?? (_forward ? 'GB' : 'MB');
+       default:
+         return '';
+     }
+@@ -696,6 +710,8 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
+       case 'weight':
+       case 'body_weight':
+         return _toUnitOverride ?? (_forward ? 'lb' : 'kg');
++      case 'data_storage':
++        return _toUnitOverride ?? (_forward ? 'MB' : 'GB');
+       default:
+         return '';
+     }
+@@ -842,6 +858,11 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
+       'ft2',
+       'usd',
+       'eur',
++      'b',
++      'kb',
++      'mb',
++      'gb',
++      'tb',
+     ];
+ 
+     final lower = working.toLowerCase();
+diff --git a/app/unitana/test/dashboard_devtools_weather_menu_hardening_test.dart b/app/unitana/test/dashboard_devtools_weather_menu_hardening_test.dart
+index 72031ca..9592961 100644
+--- a/app/unitana/test/dashboard_devtools_weather_menu_hardening_test.dart
++++ b/app/unitana/test/dashboard_devtools_weather_menu_hardening_test.dart
+@@ -87,7 +87,7 @@ void main() {
+ 
+         // Sanity: sheet is actually open.
+         expect(
+-          find.descendant(of: menuSheet, matching: find.text('Edit Widgets')),
++          find.descendant(of: menuSheet, matching: find.text('Profiles')),
+           findsOneWidget,
+         );
+ 
+diff --git a/app/unitana/test/dashboard_edit_drag_handle_hit_testing_test.dart b/app/unitana/test/dashboard_edit_drag_handle_hit_testing_test.dart
+index b4470de..398c142 100644
+--- a/app/unitana/test/dashboard_edit_drag_handle_hit_testing_test.dart
++++ b/app/unitana/test/dashboard_edit_drag_handle_hit_testing_test.dart
+@@ -26,10 +26,7 @@ Future<void> _enterEditMode(WidgetTester tester) async {
+     return;
+   }
+ 
+-  await tester.tap(find.byKey(const Key('dashboard_menu_button')));
+-  await tester.pumpAndSettle(const Duration(milliseconds: 250));
+-
+-  await tester.tap(find.text('Edit Widgets'));
++  await tester.tap(find.byKey(const Key('dashboard_edit_mode')));
+   await _pumpFor(tester, const Duration(milliseconds: 260));
+ 
+   expect(find.byKey(const Key('dashboard_edit_done')), findsOneWidget);
+diff --git a/app/unitana/test/dashboard_reorder_persistence_breakpoints_test.dart b/app/unitana/test/dashboard_reorder_persistence_breakpoints_test.dart
+index 9d82b43..d84264a 100644
+--- a/app/unitana/test/dashboard_reorder_persistence_breakpoints_test.dart
++++ b/app/unitana/test/dashboard_reorder_persistence_breakpoints_test.dart
+@@ -88,15 +88,8 @@ void main() {
+     // Phone (2 columns).
+     await pumpDashboard(const Size(390, 844));
+ 
+-    // Enter edit mode via the menu.
+-    await tester.tap(find.byKey(const Key('dashboard_menu_button')));
+-    await tester.pump(const Duration(milliseconds: 500));
+-
+-    final editWidgets = find.text('Edit Widgets');
+-    await ensureVisibleAligned(tester, editWidgets);
+-    await tester.pump(const Duration(milliseconds: 100));
+-
+-    await tester.tap(editWidgets);
++    // Enter edit mode via inline header action.
++    await tester.tap(find.byKey(const Key('dashboard_edit_mode')));
+     await tester.pump();
+     await tester.pump(const Duration(milliseconds: 250));
+ 
+diff --git a/app/unitana/test/profile_switcher_switch_profile_flow_test.dart b/app/unitana/test/profile_switcher_switch_profile_flow_test.dart
+index 0eb9c38..882e1a0 100644
+--- a/app/unitana/test/profile_switcher_switch_profile_flow_test.dart
++++ b/app/unitana/test/profile_switcher_switch_profile_flow_test.dart
+@@ -27,6 +27,17 @@ Place _place({
+ }
+ 
+ void main() {
++  Finder addProfileTiles() {
++    return find.byWidgetPredicate((w) {
++      final key = w.key;
++      if (key is Key) {
++        final raw = key.toString();
++        return raw.contains("profiles_board_add_profile");
++      }
++      return false;
++    });
++  }
++
+   testWidgets('Profile switcher changes active profile in dashboard', (
+     tester,
+   ) async {
+@@ -100,4 +111,49 @@ void main() {
+     expect(find.text('Trip Profile'), findsOneWidget);
+     expect(state.activeProfileId, 'profile_2');
+   });
++
++  testWidgets(
++    'Profiles board keeps add-slot tile count balanced for 2-column grid',
++    (tester) async {
++      SharedPreferences.setMockInitialValues(<String, Object>{});
++      final state = UnitanaAppState(UnitanaStorage());
++      await state.load();
++
++      await state.createProfile(
++        const UnitanaProfile(
++          id: 'profile_2',
++          name: 'Second',
++          places: <Place>[],
++          defaultPlaceId: null,
++        ).copyWith(
++          places: <Place>[
++            _place(
++              id: 'home_2',
++              type: PlaceType.living,
++              city: 'Lisbon',
++              country: 'PT',
++            ),
++            _place(
++              id: 'visit_2',
++              type: PlaceType.visiting,
++              city: 'Austin',
++              country: 'US',
++            ),
++          ],
++          defaultPlaceId: 'home_2',
++        ),
++      );
++
++      await pumpDashboardForTest(tester, state: state);
++
++      await tester.tap(find.byKey(const Key('dashboard_menu_button')));
++      await tester.pumpAndSettle();
++      final profilesTile = find.widgetWithText(ListTile, 'Profiles');
++      await ensureVisibleAligned(tester, profilesTile);
++      await tester.tap(profilesTile);
++      await tester.pumpAndSettle();
++
++      expect(addProfileTiles(), findsNWidgets(4));
++    },
++  );
+ }
+diff --git a/docs/ai/context_db.json b/docs/ai/context_db.json
+index 7923b63..eb5709e 100644
+--- a/docs/ai/context_db.json
++++ b/docs/ai/context_db.json
+@@ -66,7 +66,7 @@
+     {
+       "id": "PACK_F_tools_surface_completion",
+       "title": "Pack F (P1): Tools surface completion and parity cleanup",
+-      "summary": "Resolve remaining \u201ccoming soon\u201d surfaces, finish key tool UX parity, and normalize unit-matrix behavior between tools and widgets.",
++      "summary": "Resolve remaining “coming soon” surfaces, finish key tool UX parity, and normalize unit-matrix behavior between tools and widgets.",
+       "notes": [
+         "Run and execute a concrete coming-soon audit with owner and ETA per tool.",
+         "Finish currency tool UX parity if any gaps remain after Pack C.",
+@@ -141,13 +141,13 @@
+     },
+     {
+       "date": "2026-01-14",
+-      "decision": "Use unit pills that open a compact selector sheet for input/output units. Put secondary outputs behind a \"More units\u2026\" sub-sheet when needed.",
++      "decision": "Use unit pills that open a compact selector sheet for input/output units. Put secondary outputs behind a \"More units…\" sub-sheet when needed.",
+       "rationale": "Keeps the primary modal clean and fast while still supporting tools with many units; avoids bolting \"From/To\" everywhere.",
+       "topic": "Multi-unit tool UX (selector strategy)"
+     },
+     {
+       "date": "2026-01-14",
+-      "decision": "For multi-unit tools, use input/output unit pills that open a compact selector as the default; expose additional outputs behind a single \"More units\u2026\" sub-sheet when needed.",
++      "decision": "For multi-unit tools, use input/output unit pills that open a compact selector as the default; expose additional outputs behind a single \"More units…\" sub-sheet when needed.",
+       "rationale": "Keeps the primary modal clean and consistent across tools while still supporting power users; avoids bolting on verbose From/To forms everywhere.",
+       "topic": "Multi-unit tool UX strategy"
+     },
+@@ -166,7 +166,7 @@
+     {
+       "date": "2026-01-20",
+       "decision": "Enforce a single authoritative micro-mode gate for Env and Currency that triggers before any multi-line layout is constructed; under tight constraints render icon + single-line micro layouts.",
+-      "rationale": "Prevents recurring RenderFlex overflows caused by 2-line Columns being forced into inner heights in the 20\u201330px range by tests and compact surfaces.",
++      "rationale": "Prevents recurring RenderFlex overflows caused by 2-line Columns being forced into inner heights in the 20–30px range by tests and compact surfaces.",
+       "topic": "Hero overflow prevention (micro-first contract)"
+     },
+     {
+@@ -199,7 +199,7 @@
+       "rationale": "Avoids scroll jumps and layout popping under fast scroll; keeps hit testing stable by reserving space smoothly.",
+       "topic": "Pinned mini-hero transition hardening (P0)"
+     },
+-    "Hero interaction consistency: AQI/Pollen pill must show tap ripple feedback (Material+InkWell) like Sunrise/Sunset \u2194 Wind/Gust.",
++    "Hero interaction consistency: AQI/Pollen pill must show tap ripple feedback (Material+InkWell) like Sunrise/Sunset ↔ Wind/Gust.",
+     "Currency cockpit: center-align the currency rate line in both normal and micro layouts.",
+     {
+       "date": "2026-02-01",
+@@ -345,6 +345,28 @@
+         "Profile edit can target non-active profiles through temporary context switching.",
+         "Profile ordering is persisted in app state for future UX refinement."
+       ]
++    },
++    {
++      "id": "D-2026-02-06-packd-restore-preflight",
++      "date": "2026-02-06",
++      "title": "Require restore-point preflight before Pack D consolidation/deletion",
++      "decision": "Any docs cleanup/deletion batch must create a restore point first via ./tools/create_restore_point.sh and follow PACK_D_RESTORE_BACKUP_STRATEGY.md.",
++      "rationale": "Pack D consolidation is intentionally destructive; explicit restore artifacts prevent irreversible loss and speed rollback when discrepancies are discovered.",
++      "impacts": [
++        "Consolidation work is gated by reproducible backup artifacts.",
++        "Autonomous delete/move passes can proceed with lower operational risk."
++      ]
++    },
++    {
++      "id": "D-2026-02-06-time-tool-repurpose-lock",
++      "date": "2026-02-06",
++      "title": "Lock Time tool direction to timezone/delta-first",
++      "decision": "Treat 12h↔24h conversion as interim only; repurpose Time workflow toward timezone lookup and delta use-cases per TIME_TOOL_REPURPOSE_PLAN.md.",
++      "rationale": "Time formatting conversion is low-value for Unitana’s travel context versus timezone/delta workflows tied to home/destination places.",
++      "impacts": [
++        "Future tool activation should merge world_clock_delta/timezone_lookup into the Time surface.",
++        "UI copy and tests should pivot toward timezone correctness and DST-aware behavior."
++      ]
+     }
+   ],
+   "design_system": {
+@@ -602,8 +624,8 @@
+       ],
+       "slice": "L",
+       "summary": [
+-        "Fixed Weight tool modal labeling and unit toggling to match existing tool patterns (e.g., Temperature shows C \u2192 F or F \u2192 C).",
+-        "Corrected Weight conversion display so inputs/outputs clearly indicate kg \u2194 lb; removed ambiguous \"what/lbs\" presentation.",
++        "Fixed Weight tool modal labeling and unit toggling to match existing tool patterns (e.g., Temperature shows C → F or F → C).",
++        "Corrected Weight conversion display so inputs/outputs clearly indicate kg ↔ lb; removed ambiguous \"what/lbs\" presentation.",
+         "Ensured Weight tool tile subtitle uses the correct unit pair string and stays consistent with other tiles."
+       ],
+       "title": "Weight tool: consistent unit labels + modal header clarity"
+@@ -797,7 +819,7 @@
+       },
+       "slice": "O2",
+       "summary": [
+-        "Updated dashboard tiles to color their leading icon and footer cue using the owning tool\u2019s Activity Lens accent (Dracula palette tints), eliminating the legacy global purple accent.",
++        "Updated dashboard tiles to color their leading icon and footer cue using the owning tool’s Activity Lens accent (Dracula palette tints), eliminating the legacy global purple accent.",
+         "Added an optional accentColor override to UnitanaTile, allowing per-tool coloring while keeping existing defaults when no override is provided.",
+         "Added a widget test asserting the Height tile uses the Health & Fitness lens accent for both icon and footer cue (covers Odd But Useful mapping via the same path)."
+       ],
+@@ -944,7 +966,7 @@
+       "date": "2026-01-01",
+       "id": "patch_2026-01-01_slice_O7h_hotfix_layout_reset_and_hero_header",
+       "slice": "O7h",
+-      "summary": "Fix Reset Dashboard Defaults implementation issues (controller API + test seeding) and remove the redundant \u201cTools\u201d entry from the top-right menu now that a dedicated tools button exists. Restore the Places Hero V2 clock header to the two-line centered format using bullets, and center the \u201cSunrise / Sunset\u201d header within its pill.",
++      "summary": "Fix Reset Dashboard Defaults implementation issues (controller API + test seeding) and remove the redundant “Tools” entry from the top-right menu now that a dedicated tools button exists. Restore the Places Hero V2 clock header to the two-line centered format using bullets, and center the “Sunrise / Sunset” header within its pill.",
+       "test_status": "flutter analyze clean; flutter test passing (expected after patch)",
+       "title": "Hotfix: Reset defaults wiring + hero header formatting"
+     },
+@@ -958,7 +980,7 @@
+       ],
+       "id": "patch_2026-01-01_slice_O7h_hotfix_reset_defaults_and_hero_header",
+       "slice": "O7h",
+-      "summary": "Addresses regressions from the O7 reset-defaults slice by ensuring the DashboardLayoutController exposes resetDashboardDefaults(), fixing the widget test to seed layout JSON using the current schema, and removing the redundant \u201cTools\u201d option from the top-right (...) menu since a dedicated Tools button now exists. Also restores the PlacesHeroV2 time header to the two-line centered format: \u201cLisbon \u2022 Denver +7h\u201d and \u201c01:03 WET \u2022 6:03 PM MST (Fri 2 Jan)\u201d, and centers the \u201cSunrise / Sunset\u201d title within its pill.",
++      "summary": "Addresses regressions from the O7 reset-defaults slice by ensuring the DashboardLayoutController exposes resetDashboardDefaults(), fixing the widget test to seed layout JSON using the current schema, and removing the redundant “Tools” option from the top-right (...) menu since a dedicated Tools button now exists. Also restores the PlacesHeroV2 time header to the two-line centered format: “Lisbon • Denver +7h” and “01:03 WET • 6:03 PM MST (Fri 2 Jan)”, and centers the “Sunrise / Sunset” title within its pill.",
+       "title": "Hotfix: Reset defaults + hero time header"
+     },
+     {
+@@ -1062,7 +1084,7 @@
+       "id": "patch_2026-01-01_sliceR1_tile_footer_convert_cta",
+       "slice": "R1",
+       "summary": [
+-        "Replaced the dashboard tile footer copy from \u201cTap to convert\u201d to \u201cConvert\u201d.",
++        "Replaced the dashboard tile footer copy from “Tap to convert” to “Convert”.",
+         "Swapped the footer dot indicator for a conversion icon (swap_horiz) and centered the CTA row.",
+         "Updated widget tests to assert the new footer text and icon tinting behavior."
+       ],
+@@ -1093,7 +1115,7 @@
+       "id": "patch_2026-01-03_docs_handoff_refresh_senior_transition",
+       "slice": "DOCS",
+       "summary": [
+-        "Refreshed CURRENT_HANDOFF to reflect O12e\u2013O12g3 outcomes, current priorities, risks, and lessons learned.",
++        "Refreshed CURRENT_HANDOFF to reflect O12e–O12g3 outcomes, current priorities, risks, and lessons learned.",
+         "Set next slice definition for O12g4 (WeatherAPI condition.code -> SceneKey -> marquee selection, DevTools override precedence).",
+         "Prepared senior-team transition prompt for next chat to reduce scope thrash and enforce one-slice execution."
+       ],
+@@ -1108,7 +1130,7 @@
+       "slice": "O12j10",
+       "summary": [
+         "Strengthened Dracula-terminal feel in tool modals: consistent monospace typography, prompt glyph styling, and improved readability.",
+-        "Removed all \"$\" prompt prefixes to avoid currency confusion; standardized prompt to \"\u276f\".",
++        "Removed all \"$\" prompt prefixes to avoid currency confusion; standardized prompt to \"❯\".",
+         "Improved microcopy and affordances: dynamic \"Enter Value\" -> \"Edit Value\" when input present; timestamp rendered as lighter italic meta text."
+       ],
+       "title": "Tool modal terminal polish (monospace prompt, remove $ prefix, timestamp styling)"
+@@ -1122,7 +1144,7 @@
+       "slice": "O12k07g",
+       "summary": [
+         "Fixes brittle test coupling to the exact 'Time' label by selecting the first enabled ToolPicker search result whose title contains 'time' (case-insensitive).",
+-        "Derives toolId from modal keys (tool_input_*) and chooses 12h vs 24h input based on the modal '<from> \u2192 <to>' direction label.",
++        "Derives toolId from modal keys (tool_input_*) and chooses 12h vs 24h input based on the modal '<from> → <to>' direction label.",
+         "Validates conversion output shape plus history tap-to-copy and long-press-to-edit behaviors without relying on list ordering."
+       ],
+       "title": "Time modal test: robust ToolPicker selection + direction-aware input"
+@@ -1351,12 +1373,12 @@
+       },
+       "slice": "O12k13k",
+       "summary": [
+-        "Enabled the Length tool under the Home & DIY lens (cm \u2194 ft/in) using the existing canonical length engine.",
++        "Enabled the Length tool under the Home & DIY lens (cm ↔ ft/in) using the existing canonical length engine.",
+         "Extended ToolModalBottomSheet unit-label and input-mode handling to support toolId 'length' (including freeform input in the imperial direction).",
+         "Added a widget interaction test that covers conversion, history copy, and long-press edit for the Length tool.",
+         "Updated canonical docs and captured the Radio feature as a docs-only backlog item."
+       ],
+-      "title": "Tool surface: enable Length tool (cm \u2194 ft/in) + modal support + interaction test"
++      "title": "Tool surface: enable Length tool (cm ↔ ft/in) + modal support + interaction test"
+     },
+     {
+       "date": "2026-01-09",
+@@ -1576,8 +1598,8 @@
+       },
+       "slice": "O12k13r1",
+       "summary": [
+-        "Fixed a regression where opening Currency from a dashboard tile lacked place context, causing the default units to fall back to USD\u2192EUR regardless of selected reality.",
+-        "Dashboard tile modal invocation now passes home + destination Place objects and the live EUR\u2192USD rate into ToolModalBottomSheet so defaults align with Places Hero selection."
++        "Fixed a regression where opening Currency from a dashboard tile lacked place context, causing the default units to fall back to USD→EUR regardless of selected reality.",
++        "Dashboard tile modal invocation now passes home + destination Place objects and the live EUR→USD rate into ToolModalBottomSheet so defaults align with Places Hero selection."
+       ],
+       "title": "Currency modal: pass home/destination context from dashboard tiles"
+     },
+@@ -1673,7 +1695,7 @@
+       ],
+       "slice": "H2",
+       "summary": [
+-        "Updated CURRENT_HANDOFF.md to reflect the actual completed slices (C3c\u2192C7, TZ fixes, tests) and to capture current priorities and backlog.",
++        "Updated CURRENT_HANDOFF.md to reflect the actual completed slices (C3c→C7, TZ fixes, tests) and to capture current priorities and backlog.",
+         "Ensures DashboardSessionController exposes PinnedHeroDetailsMode, pinnedHeroDetailsMode, and togglePinnedHeroDetailsMode so dashboard_screen.dart compiles cleanly after recent refactors."
+       ],
+       "title": "Refresh handoff + restore pinned hero details mode API for dashboard screen"
+@@ -1748,8 +1770,8 @@
+     {
+       "changes": [
+         "Enable Shoe Sizes in Tool Registry and wire it into ToolDefinitions + canonical tool ids.",
+-        "Add EU \u2194 US (men) lookup conversion (nearest match) with UK/JP hint values; keep value-first output.",
+-        "Add a targeted widget test that adds the tool from the picker and verifies a stable US\u2192EU conversion result."
++        "Add EU ↔ US (men) lookup conversion (nearest match) with UK/JP hint values; keep value-first output.",
++        "Add a targeted widget test that adds the tool from the picker and verifies a stable US→EU conversion result."
+       ],
+       "files_changed": [
+         "app/unitana/lib/features/dashboard/models/canonical_tools.dart",
+@@ -1763,7 +1785,7 @@
+       "id": "patch_2026-01-13_S6_shoe_sizes_tool_us_eu",
+       "sev": "Sev1-hardening",
+       "slice": "S6",
+-      "title": "Add Shoe Sizes tool (EU \u2194 US M) with UK/JP hints + modal test"
++      "title": "Add Shoe Sizes tool (EU ↔ US M) with UK/JP hints + modal test"
+     },
+     {
+       "changes": [
+@@ -1863,7 +1885,7 @@
+       "slice": "S6k",
+       "summary": [
+         "Tool modal: increased cacheExtent on the modal body ListView so history widgets build reliably on small test surfaces (prevents 'history not found' flake from lazy sliver construction).",
+-        "Widget tests: use the Scrollable descendant inside the keyed ListView when calling scrollUntilVisible (prevents ListView\u2192Scrollable cast failure)."
++        "Widget tests: use the Scrollable descendant inside the keyed ListView when calling scrollUntilVisible (prevents ListView→Scrollable cast failure)."
+       ],
+       "title": "Tools: stabilize modal scroll + fix test scrollable finders"
+     },
+@@ -2016,7 +2038,7 @@
+       "slice": "S7d",
+       "summary": [
+         "Updates Volume and Pressure modal widget tests to tolerate the optional prompt marker prefix (e.g. \"> \") used in history/result rendering.",
+-        "Updates expectations to accept the post-multi-unit result format that includes the input unit (e.g. \"10 L \u2192 2.6 gal\", \"10 kPa \u2192 1.5 psi\").",
++        "Updates expectations to accept the post-multi-unit result format that includes the input unit (e.g. \"10 L → 2.6 gal\", \"10 kPa → 1.5 psi\").",
+         "Keeps backward-compatible acceptors so older builds or default-unit flips do not break the tests."
+       ],
+       "title": "Fix: stabilize Volume/Pressure modal tests after multi-unit pills"
+@@ -2139,7 +2161,7 @@
+       ],
+       "id": "S7p",
+       "notes": [
+-        "Adds DataRefreshStatusLabel: provider-agnostic 'Updated X ago' (or 'Updating\u2026', 'Stale (\u2026)') with a safe 60s UI ticker.",
++        "Adds DataRefreshStatusLabel: provider-agnostic 'Updated X ago' (or 'Updating…', 'Stale (…)') with a safe 60s UI ticker.",
+         "Moves refresh messaging out of the hero marquee visual surface (no longer covering the animation); renders a small right-rail label instead.",
+         "Adds a subtle dashboard header-line status (under AppBar, above the board) to show last refresh without changing AppBar height.",
+         "Optionally triggers an automatic refresh when live weather is enabled and data is missing/stale, with a 30s guard to avoid spam."
+@@ -2391,11 +2413,11 @@
+       "id": "P1.8",
+       "notes": [
+         "Adds FrankfurterClient and CurrencyBackend (mock/frankfurter) with build/runtime gating.",
+-        "Loads cached EUR\u2192USD rate from SharedPreferences and refreshes on a 12h TTL (manual refresh remains non-chatty).",
+-        "Removes simulated EUR\u2192USD drift in refreshAll; demo mode uses stable 1.10 unless a debug override is set.",
++        "Loads cached EUR→USD rate from SharedPreferences and refreshes on a 12h TTL (manual refresh remains non-chatty).",
++        "Removes simulated EUR→USD drift in refreshAll; demo mode uses stable 1.10 unless a debug override is set.",
+         "Adds unit tests for FrankfurterClient JSON parsing and error handling."
+       ],
+-      "title": "Currency backend MVP: Frankfurter EUR\u2192USD + 12h TTL cache (non-chatty)"
++      "title": "Currency backend MVP: Frankfurter EUR→USD + 12h TTL cache (non-chatty)"
+     },
+     {
+       "date": "2026-01-17",
+@@ -2678,7 +2700,7 @@
+         "Fixes the recurring unbounded-height flex failure by tightly bounding the bottom band height (SizedBox height) instead of minHeight-only constraints; avoids CrossAxisAlignment.stretch coupling.",
+         "Adds a defensive unbounded-height guardrail in _LeftEnvCurrencyStack to render without Expanded/Flexible when height is infinite.",
+         "Restores deterministic mock/demo data by calling DashboardLiveData.ensureSeeded([home, dest]) in DashboardBoard before tiles read per-place snapshots; this re-enables AQI, Pollen, and SunTimes in mock mode.",
+-        "Aligns details pill title separator to '\u2022' and preserves legacy segment key compatibility for tests."
++        "Aligns details pill title separator to '•' and preserves legacy segment key compatibility for tests."
+       ],
+       "title": "P1.28: Bound bottom band + restore deterministic mock data"
+     },
+@@ -2692,11 +2714,11 @@
+       ],
+       "id": "P1.29_sev1_compact_overflow_and_analyze_clean",
+       "notes": [
+-        "Fixes recurring RenderFlex bottom overflow on 320\u00d7568 by reducing vertical-only padding in PlacesHeroV2 compact mode (saves ~12px without changing normal geometry).",
++        "Fixes recurring RenderFlex bottom overflow on 320×568 by reducing vertical-only padding in PlacesHeroV2 compact mode (saves ~12px without changing normal geometry).",
+         "Removes unused secondaryZone variable in PlacesHeroV2 and unused _tzAbbrev helper in DashboardScreen to keep flutter analyze clean.",
+         "Replaces deprecated RichText.textScaleFactor with textScaler to eliminate deprecated_member_use warning."
+       ],
+-      "title": "P1.29: Fix 320\u00d7568 overflow + clean flutter analyze warnings"
++      "title": "P1.29: Fix 320×568 overflow + clean flutter analyze warnings"
+     },
+     {
+       "date": "2026-01-31",
+@@ -2707,7 +2729,7 @@
+         "docs/ai/context_db.json"
+       ],
+       "id": "P1.30",
+-      "summary": "Remove dashboard header refresh label (Updated just now) to prevent small-phone RenderFlex overflow; further reduce PlacesHeroV2 compact vertical padding/gap for 320\u00d7568 stability."
++      "summary": "Remove dashboard header refresh label (Updated just now) to prevent small-phone RenderFlex overflow; further reduce PlacesHeroV2 compact vertical padding/gap for 320×568 stability."
+     },
+     {
+       "date": "2026-01-31",
+@@ -3048,6 +3070,72 @@
+         "Added persisted profile ordering in app state and wired drag reorder behavior on the board.",
+         "Migrated existing profile flow tests to board keys and paths."
+       ]
++    },
++    {
++      "id": "patch_2026-02-06_pack_bc_retry_global_coverage_and_packf_activation_bundle",
++      "date": "2026-02-06",
++      "title": "Pack B/C hardening coverage + Pack F first activation bundle + header/profile grid UX follow-up",
++      "files_changed": [
++        "app/unitana/lib/features/dashboard/dashboard_screen.dart",
++        "app/unitana/lib/features/dashboard/models/dashboard_live_data.dart",
++        "app/unitana/lib/features/dashboard/models/tool_registry.dart",
++        "app/unitana/lib/features/dashboard/widgets/dashboard_board.dart",
++        "app/unitana/lib/features/dashboard/widgets/profiles_board_screen.dart",
++        "app/unitana/test/dashboard_currency_retry_cache_semantics_test.dart",
++        "app/unitana/test/dashboard_live_data_global_city_coverage_test.dart",
++        "app/unitana/test/toolpicker_activation_bundle_test.dart",
++        "app/unitana/test/profile_switcher_switch_profile_flow_test.dart",
++        "app/unitana/test/dashboard_devtools_weather_menu_hardening_test.dart",
++        "app/unitana/test/dashboard_edit_drag_handle_hit_testing_test.dart",
++        "app/unitana/test/dashboard_reorder_persistence_breakpoints_test.dart",
++        "docs/ai/context_db.json",
++        "docs/ai/handoff/CURRENT_HANDOFF.md"
++      ],
++      "notes": [
++        "Added explicit currency stale/retry observability in DashboardLiveDataController and constructor-configurable retry backoff (default unchanged: 2 minutes).",
++        "Added Pack C regression coverage for cache TTL/no-refetch, outage backoff suppression, and retry recovery paths.",
++        "Added Pack B representative global-city live-path coverage for weather/sun/AQI/pollen on Open-Meteo path.",
++        "Reduced disabled tool count by activating world_clock_delta + jet_lag_delta entries and routing both to the existing Time modal as a low-risk activation bundle.",
++        "Dashboard status row now uses inline right-aligned edit action; refresh cluster is centered to title axis with optical nudge; profile-board add-slot placeholders now render in even balanced counts."
++      ]
++    },
++    {
++      "id": "patch_2026-02-06_packf_data_storage_activation_bundle",
++      "date": "2026-02-06",
++      "title": "Pack F: Data Storage activation bundle (registry + modal + conversion + tests)",
++      "files_changed": [
++        "app/unitana/lib/features/dashboard/models/canonical_tools.dart",
++        "app/unitana/lib/features/dashboard/models/tool_definitions.dart",
++        "app/unitana/lib/features/dashboard/models/tool_registry.dart",
++        "app/unitana/lib/features/dashboard/widgets/tool_modal_bottom_sheet.dart",
++        "app/unitana/test/toolpicker_activation_bundle_test.dart",
++        "docs/ai/context_db.json",
++        "docs/ai/handoff/CURRENT_HANDOFF.md",
++        "docs/ai/prompts/NEXT_CHAT_PROMPT.md"
++      ],
++      "notes": [
++        "Enabled data_storage in ToolRegistry and added ToolDefinition mapping so picker now opens a real modal instead of coming-soon state.",
++        "Extended multi-unit conversion engine for data storage units (B/KB/MB/GB/TB) and wired unit pill defaults in modal.",
++        "Expanded activation bundle regression test to verify Data Storage modal opens and performs a conversion run."
++      ]
++    },
++    {
++      "id": "patch_2026-02-06_packd_restore_gate_and_time_repurpose_sequencing",
++      "date": "2026-02-06",
++      "title": "Planning artifacts: Pack D restore gate + Time repurpose sequencing",
++      "files_changed": [
++        "tools/create_restore_point.sh",
++        "docs/ai/reference/PACK_D_RESTORE_BACKUP_STRATEGY.md",
++        "docs/ai/reference/TIME_TOOL_REPURPOSE_PLAN.md",
++        "docs/ai/handoff/CURRENT_HANDOFF.md",
++        "docs/ai/prompts/NEXT_CHAT_PROMPT.md",
++        "docs/ai/context_db.json"
++      ],
++      "notes": [
++        "Added executable restore-point helper that captures commit, status, diffs, tracked files, and a worktree snapshot archive.",
++        "Defined mandatory backup/restore preflight before any Pack D consolidation/deletion batches.",
++        "Documented and locked sequencing to repurpose Time tool toward timezone/delta workflows rather than 12h↔24h conversion-only behavior."
++      ]
+     }
+   ],
+   "patches": [
+@@ -3108,7 +3196,7 @@
+       "id": "P1.15a_env_data_swap_persistence",
+       "notes": [
+         "Env pill now renders live AQI and a compact pollen index for both selected cities when coordinates are available; otherwise shows '--' placeholders.",
+-        "Normal mode displays dual values as 'A: ... \u2022 B: ...'; micro mode collapses to a single safe line (e.g., 'AQI 42/55', 'Pol 3.2/1.1') with the swap affordance always visible and right-aligned.",
++        "Normal mode displays dual values as 'A: ... • B: ...'; micro mode collapses to a single safe line (e.g., 'AQI 42/55', 'Pol 3.2/1.1') with the swap affordance always visible and right-aligned.",
+         "Tap swaps AQI <-> Pollen, and the selected mode is persisted via shared preferences.",
+         "Air quality data is fetched from Open-Meteo Air Quality API under the existing weather network gate; tests remain deterministic via seeding and micro-first layout."
+       ],
+@@ -3124,7 +3212,7 @@
+       ],
+       "id": "P1.15b_hero_semantics_sun_env_clarity",
+       "notes": [
+-        "Sunrise/Sunset pill shows two lines with explicit time zones: \u201c\ud83c\udf05 07:52 WET (00:52 MST)\u201d and \u201c\ud83c\udf07 17:29 WET (10:29 MST)\u201d.",
++        "Sunrise/Sunset pill shows two lines with explicit time zones: “🌅 07:52 WET (00:52 MST)” and “🌇 17:29 WET (10:29 MST)”.",
+         "Env (AQI/Pollen) now represents the selected city only to avoid cross-city ambiguity; swap toggles AQI <-> Pollen and persists.",
+         "Currency pill keeps 2dp support and clarifies symbols; no hero proportion changes."
+       ],
+@@ -3153,7 +3241,7 @@
+       ],
+       "id": "P1.16b_details_pill_alignment_unification",
+       "notes": [
+-        "Unifies line metrics/spacing so swapping Wind/Gust <-> Sunrise/Sunset feels like a clean \u201cflip\u201d rather than a jump."
++        "Unifies line metrics/spacing so swapping Wind/Gust <-> Sunrise/Sunset feels like a clean “flip” rather than a jump."
+       ],
+       "title": "P1.16b: Details pill alignment unification (Wind/Gust and Sunrise/Sunset swap stability)"
+     },
+@@ -3183,7 +3271,7 @@
+       ],
+       "id": "P1.17a_clear_history_style_aqi_dot",
+       "notes": [
+-        "\u201cClear History\u201d link is de-underlined, title-cased, and uses a distinct accent color from base Dracula neutrals.",
++        "“Clear History” link is de-underlined, title-cased, and uses a distinct accent color from base Dracula neutrals.",
+         "Introduces a simple AQI severity-to-color dot mapping hook (uses standard US AQI breakpoints)."
+       ],
+       "title": "P1.17a: Clear History styling + AQI dot mapping scaffold"
+@@ -3229,7 +3317,7 @@
+       "id": "P1.18b_hotfix1_compile_refresh_label",
+       "notes": [
+         "Removes duplicate local declarations introduced during mini-hero terminal refactor.",
+-        "Imports Dracula palette and uses Dracula purple for the \u201cUpdated \u2026\u201d label; background pill disabled in header per contract."
++        "Imports Dracula palette and uses Dracula purple for the “Updated …” label; background pill disabled in header per contract."
+       ],
+       "title": "P1.18b hotfix1: Fix dashboard compile errors + restore purple floating refresh label"
+     },
+@@ -3360,7 +3448,7 @@
+       "notes": [
+         "Added generated canonical country->currency map from city dataset and wired it into currency surfaces.",
+         "Currency tool units now reflect non-EUR/US countries (example: JPY <-> USD direction based on selected reality).",
+-        "Unsupported non-EUR/USD live-rate pairs in hero/tile previews now render deterministic placeholders (\u2014) instead of incorrect rates."
++        "Unsupported non-EUR/USD live-rate pairs in hero/tile previews now render deterministic placeholders (—) instead of incorrect rates."
+       ]
+     },
+     {
+@@ -3534,6 +3622,6 @@
+     "tagline": "travel-first decoder ring; dual reality side-by-side"
+   },
+   "schema_version": "1.0",
+-  "last_patch_id": "patch_2026-02-06_dashboard_profile_edit_surface_alignment",
++  "last_patch_id": "patch_2026-02-06_packd_restore_gate_and_time_repurpose_sequencing",
+   "last_patch_date": "2026-02-06"
+ }
+diff --git a/docs/ai/handoff/CURRENT_HANDOFF.md b/docs/ai/handoff/CURRENT_HANDOFF.md
+index 038b54d..c55497b 100644
+--- a/docs/ai/handoff/CURRENT_HANDOFF.md
++++ b/docs/ai/handoff/CURRENT_HANDOFF.md
+@@ -18,6 +18,31 @@
+   - `docs/ai/design_lock/CITY_DATA_SCHEMA_CONTRACT.md`
+ 
+ ## Latest changes (2026-02-06)
++- Header controls follow-up:
++  - removed `Edit Widgets` from the menu and moved edit entry to an inline `✏ Edit` action on the status row.
++  - `Updated …` + refresh cluster is now visually centered to the same title axis with a small right optical nudge.
++  - kept small-phone overflow safety via responsive scaling; devtools overflow regression remains green.
++- Profiles board add-slot balancing:
++  - add-profile placeholder tiles now render as an even, balanced count for the 2-column grid (no orphan final cell in common 2-profile state).
++  - added regression coverage in `profile_switcher_switch_profile_flow_test.dart`.
++- Pack C stale/retry/cache hardening:
++  - `DashboardLiveDataController` now exposes explicit currency stale + retry semantics (`isCurrencyStale`, `shouldRetryCurrencyNow`, `lastCurrencyError`, `lastCurrencyErrorAt`).
++  - currency retry backoff is now constructor-configurable for deterministic tests (default remains 2 minutes).
++  - added `dashboard_currency_retry_cache_semantics_test.dart` for TTL/no-refetch, outage backoff suppression, and immediate retry behavior when configured.
++- Pack B global coverage hardening:
++  - added `dashboard_live_data_global_city_coverage_test.dart` with representative city set (Tokyo/Cairo/Sao Paulo/Sydney/Nairobi/Reykjavik) for live weather/sun/AQI/pollen success path coverage.
++- Pack F activation bundle (phase 1):
++  - activated `world_clock_delta` and `jet_lag_delta` entries in tool registry.
++  - wired both entries to the existing mature Time modal flow as interim E2E activation.
++  - added `toolpicker_activation_bundle_test.dart` to verify both entries open Time modal from picker search.
++- Pack F activation bundle (phase 2):
++  - activated `data_storage` entry end-to-end (tool registry + picker + modal + conversion engine).
++  - added multi-unit data-storage conversion support (`B/KB/MB/GB/TB`) in tool modal + converter wiring.
++  - expanded `toolpicker_activation_bundle_test.dart` to verify Data Storage opens and performs conversion.
++- Planning/sequence hardening follow-up:
++  - added Pack D preflight restore/backup runbook: `docs/ai/reference/PACK_D_RESTORE_BACKUP_STRATEGY.md`.
++  - added restore-point helper script: `tools/create_restore_point.sh` (captures base commit, status, diffs, tracked files, and worktree snapshot archive).
++  - added Time-tool repurpose sequence doc: `docs/ai/reference/TIME_TOOL_REPURPOSE_PLAN.md` to move from `12h↔24h` conversion toward timezone/delta-first behavior.
+ - Fixed pinned mini-hero reality toggle interaction handoff:
+   - removed the visible-but-untappable dead zone during collapse transition
+   - pinned mini layer now becomes interactive at the same threshold where expanded hero input is disabled
+@@ -64,8 +89,8 @@
+   - Open-Meteo mapper test coverage now validates the full known WMO code set used by the backend contract (not only representative samples)
+   - known codes must map to explicit labels (no generic fallback label for contracted codes).
+ - Tools audit checkpoint:
+-  - tool registry still has 14 disabled entries (coming-soon surfaces), so tools completion remains open under Pack F.
+-  - Disabled IDs: `jet_lag_delta`, `data_storage`, `oven_temperature`, `cups_grams_estimates`, `pace`, `hydration`, `energy`, `world_clock_delta`, `tip_helper`, `tax_vat_helper`, `unit_price_helper`, `clothing_sizes`, `paper_sizes`, `timezone_lookup`.
++  - tool registry now has 11 disabled entries (coming-soon surfaces), so tools completion remains open under Pack F.
++  - Disabled IDs: `oven_temperature`, `cups_grams_estimates`, `pace`, `hydration`, `energy`, `tip_helper`, `tax_vat_helper`, `unit_price_helper`, `clothing_sizes`, `paper_sizes`, `timezone_lookup`.
+ - Profile UX rework (phase 1):
+   - replaced split menu actions (`Switch profile` + `Add profile`) with a single `Profiles` entry.
+   - added a dedicated tiled `Profiles Board` screen with:
+@@ -79,7 +104,7 @@
+ - Profile/currency UX parity follow-up:
+   - profile board app bar now uses `Manage` -> edit-mode `X`/`✔` actions to align with tile-edit interaction patterns.
+   - profile tiles now expose explicit drag/edit/delete affordances in edit mode and include additional add-profile `+` slots for denser grid parity with dashboard behavior.
+-  - dashboard menu copy normalized to `Edit Widgets`.
++  - dashboard header now exposes inline `✏ Edit` action; menu no longer includes `Edit Widgets`.
+   - currency token formatting now isolates mixed-direction text runs and applies suffix placement for Arabic-script currencies to avoid bidi reorder defects (example IQD/AED family).
+   - all required gates re-verified green after these updates (`dart format`, `flutter analyze`, `flutter test`).
+ - Startup/profile flow hardening follow-up:
+diff --git a/docs/ai/prompts/NEXT_CHAT_PROMPT.md b/docs/ai/prompts/NEXT_CHAT_PROMPT.md
+index 5d62817..15fa220 100644
+--- a/docs/ai/prompts/NEXT_CHAT_PROMPT.md
++++ b/docs/ai/prompts/NEXT_CHAT_PROMPT.md
+@@ -26,11 +26,21 @@ Then execute using this contract.
+ - Pack A is complete (canonical city schema + full required field coverage + validators/contracts).
+ - Pack B has fallback hardening in place (no blank critical weather/env states under provider failure).
+ - Pack C has global currency pair mapping/rate wiring in place (hero/mini/tool), with bidi/symbol placement fixes.
++- Pack B/C hardening follow-up landed:
++  - explicit currency stale/retry observability + retry-backoff testability in `DashboardLiveDataController`
++  - Pack C stale-rate/retry/cache invariants covered by tests
++  - Pack B representative global-city weather/sun/AQI/pollen live-path coverage test added
++- Pack F activation bundle phase 1 landed:
++  - `world_clock_delta` + `jet_lag_delta` are now enabled and routed to the existing Time modal flow (with E2E picker tests).
++- Pack F activation bundle phase 2 landed:
++  - `data_storage` is now enabled end-to-end with multi-unit conversion support (`B/KB/MB/GB/TB`) and picker/modal regression coverage.
+ - Profile UX phase 1 + parity passes landed:
+   - dedicated Profiles board
+   - switch/add/edit/delete/reorder behaviors
+   - startup recovery when active profile is incomplete
+   - dashboard/profile edit-mode UI parity improvements (centered icon rows, spacing fixes).
++  - dashboard now uses inline status-row `✏ Edit` control (menu no longer carries `Edit Widgets`)
++  - profiles board add-slot placeholders render in even balanced counts for 2-column grid.
+ 
+ ## Mission
+ Continue P0/P1 execution with this order:
+@@ -59,8 +69,11 @@ Goal:
+ 
+ Required outputs:
+ - audited disabled-tools table (keep/merge/remove with rationale)
+-- at least one high-value activation bundle implemented E2E (modal + tile + tests), unless blocked
++- next high-value activation bundle implemented E2E (modal + tile + tests), unless blocked
+ - explicit deferral notes for remaining disabled tools
++- Time-tool direction lock:
++  - treat current `12h↔24h` flow as interim only
++  - execute sequencing in `docs/ai/reference/TIME_TOOL_REPURPOSE_PLAN.md` toward timezone/delta-first behavior
+ 
+ ### Pack H (P1): Localization epic bootstrap
+ Goal:
+@@ -75,6 +88,7 @@ Required outputs:
+ - Keep Pack F active in parallel (do not claim tools completion while disabled entries remain).
+ - Keep Pack H tracked as active P1 and avoid deferring it indefinitely.
+ - Radio remains Icebox unless explicitly reprioritized.
++- Before Pack D consolidation/deletions, run mandatory preflight from `docs/ai/reference/PACK_D_RESTORE_BACKUP_STRATEGY.md` and create a restore point via `./tools/create_restore_point.sh`.
+ 
+ ## Deliverables per pack
+ 1) What changed and why (short)
+@@ -87,5 +101,5 @@ Required outputs:
+ 
+ ## First action in new chat
+ - Audit current Pack B/C residual risk from tests and code paths (retry/stale/cache/outage semantics).
+-- Audit disabled tools in `tool_registry.dart` and propose the smallest high-value activation bundle.
++- Audit remaining disabled tools in `tool_registry.dart` and propose the next smallest high-value activation bundle.
+ - Produce a concrete implementation plan and begin coding in the same session unless blocked.

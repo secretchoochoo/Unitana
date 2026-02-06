@@ -1,0 +1,37 @@
+On branch main
+Your branch is ahead of 'origin/main' by 1 commit.
+  (use "git push" to publish your local commits)
+
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   app/unitana/lib/features/dashboard/dashboard_screen.dart
+	modified:   app/unitana/lib/features/dashboard/models/canonical_tools.dart
+	modified:   app/unitana/lib/features/dashboard/models/dashboard_live_data.dart
+	modified:   app/unitana/lib/features/dashboard/models/tool_definitions.dart
+	modified:   app/unitana/lib/features/dashboard/models/tool_registry.dart
+	modified:   app/unitana/lib/features/dashboard/widgets/dashboard_board.dart
+	modified:   app/unitana/lib/features/dashboard/widgets/profiles_board_screen.dart
+	modified:   app/unitana/lib/features/dashboard/widgets/tool_modal_bottom_sheet.dart
+	modified:   app/unitana/test/dashboard_devtools_weather_menu_hardening_test.dart
+	modified:   app/unitana/test/dashboard_edit_drag_handle_hit_testing_test.dart
+	modified:   app/unitana/test/dashboard_reorder_persistence_breakpoints_test.dart
+	modified:   app/unitana/test/profile_switcher_switch_profile_flow_test.dart
+	modified:   docs/ai/context_db.json
+	modified:   docs/ai/handoff/CURRENT_HANDOFF.md
+	modified:   docs/ai/prompts/NEXT_CHAT_PROMPT.md
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+	.venv/
+	app/unitana/test/dashboard_currency_retry_cache_semantics_test.dart
+	app/unitana/test/dashboard_live_data_global_city_coverage_test.dart
+	app/unitana/test/toolpicker_activation_bundle_test.dart
+	docs/ai/reference/PACK_D_RESTORE_BACKUP_STRATEGY.md
+	docs/ai/reference/TIME_TOOL_REPURPOSE_PLAN.md
+	tmp/
+	tools/create_restore_point.sh
+	unitana_patch_next_slice_2026-02-05.zip
+	unitana_patch_p0_p1_2026-02-05.zip
+
+no changes added to commit (use "git add" and/or "git commit -a")

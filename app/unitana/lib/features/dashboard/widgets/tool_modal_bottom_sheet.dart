@@ -190,7 +190,8 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
   bool get _isMultiUnitTool =>
       widget.tool.canonicalToolId == CanonicalToolId.volume ||
       widget.tool.canonicalToolId == CanonicalToolId.pressure ||
-      widget.tool.canonicalToolId == CanonicalToolId.weight;
+      widget.tool.canonicalToolId == CanonicalToolId.weight ||
+      widget.tool.canonicalToolId == CanonicalToolId.dataStorage;
   bool get _supportsUnitPicker => _isMultiUnitTool || _isCurrencyTool;
 
   List<String> get _multiUnitChoices {
@@ -201,6 +202,8 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
         return const <String>['kPa', 'psi', 'bar', 'atm'];
       case CanonicalToolId.weight:
         return const <String>['g', 'kg', 'oz', 'lb', 'st'];
+      case CanonicalToolId.dataStorage:
+        return const <String>['B', 'KB', 'MB', 'GB', 'TB'];
       default:
         return const <String>[];
     }
@@ -287,6 +290,10 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
         _fromUnitOverride = _forward ? 'kg' : 'lb';
         _toUnitOverride = _forward ? 'lb' : 'kg';
         return;
+      case CanonicalToolId.dataStorage:
+        _fromUnitOverride = _forward ? 'GB' : 'MB';
+        _toUnitOverride = _forward ? 'MB' : 'GB';
+        return;
       default:
         _fromUnitOverride = null;
         _toUnitOverride = null;
@@ -325,6 +332,8 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
         return _forward ? ('kPa', 'psi') : ('psi', 'kPa');
       case CanonicalToolId.weight:
         return _forward ? ('kg', 'lb') : ('lb', 'kg');
+      case CanonicalToolId.dataStorage:
+        return _forward ? ('GB', 'MB') : ('MB', 'GB');
       default:
         return ('', '');
     }
@@ -575,6 +584,9 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
       case 'weight':
         // kg <-> lb
         return preferMetric;
+      case 'data_storage':
+        // GB <-> MB
+        return true;
       case 'time':
         // 24h <-> 12h
         return prefer24h;
@@ -664,6 +676,8 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
       case 'weight':
       case 'body_weight':
         return _fromUnitOverride ?? (_forward ? 'kg' : 'lb');
+      case 'data_storage':
+        return _fromUnitOverride ?? (_forward ? 'GB' : 'MB');
       default:
         return '';
     }
@@ -696,6 +710,8 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
       case 'weight':
       case 'body_weight':
         return _toUnitOverride ?? (_forward ? 'lb' : 'kg');
+      case 'data_storage':
+        return _toUnitOverride ?? (_forward ? 'MB' : 'GB');
       default:
         return '';
     }
@@ -842,6 +858,11 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
       'ft2',
       'usd',
       'eur',
+      'b',
+      'kb',
+      'mb',
+      'gb',
+      'tb',
     ];
 
     final lower = working.toLowerCase();

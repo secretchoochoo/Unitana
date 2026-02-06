@@ -167,6 +167,16 @@ class ToolDefinitions {
     defaultSecondary: '6:30 PM',
   );
 
+  static const dataStorage = ToolDefinition(
+    id: 'data_storage',
+    canonicalToolId: CanonicalToolId.dataStorage,
+    lensId: ActivityLensId.travelEssentials,
+    title: 'Data Storage',
+    icon: Icons.sd_storage_rounded,
+    defaultPrimary: '1 GB',
+    defaultSecondary: '1024 MB',
+  );
+
   static const currencyConvert = ToolDefinition(
     id: 'currency_convert',
     canonicalToolId: CanonicalToolId.currency,
@@ -239,6 +249,7 @@ class ToolDefinitions {
     speed,
     temperature,
     time,
+    dataStorage,
     currencyConvert,
     shoeSizes,
     weight,
@@ -258,6 +269,7 @@ class ToolDefinitions {
     'speed': speed,
     'temperature': temperature,
     'time': time,
+    'data_storage': dataStorage,
     'currency_convert': currencyConvert,
     'shoe_sizes': shoeSizes,
     'weight': weight,
@@ -362,6 +374,12 @@ class ToolConverters {
         );
       case CanonicalToolId.weight:
         return _convertWeightWithUnits(
+          fromUnit: fromUnit,
+          toUnit: toUnit,
+          input: input,
+        );
+      case CanonicalToolId.dataStorage:
+        return _convertDataStorageWithUnits(
           fromUnit: fromUnit,
           toUnit: toUnit,
           input: input,
@@ -473,6 +491,32 @@ class ToolConverters {
 
     final kg = value * fromFactor;
     final out = kg / toFactor;
+    return '${_fmt(out)} $toUnit';
+  }
+
+  static String? _convertDataStorageWithUnits({
+    required String fromUnit,
+    required String toUnit,
+    required String input,
+  }) {
+    final value = double.tryParse(input.trim());
+    if (value == null) return null;
+
+    // Normalize into bytes (binary multiples for practical storage math).
+    const bytesPer = <String, double>{
+      'B': 1.0,
+      'KB': 1024.0,
+      'MB': 1024.0 * 1024.0,
+      'GB': 1024.0 * 1024.0 * 1024.0,
+      'TB': 1024.0 * 1024.0 * 1024.0 * 1024.0,
+    };
+
+    final fromFactor = bytesPer[fromUnit];
+    final toFactor = bytesPer[toUnit];
+    if (fromFactor == null || toFactor == null) return null;
+
+    final bytes = value * fromFactor;
+    final out = bytes / toFactor;
     return '${_fmt(out)} $toUnit';
   }
 

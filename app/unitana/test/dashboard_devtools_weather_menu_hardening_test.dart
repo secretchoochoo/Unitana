@@ -87,7 +87,7 @@ void main() {
 
         // Sanity: sheet is actually open.
         expect(
-          find.descendant(of: menuSheet, matching: find.text('Edit Widgets')),
+          find.descendant(of: menuSheet, matching: find.text('Profiles')),
           findsOneWidget,
         );
 

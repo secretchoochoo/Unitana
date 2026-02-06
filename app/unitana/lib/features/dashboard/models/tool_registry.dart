@@ -91,6 +91,7 @@ class ToolRegistry {
       toolId: 'jet_lag_delta',
       label: 'Jet Lag Delta',
       icon: Icons.airline_seat_recline_normal,
+      isEnabled: true,
       lenses: <String>[ActivityLensId.travelEssentials],
       presetsByLens: <String, Map<String, Object?>>{
         ActivityLensId.travelEssentials: <String, Object?>{
@@ -102,6 +103,7 @@ class ToolRegistry {
       toolId: 'data_storage',
       label: 'Data Storage',
       icon: Icons.sd_storage_rounded,
+      isEnabled: true,
       lenses: <String>[ActivityLensId.travelEssentials],
     ),
     ToolRegistryTool(
@@ -217,6 +219,7 @@ class ToolRegistry {
       toolId: 'world_clock_delta',
       label: 'World Clock Delta',
       icon: Icons.public_rounded,
+      isEnabled: true,
       lenses: <String>[ActivityLensId.weatherTime],
     ),
 

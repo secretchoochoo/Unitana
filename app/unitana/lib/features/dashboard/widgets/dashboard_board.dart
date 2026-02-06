@@ -16,6 +16,7 @@ import '../models/tool_definitions.dart';
 import '../models/activity_lenses.dart';
 import '../models/tool_registry.dart';
 import '../models/lens_accents.dart';
+import 'destructive_confirmation_sheet.dart';
 import 'places_hero_v2.dart';
 import 'tool_modal_bottom_sheet.dart';
 import 'unitana_tile.dart';
@@ -758,60 +759,12 @@ class _DashboardBoardState extends State<DashboardBoard>
   }
 
   Future<bool> _confirmRemoveTile(BuildContext context, String label) async {
-    final decision = await showModalBottomSheet<bool>(
-      context: context,
-      useSafeArea: true,
-      showDragHandle: true,
-      builder: (sheetContext) {
-        final scheme = Theme.of(sheetContext).colorScheme;
-        return Padding(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Remove $label?',
-                style: Theme.of(
-                  sheetContext,
-                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'This tile will be removed from your dashboard.',
-                style: Theme.of(sheetContext).textTheme.bodyMedium?.copyWith(
-                  color: scheme.onSurfaceVariant,
-                ),
-              ),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: () => Navigator.of(sheetContext).pop(false),
-                      child: const Text('Cancel'),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: FilledButton(
-                      onPressed: () => Navigator.of(sheetContext).pop(true),
-                      style: FilledButton.styleFrom(
-                        backgroundColor: scheme.error,
-                        foregroundColor: scheme.onError,
-                      ),
-                      child: const Text('Remove'),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        );
-      },
+    return showDestructiveConfirmationSheet(
+      context,
+      title: 'Remove $label?',
+      message: 'This tile will be removed from your dashboard.',
+      confirmLabel: 'Remove',
     );
-
-    return decision ?? false;
   }
 
   Future<void> _showTileActions(
@@ -1331,6 +1284,12 @@ class _ToolPickerSheetState extends State<ToolPickerSheet> {
       return lensId == ActivityLensId.foodCooking
           ? ToolDefinitions.baking
           : ToolDefinitions.liquids;
+    }
+
+    // Activation bundle (Pack F): these remain distinct discovery entries,
+    // but currently reuse the mature Time modal.
+    if (tool.toolId == 'world_clock_delta' || tool.toolId == 'jet_lag_delta') {
+      return ToolDefinitions.time;
     }
 
     return null;

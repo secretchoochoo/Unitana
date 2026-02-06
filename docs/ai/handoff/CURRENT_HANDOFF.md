@@ -18,6 +18,41 @@
   - `docs/ai/design_lock/CITY_DATA_SCHEMA_CONTRACT.md`
 
 ## Latest changes (2026-02-06)
+- Header controls follow-up:
+  - removed `Edit Widgets` from the menu and moved edit entry to an inline `✏ Edit` action on the status row.
+  - `Updated …` + refresh cluster is now visually centered to the same title axis with a small right optical nudge.
+  - kept small-phone overflow safety via responsive scaling; devtools overflow regression remains green.
+- Profiles board add-slot balancing:
+  - add-profile placeholder tiles now render as an even, balanced count for the 2-column grid (no orphan final cell in common 2-profile state).
+  - added regression coverage in `profile_switcher_switch_profile_flow_test.dart`.
+- Pack C stale/retry/cache hardening:
+  - `DashboardLiveDataController` now exposes explicit currency stale + retry semantics (`isCurrencyStale`, `shouldRetryCurrencyNow`, `lastCurrencyError`, `lastCurrencyErrorAt`).
+  - currency retry backoff is now constructor-configurable for deterministic tests (default remains 2 minutes).
+  - added `dashboard_currency_retry_cache_semantics_test.dart` for TTL/no-refetch, outage backoff suppression, and immediate retry behavior when configured.
+- Pack B global coverage hardening:
+  - added `dashboard_live_data_global_city_coverage_test.dart` with representative city set (Tokyo/Cairo/Sao Paulo/Sydney/Nairobi/Reykjavik) for live weather/sun/AQI/pollen success path coverage.
+- Pack F activation bundle (phase 1):
+  - activated `world_clock_delta` and `jet_lag_delta` entries in tool registry.
+  - wired both entries to the existing mature Time modal flow as interim E2E activation.
+  - added `toolpicker_activation_bundle_test.dart` to verify both entries open Time modal from picker search.
+- Pack F activation bundle (phase 2):
+  - activated `data_storage` entry end-to-end (tool registry + picker + modal + conversion engine).
+  - added multi-unit data-storage conversion support (`B/KB/MB/GB/TB`) in tool modal + converter wiring.
+  - expanded `toolpicker_activation_bundle_test.dart` to verify Data Storage opens and performs conversion.
+- Planning/sequence hardening follow-up:
+  - added Pack D preflight restore/backup runbook: `docs/ai/reference/PACK_D_RESTORE_BACKUP_STRATEGY.md`.
+  - added restore-point helper script: `tools/create_restore_point.sh` (captures base commit, status, diffs, tracked files, and worktree snapshot archive).
+  - added Time-tool repurpose sequence doc: `docs/ai/reference/TIME_TOOL_REPURPOSE_PLAN.md` to move from `12h↔24h` conversion toward timezone/delta-first behavior.
+- Weather tile readability follow-up:
+  - Wind/Gust rows now render primary measure + smaller alternate-unit measure on the same line (example pattern: `10 km/h • 6.2 mph`).
+  - updated row rendering in `places_hero_v2.dart` and revalidated wind contract/widget tests.
+- Confirmation UX consistency follow-up:
+  - profile deletion now uses the same destructive bottom-sheet confirmation pattern as dashboard widget deletion (no floating `AlertDialog` mismatch).
+  - shared helper added at `app/unitana/lib/features/dashboard/widgets/destructive_confirmation_sheet.dart` to enforce consistency.
+  - policy/safeguard documented in `docs/ai/reference/CONFIRMATION_DIALOG_POLICY.md`.
+- Pack F table-tools UX direction lock:
+  - added `docs/ai/reference/LOOKUP_TABLE_TOOLS_UX_PATTERN.md` as canonical guidance for lookup-table interactions (`paper_sizes`, `shoe_sizes`, `mattress_sizes`).
+  - sequence set to ship paper sizes first on the lookup framework, then shoe sizes, then mattress sizes.
 - Fixed pinned mini-hero reality toggle interaction handoff:
   - removed the visible-but-untappable dead zone during collapse transition
   - pinned mini layer now becomes interactive at the same threshold where expanded hero input is disabled
@@ -64,8 +99,8 @@
   - Open-Meteo mapper test coverage now validates the full known WMO code set used by the backend contract (not only representative samples)
   - known codes must map to explicit labels (no generic fallback label for contracted codes).
 - Tools audit checkpoint:
-  - tool registry still has 14 disabled entries (coming-soon surfaces), so tools completion remains open under Pack F.
-  - Disabled IDs: `jet_lag_delta`, `data_storage`, `oven_temperature`, `cups_grams_estimates`, `pace`, `hydration`, `energy`, `world_clock_delta`, `tip_helper`, `tax_vat_helper`, `unit_price_helper`, `clothing_sizes`, `paper_sizes`, `timezone_lookup`.
+  - tool registry now has 11 disabled entries (coming-soon surfaces), so tools completion remains open under Pack F.
+  - Disabled IDs: `oven_temperature`, `cups_grams_estimates`, `pace`, `hydration`, `energy`, `tip_helper`, `tax_vat_helper`, `unit_price_helper`, `clothing_sizes`, `paper_sizes`, `timezone_lookup`.
 - Profile UX rework (phase 1):
   - replaced split menu actions (`Switch profile` + `Add profile`) with a single `Profiles` entry.
   - added a dedicated tiled `Profiles Board` screen with:
@@ -79,7 +114,7 @@
 - Profile/currency UX parity follow-up:
   - profile board app bar now uses `Manage` -> edit-mode `X`/`✔` actions to align with tile-edit interaction patterns.
   - profile tiles now expose explicit drag/edit/delete affordances in edit mode and include additional add-profile `+` slots for denser grid parity with dashboard behavior.
-  - dashboard menu copy normalized to `Edit Widgets`.
+  - dashboard header now exposes inline `✏ Edit` action; menu no longer includes `Edit Widgets`.
   - currency token formatting now isolates mixed-direction text runs and applies suffix placement for Arabic-script currencies to avoid bidi reorder defects (example IQD/AED family).
   - all required gates re-verified green after these updates (`dart format`, `flutter analyze`, `flutter test`).
 - Startup/profile flow hardening follow-up:
@@ -114,12 +149,20 @@ Backlog has been reprioritized away from small, fragmented slices into larger ex
 - About/licenses/accessibility/haptics/release checklist.
 8) **Pack H (P1): Localization and language settings**
 - Add app language selection in Settings plus i18n/l10n + locale-aware formatting coverage.
-9) **Icebox:** Optional radio feature.
+9) **Pack I (P2): In-app playful tutorial overlay (near-finalization)**
+- Add a skippable overlay walkthrough once UI contracts stabilize (avoid high churn while core UX is still changing).
+- Scope initial tutorial to: Home/Destination picker flow (wizard slide 2), Save Profile (slide 3), hero toggle pills (Sunrise/Sunset, Wind/Gust, Pollen/AQI), tools menu, add-widget flow, and settings entry.
+- Visual direction: playful callouts/circles with Dracula palette accents; Cabin Sketch-style typography is an optional exploration track.
+10) **Pack J (P1): Weather tool full redesign + positioning decision**
+- Current Weather modal must not remain a generic converter-style form.
+- Before implementation, run an explicit options pitch and choose direction: conversion utility vs richer weather cockpit with larger marquee + deeper API detail.
+- Selected direction must align with Unitana travel intent and established Dracula visual language.
+11) **Icebox:** Optional radio feature.
 
 Current execution focus:
 - **Now:** Pack B + Pack C (fallback hardening landed; continue outage/cache/retry resilience + coverage) plus Pack F activation plan for disabled tools
 - **Next:** Pack D
-- **Later:** Pack E, then Pack H
+- **Later:** Pack E, then Pack H, with Pack J weather redesign decision gate prior to Weather implementation.
 
 ## What’s true right now (high signal)
 ### 1) Dashboard header is a continuous collapsing header (no pop-in)

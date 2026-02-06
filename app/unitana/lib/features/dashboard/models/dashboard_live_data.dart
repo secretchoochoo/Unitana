@@ -519,6 +519,7 @@ class DashboardLiveDataController extends ChangeNotifier {
   final bool allowLiveRefreshInTestHarness;
   final Duration refreshDebounceDuration;
   final Duration simulatedNetworkLatency;
+  final Duration currencyRetryBackoffDuration;
 
   DashboardLiveDataController({
     CityRepository? cityRepository,
@@ -529,6 +530,7 @@ class DashboardLiveDataController extends ChangeNotifier {
     this.allowLiveRefreshInTestHarness = false,
     this.refreshDebounceDuration = const Duration(milliseconds: 250),
     this.simulatedNetworkLatency = const Duration(milliseconds: 350),
+    this.currencyRetryBackoffDuration = const Duration(minutes: 2),
   }) : _cityRepository = cityRepository ?? CityRepository.instance,
        _weatherApi = weatherApiClient ?? WeatherApiClient.fromEnvironment(),
        _openMeteo = openMeteoClient ?? OpenMeteoClient(),
@@ -638,7 +640,6 @@ class DashboardLiveDataController extends ChangeNotifier {
       'currency_eur_to_usd_updated_at_v1';
 
   static const Duration _currencyTtl = Duration(hours: 12);
-
   static WeatherBackend _backendFromEnv() {
     if (!_envWeatherNetworkEnabled) return WeatherBackend.mock;
     switch (_envWeatherProvider.toLowerCase()) {
@@ -684,6 +685,8 @@ class DashboardLiveDataController extends ChangeNotifier {
   WeatherBackend _weatherBackend = _backendFromEnv();
   CurrencyBackend _currencyBackend = _currencyBackendFromEnv();
   DateTime? _lastCurrencyRefreshedAt;
+  DateTime? _lastCurrencyErrorAt;
+  Object? _lastCurrencyError;
   bool _devSettingsLoaded = false;
   WeatherBackend get weatherBackend => _weatherBackend;
 
@@ -696,6 +699,21 @@ class DashboardLiveDataController extends ChangeNotifier {
   bool get currencyNetworkAllowed => _currencyNetworkAllowed;
 
   DateTime? get lastCurrencyRefreshedAt => _lastCurrencyRefreshedAt;
+  DateTime? get lastCurrencyErrorAt => _lastCurrencyErrorAt;
+  Object? get lastCurrencyError => _lastCurrencyError;
+
+  bool get isCurrencyStale {
+    final last = _lastCurrencyRefreshedAt;
+    if (last == null) return true;
+    return DateTime.now().difference(last) > _currencyTtl;
+  }
+
+  bool get shouldRetryCurrencyNow {
+    if (!currencyNetworkEnabled) return false;
+    final errAt = _lastCurrencyErrorAt;
+    if (errAt == null) return isCurrencyStale;
+    return DateTime.now().difference(errAt) >= currencyRetryBackoffDuration;
+  }
 
   /// Whether live network weather is enabled (and allowed) for this build.
   bool get weatherNetworkEnabled =>
@@ -1285,11 +1303,14 @@ class DashboardLiveDataController extends ChangeNotifier {
   Future<void> _maybeRefreshCurrency() async {
     if (!currencyNetworkEnabled) return;
 
-    // TTL-based refresh so we don't create a chatty background dependency.
     final now = DateTime.now();
-    final last = _lastCurrencyRefreshedAt;
-    final stale = last == null || now.difference(last) > _currencyTtl;
+    final stale = isCurrencyStale;
     if (!stale) return;
+
+    final errAt = _lastCurrencyErrorAt;
+    if (errAt != null && now.difference(errAt) < currencyRetryBackoffDuration) {
+      return;
+    }
 
     try {
       double? rate;
@@ -1315,12 +1336,16 @@ class DashboardLiveDataController extends ChangeNotifier {
       _eurToUsd = rate;
       _eurBaseRates['USD'] = rate;
       _lastCurrencyRefreshedAt = now;
+      _lastCurrencyError = null;
+      _lastCurrencyErrorAt = null;
 
       final prefs = await SharedPreferences.getInstance();
       await prefs.setDouble(_kCachedEurToUsdRate, rate);
       await prefs.setInt(_kCachedEurToUsdUpdatedAt, now.millisecondsSinceEpoch);
-    } catch (_) {
+    } catch (e) {
       // Best-effort only. Keep the last stable value.
+      _lastCurrencyError = e;
+      _lastCurrencyErrorAt = now;
     }
   }
 
