@@ -15,6 +15,8 @@ import 'widgets/data_refresh_status_label.dart';
 import 'widgets/places_hero_collapsing_header.dart';
 import 'widgets/profiles_board_screen.dart';
 import 'widgets/tool_modal_bottom_sheet.dart';
+import 'widgets/destructive_confirmation_sheet.dart';
+import 'widgets/weather_summary_bottom_sheet.dart';
 import '../../theme/dracula_palette.dart';
 
 /// Developer-only time-of-day override for weather scene previews.
@@ -125,6 +127,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
     // Kick off an initial refresh so the hero is never stuck showing placeholders.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _refreshAllNow();
+      final pendingSuccess = state.consumePendingSuccessToast();
+      if (!mounted || pendingSuccess == null) return;
+      UnitanaToast.showSuccess(context, pendingSuccess);
     });
   }
 
@@ -740,57 +745,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Future<void> _resetDashboardDefaults() async {
-    final confirmed = await showModalBottomSheet<bool>(
-      context: context,
-      showDragHandle: true,
-      useSafeArea: true,
-      builder: (sheetContext) {
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        'Reset Dashboard Defaults',
-                        style: Theme.of(sheetContext).textTheme.titleLarge,
-                      ),
-                    ),
-                    _sheetCloseButton(sheetContext),
-                  ],
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  'This removes any widgets you\'ve added and restores the default dashboard layout.',
-                  style: Theme.of(sheetContext).textTheme.bodyMedium,
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed: () => Navigator.of(sheetContext).pop(false),
-                        child: const Text('Cancel'),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: FilledButton(
-                        onPressed: () => Navigator.of(sheetContext).pop(true),
-                        child: const Text('Reset'),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        );
-      },
+    final confirmed = await showDestructiveConfirmationSheet(
+      context,
+      title: 'Reset Dashboard Defaults',
+      message:
+          'This removes any widgets you\'ve added and restores the default dashboard layout.',
+      confirmLabel: 'Reset',
     );
 
     if (confirmed != true) return;
@@ -858,6 +818,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     final (home, destination) = _resolveHomeDestination();
 
+    if (picked.id == 'weather_summary') {
+      await WeatherSummaryBottomSheet.show(
+        context,
+        liveData: _liveData,
+        home: home,
+        destination: destination,
+      );
+      return;
+    }
+
     await ToolModalBottomSheet.show(
       context,
       tool: picked,
@@ -867,6 +837,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
       eurToUsd: _liveData.eurToUsd,
       currencyRateForPair: (fromCode, toCode) =>
           _liveData.currencyRate(fromCode: fromCode, toCode: toCode),
+      currencyIsStale: _liveData.isCurrencyStale,
+      currencyShouldRetryNow: _liveData.shouldRetryCurrencyNow,
+      currencyLastErrorAt: _liveData.lastCurrencyErrorAt,
+      onRetryCurrencyNow: () async {
+        final places = <Place>[
+          if (home != null) home,
+          if (destination != null) destination,
+        ];
+        if (places.isEmpty) return;
+        await _liveData.refreshAll(places: places);
+      },
       home: home,
       destination: destination,
       canAddWidget: true,
@@ -896,6 +877,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     bool reopenSwitcherOnCancel = false,
     String? discardProfileIdOnCancel,
     String? returnToProfileIdOnCancel,
+    String? successToast,
   }) async {
     if (!mounted) return;
     final result = await Navigator.of(context).push<FirstRunExitAction>(
@@ -907,6 +889,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ),
       ),
     );
+
+    if (result == FirstRunExitAction.saved) {
+      if (successToast != null && successToast.trim().isNotEmpty && mounted) {
+        UnitanaToast.showSuccess(context, successToast);
+      }
+      return;
+    }
 
     if (result != FirstRunExitAction.cancelled) return;
     if (!mounted) return;
@@ -938,7 +927,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
       if (!mounted) return;
     }
 
-    await _openEditProfileWizard(reopenSwitcherOnCancel: false);
+    await _openEditProfileWizard(
+      reopenSwitcherOnCancel: false,
+      successToast: 'Profile updated',
+    );
     if (!mounted) return;
 
     if (switched) {
@@ -1018,6 +1010,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       reopenSwitcherOnCancel: reopenOnCancel,
       discardProfileIdOnCancel: profile.id,
       returnToProfileIdOnCancel: previousProfileId,
+      successToast: 'Profile created',
     );
   }
 

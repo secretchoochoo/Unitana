@@ -69,21 +69,24 @@ void main() {
       await tester.pumpAndSettle();
 
       await tester.tap(find.byKey(const ValueKey('profiles_board_edit_mode')));
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 300));
 
       await tester.tap(
         find.byKey(const ValueKey('profiles_board_delete_profile_2')),
       );
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 350));
 
       expect(find.byType(BottomSheet), findsOneWidget);
       expect(find.byType(AlertDialog), findsNothing);
       expect(find.text('Delete profile?'), findsOneWidget);
 
-      await tester.tap(find.widgetWithText(FilledButton, 'Delete'));
-      await tester.pumpAndSettle();
+      final deleteButton = find.widgetWithText(FilledButton, 'Delete');
+      final deleteWidget = tester.widget<FilledButton>(deleteButton);
+      deleteWidget.onPressed?.call();
+      await tester.pump(const Duration(milliseconds: 350));
 
       expect(state.profiles.any((p) => p.id == 'profile_2'), isFalse);
+      expect(find.text('Profile deleted'), findsOneWidget);
     },
   );
 }

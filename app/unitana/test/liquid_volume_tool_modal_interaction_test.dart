@@ -156,11 +156,11 @@ void main() {
     final searchField = find.byKey(const ValueKey('toolpicker_search'));
     expect(searchField, findsOneWidget);
 
-    await tester.enterText(searchField, 'Liquid Volume');
+    await tester.enterText(searchField, 'Liquids');
     await tester.pumpAndSettle(const Duration(milliseconds: 250));
 
     final toolRow = find.byKey(
-      const ValueKey('toolpicker_search_tool_liquid_volume'),
+      const ValueKey('toolpicker_search_tool_liquids'),
     );
     expect(toolRow, findsOneWidget);
     await tester.tap(toolRow);
@@ -173,12 +173,11 @@ void main() {
     final units = readUnitArrowLabel(tester, modal, toolId);
     final fromUnit = units.split(arrow).first.trim().toLowerCase();
 
-    // In Food & Cooking, the canonical liquids engine uses the Baking preset:
-    // cups <-> ml (1 cup = 240 ml).
-    final fromIsCup = fromUnit.contains('cup');
-    final inputValue = fromIsCup ? '2' : '240';
-    final expectedUnit = fromIsCup ? 'ml' : 'cup';
-    final expectedOut = fromIsCup ? 2.0 * 240.0 : 240.0 / 240.0;
+    // Liquids tool uses the travel preset: oz <-> ml (1 oz = 29.5735 ml).
+    final fromIsOz = fromUnit.contains('oz');
+    final inputValue = fromIsOz ? '12' : '355';
+    final expectedUnit = fromIsOz ? 'ml' : 'oz';
+    final expectedOut = fromIsOz ? 12.0 * 29.5735 : 355.0 / 29.5735;
 
     final inputKey = ValueKey('tool_input_$toolId');
     await tester.enterText(find.byKey(inputKey), inputValue);

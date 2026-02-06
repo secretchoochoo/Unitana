@@ -348,6 +348,7 @@ class _FirstRunScreenState extends State<FirstRunScreen> {
       return;
     }
 
+    widget.state.setPendingSuccessToast('Profile created');
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(builder: (_) => DashboardScreen(state: widget.state)),
       (route) => false,

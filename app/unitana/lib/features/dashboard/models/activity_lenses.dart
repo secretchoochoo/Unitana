@@ -85,42 +85,42 @@ class ActivityLenses {
 
   static const ActivityLens foodCooking = ActivityLens(
     id: ActivityLensId.foodCooking,
-    name: 'Food and Cooking',
+    name: 'Food & Cooking',
     descriptor: 'Kitchen conversions and presets',
     icon: Icons.restaurant_rounded,
   );
 
   static const ActivityLens healthFitness = ActivityLens(
     id: ActivityLensId.healthFitness,
-    name: 'Health and Fitness',
+    name: 'Health & Fitness',
     descriptor: 'Training, body metrics, and hydration',
     icon: Icons.fitness_center_rounded,
   );
 
   static const ActivityLens homeDiy = ActivityLens(
     id: ActivityLensId.homeDiy,
-    name: 'Home and DIY',
+    name: 'Home & DIY',
     descriptor: 'Projects, space, and measurements',
     icon: Icons.handyman_rounded,
   );
 
   static const ActivityLens weatherTime = ActivityLens(
     id: ActivityLensId.weatherTime,
-    name: 'Weather and Time',
+    name: 'Weather & Time',
     descriptor: 'Conditions, clocks, and deltas',
     icon: Icons.schedule_rounded,
   );
 
   static const ActivityLens moneyShopping = ActivityLens(
     id: ActivityLensId.moneyShopping,
-    name: 'Money and Shopping',
+    name: 'Money & Shopping',
     descriptor: 'Currency, tax, and price comparisons',
     icon: Icons.payments_rounded,
   );
 
   static const ActivityLens oddUseful = ActivityLens(
     id: ActivityLensId.oddUseful,
-    name: 'Odd But Useful',
+    name: 'Odd & Useful',
     descriptor: 'Little lookups that save a trip to the web',
     icon: Icons.auto_fix_high_rounded,
   );

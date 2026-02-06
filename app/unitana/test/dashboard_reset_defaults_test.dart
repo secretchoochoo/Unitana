@@ -97,6 +97,10 @@ void main() {
       );
       await tester.pumpAndSettle(const Duration(milliseconds: 200));
 
+      expect(find.byType(BottomSheet), findsOneWidget);
+      expect(find.byType(AlertDialog), findsNothing);
+      expect(find.text('Reset Dashboard Defaults'), findsOneWidget);
+
       // Confirm.
       await tester.tap(find.text('Reset'));
       await tester.pumpAndSettle(const Duration(milliseconds: 400));

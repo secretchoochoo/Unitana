@@ -542,6 +542,15 @@ class DashboardLiveDataController extends ChangeNotifier {
   Object? get lastError => _lastError;
   DateTime? get lastRefreshedAt => _lastRefreshedAt;
 
+  /// Test hook for deterministic stale/fresh rendering contracts.
+  ///
+  /// Production code should not call this.
+  @visibleForTesting
+  void debugSetLastRefreshedAt(DateTime? value) {
+    _lastRefreshedAt = value;
+    _notify();
+  }
+
   /// True when the live data age exceeds the dashboard's default stale threshold.
   ///
   /// Used by compact UI elements that want to adjust styling without

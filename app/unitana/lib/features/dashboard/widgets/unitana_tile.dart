@@ -294,7 +294,7 @@ class UnitanaTile extends StatelessWidget {
                             ? math.min(midGap, math.max(0.0, mainH * 0.12))
                             : 0.0;
                         final editExtraGap = compactValues
-                            ? math.min(6.0, math.max(2.0, mainH * 0.08))
+                            ? math.min(9.0, math.max(3.0, mainH * 0.11))
                             : 0.0;
 
                         return Column(

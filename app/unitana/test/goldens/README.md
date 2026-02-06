@@ -21,6 +21,7 @@ cd ~/unitana/app/unitana
 UNITANA_GOLDENS=1 flutter test test/goldens
 flutter test --update-goldens test/goldens/places_hero_v2_goldens_test.dart
 flutter test --update-goldens test/goldens/pinned_mini_hero_goldens_test.dart
+flutter test --update-goldens test/goldens/tool_surface_contract_goldens_test.dart
 ```
 
 Notes
@@ -46,3 +47,12 @@ Capture notes
 
 - `wizard_step2_phone.png`: Slide 2 (Pick Your Places) on a phone-sized surface
 - `wizard_step3_phone.png`: Slide 3 (Name and Confirm) on a phone-sized surface
+
+### Tool and weather surface contracts
+
+- `tool_time_from_zone_tile.png`: Time tool zone selector tile (from)
+- `tool_time_to_zone_tile.png`: Time tool zone selector tile (to)
+- `tool_time_zone_converter_card.png`: Time Zone Converter interaction card
+- `tool_modal_long_title_overflow.png`: Modal title two-line + ellipsis treatment
+- `weather_summary_stale.png`: Weather summary sheet in stale state
+- `weather_summary_live.png`: Weather summary sheet in live/fresh state

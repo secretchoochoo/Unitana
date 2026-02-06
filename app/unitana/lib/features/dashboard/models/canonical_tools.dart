@@ -19,8 +19,11 @@ class CanonicalToolId {
   static const String volume = 'volume';
   static const String pressure = 'pressure';
   static const String shoeSizes = 'shoe_sizes';
+  static const String paperSizes = 'paper_sizes';
+  static const String mattressSizes = 'mattress_sizes';
   static const String weather = 'weather';
   static const String dataStorage = 'data_storage';
+  static const String tipHelper = 'tip_helper';
 
   static const List<String> all = <String>[
     time,
@@ -35,8 +38,11 @@ class CanonicalToolId {
     volume,
     pressure,
     shoeSizes,
+    paperSizes,
+    mattressSizes,
     weather,
     dataStorage,
+    tipHelper,
   ];
 }
 
@@ -166,11 +172,32 @@ class CanonicalTools {
     icon: Icons.directions_run_rounded,
   );
 
+  static const CanonicalTool paperSizes = CanonicalTool(
+    id: CanonicalToolId.paperSizes,
+    name: 'Paper Sizes',
+    descriptor: 'ISO and US paper standards lookup',
+    icon: Icons.description_rounded,
+  );
+
+  static const CanonicalTool mattressSizes = CanonicalTool(
+    id: CanonicalToolId.mattressSizes,
+    name: 'Mattress Sizes',
+    descriptor: 'US/EU mattress name and dimensions lookup',
+    icon: Icons.bed_rounded,
+  );
+
   static const CanonicalTool weather = CanonicalTool(
     id: CanonicalToolId.weather,
     name: 'Weather',
     descriptor: 'Conditions, precipitation, wind',
     icon: Icons.cloud_rounded,
+  );
+
+  static const CanonicalTool tipHelper = CanonicalTool(
+    id: CanonicalToolId.tipHelper,
+    name: 'Tip Helper',
+    descriptor: 'Bill + tip + split with rounding',
+    icon: Icons.percent_rounded,
   );
 
   static const List<CanonicalTool> all = <CanonicalTool>[
@@ -186,7 +213,10 @@ class CanonicalTools {
     volume,
     pressure,
     shoeSizes,
+    paperSizes,
+    mattressSizes,
     weather,
+    tipHelper,
   ];
 
   static final Map<String, CanonicalTool> byId =

@@ -67,7 +67,7 @@ void main() {
     });
   }
 
-  testWidgets('Shoe Sizes modal: convert US M to EU (stable result)', (
+  testWidgets('Shoe Sizes modal: lookup maps US Men to EU (stable result)', (
     tester,
   ) async {
     SharedPreferences.setMockInitialValues({});
@@ -111,18 +111,22 @@ void main() {
     await tester.tap(shoeSizesTile, warnIfMissed: false);
     await tester.pumpAndSettle(const Duration(milliseconds: 250));
 
-    final inputField = find.byKey(const ValueKey('tool_input_shoe_sizes'));
-    expect(inputField, findsOneWidget);
-
-    await tester.enterText(inputField, '9');
-    await tester.pumpAndSettle(const Duration(milliseconds: 100));
-
-    await tester.tap(find.byKey(const ValueKey('tool_run_shoe_sizes')));
-    await tester.pumpAndSettle(const Duration(milliseconds: 200));
+    expect(
+      find.byKey(const ValueKey('tool_lookup_from_shoe_sizes')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('tool_lookup_to_shoe_sizes')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('tool_lookup_size_shoe_sizes')),
+      findsOneWidget,
+    );
 
     final resultRichTextFinder = find
         .descendant(
-          of: find.byKey(const ValueKey('tool_result_shoe_sizes')),
+          of: find.byKey(const ValueKey('tool_lookup_result_shoe_sizes')),
           matching: find.byType(RichText),
         )
         .first;
@@ -132,7 +136,7 @@ void main() {
     final resultRichText = tester.widget<RichText>(resultRichTextFinder);
     final resultText = resultRichText.text.toPlainText();
 
-    // Value-first output. Unit is carried by the output side, so no redundant labels.
-    expect(resultText, contains('9 → 42 EU'));
+    expect(resultText, contains('US Men: 9'));
+    expect(resultText, contains('EU: 42'));
   });
 }

@@ -50,7 +50,9 @@ class ToolDefinitions {
   /// - Keep shortnames recognizable and compact; prefer common abbreviations.
   static const Map<String, String> _widgetShortTitles = {
     'temperature': 'Temp',
+    'oven_temperature': 'Oven Temp',
     'body_weight': 'Body Wt',
+    'time_zone_converter': 'TZ Converter',
   };
 
   static String widgetTitleFor(ToolDefinition tool) {
@@ -157,6 +159,16 @@ class ToolDefinitions {
     defaultSecondary: '68°F',
   );
 
+  static const ovenTemperature = ToolDefinition(
+    id: 'oven_temperature',
+    canonicalToolId: CanonicalToolId.temperature,
+    lensId: ActivityLensId.foodCooking,
+    title: 'Oven Temperature',
+    icon: Icons.bakery_dining_rounded,
+    defaultPrimary: '350°F',
+    defaultSecondary: '177°C',
+  );
+
   static const time = ToolDefinition(
     id: 'time',
     canonicalToolId: CanonicalToolId.time,
@@ -165,6 +177,16 @@ class ToolDefinitions {
     icon: Icons.schedule_rounded,
     defaultPrimary: '18:30',
     defaultSecondary: '6:30 PM',
+  );
+
+  static const timeZoneConverter = ToolDefinition(
+    id: 'time_zone_converter',
+    canonicalToolId: CanonicalToolId.time,
+    lensId: ActivityLensId.weatherTime,
+    title: 'Time Zone Converter',
+    icon: Icons.travel_explore_rounded,
+    defaultPrimary: '2026-02-06 18:30',
+    defaultSecondary: '2026-02-06 10:30',
   );
 
   static const dataStorage = ToolDefinition(
@@ -197,6 +219,26 @@ class ToolDefinitions {
     defaultSecondary: '9 US M',
   );
 
+  static const paperSizes = ToolDefinition(
+    id: 'paper_sizes',
+    canonicalToolId: CanonicalToolId.paperSizes,
+    lensId: ActivityLensId.oddUseful,
+    title: 'Paper Sizes',
+    icon: Icons.description_rounded,
+    defaultPrimary: 'A4',
+    defaultSecondary: '210 × 297 mm',
+  );
+
+  static const mattressSizes = ToolDefinition(
+    id: 'mattress_sizes',
+    canonicalToolId: CanonicalToolId.mattressSizes,
+    lensId: ActivityLensId.oddUseful,
+    title: 'Mattress Sizes',
+    icon: Icons.bed_rounded,
+    defaultPrimary: 'Queen (US)',
+    defaultSecondary: '60 × 80 in',
+  );
+
   static const weight = ToolDefinition(
     id: 'weight',
     canonicalToolId: CanonicalToolId.weight,
@@ -220,6 +262,16 @@ class ToolDefinitions {
     // These are placeholders; the dashboard renders live labels when possible.
     defaultPrimary: '—',
     defaultSecondary: '—',
+  );
+
+  static const tipHelper = ToolDefinition(
+    id: 'tip_helper',
+    canonicalToolId: CanonicalToolId.tipHelper,
+    lensId: ActivityLensId.moneyShopping,
+    title: 'Tip Helper',
+    icon: Icons.percent_rounded,
+    defaultPrimary: '\$100.00',
+    defaultSecondary: '15% • Split 2',
   );
 
   static const bodyWeight = ToolDefinition(
@@ -248,13 +300,17 @@ class ToolDefinitions {
     distance,
     speed,
     temperature,
+    ovenTemperature,
     time,
     dataStorage,
     currencyConvert,
     shoeSizes,
+    paperSizes,
+    mattressSizes,
     weight,
     bodyWeight,
     weatherSummary,
+    tipHelper,
   ];
 
   static const Map<String, ToolDefinition> _byId = {
@@ -268,13 +324,18 @@ class ToolDefinitions {
     'distance': distance,
     'speed': speed,
     'temperature': temperature,
+    'oven_temperature': ovenTemperature,
     'time': time,
+    'time_zone_converter': timeZoneConverter,
     'data_storage': dataStorage,
     'currency_convert': currencyConvert,
     'shoe_sizes': shoeSizes,
+    'paper_sizes': paperSizes,
+    'mattress_sizes': mattressSizes,
     'weight': weight,
     'body_weight': bodyWeight,
     'weather_summary': weatherSummary,
+    'tip_helper': tipHelper,
   };
 
   static ToolDefinition? byId(String toolId) => _byId[toolId];

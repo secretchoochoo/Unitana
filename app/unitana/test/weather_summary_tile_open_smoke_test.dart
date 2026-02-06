@@ -123,6 +123,13 @@ void main() {
           sheetFinder,
         );
         expect(refreshText.evaluate().isNotEmpty, isTrue);
+        expect(
+          find.descendant(
+            of: sheetFinder,
+            matching: find.byKey(const ValueKey('weather_summary_freshness')),
+          ),
+          findsOneWidget,
+        );
 
         // Place header rows: avoid brittle spacing around the middle dot.
         final destinationHeader = textInSheetWhere(
@@ -138,10 +145,7 @@ void main() {
         expect(homeHeader.evaluate().isNotEmpty, isTrue);
 
         expect(
-          find.descendant(
-            of: sheetFinder,
-            matching: find.textContaining('Provider-agnostic'),
-          ),
+          find.byKey(const ValueKey('weather_summary_refresh')),
           findsOneWidget,
         );
 
@@ -170,6 +174,23 @@ void main() {
         expect(
           find
               .descendant(of: sheetFinder, matching: find.text('💨'))
+              .evaluate()
+              .length,
+          greaterThanOrEqualTo(2),
+        );
+        expect(
+          find
+              .descendant(of: sheetFinder, matching: find.text('🌫️ AQI (US)'))
+              .evaluate()
+              .length,
+          greaterThanOrEqualTo(2),
+        );
+        expect(
+          find
+              .descendant(
+                of: sheetFinder,
+                matching: find.text('🌼 Pollen (0-5)'),
+              )
               .evaluate()
               .length,
           greaterThanOrEqualTo(2),

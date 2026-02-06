@@ -1,9 +1,11 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../app/app_state.dart';
+import '../../../common/feedback/unitana_toast.dart';
 import '../../../models/place.dart';
 import '../../../theme/dracula_palette.dart';
 import 'destructive_confirmation_sheet.dart';
@@ -28,17 +30,27 @@ class ProfilesBoardScreen extends StatefulWidget {
   State<ProfilesBoardScreen> createState() => _ProfilesBoardScreenState();
 }
 
-class _ProfilesBoardScreenState extends State<ProfilesBoardScreen> {
+class _ProfilesBoardScreenState extends State<ProfilesBoardScreen>
+    with SingleTickerProviderStateMixin {
   static const int _kMinAddTileCount = 4;
+  static const int _kMinTotalGridCells = 10;
   static const double _kEditAppBarActionFontSize = 14;
+  static const double _kDragFeedbackWidth = 160;
+  static const double _kDragFeedbackHeight = 186;
 
   bool _editMode = false;
   List<String> _orderedIds = const <String>[];
+  List<String?> _editSlots = const <String?>[];
   String? _draggingId;
+  late final AnimationController _wiggle;
 
   @override
   void initState() {
     super.initState();
+    _wiggle = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 700),
+    );
     _syncOrderFromState();
   }
 
@@ -55,15 +67,106 @@ class _ProfilesBoardScreenState extends State<ProfilesBoardScreen> {
     }
   }
 
+  void _ensureEditSlots(List<String> orderedIds, int addTileCount) {
+    final expectedLength = orderedIds.length + addTileCount;
+    final expectedSet = orderedIds.toSet();
+    final currentIds = _editSlots.whereType<String>().toSet();
+    final needsReset =
+        _editSlots.length != expectedLength ||
+        currentIds.length != expectedSet.length ||
+        !currentIds.containsAll(expectedSet);
+    if (!needsReset) return;
+
+    _editSlots = <String?>[
+      ...orderedIds,
+      ...List<String?>.filled(addTileCount, null),
+    ];
+  }
+
+  void _commitEditSlots() {
+    final nextOrdered = _editSlots.whereType<String>().toList(growable: false);
+    if (_sameItems(nextOrdered, _orderedIds) &&
+        nextOrdered.length == _orderedIds.length) {
+      _orderedIds = nextOrdered;
+      return;
+    }
+    _orderedIds = nextOrdered;
+    unawaited(widget.state.reorderProfiles(nextOrdered));
+  }
+
+  void _swapDraggedIntoSlot({
+    required String draggedId,
+    required int targetIndex,
+  }) {
+    final from = _editSlots.indexOf(draggedId);
+    if (from < 0 || targetIndex < 0 || targetIndex >= _editSlots.length) return;
+    if (from == targetIndex) return;
+    final next = List<String?>.from(_editSlots);
+    final tmp = next[targetIndex];
+    next[targetIndex] = draggedId;
+    next[from] = tmp;
+    setState(() {
+      _editSlots = next;
+    });
+  }
+
+  void _setEditMode(
+    bool enabled, {
+    List<String>? orderedIds,
+    int? addTileCount,
+  }) {
+    if (_editMode == enabled) return;
+    setState(() {
+      _editMode = enabled;
+      if (enabled) {
+        final ids = orderedIds ?? _orderedIds;
+        final add = addTileCount ?? _addTileCountFor(ids.length);
+        _ensureEditSlots(ids, add);
+      } else {
+        _editSlots = const <String?>[];
+      }
+    });
+    if (enabled) {
+      _wiggle.repeat();
+    } else {
+      _wiggle.stop();
+      _wiggle.value = 0.0;
+    }
+  }
+
+  double _wiggleAngleFor(String id) {
+    final phase = (id.hashCode % 360) * (math.pi / 180.0);
+    final v = _wiggle.value;
+    final carrier = math.sin((v * 2 * math.pi * 2) + phase);
+    return carrier * 0.014;
+  }
+
+  Widget _maybeWiggle(String id, Widget child) {
+    if (!_editMode) return child;
+    return AnimatedBuilder(
+      animation: _wiggle,
+      builder: (context, _) {
+        return Transform.rotate(
+          key: ValueKey('profiles_board_wiggle_$id'),
+          angle: _wiggleAngleFor(id),
+          child: child,
+        );
+      },
+    );
+  }
+
   bool _sameItems(List<String> a, List<String> b) {
     if (a.length != b.length) return false;
     return a.toSet().containsAll(b) && b.toSet().containsAll(a);
   }
 
   int _addTileCountFor(int profileCount) {
-    // Keep at least two full rows of add slots, and keep total grid cells even
-    // so the 2-column board does not end with an orphan final tile.
-    var addCount = _kMinAddTileCount;
+    // Keep at least two full rows of add slots, enforce a minimum of 10
+    // total board cells, and keep total cells even for the 2-column grid.
+    var addCount = math.max(
+      _kMinAddTileCount,
+      _kMinTotalGridCells - profileCount,
+    );
     if ((profileCount + addCount).isOdd) {
       addCount += 1;
     }
@@ -101,6 +204,14 @@ class _ProfilesBoardScreenState extends State<ProfilesBoardScreen> {
     );
     if (approved != true) return;
     await widget.onDeleteProfile(profile.id);
+    if (!mounted) return;
+    UnitanaToast.showSuccess(context, 'Profile deleted');
+  }
+
+  @override
+  void dispose() {
+    _wiggle.dispose();
+    super.dispose();
   }
 
   String _flagEmoji(String? countryCode) {
@@ -169,6 +280,12 @@ class _ProfilesBoardScreenState extends State<ProfilesBoardScreen> {
         if (ordered.length != widget.state.profiles.length) {
           _syncOrderFromState();
         }
+        if (_editMode) {
+          _ensureEditSlots(
+            ordered.map((p) => p.id).toList(growable: false),
+            addTileCount,
+          );
+        }
 
         return Scaffold(
           appBar: AppBar(
@@ -181,11 +298,7 @@ class _ProfilesBoardScreenState extends State<ProfilesBoardScreen> {
               if (_editMode) ...[
                 TextButton(
                   key: const ValueKey('profiles_board_edit_cancel'),
-                  onPressed: () {
-                    setState(() {
-                      _editMode = false;
-                    });
-                  },
+                  onPressed: () => _setEditMode(false),
                   style: TextButton.styleFrom(
                     visualDensity: VisualDensity.compact,
                     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -202,9 +315,9 @@ class _ProfilesBoardScreenState extends State<ProfilesBoardScreen> {
                   child: TextButton(
                     key: const ValueKey('profiles_board_edit_done'),
                     onPressed: () {
-                      setState(() {
-                        _editMode = false;
-                      });
+                      _commitEditSlots();
+                      _setEditMode(false);
+                      UnitanaToast.showSuccess(context, 'Profiles updated');
                     },
                     style: TextButton.styleFrom(
                       visualDensity: VisualDensity.compact,
@@ -223,11 +336,13 @@ class _ProfilesBoardScreenState extends State<ProfilesBoardScreen> {
                   padding: const EdgeInsets.only(right: 8),
                   child: TextButton(
                     key: const ValueKey('profiles_board_edit_mode'),
-                    onPressed: () {
-                      setState(() {
-                        _editMode = true;
-                      });
-                    },
+                    onPressed: () => _setEditMode(
+                      true,
+                      orderedIds: ordered
+                          .map((p) => p.id)
+                          .toList(growable: false),
+                      addTileCount: addTileCount,
+                    ),
                     child: const Text('✏ Edit'),
                   ),
                 ),
@@ -249,8 +364,128 @@ class _ProfilesBoardScreenState extends State<ProfilesBoardScreen> {
                           crossAxisSpacing: 12,
                           childAspectRatio: 0.9,
                         ),
-                    itemCount: ordered.length + addTileCount,
+                    itemCount: _editMode
+                        ? _editSlots.length
+                        : (ordered.length + addTileCount),
                     itemBuilder: (context, index) {
+                      if (_editMode) {
+                        final slotId = _editSlots[index];
+                        final slotProfile = slotId == null
+                            ? null
+                            : byId[slotId];
+                        if (slotProfile == null) {
+                          return DragTarget<String>(
+                            key: ValueKey('profiles_board_target_empty_$index'),
+                            onWillAcceptWithDetails: (details) =>
+                                details.data.trim().isNotEmpty,
+                            onAcceptWithDetails: (details) {
+                              _swapDraggedIntoSlot(
+                                draggedId: details.data,
+                                targetIndex: index,
+                              );
+                            },
+                            builder: (context, candidateData, rejectedData) {
+                              if (candidateData.isNotEmpty &&
+                                  rejectedData.isNotEmpty) {
+                                // no-op
+                              }
+                              final slotIndex = index - ordered.length < 0
+                                  ? 0
+                                  : index - ordered.length;
+                              return _AddProfileTile(
+                                onTap: widget.onAddProfile,
+                                slotIndex: slotIndex,
+                              );
+                            },
+                          );
+                        }
+
+                        final profile = slotProfile;
+                        final active =
+                            profile.id == widget.state.activeProfileId;
+
+                        return DragTarget<String>(
+                          key: ValueKey('profiles_board_target_${profile.id}'),
+                          onWillAcceptWithDetails: (details) =>
+                              details.data != profile.id,
+                          onAcceptWithDetails: (details) {
+                            _swapDraggedIntoSlot(
+                              draggedId: details.data,
+                              targetIndex: index,
+                            );
+                          },
+                          builder: (context, candidateData, rejectedData) {
+                            if (candidateData.isNotEmpty &&
+                                rejectedData.isNotEmpty) {
+                              // no-op
+                            }
+
+                            final feedbackTile = _ProfileTile(
+                              profile: profile,
+                              isActive: active,
+                              isEditing: false,
+                              onTap: () {},
+                              onEdit: () {},
+                              onDelete: () {},
+                              flagEmojiForCountry: _flagEmoji,
+                              homeAndDestination: _homeAndDestination,
+                              dragHandle: null,
+                            );
+
+                            final dragHandle = Draggable<String>(
+                              data: profile.id,
+                              dragAnchorStrategy: pointerDragAnchorStrategy,
+                              onDragStarted: () {
+                                setState(() {
+                                  _draggingId = profile.id;
+                                });
+                              },
+                              onDragEnd: (_) {
+                                setState(() {
+                                  _draggingId = null;
+                                });
+                              },
+                              feedback: SizedBox(
+                                width: _kDragFeedbackWidth,
+                                height: _kDragFeedbackHeight,
+                                child: Material(
+                                  elevation: 6,
+                                  color: Colors.transparent,
+                                  child: Opacity(
+                                    opacity: 0.92,
+                                    child: feedbackTile,
+                                  ),
+                                ),
+                              ),
+                              childWhenDragging: const _ProfileEditIconButton(
+                                icon: Icons.drag_indicator_rounded,
+                                isDragging: true,
+                              ),
+                              child: const _ProfileEditIconButton(
+                                icon: Icons.drag_indicator_rounded,
+                              ),
+                            );
+
+                            final tile = _ProfileTile(
+                              profile: profile,
+                              isActive: active,
+                              isEditing: true,
+                              onTap: () => widget.onSwitchProfile(profile.id),
+                              onEdit: () => widget.onEditProfile(profile.id),
+                              onDelete: () => _confirmDelete(profile),
+                              flagEmojiForCountry: _flagEmoji,
+                              homeAndDestination: _homeAndDestination,
+                              dragHandle: dragHandle,
+                            );
+                            final wiggledTile = _maybeWiggle(profile.id, tile);
+                            return Opacity(
+                              opacity: _draggingId == profile.id ? 0.4 : 1.0,
+                              child: wiggledTile,
+                            );
+                          },
+                        );
+                      }
+
                       if (index >= ordered.length) {
                         final addSlot = index - ordered.length;
                         return _AddProfileTile(
@@ -277,44 +512,74 @@ class _ProfilesBoardScreenState extends State<ProfilesBoardScreen> {
                               rejectedData.isNotEmpty) {
                             // no-op (keeps strict lint happy without hiding params)
                           }
-                          final tile = _ProfileTile(
+                          Widget buildTile({required Widget? dragHandle}) {
+                            return _ProfileTile(
+                              profile: profile,
+                              isActive: active,
+                              isEditing: _editMode,
+                              onTap: () => widget.onSwitchProfile(profile.id),
+                              onEdit: () => widget.onEditProfile(profile.id),
+                              onDelete: () => _confirmDelete(profile),
+                              flagEmojiForCountry: _flagEmoji,
+                              homeAndDestination: _homeAndDestination,
+                              dragHandle: dragHandle,
+                            );
+                          }
+
+                          final feedbackTile = _ProfileTile(
                             profile: profile,
                             isActive: active,
-                            isEditing: _editMode,
-                            onTap: () => widget.onSwitchProfile(profile.id),
-                            onEdit: () => widget.onEditProfile(profile.id),
-                            onDelete: () => _confirmDelete(profile),
+                            isEditing: false,
+                            onTap: () {},
+                            onEdit: () {},
+                            onDelete: () {},
                             flagEmojiForCountry: _flagEmoji,
                             homeAndDestination: _homeAndDestination,
+                            dragHandle: null,
                           );
 
-                          if (!_editMode) return tile;
-
-                          return LongPressDraggable<String>(
-                            data: profile.id,
-                            onDragStarted: () {
-                              setState(() {
-                                _draggingId = profile.id;
-                              });
-                            },
-                            onDragEnd: (_) {
-                              setState(() {
-                                _draggingId = null;
-                              });
-                            },
-                            feedback: SizedBox(
-                              width: 160,
-                              child: Material(
-                                elevation: 6,
-                                color: Colors.transparent,
-                                child: Opacity(opacity: 0.92, child: tile),
+                          Widget? dragHandle;
+                          if (_editMode) {
+                            dragHandle = Draggable<String>(
+                              data: profile.id,
+                              dragAnchorStrategy: pointerDragAnchorStrategy,
+                              onDragStarted: () {
+                                setState(() {
+                                  _draggingId = profile.id;
+                                });
+                              },
+                              onDragEnd: (_) {
+                                setState(() {
+                                  _draggingId = null;
+                                });
+                              },
+                              feedback: SizedBox(
+                                width: _kDragFeedbackWidth,
+                                height: _kDragFeedbackHeight,
+                                child: Material(
+                                  elevation: 6,
+                                  color: Colors.transparent,
+                                  child: Opacity(
+                                    opacity: 0.92,
+                                    child: feedbackTile,
+                                  ),
+                                ),
                               ),
-                            ),
-                            childWhenDragging: Opacity(
-                              opacity: _draggingId == profile.id ? 0.4 : 1.0,
-                              child: tile,
-                            ),
-                            child: tile,
+                              childWhenDragging: const _ProfileEditIconButton(
+                                icon: Icons.drag_indicator_rounded,
+                                isDragging: true,
+                              ),
+                              child: const _ProfileEditIconButton(
+                                icon: Icons.drag_indicator_rounded,
+                              ),
+                            );
+                          }
+
+                          final tile = buildTile(dragHandle: dragHandle);
+                          final wiggledTile = _maybeWiggle(profile.id, tile);
+                          return Opacity(
+                            opacity: _draggingId == profile.id ? 0.4 : 1.0,
+                            child: wiggledTile,
                           );
                         },
                       );
@@ -362,6 +627,23 @@ class _AddProfileTile extends StatelessWidget {
   }
 }
 
+class _ProfileEditIconButton extends StatelessWidget {
+  final IconData icon;
+  final bool isDragging;
+
+  const _ProfileEditIconButton({required this.icon, this.isDragging = false});
+
+  @override
+  Widget build(BuildContext context) {
+    final onSurface = Theme.of(context).colorScheme.onSurface;
+    return Icon(
+      icon,
+      size: 18,
+      color: isDragging ? onSurface.withAlpha(90) : onSurface.withAlpha(215),
+    );
+  }
+}
+
 class _ProfileTile extends StatelessWidget {
   final UnitanaProfile profile;
   final bool isActive;
@@ -369,6 +651,7 @@ class _ProfileTile extends StatelessWidget {
   final VoidCallback onTap;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
+  final Widget? dragHandle;
   final String Function(String?) flagEmojiForCountry;
   final (Place?, Place?) Function(UnitanaProfile) homeAndDestination;
 
@@ -379,6 +662,7 @@ class _ProfileTile extends StatelessWidget {
     required this.onTap,
     required this.onEdit,
     required this.onDelete,
+    required this.dragHandle,
     required this.flagEmojiForCountry,
     required this.homeAndDestination,
   });
@@ -455,19 +739,17 @@ class _ProfileTile extends StatelessWidget {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        IconButton(
+                        SizedBox(
                           key: ValueKey('profiles_board_drag_${profile.id}'),
-                          tooltip: 'Drag profile',
-                          visualDensity: VisualDensity.compact,
-                          padding: const EdgeInsets.all(4),
-                          constraints: BoxConstraints.tightFor(
-                            width: iconBox,
-                            height: iconBox,
-                          ),
-                          onPressed: () {},
-                          icon: Icon(
-                            Icons.drag_indicator_rounded,
-                            size: iconSize,
+                          width: iconBox,
+                          height: iconBox,
+                          child: Center(
+                            child:
+                                dragHandle ??
+                                Icon(
+                                  Icons.drag_indicator_rounded,
+                                  size: iconSize,
+                                ),
                           ),
                         ),
                         const SizedBox(width: 2),

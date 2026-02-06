@@ -76,4 +76,118 @@ void main() {
       findsWidgets,
     );
   });
+
+  testWidgets('paper sizes is enabled and opens lookup modal', (tester) async {
+    await pumpDashboardForTest(tester);
+    await _openToolPicker(tester);
+    await _searchTool(tester, 'paper sizes');
+
+    await tester.tap(
+      find.byKey(const ValueKey('toolpicker_search_tool_paper_sizes')),
+    );
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const ValueKey('tool_title_paper_sizes')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('tool_lookup_result_paper_sizes')),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('mattress sizes is enabled and opens lookup modal', (
+    tester,
+  ) async {
+    await pumpDashboardForTest(tester);
+    await _openToolPicker(tester);
+    await _searchTool(tester, 'mattress sizes');
+
+    await tester.tap(
+      find.byKey(const ValueKey('toolpicker_search_tool_mattress_sizes')),
+    );
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const ValueKey('tool_title_mattress_sizes')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('tool_lookup_result_mattress_sizes')),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('baking appears in picker and opens Baking modal', (
+    tester,
+  ) async {
+    await pumpDashboardForTest(tester);
+    await _openToolPicker(tester);
+    await _searchTool(tester, 'baking');
+
+    await tester.tap(
+      find.byKey(const ValueKey('toolpicker_search_tool_baking')),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const ValueKey('tool_title_baking')), findsOneWidget);
+  });
+
+  testWidgets(
+    'timezone lookup is enabled and opens Time Zone Converter modal',
+    (tester) async {
+      await pumpDashboardForTest(tester);
+      await _openToolPicker(tester);
+      await _searchTool(tester, 'time zone');
+
+      await tester.tap(
+        find.byKey(const ValueKey('toolpicker_search_tool_timezone_lookup')),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.byKey(const ValueKey('tool_title_time_zone_converter')),
+        findsOneWidget,
+      );
+    },
+  );
+
+  testWidgets('weather summary opens weather sheet (not converter modal)', (
+    tester,
+  ) async {
+    await pumpDashboardForTest(tester);
+    await _openToolPicker(tester);
+    await _searchTool(tester, 'weather');
+
+    await tester.tap(
+      find.byKey(const ValueKey('toolpicker_search_tool_weather_summary')),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const ValueKey('weather_summary_sheet')), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('tool_title_weather_summary')),
+      findsNothing,
+    );
+  });
+
+  testWidgets('tip helper is enabled and opens dedicated tip modal', (
+    tester,
+  ) async {
+    await pumpDashboardForTest(tester);
+    await _openToolPicker(tester);
+    await _searchTool(tester, 'tip helper');
+
+    await tester.tap(
+      find.byKey(const ValueKey('toolpicker_search_tool_tip_helper')),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const ValueKey('tool_title_tip_helper')), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('tool_tip_result_tip_helper')),
+      findsOneWidget,
+    );
+  });
 }

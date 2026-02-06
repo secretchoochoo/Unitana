@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import 'activity_lenses.dart';
 
+enum ToolSurfaceType { dedicated, configurableTemplate, aliasPreset, deferred }
+
 @immutable
 class ToolRegistryTool {
   /// Stable tool identifier used for Keys and (eventually) persistence.
@@ -23,6 +25,9 @@ class ToolRegistryTool {
   /// Slice C focuses on the picker UX; unsupported tools are discoverable but
   /// disabled to avoid breaking flows.
   final bool isEnabled;
+  final ToolSurfaceType surfaceType;
+  final String? aliasTargetToolId;
+  final String? deferReason;
 
   const ToolRegistryTool({
     required this.toolId,
@@ -31,6 +36,9 @@ class ToolRegistryTool {
     required this.lenses,
     this.presetsByLens = const <String, Map<String, Object?>>{},
     this.isEnabled = false,
+    this.surfaceType = ToolSurfaceType.configurableTemplate,
+    this.aliasTargetToolId,
+    this.deferReason,
   });
 }
 
@@ -56,6 +64,7 @@ class ToolRegistry {
       label: 'Distance',
       icon: Icons.straighten_rounded,
       isEnabled: true,
+      surfaceType: ToolSurfaceType.configurableTemplate,
       lenses: <String>[
         ActivityLensId.travelEssentials,
         ActivityLensId.healthFitness,
@@ -75,6 +84,7 @@ class ToolRegistry {
       label: 'Speed',
       icon: Icons.speed_rounded,
       isEnabled: true,
+      surfaceType: ToolSurfaceType.configurableTemplate,
       lenses: <String>[ActivityLensId.travelEssentials],
     ),
     ToolRegistryTool(
@@ -82,6 +92,7 @@ class ToolRegistry {
       label: 'Time',
       icon: Icons.schedule_rounded,
       isEnabled: true,
+      surfaceType: ToolSurfaceType.dedicated,
       lenses: <String>[
         ActivityLensId.travelEssentials,
         ActivityLensId.weatherTime,
@@ -92,6 +103,8 @@ class ToolRegistry {
       label: 'Jet Lag Delta',
       icon: Icons.airline_seat_recline_normal,
       isEnabled: true,
+      surfaceType: ToolSurfaceType.aliasPreset,
+      aliasTargetToolId: 'time',
       lenses: <String>[ActivityLensId.travelEssentials],
       presetsByLens: <String, Map<String, Object?>>{
         ActivityLensId.travelEssentials: <String, Object?>{
@@ -104,6 +117,7 @@ class ToolRegistry {
       label: 'Data Storage',
       icon: Icons.sd_storage_rounded,
       isEnabled: true,
+      surfaceType: ToolSurfaceType.configurableTemplate,
       lenses: <String>[ActivityLensId.travelEssentials],
     ),
     ToolRegistryTool(
@@ -111,35 +125,51 @@ class ToolRegistry {
       label: 'Temperature',
       icon: Icons.thermostat_rounded,
       isEnabled: true,
-      lenses: <String>[ActivityLensId.travelEssentials, ActivityLensId.homeDiy],
+      surfaceType: ToolSurfaceType.configurableTemplate,
+      lenses: <String>[ActivityLensId.travelEssentials],
     ),
 
     // Food and Cooking
     ToolRegistryTool(
-      toolId: 'liquid_volume',
-      label: 'Liquid Volume',
+      toolId: 'liquids',
+      label: 'Liquids',
       icon: Icons.science_rounded,
-      lenses: <String>[ActivityLensId.foodCooking],
-      // Enabled via existing baking/liquids tooling; picker maps to those.
+      lenses: <String>[ActivityLensId.travelEssentials],
       isEnabled: true,
+      surfaceType: ToolSurfaceType.configurableTemplate,
+    ),
+    ToolRegistryTool(
+      toolId: 'baking',
+      label: 'Baking',
+      icon: Icons.local_cafe_rounded,
+      lenses: <String>[ActivityLensId.foodCooking],
+      isEnabled: true,
+      surfaceType: ToolSurfaceType.aliasPreset,
+      aliasTargetToolId: 'liquids',
     ),
     ToolRegistryTool(
       toolId: 'weight',
       label: 'Weight',
       icon: Icons.monitor_weight_rounded,
       isEnabled: true,
+      surfaceType: ToolSurfaceType.configurableTemplate,
       lenses: <String>[ActivityLensId.foodCooking],
     ),
     ToolRegistryTool(
       toolId: 'oven_temperature',
       label: 'Oven Temperature',
       icon: Icons.bakery_dining_rounded,
+      isEnabled: true,
+      surfaceType: ToolSurfaceType.aliasPreset,
+      aliasTargetToolId: 'temperature',
       lenses: <String>[ActivityLensId.foodCooking],
     ),
     ToolRegistryTool(
       toolId: 'cups_grams_estimates',
       label: 'Cups ↔ Grams Estimates',
       icon: Icons.restaurant_menu_rounded,
+      surfaceType: ToolSurfaceType.deferred,
+      deferReason: 'Needs ingredient-density dataset and food taxonomy.',
       lenses: <String>[ActivityLensId.foodCooking],
     ),
 
@@ -149,6 +179,8 @@ class ToolRegistry {
       label: 'Body Weight',
       icon: Icons.monitor_weight_rounded,
       isEnabled: true,
+      surfaceType: ToolSurfaceType.aliasPreset,
+      aliasTargetToolId: 'weight',
       lenses: <String>[ActivityLensId.healthFitness],
     ),
     ToolRegistryTool(
@@ -157,23 +189,31 @@ class ToolRegistry {
       icon: Icons.height_rounded,
       lenses: <String>[ActivityLensId.healthFitness],
       isEnabled: true,
+      surfaceType: ToolSurfaceType.aliasPreset,
+      aliasTargetToolId: 'length',
     ),
     ToolRegistryTool(
       toolId: 'pace',
       label: 'Pace',
       icon: Icons.directions_run_rounded,
+      surfaceType: ToolSurfaceType.deferred,
+      deferReason: 'Needs pace/race model and training-context defaults.',
       lenses: <String>[ActivityLensId.healthFitness],
     ),
     ToolRegistryTool(
       toolId: 'hydration',
       label: 'Hydration',
       icon: Icons.water_drop_rounded,
+      surfaceType: ToolSurfaceType.deferred,
+      deferReason: 'Needs health-safe intake policy and personalization model.',
       lenses: <String>[ActivityLensId.healthFitness],
     ),
     ToolRegistryTool(
       toolId: 'energy',
       label: 'Calories / Energy',
       icon: Icons.local_fire_department_rounded,
+      surfaceType: ToolSurfaceType.deferred,
+      deferReason: 'Needs nutrition/energy contract and unit standards.',
       lenses: <String>[ActivityLensId.healthFitness],
     ),
 
@@ -184,6 +224,7 @@ class ToolRegistry {
       icon: Icons.straighten_rounded,
       lenses: <String>[ActivityLensId.homeDiy],
       isEnabled: true,
+      surfaceType: ToolSurfaceType.configurableTemplate,
     ),
     ToolRegistryTool(
       toolId: 'area',
@@ -191,12 +232,14 @@ class ToolRegistry {
       icon: Icons.square_foot_rounded,
       lenses: <String>[ActivityLensId.homeDiy],
       isEnabled: true,
+      surfaceType: ToolSurfaceType.configurableTemplate,
     ),
     ToolRegistryTool(
       toolId: 'volume',
       label: 'Volume',
       icon: Icons.local_drink_rounded,
       isEnabled: true,
+      surfaceType: ToolSurfaceType.configurableTemplate,
       lenses: <String>[ActivityLensId.homeDiy],
     ),
     ToolRegistryTool(
@@ -204,6 +247,7 @@ class ToolRegistry {
       label: 'Pressure',
       icon: Icons.tire_repair_rounded,
       isEnabled: true,
+      surfaceType: ToolSurfaceType.configurableTemplate,
       lenses: <String>[ActivityLensId.homeDiy],
     ),
 
@@ -213,6 +257,7 @@ class ToolRegistry {
       label: 'Weather Summary',
       icon: Icons.cloud_rounded,
       isEnabled: true,
+      surfaceType: ToolSurfaceType.dedicated,
       lenses: <String>[ActivityLensId.weatherTime],
     ),
     ToolRegistryTool(
@@ -220,6 +265,8 @@ class ToolRegistry {
       label: 'World Clock Delta',
       icon: Icons.public_rounded,
       isEnabled: true,
+      surfaceType: ToolSurfaceType.aliasPreset,
+      aliasTargetToolId: 'time',
       lenses: <String>[ActivityLensId.weatherTime],
     ),
 
@@ -229,24 +276,31 @@ class ToolRegistry {
       label: 'Currency',
       icon: Icons.currency_exchange_rounded,
       isEnabled: true,
+      surfaceType: ToolSurfaceType.configurableTemplate,
       lenses: <String>[ActivityLensId.moneyShopping],
     ),
     ToolRegistryTool(
       toolId: 'tip_helper',
       label: 'Tip Helper',
       icon: Icons.percent_rounded,
+      isEnabled: true,
+      surfaceType: ToolSurfaceType.dedicated,
       lenses: <String>[ActivityLensId.moneyShopping],
     ),
     ToolRegistryTool(
       toolId: 'tax_vat_helper',
       label: 'Sales Tax / VAT Helper',
       icon: Icons.calculate_rounded,
+      surfaceType: ToolSurfaceType.deferred,
+      deferReason: 'Needs country/region tax model and disclosure rules.',
       lenses: <String>[ActivityLensId.moneyShopping],
     ),
     ToolRegistryTool(
       toolId: 'unit_price_helper',
       label: 'Unit Price Helper',
       icon: Icons.local_offer_rounded,
+      surfaceType: ToolSurfaceType.deferred,
+      deferReason: 'Needs packaging/quantity normalization contract.',
       lenses: <String>[ActivityLensId.moneyShopping],
     ),
 
@@ -256,24 +310,40 @@ class ToolRegistry {
       label: 'Shoe Sizes',
       icon: Icons.directions_walk_rounded,
       isEnabled: true,
+      surfaceType: ToolSurfaceType.configurableTemplate,
       lenses: <String>[ActivityLensId.quickTools, ActivityLensId.oddUseful],
     ),
     ToolRegistryTool(
       toolId: 'clothing_sizes',
       label: 'Clothing Sizes',
       icon: Icons.checkroom_rounded,
+      surfaceType: ToolSurfaceType.deferred,
+      deferReason: 'High brand variance; quality bar for mappings not met yet.',
       lenses: <String>[ActivityLensId.quickTools, ActivityLensId.oddUseful],
     ),
     ToolRegistryTool(
       toolId: 'paper_sizes',
       label: 'Paper Sizes',
       icon: Icons.description_rounded,
+      isEnabled: true,
+      surfaceType: ToolSurfaceType.configurableTemplate,
       lenses: <String>[ActivityLensId.quickTools, ActivityLensId.oddUseful],
     ),
     ToolRegistryTool(
+      toolId: 'mattress_sizes',
+      label: 'Mattress Sizes',
+      icon: Icons.bed_rounded,
+      isEnabled: true,
+      surfaceType: ToolSurfaceType.configurableTemplate,
+      lenses: <String>[ActivityLensId.oddUseful],
+    ),
+    ToolRegistryTool(
       toolId: 'timezone_lookup',
-      label: 'Time Zones Lookup',
+      label: 'Time Zone Converter',
       icon: Icons.travel_explore_rounded,
+      isEnabled: true,
+      surfaceType: ToolSurfaceType.aliasPreset,
+      aliasTargetToolId: 'time_zone_converter',
       lenses: <String>[ActivityLensId.quickTools, ActivityLensId.oddUseful],
     ),
   ];
@@ -292,10 +362,11 @@ class ToolRegistry {
           'time',
           'jet_lag_delta',
           'data_storage',
+          'liquids',
           'temperature',
         ],
         ActivityLensId.foodCooking: <String>[
-          'liquid_volume',
+          'baking',
           'weight',
           'oven_temperature',
           'cups_grams_estimates',
@@ -313,7 +384,6 @@ class ToolRegistry {
           'area',
           'volume',
           'pressure',
-          'temperature',
         ],
         ActivityLensId.weatherTime: <String>[
           'weather_summary',
@@ -331,6 +401,13 @@ class ToolRegistry {
           'clothing_sizes',
           'paper_sizes',
           'timezone_lookup',
+        ],
+        ActivityLensId.oddUseful: <String>[
+          'shoe_sizes',
+          'paper_sizes',
+          'mattress_sizes',
+          'timezone_lookup',
+          'clothing_sizes',
         ],
       };
 
@@ -361,6 +438,10 @@ class ToolRegistry {
     'shoe_sizes',
     'clothing_sizes',
     'paper_sizes',
+    'mattress_sizes',
     'timezone_lookup',
   ];
+
+  static List<ToolRegistryTool> deferredTools() =>
+      all.where((t) => t.surfaceType == ToolSurfaceType.deferred).toList();
 }

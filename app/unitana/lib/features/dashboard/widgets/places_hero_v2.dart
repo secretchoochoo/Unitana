@@ -1794,7 +1794,19 @@ class _SunTimesPill extends StatelessWidget {
         (compact
                 ? Theme.of(context).textTheme.titleSmall
                 : Theme.of(context).textTheme.titleMedium)
-            ?.copyWith(fontWeight: FontWeight.w800);
+            ?.copyWith(
+              fontWeight: FontWeight.w800,
+              // Slight downscale so the details header sits more in proportion
+              // with surrounding hero typography.
+              fontSize:
+                  ((compact
+                          ? Theme.of(context).textTheme.titleSmall?.fontSize
+                          : Theme.of(
+                              context,
+                            ).textTheme.titleMedium?.fontSize) ??
+                      (compact ? 14 : 16)) -
+                  1.0,
+            );
 
     final baseRow = (compact
         ? Theme.of(context).textTheme.bodySmall
@@ -1802,6 +1814,8 @@ class _SunTimesPill extends StatelessWidget {
     final rowStyle = (baseRow ?? const TextStyle()).copyWith(
       color: cs.onSurface.withAlpha(220),
       fontWeight: FontWeight.w600,
+      // Slight downscale for visual parity against adjacent AQI/currency text.
+      fontSize: ((baseRow?.fontSize ?? (compact ? 12 : 14)) - 0.8),
       // Tighten line height slightly so the sun/wind detail content fits
       // inside the fixed-height details region without overflow.
       height: 1.05,
@@ -1930,7 +1944,7 @@ class _SunTimesPill extends StatelessWidget {
       final useImperial =
           (primaryPlace?.unitSystem.toLowerCase() ?? 'metric') == 'imperial';
 
-      InlineSpan measureSpan(String icon, double? kmh) {
+      InlineSpan measureSpan(double? kmh) {
         final row = _windMeasureRow(kmh, useImperial: useImperial);
         final secondaryStyle = rowStyle.copyWith(
           fontSize: (rowStyle.fontSize ?? 14) * (compact ? 0.72 : 0.78),
@@ -1939,10 +1953,39 @@ class _SunTimesPill extends StatelessWidget {
         );
         return TextSpan(
           children: [
-            TextSpan(text: '$icon ${row.primary}', style: rowStyle),
+            TextSpan(text: row.primary, style: rowStyle),
             if (row.secondary != null)
               TextSpan(text: ' • ${row.secondary}', style: secondaryStyle),
           ],
+        );
+      }
+
+      Widget windLine({
+        required String icon,
+        required double? kmh,
+        required Key? textKey,
+      }) {
+        return FittedBox(
+          fit: BoxFit.scaleDown,
+          alignment: Alignment.center,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SizedBox(
+                width: 18,
+                child: Text(icon, textAlign: TextAlign.center, style: rowStyle),
+              ),
+              const SizedBox(width: 6),
+              RichText(
+                key: textKey,
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                softWrap: false,
+                overflow: TextOverflow.visible,
+                text: measureSpan(kmh),
+              ),
+            ],
+          ),
         );
       }
 
@@ -1950,17 +1993,19 @@ class _SunTimesPill extends StatelessWidget {
         key: includeTestKeys
             ? const ValueKey('hero_details_wind_content')
             : null,
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
         mainAxisSize: MainAxisSize.min,
         children: [
           SizedBox(height: compact ? 0 : 2),
-          _ScaleDownRichText(
-            span: measureSpan('🌬', primaryWeather?.windKmh),
+          windLine(
+            icon: '🌬',
+            kmh: primaryWeather?.windKmh,
             textKey: includeTestKeys ? const ValueKey('hero_wind_row') : null,
           ),
           SizedBox(height: compact ? 0 : 1),
-          _ScaleDownRichText(
-            span: measureSpan('💨', primaryWeather?.gustKmh),
+          windLine(
+            icon: '💨',
+            kmh: primaryWeather?.gustKmh,
             textKey: includeTestKeys ? const ValueKey('hero_gust_row') : null,
           ),
         ],

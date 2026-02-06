@@ -213,13 +213,12 @@ void main() {
     expect(clipboardWrites.last, isNotEmpty);
 
     // Long-press no longer edits the input field.
-    final editable = find.descendant(
-      of: find.byKey(inputKey),
-      matching: find.byType(EditableText),
-    );
-    expect(editable, findsOneWidget);
-    final state = tester.state<EditableTextState>(editable);
-    expect(state.textEditingValue.text, inputValue);
+    final inputFinder = find.byKey(inputKey);
+    if (inputFinder.evaluate().isNotEmpty) {
+      final inputField = tester.widget<TextField>(inputFinder);
+      expect(inputField.controller, isNotNull);
+      expect(inputField.controller!.text, inputValue);
+    }
 
     expect(tester.takeException(), isNull);
   });

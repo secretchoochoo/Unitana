@@ -18,6 +18,71 @@
   - `docs/ai/design_lock/CITY_DATA_SCHEMA_CONTRACT.md`
 
 ## Latest changes (2026-02-06)
+- Pack F contracted implementation sprint (phase 2) shipped:
+  - tool registry now carries explicit architecture metadata per tool:
+    - `surfaceType` (`dedicated`, `configurableTemplate`, `aliasPreset`, `deferred`)
+    - `aliasTargetToolId` for alias/preconfiguration entries
+    - `deferReason` for deferred tools
+  - deferred backlog is now encoded in-code (not only docs) for:
+    - `cups_grams_estimates`, `pace`, `hydration`, `energy`, `tip_helper`, `tax_vat_helper`, `unit_price_helper`, `clothing_sizes`
+  - tool picker now differentiates deferred items with `Deferred` badge + rationale text instead of generic `Soon` for all disabled entries.
+  - added regression guard `tool_registry_architecture_matrix_test.dart` to lock deferred IDs/reasons and critical alias targets.
+  - added picker UX regression guard `toolpicker_deferred_badge_test.dart` to ensure deferred rows render `Deferred` + defer rationale and remain non-launchable.
+- Pack C reliability visibility follow-up (2026-02-06):
+  - Currency tool modal now surfaces stale/error status using live-data currency health signals:
+    - stale/cached message
+    - backoff vs retry-now messaging when last refresh failed
+    - explicit `Retry rates` action when retry is available now
+  - dashboard and board tool-launch paths now pass currency stale/retry/error metadata into the modal.
+  - added regression guard `currency_tool_stale_status_banner_test.dart`.
+- Pack F visual guardrails follow-up (2026-02-06):
+  - added targeted opt-in golden contract suite for key tool/weather surfaces:
+    - `tool_time_from_zone_tile.png` and `tool_time_to_zone_tile.png` (Time base zone selectors)
+    - `tool_time_zone_converter_card.png` (Time Zone Converter interaction card)
+    - `tool_modal_long_title_overflow.png` (tool title two-line ellipsis overflow contract)
+    - `weather_summary_stale.png` and `weather_summary_live.png` (weather freshness/stale visual states)
+  - new test suite: `app/unitana/test/goldens/tool_surface_contract_goldens_test.dart`.
+  - golden catalog updated in `app/unitana/test/goldens/README.md`.
+  - generated baseline assets under `app/unitana/test/goldens/goldens/` for the new suite.
+  - added a test-only freshness hook (`debugSetLastRefreshedAt`) in `DashboardLiveDataController` so stale/live weather states can be captured deterministically in goldens without async timer flake.
+- Pack F lookup UX follow-up (2026-02-06):
+  - lookup-table tools now render a styled `Size Matrix` section (replacing plain `Nearby` list rows) with:
+    - explicit column headers (`Size`, `From`, `To`)
+    - selected-row highlight treatment using accent + Dracula contrast
+    - centered selected row when neighboring rows exist (proximity framing)
+    - tap-to-copy on value cells and tap-to-reselect on size labels
+  - added regression coverage in `app/unitana/test/mattress_sizes_matrix_interaction_test.dart` (matrix rendering + reselection behavior).
+  - added planning artifact `docs/ai/reference/DEFERRED_TOOLS_EXECUTION_MATRIX.md` to map each deferred tool to activation prerequisites, execution slices, and recommended ship order.
+- Pack F activation bundle (phase 6):
+  - activated `tip_helper` as an enabled dedicated tool surface (`surfaceType: dedicated`) with full picker + modal launch wiring.
+  - implemented dedicated Tip Helper modal interaction contract:
+    - locale-aware preset tip chips by country context
+    - split controls
+    - rounding mode controls (`none`, `nearest`, `up`, `down`)
+    - results panel with tip/total/per-person and rounding adjustment lines
+  - mapped `tip_helper` into `money_shopping` lens for canonical discoverability guarantees.
+  - added regression coverage:
+    - `tip_helper_modal_interaction_test.dart`
+    - activation assertion in `toolpicker_activation_bundle_test.dart`
+    - deferred/audit expectation updates in `tool_registry_architecture_matrix_test.dart`, `toolpicker_deferred_badge_test.dart`, and `tool_lens_map_test.dart` adjacency.
+- Pack F contracted implementation sprint (phase 1) shipped:
+  - Time-family split implemented in tool surfaces:
+    - `Time` now remains the live home/destination clocks + delta workflow.
+    - `timezone_lookup` picker alias now opens a distinct `Time Zone Converter` surface (`time_zone_converter` tool definition) with explicit local-time conversion + per-tool history.
+    - swap behavior in converter rebases entered local time across source-zone changes (preserves instant intent instead of resetting input).
+  - Time tool live-update behavior hardened:
+    - time surfaces now tick on a minute timer so live clocks/delta stay current while open.
+  - Weather clarity/refresh contract implemented:
+    - weather sheet now shows freshness state (`Live updates enabled` vs `Data may be stale`) and a short manual/auto refresh policy line.
+    - AQI labeling upgraded to value + health band (example: `72 (Moderate)`).
+    - pollen labeling upgraded to explicit scale semantics (`x.x/5 (Band)`).
+    - headers clarified to `AQI (US)` and `Pollen (0-5)`.
+  - Tool visual/title real-estate policy implementation:
+    - tool modal titles now allow two lines with ellipsis instead of single-line fade truncation.
+  - Regression coverage added/updated:
+    - `time_tool_modal_interaction_test.dart` now covers Time Zone Converter alias open + explicit conversion history behavior.
+    - `toolpicker_activation_bundle_test.dart` now asserts timezone lookup opens `time_zone_converter`.
+    - `weather_summary_tile_open_smoke_test.dart` now asserts freshness indicator and updated AQI/Pollen labels.
 - Header controls follow-up:
   - removed `Edit Widgets` from the menu and moved edit entry to an inline `✏ Edit` action on the status row.
   - `Updated …` + refresh cluster is now visually centered to the same title axis with a small right optical nudge.
@@ -39,6 +104,34 @@
   - activated `data_storage` entry end-to-end (tool registry + picker + modal + conversion engine).
   - added multi-unit data-storage conversion support (`B/KB/MB/GB/TB`) in tool modal + converter wiring.
   - expanded `toolpicker_activation_bundle_test.dart` to verify Data Storage opens and performs conversion.
+- Pack F activation + lookup shell expansion (phase 3):
+  - activated `paper_sizes`, `mattress_sizes`, `timezone_lookup`, and `oven_temperature` in registry/picker flow.
+  - mapped `timezone_lookup` to the Time modal (timezone/delta migration path) and `oven_temperature` to Temperature.
+  - added shared lookup-table modal shell for size/reference tools with:
+    - from/to system selectors + swap
+    - primary size/category selector
+    - immediate mapped result card
+    - nearby row context + optional approximation notes
+    - one-tap `Reset Defaults` support
+  - migrated `shoe_sizes` from numeric conversion form to the lookup-table shell.
+  - shipped `paper_sizes` and `mattress_sizes` on the same lookup shell.
+  - expanded activation tests in `toolpicker_activation_bundle_test.dart` for paper, mattress, timezone, and weather entry behavior.
+- Weather tool baseline direction implemented:
+  - selected utility-first baseline (existing read-only weather cockpit sheet) rather than generic converter treatment.
+  - tools-menu launch path now routes `weather_summary` directly to `WeatherSummaryBottomSheet` (same behavior as weather tile tap).
+  - added regression assertion that picker-launched weather opens the weather sheet and not a converter modal.
+- Save/update feedback matrix closure (high-value):
+  - profile deletion now emits `Profile deleted` success toast.
+  - profile edit save now emits `Profile updated` success toast.
+  - add-profile save now emits `Profile created` success toast.
+  - first-run create path now seeds a pending success toast so dashboard can show `Profile created` after navigation.
+  - added toast regression coverage in:
+    - `profile_feedback_toast_test.dart`
+    - `profile_delete_confirmation_consistency_test.dart`
+    - `distance_tool_modal_interaction_test.dart` (`History cleared`)
+- Edit-mode stability hardening:
+  - fixed edit-mode anchor freeze race (`setState during build`) by deferring `_freezeVisibleAnchorsForEdit()` to post-frame in `dashboard_board.dart`.
+  - validated with `dashboard_edit_drag_handle_hit_testing_test.dart` and full suite.
 - Planning/sequence hardening follow-up:
   - added Pack D preflight restore/backup runbook: `docs/ai/reference/PACK_D_RESTORE_BACKUP_STRATEGY.md`.
   - added restore-point helper script: `tools/create_restore_point.sh` (captures base commit, status, diffs, tracked files, and worktree snapshot archive).
@@ -50,6 +143,17 @@
   - profile deletion now uses the same destructive bottom-sheet confirmation pattern as dashboard widget deletion (no floating `AlertDialog` mismatch).
   - shared helper added at `app/unitana/lib/features/dashboard/widgets/destructive_confirmation_sheet.dart` to enforce consistency.
   - policy/safeguard documented in `docs/ai/reference/CONFIRMATION_DIALOG_POLICY.md`.
+  - rollout extended to `Clear history` (tool modal) and `Reset Dashboard Defaults` so destructive confirmations now share one implementation path.
+  - save/update feedback audit is now tracked in `docs/ai/reference/SAVE_UPDATE_FEEDBACK_MATRIX.md` with explicit current-state gaps.
+- Edit-mode parity + hero typography follow-up:
+  - profiles board now mirrors dashboard edit-mode jiggle behavior while preserving long-press drag reorder.
+  - dashboard edit tiles move value content lower in edit mode for better spacing under drag/edit/delete icon row.
+  - hero details pill typography was tuned down slightly for `Sunrise • Sunset` and `Wind • Gust`.
+  - wind/gust value rows are now centered (title + values alignment parity).
+  - profile drag interaction now mirrors dashboard behavior: drag handle is directly draggable (no long-press requirement on tile body).
+  - profiles board edit mode now supports dropping onto empty `+` slots; dragged profile swaps with that empty slot so a `+` appears where the profile came from.
+  - fixed profile-drag overlay layout crash by constraining drag feedback tile dimensions (prevents unbounded-height flex errors seen in error.log).
+  - profiles board now enforces a minimum of 10 total grid cells (profiles + add slots), adding one extra 1x2 row of `+` tiles.
 - Pack F table-tools UX direction lock:
   - added `docs/ai/reference/LOOKUP_TABLE_TOOLS_UX_PATTERN.md` as canonical guidance for lookup-table interactions (`paper_sizes`, `shoe_sizes`, `mattress_sizes`).
   - sequence set to ship paper sizes first on the lookup framework, then shoe sizes, then mattress sizes.
@@ -99,8 +203,8 @@
   - Open-Meteo mapper test coverage now validates the full known WMO code set used by the backend contract (not only representative samples)
   - known codes must map to explicit labels (no generic fallback label for contracted codes).
 - Tools audit checkpoint:
-  - tool registry now has 11 disabled entries (coming-soon surfaces), so tools completion remains open under Pack F.
-  - Disabled IDs: `oven_temperature`, `cups_grams_estimates`, `pace`, `hydration`, `energy`, `tip_helper`, `tax_vat_helper`, `unit_price_helper`, `clothing_sizes`, `paper_sizes`, `timezone_lookup`.
+  - tool registry now has 7 deferred entries (coming-soon surfaces), so tools completion remains open under Pack F.
+  - Deferred IDs: `cups_grams_estimates`, `pace`, `hydration`, `energy`, `tax_vat_helper`, `unit_price_helper`, `clothing_sizes`.
 - Profile UX rework (phase 1):
   - replaced split menu actions (`Switch profile` + `Add profile`) with a single `Profiles` entry.
   - added a dedicated tiled `Profiles Board` screen with:
@@ -130,6 +234,38 @@
   - dashboard edit mode no longer renders the `Edit mode` pill, reclaiming vertical space for cleaner icon/action separation.
   - dashboard edit value typography was reduced and shifted lower with added vertical breathing room to avoid icon/value overlap.
   - edit action affordances remain text-based (`Cancel` / `Done`) with compact sizing/spacing consistency across dashboard and profile board.
+- Late pass follow-up (tools + design pivot):
+  - `baking` is explicitly represented in tool taxonomy/picker flow (not only a default dashboard seed).
+  - `oven_temperature` is now treated as a distinct tool identity and duplicate Temperature presentation was reduced pending broader taxonomy cleanup.
+  - tool/lens naming policy now favors `&` over `and` for tighter labels.
+  - Time tool generic convert/planner/history framing was removed in favor of a timezone-first interim baseline (`From/To`, swap, now, delta).
+  - Weather sheet copy and clarity were improved: user-facing provider-agnostic copy removed and pollen labeling clarified as an explicit index scale.
+  - Product direction is now explicitly design-first for the next context window: unify artistic/visual language before further heavy Time-tool expansion.
+- Design-only decision matrix lock (2026-02-06):
+  - tool architecture contract is now explicit: every tool must be classified as `Dedicated`, `Configurable template`, `Alias/preconfiguration`, or `Deferred`.
+  - duplication policy is explicit: one canonical engine per domain; aliases are allowed only when context/defaults materially differ (example: `Oven Temperature` as a Temperature alias, not a separate conversion engine).
+  - Time-family recommendation is locked to Option B:
+    - `Time` = home/destination live clocks + offset delta (profile-context first).
+    - `Time Zone Converter` = explicit arbitrary-zone conversions/planning.
+    - `Time Zone Map` = deferred optional visualization (not required for Pack F residual).
+  - Time IA contract:
+    - defaults = profile home/destination zones.
+    - swap = swaps zones and preserves entered local datetime values relative to selected zone.
+    - 12h/24h = display preference only (Settings/Profile), not conversion mode.
+    - history = only explicit user conversions/plans (no passive clock snapshots).
+    - refresh = clocks tick every minute; offset/delta recompute on timezone/date changes.
+  - visual-system contract for tool + marquee-adjacent surfaces is now locked:
+    - shared typography hierarchy and title handling (full title in picker/menu, short alias on compact tiles, modal title max two lines then ellipsis).
+    - one tokenized component shape/radius system (no ad hoc pills).
+    - consistent spacing rhythm and icon weight/style.
+    - maintain Dracula palette direction while unifying artwork/visual language.
+  - Weather clarity contract:
+    - AQI and pollen must use user semantics (value + band/scale), no provider/dev copy.
+    - manual refresh stays exposed; auto-refresh follows live-data cadence.
+    - stale indicator appears when data age exceeds freshness threshold.
+  - regression guardrails plan:
+    - add targeted opt-in golden/screenshot coverage for Time base surface, Time Zone Converter core state, weather freshness/stale states, and title overflow behavior.
+    - keep goldens opt-in only (`UNITANA_GOLDENS=1`).
 
 ## Planning reset (Codex-era large packs)
 Backlog has been reprioritized away from small, fragmented slices into larger execution packs:
@@ -160,9 +296,9 @@ Backlog has been reprioritized away from small, fragmented slices into larger ex
 11) **Icebox:** Optional radio feature.
 
 Current execution focus:
-- **Now:** Pack B + Pack C (fallback hardening landed; continue outage/cache/retry resilience + coverage) plus Pack F activation plan for disabled tools
-- **Next:** Pack D
-- **Later:** Pack E, then Pack H, with Pack J weather redesign decision gate prior to Weather implementation.
+- **Now:** implement the locked design contracts in Pack F residual execution (tool taxonomy cleanup, Time-family split behavior, weather semantics/refresh clarity, visual tokenization, and targeted visual regression guards).
+- **Next:** complete remaining tools activation/defer decisions under the new architecture matrix and close high-value interaction/test gaps.
+- **Later:** Pack E production facelift and Pack H localization.
 
 ## What’s true right now (high signal)
 ### 1) Dashboard header is a continuous collapsing header (no pop-in)
@@ -243,22 +379,7 @@ From `app/unitana`:
 - `docs/ai/design_lock/CITY_DATA_SCHEMA_CONTRACT.md`
 
 ## Codex handoff prompt (copy/paste)
-You are taking over Unitana, a Flutter app. Keep the repo green and avoid regressions.
+Use the full high-context prompt in:
+- `docs/ai/prompts/NEXT_CHAT_PROMPT.md`
 
-Non-negotiables:
-- Do not remove the collapsing header. No threshold-based mini-hero insertion.
-- Canonical hero keys must be unique; preview surfaces must not emit them.
-- Slide 2 of the wizard must fit on one screen, no scrolling.
-- Do not update goldens unless explicitly requested and documented.
-
-Inputs you will receive:
-- Latest codebase zip.
-- Latest `error.log`.
-
-Task:
-1) Read `error.log`. Identify the smallest set of changes to restore green.
-2) Make fixes with minimal behavioral change; prefer key hygiene, scroll alignment in tests, and layout constraint fixes over refactors.
-3) If any behavior changes, update:
-   - `docs/ai/context_db.json` patch_log + decisions
-   - relevant design locks (especially `HERO_MINI_HERO_CONTRACT.md`)
-4) Return a changed-files-only patch zip, plus a short changelog and rerun commands.
+That file is now the canonical copy/paste prompt for the next window.

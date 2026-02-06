@@ -12,6 +12,7 @@ class UnitanaAppState extends ChangeNotifier {
   // We keep legacy single-profile fields as computed views over the active profile.
   List<UnitanaProfile> _profiles = <UnitanaProfile>[];
   String _activeProfileId = 'profile_1';
+  String? _pendingSuccessToast;
 
   UnitanaAppState(this.storage);
 
@@ -277,6 +278,18 @@ class UnitanaAppState extends ChangeNotifier {
     await storage.clearAll();
     _profiles = <UnitanaProfile>[];
     _activeProfileId = 'profile_1';
+    _pendingSuccessToast = null;
     notifyListeners();
+  }
+
+  void setPendingSuccessToast(String? message) {
+    final next = message?.trim();
+    _pendingSuccessToast = (next == null || next.isEmpty) ? null : next;
+  }
+
+  String? consumePendingSuccessToast() {
+    final text = _pendingSuccessToast;
+    _pendingSuccessToast = null;
+    return text;
   }
 }

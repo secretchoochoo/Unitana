@@ -183,6 +183,89 @@ class _DashboardBoardState extends State<DashboardBoard>
     }
   }
 
+  Future<void> _freezeVisibleAnchorsForEdit() async {
+    final cols = widget.availableWidth >= 520 ? 3 : 2;
+
+    const int heroRows = 2;
+    final legacyAnchors = <int>[];
+    if (!widget.includePlacesHero) {
+      for (final t in ToolDefinitions.defaultTiles) {
+        final idx = widget.layout.defaultToolAnchorIndex(t.id);
+        if (idx != null) legacyAnchors.add(idx);
+      }
+      for (final i in widget.layout.items) {
+        final a = i.anchor;
+        if (a != null) legacyAnchors.add(a.index);
+      }
+    }
+
+    final bool needsLegacyHeroOffset =
+        !widget.includePlacesHero && legacyAnchors.isNotEmpty
+        ? legacyAnchors.map((a) => a ~/ cols).reduce(math.min) >= heroRows
+        : false;
+    final heroAnchorOffset = needsLegacyHeroOffset ? cols * heroRows : 0;
+    int adjustAnchor(int raw) =>
+        heroAnchorOffset == 0 ? raw : math.max(0, raw - heroAnchorOffset);
+
+    final toolItems = ToolDefinitions.defaultTiles
+        .where((t) => !widget.layout.isDefaultToolHidden(t.id))
+        .map(
+          (t) => DashboardBoardItem(
+            id: t.id,
+            kind: DashboardItemKind.tool,
+            span: DashboardTileSpan.oneByOne,
+            toolId: t.id,
+            anchor: widget.layout.defaultToolAnchorIndex(t.id) == null
+                ? null
+                : DashboardAnchor(
+                    index: adjustAnchor(
+                      widget.layout.defaultToolAnchorIndex(t.id)!,
+                    ),
+                  ),
+          ),
+        )
+        .toList();
+
+    final adjustedUserItems = widget.layout.items.map((i) {
+      final a = i.anchor;
+      if (a == null) return i;
+      if (heroAnchorOffset == 0) return i;
+      return DashboardBoardItem(
+        id: i.id,
+        kind: i.kind,
+        span: i.span,
+        toolId: i.toolId,
+        userAdded: i.userAdded,
+        anchor: DashboardAnchor(index: adjustAnchor(a.index)),
+      );
+    }).toList();
+
+    final items = <DashboardBoardItem>[
+      if (widget.includePlacesHero)
+        const DashboardBoardItem(
+          id: 'places_hero_v2',
+          kind: DashboardItemKind.placesHero,
+          span: DashboardTileSpan.fullWidthTwoTall,
+        ),
+      ...toolItems,
+      ...adjustedUserItems,
+    ];
+
+    final placed = _place(items, cols);
+    for (final p in placed) {
+      final item = p.item;
+      if (item.kind == DashboardItemKind.placesHero) continue;
+      if (item.toolId == null) continue;
+      final index = p.row * cols + p.col;
+      final payload = _payloadForToolTile(item: item, currentIndex: index);
+      await _setAnchorIndex(payload, index);
+    }
+
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -206,6 +289,10 @@ class _DashboardBoardState extends State<DashboardBoard>
     if (oldWidget.isEditing != widget.isEditing) {
       if (widget.isEditing) {
         _wiggle.repeat();
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted || !widget.isEditing) return;
+          unawaited(_freezeVisibleAnchorsForEdit());
+        });
       } else {
         _wiggle.stop();
         _wiggle.value = 0.0;
@@ -606,6 +693,11 @@ class _DashboardBoardState extends State<DashboardBoard>
     final prefer24h = activePlace?.use24h ?? false;
     final primary = labels.$1;
     final secondary = labels.$2;
+    final footerLabel = widget.isEditing
+        ? ''
+        : (isCurrency && widget.liveData.isCurrencyStale)
+        ? 'Rates stale'
+        : 'Convert';
 
     final isDefaultTile = _isDefaultToolTile(item);
     final canEdit = item.userAdded || isDefaultTile;
@@ -620,9 +712,9 @@ class _DashboardBoardState extends State<DashboardBoard>
           : LensAccents.iconTintFor(tool.lensId!),
       primary: primary,
       secondary: secondary,
-      footer: widget.isEditing ? '' : 'Convert',
+      footer: footerLabel,
       compactValues: widget.isEditing,
-      valuesTopInset: widget.isEditing ? 16 : 0,
+      valuesTopInset: widget.isEditing ? 22 : 0,
       onLongPress: canEdit
           ? () {
               if (!widget.isEditing) {
@@ -654,6 +746,17 @@ class _DashboardBoardState extends State<DashboardBoard>
                 eurToUsd: widget.liveData.eurToUsd,
                 currencyRateForPair: (fromCode, toCode) => widget.liveData
                     .currencyRate(fromCode: fromCode, toCode: toCode),
+                currencyIsStale: widget.liveData.isCurrencyStale,
+                currencyShouldRetryNow: widget.liveData.shouldRetryCurrencyNow,
+                currencyLastErrorAt: widget.liveData.lastCurrencyErrorAt,
+                onRetryCurrencyNow: () async {
+                  final places = <Place>[
+                    if (home != null) home,
+                    if (destination != null) destination,
+                  ];
+                  if (places.isEmpty) return;
+                  await widget.liveData.refreshAll(places: places);
+                },
                 home: home,
                 destination: destination,
               );
@@ -681,7 +784,7 @@ class _DashboardBoardState extends State<DashboardBoard>
       secondary: secondary,
       footer: '',
       compactValues: true,
-      valuesTopInset: 16,
+      valuesTopInset: 22,
     );
 
     final stack = Stack(
@@ -1252,6 +1355,17 @@ class _ToolPickerSheetState extends State<ToolPickerSheet> {
 
   DashboardSessionController? get _session => widget.session;
 
+  String _disabledBadgeFor(ToolRegistryTool tool) {
+    switch (tool.surfaceType) {
+      case ToolSurfaceType.deferred:
+        return 'Deferred';
+      case ToolSurfaceType.aliasPreset:
+      case ToolSurfaceType.configurableTemplate:
+      case ToolSurfaceType.dedicated:
+        return 'Soon';
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -1277,9 +1391,7 @@ class _ToolPickerSheetState extends State<ToolPickerSheet> {
       return ToolDefinitions.currencyConvert;
     }
 
-    // Existing app currently exposes separate Baking/Liquids entry points.
-    // Keep this lens-driven mapping until we introduce distinct registry
-    // tool IDs for each entry point.
+    // Backward compatibility for older registry/tool ids.
     if (tool.toolId == 'liquid_volume') {
       return lensId == ActivityLensId.foodCooking
           ? ToolDefinitions.baking
@@ -1287,9 +1399,13 @@ class _ToolPickerSheetState extends State<ToolPickerSheet> {
     }
 
     // Activation bundle (Pack F): these remain distinct discovery entries,
-    // but currently reuse the mature Time modal.
+    // but route into Time-family surfaces.
     if (tool.toolId == 'world_clock_delta' || tool.toolId == 'jet_lag_delta') {
       return ToolDefinitions.time;
+    }
+
+    if (tool.toolId == 'timezone_lookup') {
+      return ToolDefinitions.timeZoneConverter;
     }
 
     return null;
@@ -1349,18 +1465,36 @@ class _ToolPickerSheetState extends State<ToolPickerSheet> {
               ),
             ),
             title: Text(t.label),
-            subtitle: t.lenses.isEmpty
-                ? null
-                : Text(
-                    ActivityLenses.byId(t.lenses.first)?.name ?? '',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: scheme.onSurfaceVariant,
-                    ),
+            subtitle: () {
+              final lensName = t.lenses.isEmpty
+                  ? null
+                  : (ActivityLenses.byId(t.lenses.first)?.name ?? '');
+              final deferReason = t.deferReason?.trim();
+              if (deferReason != null && deferReason.isNotEmpty) {
+                final prefix = (lensName == null || lensName.isEmpty)
+                    ? ''
+                    : '$lensName • ';
+                return Text(
+                  '$prefix$deferReason',
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: scheme.onSurfaceVariant,
                   ),
+                );
+              }
+              if (lensName == null || lensName.isEmpty) return null;
+              return Text(
+                lensName,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: scheme.onSurfaceVariant,
+                ),
+              );
+            }(),
             trailing: t.isEnabled
                 ? const Icon(Icons.chevron_right_rounded)
                 : Text(
-                    'Soon',
+                    _disabledBadgeFor(t),
                     style: theme.textTheme.labelMedium?.copyWith(
                       color: scheme.onSurfaceVariant,
                     ),
@@ -1440,10 +1574,20 @@ class _ToolPickerSheetState extends State<ToolPickerSheet> {
           enabled: t.isEnabled,
           leading: Icon(t.icon, color: accent),
           title: Text(t.label),
+          subtitle: t.deferReason == null
+              ? null
+              : Text(
+                  t.deferReason!,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: scheme.onSurfaceVariant,
+                  ),
+                ),
           trailing: t.isEnabled
               ? const Icon(Icons.chevron_right_rounded)
               : Text(
-                  'Soon',
+                  _disabledBadgeFor(t),
                   style: theme.textTheme.labelMedium?.copyWith(
                     color: scheme.onSurfaceVariant,
                   ),

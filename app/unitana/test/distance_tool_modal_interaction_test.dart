@@ -247,4 +247,41 @@ void main() {
     final field = tester.widget<TextField>(find.byKey(inputKey));
     expect(field.controller?.text, inputValue);
   });
+
+  testWidgets('Distance: clear history shows success feedback', (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    await tester.binding.setSurfaceSize(const Size(390, 844));
+    addTearDown(() async => tester.binding.setSurfaceSize(null));
+
+    final state = buildSeededState();
+    await pumpDashboard(tester, state);
+
+    await tester.tap(find.byKey(const Key('dashboard_tools_button')));
+    await tester.pumpAndSettle(const Duration(milliseconds: 250));
+    await tester.enterText(
+      find.byKey(const ValueKey('toolpicker_search')),
+      'Distance',
+    );
+    await tester.pumpAndSettle(const Duration(milliseconds: 250));
+    await tester.tap(
+      find.byKey(const ValueKey('toolpicker_search_tool_distance')),
+    );
+    await tester.pumpAndSettle(const Duration(milliseconds: 300));
+
+    await tester.enterText(
+      find.byKey(const ValueKey('tool_input_distance')),
+      '5',
+    );
+    await tester.tap(find.byKey(const ValueKey('tool_run_distance')));
+    await tester.pumpAndSettle(const Duration(milliseconds: 250));
+
+    await tester.tap(find.text('Clear History'));
+    await tester.pump(const Duration(milliseconds: 250));
+    final clearButton = find.widgetWithText(FilledButton, 'Clear');
+    final clearWidget = tester.widget<FilledButton>(clearButton);
+    clearWidget.onPressed?.call();
+    await tester.pumpAndSettle(const Duration(milliseconds: 250));
+
+    expect(find.text('History cleared'), findsOneWidget);
+  });
 }

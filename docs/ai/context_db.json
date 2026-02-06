@@ -66,7 +66,7 @@
     {
       "id": "PACK_F_tools_surface_completion",
       "title": "Pack F (P1): Tools surface completion and parity cleanup",
-      "summary": "Resolve remaining “coming soon” surfaces, finish key tool UX parity, and normalize unit-matrix behavior between tools and widgets.",
+      "summary": "Resolve remaining \u201ccoming soon\u201d surfaces, finish key tool UX parity, and normalize unit-matrix behavior between tools and widgets.",
       "notes": [
         "Run and execute a concrete coming-soon audit with owner and ETA per tool.",
         "Finish currency tool UX parity if any gaps remain after Pack C.",
@@ -115,7 +115,7 @@
     {
       "id": "PACK_J_weather_tool_full_redesign",
       "title": "Pack J (P1): Weather tool full redesign and product-positioning decision",
-      "summary": "Replace the current generic converter-style Weather modal with a deliberate Weather experience aligned to Unitana’s travel intent, data contracts, and visual language.",
+      "summary": "Replace the current generic converter-style Weather modal with a deliberate Weather experience aligned to Unitana\u2019s travel intent, data contracts, and visual language.",
       "notes": [
         "Do not keep Weather as a placeholder converter UI.",
         "Run a decision workshop before implementation: weather-as-conversion utility vs richer weather cockpit with expanded API detail + marquee-first visual storytelling.",
@@ -136,24 +136,44 @@
     }
   ],
   "current_state": {
-    "current_slice": "Pack A complete; executing Pack B + Pack C, with Pack F tools-audit unblock tracked",
+    "current_slice": "Pack F contracted implementation + Pack C reliability visibility follow-up in progress: Time-family split, weather clarity semantics, deferred-tool matrix execution, tip-helper activation, and currency stale-status surfacing shipped",
     "notes": [
       "Codex-first workflow allows larger execution packs while keeping gates green.",
       "Pack A city data platform foundation is complete with canonical schema + validation guards.",
       "Radio remains explicitly iceboxed.",
-      "Profile UX phase 1 shipped: unified Profiles entry + dedicated tiled board with add/edit/delete/switch and persisted ordering."
+      "Profile UX phase 1 shipped: unified Profiles entry + dedicated tiled board with add/edit/delete/switch and persisted ordering.",
+      "Pack F phase 3 shipped: lookup-table shell for shoe/paper/mattress, weather tool routed to weather sheet from picker, and success-feedback matrix high-value gaps closed.",
+      "Late pass captured UX concerns: Time tool interim UI is functional but not yet acceptable for final product quality.",
+      "Next window is explicitly design-only to lock tool taxonomy, Time-family boundaries, and unified art direction before additional implementation churn.",
+      "Design-only decision matrix is now complete with implementation contracts for taxonomy, Time split, weather semantics/refresh behavior, and visual-system guardrails.",
+      "Tool registry now encodes explicit architecture metadata (surface type, alias targets, defer reasons), and picker UI differentiates deferred tools with rationale.",
+      "Tip Helper (`tip_helper`) is now activated as a dedicated tool surface with picker launch, modal interaction contract, and lens discoverability mapping.",
+      "Currency modal now exposes stale/retry status messaging using controller currency health signals."
     ],
     "overall_health": "Stable with full gates passing; canonical city data coverage is now enforced for all in-scope records.",
     "status": "GREEN",
     "focus": {
-      "now": "Pack B live weather/time/AQI/pollen E2E + Pack C live currency global + Pack F coming-soon tool activation plan",
-      "next": "Pack D docs/text full audit",
+      "now": "Finish remaining Pack F residual implementation and polish after architecture-matrix + Time/Weather contract shipping.",
+      "next": "Proceed to Pack B/C reliability closure and then Pack H localization bootstrap.",
       "later": [
-        "Pack E marquee scene V2 facelift"
+        "Pack E marquee scene V2 production",
+        "Pack H localization"
       ]
     }
   },
   "decisions": [
+    {
+      "date": "2026-02-06",
+      "decision": "Use a utility-first weather baseline by routing Weather tool picker launches to the existing weather summary cockpit sheet, and avoid generic converter UI.",
+      "rationale": "This removes the placeholder converter mismatch with minimal churn, keeps behavior coherent across tile and picker entry points, and leaves room for a richer Pack J cockpit evolution.",
+      "topic": "Weather tool baseline direction"
+    },
+    {
+      "date": "2026-02-06",
+      "decision": "Ship a shared lookup-table modal shell for standards/size tools and migrate Shoe Sizes to it before adding Paper Sizes and Mattress Sizes.",
+      "rationale": "Lookup-style tools are not numeric converters; system/category selectors with immediate mapped results are a better fit and reduce UX mismatch.",
+      "topic": "Pack F lookup-table tool UX implementation"
+    },
     {
       "date": "2026-01-02",
       "decision": "Use WeatherAPI.com for MVP weather provider; map WeatherAPI condition codes to provider-agnostic SceneKeys.",
@@ -168,13 +188,13 @@
     },
     {
       "date": "2026-01-14",
-      "decision": "Use unit pills that open a compact selector sheet for input/output units. Put secondary outputs behind a \"More units…\" sub-sheet when needed.",
+      "decision": "Use unit pills that open a compact selector sheet for input/output units. Put secondary outputs behind a \"More units\u2026\" sub-sheet when needed.",
       "rationale": "Keeps the primary modal clean and fast while still supporting tools with many units; avoids bolting \"From/To\" everywhere.",
       "topic": "Multi-unit tool UX (selector strategy)"
     },
     {
       "date": "2026-01-14",
-      "decision": "For multi-unit tools, use input/output unit pills that open a compact selector as the default; expose additional outputs behind a single \"More units…\" sub-sheet when needed.",
+      "decision": "For multi-unit tools, use input/output unit pills that open a compact selector as the default; expose additional outputs behind a single \"More units\u2026\" sub-sheet when needed.",
       "rationale": "Keeps the primary modal clean and consistent across tools while still supporting power users; avoids bolting on verbose From/To forms everywhere.",
       "topic": "Multi-unit tool UX strategy"
     },
@@ -193,7 +213,7 @@
     {
       "date": "2026-01-20",
       "decision": "Enforce a single authoritative micro-mode gate for Env and Currency that triggers before any multi-line layout is constructed; under tight constraints render icon + single-line micro layouts.",
-      "rationale": "Prevents recurring RenderFlex overflows caused by 2-line Columns being forced into inner heights in the 20–30px range by tests and compact surfaces.",
+      "rationale": "Prevents recurring RenderFlex overflows caused by 2-line Columns being forced into inner heights in the 20\u201330px range by tests and compact surfaces.",
       "topic": "Hero overflow prevention (micro-first contract)"
     },
     {
@@ -226,7 +246,7 @@
       "rationale": "Avoids scroll jumps and layout popping under fast scroll; keeps hit testing stable by reserving space smoothly.",
       "topic": "Pinned mini-hero transition hardening (P0)"
     },
-    "Hero interaction consistency: AQI/Pollen pill must show tap ripple feedback (Material+InkWell) like Sunrise/Sunset ↔ Wind/Gust.",
+    "Hero interaction consistency: AQI/Pollen pill must show tap ripple feedback (Material+InkWell) like Sunrise/Sunset \u2194 Wind/Gust.",
     "Currency cockpit: center-align the currency rate line in both normal and micro layouts.",
     {
       "date": "2026-02-01",
@@ -388,8 +408,8 @@
       "id": "D-2026-02-06-time-tool-repurpose-lock",
       "date": "2026-02-06",
       "title": "Lock Time tool direction to timezone/delta-first",
-      "decision": "Treat 12h↔24h conversion as interim only; repurpose Time workflow toward timezone lookup and delta use-cases per TIME_TOOL_REPURPOSE_PLAN.md.",
-      "rationale": "Time formatting conversion is low-value for Unitana’s travel context versus timezone/delta workflows tied to home/destination places.",
+      "decision": "Treat 12h\u219424h conversion as interim only; repurpose Time workflow toward timezone lookup and delta use-cases per TIME_TOOL_REPURPOSE_PLAN.md.",
+      "rationale": "Time formatting conversion is low-value for Unitana\u2019s travel context versus timezone/delta workflows tied to home/destination places.",
       "impacts": [
         "Future tool activation should merge world_clock_delta/timezone_lookup into the Time surface.",
         "UI copy and tests should pivot toward timezone correctness and DST-aware behavior."
@@ -415,6 +435,7 @@
       "rationale": "Mixed confirmation patterns create UX inconsistency and increase implementation drift; shared component + policy reduces regressions.",
       "impacts": [
         "Profile and dashboard deletion flows now share the same confirmation model.",
+        "Tool history clear and dashboard reset-default flows also use the same destructive bottom-sheet model.",
         "New destructive actions should call the shared helper instead of bespoke dialogs.",
         "Policy contract is documented in docs/ai/reference/CONFIRMATION_DIALOG_POLICY.md."
       ]
@@ -441,13 +462,100 @@
         "Team must decide between utility-conversion behavior and richer weather cockpit behavior with stronger visual/marquee emphasis.",
         "Implementation must follow a documented recommendation aligned with Unitana aesthetics and travel use-cases."
       ]
+    },
+    {
+      "id": "D-2026-02-06-save-update-feedback-matrix-lock",
+      "date": "2026-02-06",
+      "title": "Adopt save/update feedback matrix as consistency policy",
+      "decision": "Track mutation feedback behavior via a centralized matrix and close gaps intentionally, rather than ad hoc toast additions.",
+      "rationale": "UI consistency drift has become visible across dashboard/profiles/tools flows; explicit matrix + policy makes feedback behavior testable and durable.",
+      "impacts": [
+        "Use docs/ai/reference/SAVE_UPDATE_FEEDBACK_MATRIX.md as source of truth for success-feedback parity decisions.",
+        "New mutation flows should declare expected success feedback and test coverage."
+      ]
+    },
+    {
+      "id": "D-2026-02-06-packf-mega-slice-priority-lock",
+      "date": "2026-02-06",
+      "title": "Prioritize high-context Pack F mega slice in next handoff",
+      "decision": "Set the next context-window mission to a sustained tools expansion slice with weather redesign baseline, size-matrix tooling, and unit/default hardening.",
+      "rationale": "User explicitly requested a long-running build-and-break phase focused on shipping remaining tools and converging on stable UX models.",
+      "impacts": [
+        "NEXT_CHAT_PROMPT now targets docs/ai/reference/PACK_F_MEGA_SLICE_TOOLS_EXPANSION_PLAN.md as primary execution contract.",
+        "Near-term focus shifts from incremental packs to one broader integrated delivery pass."
+      ]
+    },
+    {
+      "id": "D-2026-02-06-time-weather-design-pivot",
+      "date": "2026-02-06",
+      "title": "Pivot to design-first pass for Time/Weather and tool taxonomy",
+      "decision": "Pause deeper Time-feature expansion and run a dedicated design sprint to define final Time-family tool boundaries, interaction model, naming contracts, and unified visual language with artist guidance.",
+      "rationale": "User feedback identified functional-but-confusing UX and inconsistent visual quality; locking design contracts first reduces churn and prevents further layering on unstable foundations.",
+      "impacts": [
+        "NEXT_CHAT_PROMPT should be design-only rather than implementation-heavy.",
+        "Time tool decisions must address whether features are split across Time, Time Zone Converter, and optional map/clock surfaces.",
+        "Tool naming and duplicate taxonomy need deliberate strategy before additional activations."
+      ]
+    },
+    {
+      "id": "D-2026-02-06-tool-architecture-decision-matrix",
+      "date": "2026-02-06",
+      "title": "Lock tool architecture matrix (dedicated vs template vs alias/defer)",
+      "decision": "Classify all registry tools into four buckets: dedicated surface, configurable template, alias/preconfiguration, or remove/defer. Canonical duplicate policy: keep one canonical engine identity and allow aliases only when defaults, copy, and lens context materially differ.",
+      "rationale": "Current tool sprawl created duplicate semantics and unclear picker expectations. A hard matrix reduces clutter while keeping high-intent shortcuts.",
+      "impacts": [
+        "Keep dedicated surfaces for Weather and lookup-table standards tools.",
+        "Treat Oven Temperature as a context alias of Temperature (not a separate conversion engine).",
+        "Route world_clock_delta, jet_lag_delta, and timezone_lookup as aliases into Time-family flows.",
+        "Leave disabled helper tools deferred until data contracts and UX quality bars are defined."
+      ]
+    },
+    {
+      "id": "D-2026-02-06-time-family-split-option-b",
+      "date": "2026-02-06",
+      "title": "Adopt Time-family Option B: Time + Time Zone Converter (Map deferred)",
+      "decision": "Split Time-family into two tools: Time (home/destination clocks + delta) and Time Zone Converter (explicit arbitrary zone conversion); keep Time Zone Map deferred as optional future visualization.",
+      "rationale": "A single mega-tool was harder to scan, while three surfaces would over-fragment low-frequency behavior. Two focused surfaces balance clarity with discoverability.",
+      "impacts": [
+        "Time defaults to profile home/destination zones with one-tap swap and live clocks.",
+        "12h/24h remains display preference (profile/settings), not conversion mode.",
+        "History stores only user-entered conversions/plans in Time Zone Converter; passive live clocks are not logged.",
+        "Live clocks tick each minute and refresh offsets on timezone/date change events."
+      ]
+    },
+    {
+      "id": "D-2026-02-06-visual-system-tools-marquee-contract",
+      "date": "2026-02-06",
+      "title": "Lock shared visual contract for tool and marquee-adjacent surfaces",
+      "decision": "Adopt one visual language for tool sheets/cards and marquee-adjacent readouts: consistent type scale, radius set, icon treatment, spacing rhythm, and title truncation rules.",
+      "rationale": "One-off styling across tools and weather/time surfaces made the app feel inconsistent despite a shared palette.",
+      "impacts": [
+        "Keep Dracula palette direction while standardizing component primitives.",
+        "Title policy: menu/picker uses full title; tiles use short alias map; modal title supports max two lines before ellipsis.",
+        "Naming policy prefers '&' in compact labels where semantics remain clear."
+      ]
+    },
+    {
+      "id": "D-2026-02-06-weather-clarity-refresh-contract",
+      "date": "2026-02-06",
+      "title": "Lock weather semantics and refresh-state contract",
+      "decision": "Weather must use user-facing semantics for AQI and pollen labels, remove provider/dev wording, and expose explicit freshness state with manual + automatic refresh policy.",
+      "rationale": "Users could not easily interpret pollen/AQI context and had no strong freshness affordance.",
+      "impacts": [
+        "AQI shows value + band label; pollen shows index + explicit scale hint.",
+        "Manual refresh remains user-triggered; auto-refresh cadence aligns to dashboard live data cycle.",
+        "Stale indicator appears when weather age exceeds freshness threshold and clears after successful refresh."
+      ]
     }
   ],
   "design_system": {
     "notes": [
       "Audit text styles across pages for contrast and hierarchy.",
       "Interactive pills must provide visible tap feedback (InkWell ripple).",
-      "Currency line is center-aligned (micro and normal)."
+      "Currency line is center-aligned (micro and normal).",
+      "Tools + marquee-adjacent surfaces share the same type/radius/spacing contract.",
+      "No ad hoc pill shapes; use one tokenized component family.",
+      "Long-name policy is explicit: tile aliases first, two-line modal title max, then ellipsis."
     ],
     "theme": "Dracula-inspired"
   },
@@ -698,8 +806,8 @@
       ],
       "slice": "L",
       "summary": [
-        "Fixed Weight tool modal labeling and unit toggling to match existing tool patterns (e.g., Temperature shows C → F or F → C).",
-        "Corrected Weight conversion display so inputs/outputs clearly indicate kg ↔ lb; removed ambiguous \"what/lbs\" presentation.",
+        "Fixed Weight tool modal labeling and unit toggling to match existing tool patterns (e.g., Temperature shows C \u2192 F or F \u2192 C).",
+        "Corrected Weight conversion display so inputs/outputs clearly indicate kg \u2194 lb; removed ambiguous \"what/lbs\" presentation.",
         "Ensured Weight tool tile subtitle uses the correct unit pair string and stays consistent with other tiles."
       ],
       "title": "Weight tool: consistent unit labels + modal header clarity"
@@ -893,7 +1001,7 @@
       },
       "slice": "O2",
       "summary": [
-        "Updated dashboard tiles to color their leading icon and footer cue using the owning tool’s Activity Lens accent (Dracula palette tints), eliminating the legacy global purple accent.",
+        "Updated dashboard tiles to color their leading icon and footer cue using the owning tool\u2019s Activity Lens accent (Dracula palette tints), eliminating the legacy global purple accent.",
         "Added an optional accentColor override to UnitanaTile, allowing per-tool coloring while keeping existing defaults when no override is provided.",
         "Added a widget test asserting the Height tile uses the Health & Fitness lens accent for both icon and footer cue (covers Odd But Useful mapping via the same path)."
       ],
@@ -1040,7 +1148,7 @@
       "date": "2026-01-01",
       "id": "patch_2026-01-01_slice_O7h_hotfix_layout_reset_and_hero_header",
       "slice": "O7h",
-      "summary": "Fix Reset Dashboard Defaults implementation issues (controller API + test seeding) and remove the redundant “Tools” entry from the top-right menu now that a dedicated tools button exists. Restore the Places Hero V2 clock header to the two-line centered format using bullets, and center the “Sunrise / Sunset” header within its pill.",
+      "summary": "Fix Reset Dashboard Defaults implementation issues (controller API + test seeding) and remove the redundant \u201cTools\u201d entry from the top-right menu now that a dedicated tools button exists. Restore the Places Hero V2 clock header to the two-line centered format using bullets, and center the \u201cSunrise / Sunset\u201d header within its pill.",
       "test_status": "flutter analyze clean; flutter test passing (expected after patch)",
       "title": "Hotfix: Reset defaults wiring + hero header formatting"
     },
@@ -1054,7 +1162,7 @@
       ],
       "id": "patch_2026-01-01_slice_O7h_hotfix_reset_defaults_and_hero_header",
       "slice": "O7h",
-      "summary": "Addresses regressions from the O7 reset-defaults slice by ensuring the DashboardLayoutController exposes resetDashboardDefaults(), fixing the widget test to seed layout JSON using the current schema, and removing the redundant “Tools” option from the top-right (...) menu since a dedicated Tools button now exists. Also restores the PlacesHeroV2 time header to the two-line centered format: “Lisbon • Denver +7h” and “01:03 WET • 6:03 PM MST (Fri 2 Jan)”, and centers the “Sunrise / Sunset” title within its pill.",
+      "summary": "Addresses regressions from the O7 reset-defaults slice by ensuring the DashboardLayoutController exposes resetDashboardDefaults(), fixing the widget test to seed layout JSON using the current schema, and removing the redundant \u201cTools\u201d option from the top-right (...) menu since a dedicated Tools button now exists. Also restores the PlacesHeroV2 time header to the two-line centered format: \u201cLisbon \u2022 Denver +7h\u201d and \u201c01:03 WET \u2022 6:03 PM MST (Fri 2 Jan)\u201d, and centers the \u201cSunrise / Sunset\u201d title within its pill.",
       "title": "Hotfix: Reset defaults + hero time header"
     },
     {
@@ -1158,7 +1266,7 @@
       "id": "patch_2026-01-01_sliceR1_tile_footer_convert_cta",
       "slice": "R1",
       "summary": [
-        "Replaced the dashboard tile footer copy from “Tap to convert” to “Convert”.",
+        "Replaced the dashboard tile footer copy from \u201cTap to convert\u201d to \u201cConvert\u201d.",
         "Swapped the footer dot indicator for a conversion icon (swap_horiz) and centered the CTA row.",
         "Updated widget tests to assert the new footer text and icon tinting behavior."
       ],
@@ -1189,7 +1297,7 @@
       "id": "patch_2026-01-03_docs_handoff_refresh_senior_transition",
       "slice": "DOCS",
       "summary": [
-        "Refreshed CURRENT_HANDOFF to reflect O12e–O12g3 outcomes, current priorities, risks, and lessons learned.",
+        "Refreshed CURRENT_HANDOFF to reflect O12e\u2013O12g3 outcomes, current priorities, risks, and lessons learned.",
         "Set next slice definition for O12g4 (WeatherAPI condition.code -> SceneKey -> marquee selection, DevTools override precedence).",
         "Prepared senior-team transition prompt for next chat to reduce scope thrash and enforce one-slice execution."
       ],
@@ -1204,7 +1312,7 @@
       "slice": "O12j10",
       "summary": [
         "Strengthened Dracula-terminal feel in tool modals: consistent monospace typography, prompt glyph styling, and improved readability.",
-        "Removed all \"$\" prompt prefixes to avoid currency confusion; standardized prompt to \"❯\".",
+        "Removed all \"$\" prompt prefixes to avoid currency confusion; standardized prompt to \"\u276f\".",
         "Improved microcopy and affordances: dynamic \"Enter Value\" -> \"Edit Value\" when input present; timestamp rendered as lighter italic meta text."
       ],
       "title": "Tool modal terminal polish (monospace prompt, remove $ prefix, timestamp styling)"
@@ -1218,7 +1326,7 @@
       "slice": "O12k07g",
       "summary": [
         "Fixes brittle test coupling to the exact 'Time' label by selecting the first enabled ToolPicker search result whose title contains 'time' (case-insensitive).",
-        "Derives toolId from modal keys (tool_input_*) and chooses 12h vs 24h input based on the modal '<from> → <to>' direction label.",
+        "Derives toolId from modal keys (tool_input_*) and chooses 12h vs 24h input based on the modal '<from> \u2192 <to>' direction label.",
         "Validates conversion output shape plus history tap-to-copy and long-press-to-edit behaviors without relying on list ordering."
       ],
       "title": "Time modal test: robust ToolPicker selection + direction-aware input"
@@ -1447,12 +1555,12 @@
       },
       "slice": "O12k13k",
       "summary": [
-        "Enabled the Length tool under the Home & DIY lens (cm ↔ ft/in) using the existing canonical length engine.",
+        "Enabled the Length tool under the Home & DIY lens (cm \u2194 ft/in) using the existing canonical length engine.",
         "Extended ToolModalBottomSheet unit-label and input-mode handling to support toolId 'length' (including freeform input in the imperial direction).",
         "Added a widget interaction test that covers conversion, history copy, and long-press edit for the Length tool.",
         "Updated canonical docs and captured the Radio feature as a docs-only backlog item."
       ],
-      "title": "Tool surface: enable Length tool (cm ↔ ft/in) + modal support + interaction test"
+      "title": "Tool surface: enable Length tool (cm \u2194 ft/in) + modal support + interaction test"
     },
     {
       "date": "2026-01-09",
@@ -1672,8 +1780,8 @@
       },
       "slice": "O12k13r1",
       "summary": [
-        "Fixed a regression where opening Currency from a dashboard tile lacked place context, causing the default units to fall back to USD→EUR regardless of selected reality.",
-        "Dashboard tile modal invocation now passes home + destination Place objects and the live EUR→USD rate into ToolModalBottomSheet so defaults align with Places Hero selection."
+        "Fixed a regression where opening Currency from a dashboard tile lacked place context, causing the default units to fall back to USD\u2192EUR regardless of selected reality.",
+        "Dashboard tile modal invocation now passes home + destination Place objects and the live EUR\u2192USD rate into ToolModalBottomSheet so defaults align with Places Hero selection."
       ],
       "title": "Currency modal: pass home/destination context from dashboard tiles"
     },
@@ -1769,7 +1877,7 @@
       ],
       "slice": "H2",
       "summary": [
-        "Updated CURRENT_HANDOFF.md to reflect the actual completed slices (C3c→C7, TZ fixes, tests) and to capture current priorities and backlog.",
+        "Updated CURRENT_HANDOFF.md to reflect the actual completed slices (C3c\u2192C7, TZ fixes, tests) and to capture current priorities and backlog.",
         "Ensures DashboardSessionController exposes PinnedHeroDetailsMode, pinnedHeroDetailsMode, and togglePinnedHeroDetailsMode so dashboard_screen.dart compiles cleanly after recent refactors."
       ],
       "title": "Refresh handoff + restore pinned hero details mode API for dashboard screen"
@@ -1844,8 +1952,8 @@
     {
       "changes": [
         "Enable Shoe Sizes in Tool Registry and wire it into ToolDefinitions + canonical tool ids.",
-        "Add EU ↔ US (men) lookup conversion (nearest match) with UK/JP hint values; keep value-first output.",
-        "Add a targeted widget test that adds the tool from the picker and verifies a stable US→EU conversion result."
+        "Add EU \u2194 US (men) lookup conversion (nearest match) with UK/JP hint values; keep value-first output.",
+        "Add a targeted widget test that adds the tool from the picker and verifies a stable US\u2192EU conversion result."
       ],
       "files_changed": [
         "app/unitana/lib/features/dashboard/models/canonical_tools.dart",
@@ -1859,7 +1967,7 @@
       "id": "patch_2026-01-13_S6_shoe_sizes_tool_us_eu",
       "sev": "Sev1-hardening",
       "slice": "S6",
-      "title": "Add Shoe Sizes tool (EU ↔ US M) with UK/JP hints + modal test"
+      "title": "Add Shoe Sizes tool (EU \u2194 US M) with UK/JP hints + modal test"
     },
     {
       "changes": [
@@ -1959,7 +2067,7 @@
       "slice": "S6k",
       "summary": [
         "Tool modal: increased cacheExtent on the modal body ListView so history widgets build reliably on small test surfaces (prevents 'history not found' flake from lazy sliver construction).",
-        "Widget tests: use the Scrollable descendant inside the keyed ListView when calling scrollUntilVisible (prevents ListView→Scrollable cast failure)."
+        "Widget tests: use the Scrollable descendant inside the keyed ListView when calling scrollUntilVisible (prevents ListView\u2192Scrollable cast failure)."
       ],
       "title": "Tools: stabilize modal scroll + fix test scrollable finders"
     },
@@ -2112,7 +2220,7 @@
       "slice": "S7d",
       "summary": [
         "Updates Volume and Pressure modal widget tests to tolerate the optional prompt marker prefix (e.g. \"> \") used in history/result rendering.",
-        "Updates expectations to accept the post-multi-unit result format that includes the input unit (e.g. \"10 L → 2.6 gal\", \"10 kPa → 1.5 psi\").",
+        "Updates expectations to accept the post-multi-unit result format that includes the input unit (e.g. \"10 L \u2192 2.6 gal\", \"10 kPa \u2192 1.5 psi\").",
         "Keeps backward-compatible acceptors so older builds or default-unit flips do not break the tests."
       ],
       "title": "Fix: stabilize Volume/Pressure modal tests after multi-unit pills"
@@ -2235,7 +2343,7 @@
       ],
       "id": "S7p",
       "notes": [
-        "Adds DataRefreshStatusLabel: provider-agnostic 'Updated X ago' (or 'Updating…', 'Stale (…)') with a safe 60s UI ticker.",
+        "Adds DataRefreshStatusLabel: provider-agnostic 'Updated X ago' (or 'Updating\u2026', 'Stale (\u2026)') with a safe 60s UI ticker.",
         "Moves refresh messaging out of the hero marquee visual surface (no longer covering the animation); renders a small right-rail label instead.",
         "Adds a subtle dashboard header-line status (under AppBar, above the board) to show last refresh without changing AppBar height.",
         "Optionally triggers an automatic refresh when live weather is enabled and data is missing/stale, with a 30s guard to avoid spam."
@@ -2487,11 +2595,11 @@
       "id": "P1.8",
       "notes": [
         "Adds FrankfurterClient and CurrencyBackend (mock/frankfurter) with build/runtime gating.",
-        "Loads cached EUR→USD rate from SharedPreferences and refreshes on a 12h TTL (manual refresh remains non-chatty).",
-        "Removes simulated EUR→USD drift in refreshAll; demo mode uses stable 1.10 unless a debug override is set.",
+        "Loads cached EUR\u2192USD rate from SharedPreferences and refreshes on a 12h TTL (manual refresh remains non-chatty).",
+        "Removes simulated EUR\u2192USD drift in refreshAll; demo mode uses stable 1.10 unless a debug override is set.",
         "Adds unit tests for FrankfurterClient JSON parsing and error handling."
       ],
-      "title": "Currency backend MVP: Frankfurter EUR→USD + 12h TTL cache (non-chatty)"
+      "title": "Currency backend MVP: Frankfurter EUR\u2192USD + 12h TTL cache (non-chatty)"
     },
     {
       "date": "2026-01-17",
@@ -2774,7 +2882,7 @@
         "Fixes the recurring unbounded-height flex failure by tightly bounding the bottom band height (SizedBox height) instead of minHeight-only constraints; avoids CrossAxisAlignment.stretch coupling.",
         "Adds a defensive unbounded-height guardrail in _LeftEnvCurrencyStack to render without Expanded/Flexible when height is infinite.",
         "Restores deterministic mock/demo data by calling DashboardLiveData.ensureSeeded([home, dest]) in DashboardBoard before tiles read per-place snapshots; this re-enables AQI, Pollen, and SunTimes in mock mode.",
-        "Aligns details pill title separator to '•' and preserves legacy segment key compatibility for tests."
+        "Aligns details pill title separator to '\u2022' and preserves legacy segment key compatibility for tests."
       ],
       "title": "P1.28: Bound bottom band + restore deterministic mock data"
     },
@@ -2788,11 +2896,11 @@
       ],
       "id": "P1.29_sev1_compact_overflow_and_analyze_clean",
       "notes": [
-        "Fixes recurring RenderFlex bottom overflow on 320×568 by reducing vertical-only padding in PlacesHeroV2 compact mode (saves ~12px without changing normal geometry).",
+        "Fixes recurring RenderFlex bottom overflow on 320\u00d7568 by reducing vertical-only padding in PlacesHeroV2 compact mode (saves ~12px without changing normal geometry).",
         "Removes unused secondaryZone variable in PlacesHeroV2 and unused _tzAbbrev helper in DashboardScreen to keep flutter analyze clean.",
         "Replaces deprecated RichText.textScaleFactor with textScaler to eliminate deprecated_member_use warning."
       ],
-      "title": "P1.29: Fix 320×568 overflow + clean flutter analyze warnings"
+      "title": "P1.29: Fix 320\u00d7568 overflow + clean flutter analyze warnings"
     },
     {
       "date": "2026-01-31",
@@ -2803,7 +2911,7 @@
         "docs/ai/context_db.json"
       ],
       "id": "P1.30",
-      "summary": "Remove dashboard header refresh label (Updated just now) to prevent small-phone RenderFlex overflow; further reduce PlacesHeroV2 compact vertical padding/gap for 320×568 stability."
+      "summary": "Remove dashboard header refresh label (Updated just now) to prevent small-phone RenderFlex overflow; further reduce PlacesHeroV2 compact vertical padding/gap for 320\u00d7568 stability."
     },
     {
       "date": "2026-01-31",
@@ -3208,7 +3316,22 @@
       "notes": [
         "Added executable restore-point helper that captures commit, status, diffs, tracked files, and a worktree snapshot archive.",
         "Defined mandatory backup/restore preflight before any Pack D consolidation/deletion batches.",
-        "Documented and locked sequencing to repurpose Time tool toward timezone/delta workflows rather than 12h↔24h conversion-only behavior."
+        "Documented and locked sequencing to repurpose Time tool toward timezone/delta workflows rather than 12h\u219424h conversion-only behavior."
+      ]
+    },
+    {
+      "id": "patch_2026-02-06_design_pivot_handoff_refresh",
+      "date": "2026-02-06",
+      "title": "Design-pivot handoff refresh for Time/Weather/tool taxonomy",
+      "files_changed": [
+        "docs/ai/context_db.json",
+        "docs/ai/handoff/CURRENT_HANDOFF.md",
+        "docs/ai/prompts/NEXT_CHAT_PROMPT.md"
+      ],
+      "notes": [
+        "Shifted next context mission to a design-only sprint focused on Time-family architecture, tool duplication strategy, and unified visual direction.",
+        "Captured latest user UX feedback as explicit decision inputs (Time UI clarity, weather pollen labeling clarity, naming/duplication risks).",
+        "Prepared a new next-chat prompt to drive design artifacts before additional large implementation slices."
       ]
     }
   ],
@@ -3270,7 +3393,7 @@
       "id": "P1.15a_env_data_swap_persistence",
       "notes": [
         "Env pill now renders live AQI and a compact pollen index for both selected cities when coordinates are available; otherwise shows '--' placeholders.",
-        "Normal mode displays dual values as 'A: ... • B: ...'; micro mode collapses to a single safe line (e.g., 'AQI 42/55', 'Pol 3.2/1.1') with the swap affordance always visible and right-aligned.",
+        "Normal mode displays dual values as 'A: ... \u2022 B: ...'; micro mode collapses to a single safe line (e.g., 'AQI 42/55', 'Pol 3.2/1.1') with the swap affordance always visible and right-aligned.",
         "Tap swaps AQI <-> Pollen, and the selected mode is persisted via shared preferences.",
         "Air quality data is fetched from Open-Meteo Air Quality API under the existing weather network gate; tests remain deterministic via seeding and micro-first layout."
       ],
@@ -3286,7 +3409,7 @@
       ],
       "id": "P1.15b_hero_semantics_sun_env_clarity",
       "notes": [
-        "Sunrise/Sunset pill shows two lines with explicit time zones: “🌅 07:52 WET (00:52 MST)” and “🌇 17:29 WET (10:29 MST)”.",
+        "Sunrise/Sunset pill shows two lines with explicit time zones: \u201c\ud83c\udf05 07:52 WET (00:52 MST)\u201d and \u201c\ud83c\udf07 17:29 WET (10:29 MST)\u201d.",
         "Env (AQI/Pollen) now represents the selected city only to avoid cross-city ambiguity; swap toggles AQI <-> Pollen and persists.",
         "Currency pill keeps 2dp support and clarifies symbols; no hero proportion changes."
       ],
@@ -3315,7 +3438,7 @@
       ],
       "id": "P1.16b_details_pill_alignment_unification",
       "notes": [
-        "Unifies line metrics/spacing so swapping Wind/Gust <-> Sunrise/Sunset feels like a clean “flip” rather than a jump."
+        "Unifies line metrics/spacing so swapping Wind/Gust <-> Sunrise/Sunset feels like a clean \u201cflip\u201d rather than a jump."
       ],
       "title": "P1.16b: Details pill alignment unification (Wind/Gust and Sunrise/Sunset swap stability)"
     },
@@ -3345,7 +3468,7 @@
       ],
       "id": "P1.17a_clear_history_style_aqi_dot",
       "notes": [
-        "“Clear History” link is de-underlined, title-cased, and uses a distinct accent color from base Dracula neutrals.",
+        "\u201cClear History\u201d link is de-underlined, title-cased, and uses a distinct accent color from base Dracula neutrals.",
         "Introduces a simple AQI severity-to-color dot mapping hook (uses standard US AQI breakpoints)."
       ],
       "title": "P1.17a: Clear History styling + AQI dot mapping scaffold"
@@ -3391,7 +3514,7 @@
       "id": "P1.18b_hotfix1_compile_refresh_label",
       "notes": [
         "Removes duplicate local declarations introduced during mini-hero terminal refactor.",
-        "Imports Dracula palette and uses Dracula purple for the “Updated …” label; background pill disabled in header per contract."
+        "Imports Dracula palette and uses Dracula purple for the \u201cUpdated \u2026\u201d label; background pill disabled in header per contract."
       ],
       "title": "P1.18b hotfix1: Fix dashboard compile errors + restore purple floating refresh label"
     },
@@ -3522,7 +3645,7 @@
       "notes": [
         "Added generated canonical country->currency map from city dataset and wired it into currency surfaces.",
         "Currency tool units now reflect non-EUR/US countries (example: JPY <-> USD direction based on selected reality).",
-        "Unsupported non-EUR/USD live-rate pairs in hero/tile previews now render deterministic placeholders (—) instead of incorrect rates."
+        "Unsupported non-EUR/USD live-rate pairs in hero/tile previews now render deterministic placeholders (\u2014) instead of incorrect rates."
       ]
     },
     {
@@ -3640,7 +3763,7 @@
         "docs/ai/handoff/CURRENT_HANDOFF.md"
       ],
       "notes": [
-        "Profiles board now uses unified edit controls (`Manage` to enter, `X`/`✔` to exit) and keeps per-tile drag/edit/delete affordances in edit mode.",
+        "Profiles board now uses unified edit controls (`Manage` to enter, `X`/`\u2714` to exit) and keeps per-tile drag/edit/delete affordances in edit mode.",
         "Added additional `+` profile slots to keep grid behavior closer to dashboard tile surfaces.",
         "Dashboard menu label normalized to `Edit Widgets` for copy consistency.",
         "Currency text rendering now isolates LTR tokens and applies suffix placement for Arabic-script currency families to prevent mixed-direction reorder defects (example IQD/AED class).",
@@ -3766,6 +3889,293 @@
         "Locked a decision gate requiring an option-comparison pitch (utility converter vs rich weather cockpit) before implementation.",
         "Updated handoff/next prompt so future execution explicitly includes Weather redesign planning."
       ]
+    },
+    {
+      "id": "patch_2026-02-06_destructive_confirmation_rollout_completion",
+      "date": "2026-02-06",
+      "title": "Complete destructive-confirmation rollout for reset and clear-history flows",
+      "files_changed": [
+        "app/unitana/lib/features/dashboard/dashboard_screen.dart",
+        "app/unitana/lib/features/dashboard/widgets/tool_modal_bottom_sheet.dart",
+        "app/unitana/test/dashboard_reset_defaults_test.dart",
+        "docs/ai/context_db.json",
+        "docs/ai/handoff/CURRENT_HANDOFF.md"
+      ],
+      "notes": [
+        "Migrated dashboard reset-default confirmation to shared destructive bottom-sheet helper.",
+        "Migrated tool modal clear-history confirmation to shared destructive bottom-sheet helper.",
+        "Expanded reset-default regression test to assert BottomSheet and no AlertDialog."
+      ]
+    },
+    {
+      "id": "patch_2026-02-06_profiles_jiggle_parity_and_hero_wind_sun_typography_alignment",
+      "date": "2026-02-06",
+      "title": "Profiles jiggle parity + hero wind/sun typography/alignment + edit-mode value spacing polish",
+      "files_changed": [
+        "app/unitana/lib/features/dashboard/widgets/dashboard_board.dart",
+        "app/unitana/lib/features/dashboard/widgets/places_hero_v2.dart",
+        "app/unitana/lib/features/dashboard/widgets/profiles_board_screen.dart",
+        "app/unitana/lib/features/dashboard/widgets/unitana_tile.dart",
+        "app/unitana/test/dashboard_places_hero_v2_test.dart",
+        "app/unitana/test/dashboard_wind_gust_sun_contract_test.dart",
+        "app/unitana/test/profile_delete_confirmation_consistency_test.dart",
+        "app/unitana/test/profile_switcher_edit_profile_flow_test.dart",
+        "docs/ai/context_db.json",
+        "docs/ai/handoff/CURRENT_HANDOFF.md"
+      ],
+      "notes": [
+        "Profiles board now has edit-mode wiggle animation parity with dashboard while keeping long-press drag reorder behavior.",
+        "Dashboard edit tiles now position value content lower in edit mode for better icon-row breathing room.",
+        "Sunrise/Sunset and Wind/Gust details typography is slightly reduced for better hero text hierarchy.",
+        "Wind/Gust value rows now center-align under the title for visual consistency."
+      ]
+    },
+    {
+      "id": "patch_2026-02-06_profiles_drag_handle_parity_and_wind_row_centering_fix",
+      "date": "2026-02-06",
+      "title": "Profiles drag-handle parity with dashboard + wind-row centering fix",
+      "files_changed": [
+        "app/unitana/lib/features/dashboard/widgets/places_hero_v2.dart",
+        "app/unitana/lib/features/dashboard/widgets/profiles_board_screen.dart",
+        "app/unitana/test/profile_switcher_switch_profile_flow_test.dart",
+        "docs/ai/context_db.json",
+        "docs/ai/handoff/CURRENT_HANDOFF.md"
+      ],
+      "notes": [
+        "Wind/Gust detail rows now use centered cross-axis layout so values read visually centered under the title.",
+        "Profiles board no longer depends on long-press tile drag; drag handle is now directly draggable like dashboard edit mode.",
+        "Added regression coverage verifying reorder via profile drag handle interaction."
+      ]
+    },
+    {
+      "id": "patch_2026-02-06_profiles_empty_slot_swap_and_drag_feedback_constraint_fix",
+      "date": "2026-02-06",
+      "title": "Profiles edit-mode empty-slot swap behavior + unbounded drag-feedback layout fix",
+      "files_changed": [
+        "app/unitana/lib/features/dashboard/widgets/profiles_board_screen.dart",
+        "docs/ai/context_db.json",
+        "docs/ai/handoff/CURRENT_HANDOFF.md"
+      ],
+      "notes": [
+        "Profiles board edit mode now maintains explicit slot state (profiles + empty add slots) and supports swapping when dragging onto a `+` slot.",
+        "Dropping profile on empty `+` slot now leaves a `+` where the profile was, matching requested swap semantics.",
+        "Fixed unbounded-height RenderFlex crash during profile drag by constraining drag feedback dimensions."
+      ]
+    },
+    {
+      "id": "patch_2026-02-06_profiles_board_minimum_ten_cells",
+      "date": "2026-02-06",
+      "title": "Profiles board minimum total cell count set to 10",
+      "files_changed": [
+        "app/unitana/lib/features/dashboard/widgets/profiles_board_screen.dart",
+        "app/unitana/test/profile_switcher_switch_profile_flow_test.dart",
+        "docs/ai/context_db.json",
+        "docs/ai/handoff/CURRENT_HANDOFF.md"
+      ],
+      "notes": [
+        "Profiles board add-slot policy now enforces a minimum of 10 total cells (profiles + `+` slots), effectively adding one extra 1x2 row when needed.",
+        "Regression test now validates total grid childCount is 10 via GridView delegate childCount (robust under lazy building)."
+      ]
+    },
+    {
+      "id": "patch_2026-02-06_feedback_matrix_and_high_context_megaslice_handoff_refresh",
+      "date": "2026-02-06",
+      "title": "Create save/update feedback matrix and refresh high-context mega-slice handoff docs",
+      "files_changed": [
+        "docs/ai/context_db.json",
+        "docs/ai/handoff/CURRENT_HANDOFF.md",
+        "docs/ai/prompts/NEXT_CHAT_PROMPT.md",
+        "docs/ai/reference/PACK_F_MEGA_SLICE_TOOLS_EXPANSION_PLAN.md",
+        "docs/ai/reference/SAVE_UPDATE_FEEDBACK_MATRIX.md"
+      ],
+      "notes": [
+        "Added centralized save/update feedback matrix documenting current behavior, target behavior, copy contract, and rollout order.",
+        "Added Pack F mega-slice execution plan for long-run tools expansion, weather redesign baseline, size-matrix tooling, and default-reset hardening.",
+        "Rewrote NEXT_CHAT_PROMPT for a fresh high-context window aligned to the mega-slice mission."
+      ]
+    },
+    {
+      "id": "patch_2026-02-06_design_only_decision_matrix_lock",
+      "date": "2026-02-06",
+      "title": "Lock design-only decision matrix for tools architecture, Time split, visual system, and weather clarity",
+      "files_changed": [
+        "docs/ai/context_db.json",
+        "docs/ai/handoff/CURRENT_HANDOFF.md",
+        "docs/ai/prompts/NEXT_CHAT_PROMPT.md"
+      ],
+      "notes": [
+        "Recorded tool architecture classification rules (dedicated/template/alias/defer) and duplicate strategy.",
+        "Selected Time-family Option B with explicit IA contract, defaults, swap behavior, history boundaries, and live refresh rules.",
+        "Locked shared visual-system contract for tool surfaces and marquee-adjacent UI plus weather semantics/refresh policy.",
+        "Shifted next prompt from design-only discovery to implementation-first Pack F execution against approved contracts."
+      ]
+    },
+    {
+      "id": "patch_2026-02-06_packf_contracted_implementation_time_weather_phase1",
+      "date": "2026-02-06",
+      "title": "Implement Pack F contracted phase 1: Time-family split, timezone converter alias, and weather clarity refresh semantics",
+      "files_changed": [
+        "app/unitana/lib/features/dashboard/models/tool_definitions.dart",
+        "app/unitana/lib/features/dashboard/models/tool_registry.dart",
+        "app/unitana/lib/features/dashboard/widgets/dashboard_board.dart",
+        "app/unitana/lib/features/dashboard/widgets/tool_modal_bottom_sheet.dart",
+        "app/unitana/lib/features/dashboard/widgets/weather_summary_bottom_sheet.dart",
+        "app/unitana/test/time_tool_modal_interaction_test.dart",
+        "app/unitana/test/toolpicker_activation_bundle_test.dart",
+        "app/unitana/test/weather_summary_tile_open_smoke_test.dart",
+        "app/unitana/test/temperature_tool_modal_interaction_test.dart",
+        "docs/ai/context_db.json",
+        "docs/ai/handoff/CURRENT_HANDOFF.md"
+      ],
+      "notes": [
+        "Added a distinct `time_zone_converter` tool surface while keeping Time as the home/destination live clock + delta workspace.",
+        "Routed `timezone_lookup` picker alias into `Time Zone Converter`; retained world-clock/jet-lag aliases into Time.",
+        "Added explicit converter behavior with local datetime input, conversion history, and timezone-swap input rebasing.",
+        "Added minute-tick live updates for Time-family views.",
+        "Weather summary now exposes freshness state, stale indicator copy, and clearer AQI/Pollen user semantics.",
+        "Tool modal title handling now supports two-line ellipsis for long names.",
+        "Updated regression tests and stabilized a brittle temperature clipboard assertion under scroll/lazy-build conditions."
+      ]
+    },
+    {
+      "id": "patch_2026-02-06_packf_architecture_matrix_enforcement_phase2",
+      "date": "2026-02-06",
+      "title": "Implement Pack F contracted phase 2: enforce deferred-tool architecture matrix in code + picker",
+      "files_changed": [
+        "app/unitana/lib/features/dashboard/models/tool_registry.dart",
+        "app/unitana/lib/features/dashboard/widgets/dashboard_board.dart",
+        "app/unitana/test/tool_registry_architecture_matrix_test.dart",
+        "app/unitana/test/toolpicker_deferred_badge_test.dart",
+        "docs/ai/context_db.json",
+        "docs/ai/handoff/CURRENT_HANDOFF.md"
+      ],
+      "notes": [
+        "Added explicit tool architecture metadata in registry (`surfaceType`, `aliasTargetToolId`, `deferReason`).",
+        "Encoded all remaining disabled tools as `deferred` with rationale in code.",
+        "Updated picker disabled-state UX to show `Deferred` and reason text instead of generic `Soon` messaging.",
+        "Added regression tests to lock deferred tool set/alias targets and ensure deferred picker rows show rationale while remaining non-launchable."
+      ]
+    },
+    {
+      "id": "patch_2026-02-06_packc_currency_stale_visibility_followup",
+      "date": "2026-02-06",
+      "title": "Expose currency stale/retry health signals in Currency modal and add regression coverage",
+      "files_changed": [
+        "app/unitana/lib/features/dashboard/dashboard_screen.dart",
+        "app/unitana/lib/features/dashboard/widgets/dashboard_board.dart",
+        "app/unitana/lib/features/dashboard/widgets/tool_modal_bottom_sheet.dart",
+        "app/unitana/test/currency_tool_stale_status_banner_test.dart",
+        "docs/ai/context_db.json",
+        "docs/ai/handoff/CURRENT_HANDOFF.md"
+      ],
+      "notes": [
+        "Currency modal now shows stale/error/backoff status banner when rates are stale or refresh recently failed.",
+        "Dashboard launch paths pass currency stale/retry/error state into the modal from DashboardLiveDataController.",
+        "Added widget test to lock stale-status banner visibility behavior."
+      ]
+    },
+    {
+      "id": "patch_2026-02-06_packc_currency_retry_action_followup",
+      "date": "2026-02-06",
+      "title": "Add explicit currency retry affordance in stale-status banner",
+      "files_changed": [
+        "app/unitana/lib/features/dashboard/dashboard_screen.dart",
+        "app/unitana/lib/features/dashboard/widgets/dashboard_board.dart",
+        "app/unitana/lib/features/dashboard/widgets/tool_modal_bottom_sheet.dart",
+        "app/unitana/test/currency_tool_stale_status_banner_test.dart",
+        "docs/ai/context_db.json",
+        "docs/ai/handoff/CURRENT_HANDOFF.md"
+      ],
+      "notes": [
+        "Added `Retry rates` action in Currency modal when stale data can be retried immediately.",
+        "Wired retry callback through dashboard and board launch paths to trigger live-data refresh.",
+        "Extended currency stale-status test coverage to assert retry action visibility and invocation."
+      ]
+    },
+    {
+      "id": "patch_2026-02-06_packf_visual_guardrail_goldens_phase3",
+      "date": "2026-02-06",
+      "title": "Add opt-in visual guardrail goldens for Time-family, weather freshness states, and modal title overflow",
+      "files_changed": [
+        "app/unitana/lib/features/dashboard/models/dashboard_live_data.dart",
+        "app/unitana/test/goldens/tool_surface_contract_goldens_test.dart",
+        "app/unitana/test/goldens/README.md",
+        "app/unitana/test/goldens/goldens/tool_time_from_zone_tile.png",
+        "app/unitana/test/goldens/goldens/tool_time_to_zone_tile.png",
+        "app/unitana/test/goldens/goldens/tool_time_zone_converter_card.png",
+        "app/unitana/test/goldens/goldens/tool_modal_long_title_overflow.png",
+        "app/unitana/test/goldens/goldens/weather_summary_stale.png",
+        "app/unitana/test/goldens/goldens/weather_summary_live.png",
+        "docs/ai/context_db.json",
+        "docs/ai/handoff/CURRENT_HANDOFF.md"
+      ],
+      "notes": [
+        "Added a targeted opt-in golden suite covering Time base zone selector tiles, Time Zone Converter interaction card, weather stale/live sheet states, and modal long-title overflow behavior.",
+        "Generated baseline PNG assets for the new suite under test/goldens/goldens so visual guardrails are immediately usable.",
+        "Added @visibleForTesting `debugSetLastRefreshedAt` on DashboardLiveDataController to make weather stale/live golden states deterministic without async timer waits.",
+        "Kept goldens opt-in only by reusing existing `UNITANA_GOLDENS=1` gating contract and documented update command in the goldens README."
+      ]
+    },
+    {
+      "id": "patch_2026-02-06_packf_lookup_matrix_table_refresh_phase4",
+      "date": "2026-02-06",
+      "title": "Refresh lookup tools Nearby section into Dracula-styled matrix table with selected-row focus",
+      "files_changed": [
+        "app/unitana/lib/features/dashboard/widgets/tool_modal_bottom_sheet.dart",
+        "app/unitana/test/mattress_sizes_matrix_interaction_test.dart",
+        "docs/ai/context_db.json",
+        "docs/ai/handoff/CURRENT_HANDOFF.md"
+      ],
+      "notes": [
+        "Replaced lookup `Nearby` list with a `Size Matrix` table for lookup tools (shoe/paper/mattress) using stronger Dracula hierarchy and explicit Size/From/To columns.",
+        "Highlighted the active row and kept it in proximity context (neighbors above/below when available).",
+        "Enabled value-cell tap-to-copy and size-label tap-to-reselect for low-friction lookup iteration.",
+        "Added `mattress_sizes_matrix_interaction_test.dart` to lock matrix presence and row-reselection result updates."
+      ]
+    },
+    {
+      "id": "patch_2026-02-06_deferred_execution_matrix_and_lookup_matrix_hardening_phase5",
+      "date": "2026-02-06",
+      "title": "Add deferred-tools execution matrix and harden lookup matrix interaction contracts",
+      "files_changed": [
+        "app/unitana/lib/features/dashboard/widgets/tool_modal_bottom_sheet.dart",
+        "app/unitana/test/mattress_sizes_matrix_interaction_test.dart",
+        "docs/ai/reference/DEFERRED_TOOLS_EXECUTION_MATRIX.md",
+        "docs/ai/context_db.json",
+        "docs/ai/handoff/CURRENT_HANDOFF.md"
+      ],
+      "notes": [
+        "Introduced a concrete deferred-tools execution matrix with prerequisite contracts, proposed slices, and recommended activation order.",
+        "Lookup tools now use a Dracula-styled Size Matrix section instead of plain Nearby rows, with explicit Size/From/To columns and selected-row emphasis.",
+        "Value cells support tap-to-copy; size labels support tap-to-reselect and update the active result context.",
+        "Added interaction regression coverage for mattress lookup matrix rendering and reselection behavior."
+      ]
+    },
+    {
+      "id": "patch_2026-02-06_packf_tip_helper_activation_phase6",
+      "date": "2026-02-06",
+      "title": "Activate Tip Helper as a dedicated tool surface and complete deferred-state follow-through",
+      "files_changed": [
+        "app/unitana/lib/features/dashboard/models/canonical_tools.dart",
+        "app/unitana/lib/features/dashboard/models/tool_definitions.dart",
+        "app/unitana/lib/features/dashboard/models/tool_registry.dart",
+        "app/unitana/lib/features/dashboard/models/tool_lens_map.dart",
+        "app/unitana/lib/features/dashboard/widgets/tool_modal_bottom_sheet.dart",
+        "app/unitana/test/tool_registry_architecture_matrix_test.dart",
+        "app/unitana/test/toolpicker_deferred_badge_test.dart",
+        "app/unitana/test/toolpicker_activation_bundle_test.dart",
+        "app/unitana/test/tip_helper_modal_interaction_test.dart",
+        "docs/ai/reference/DEFERRED_TOOLS_EXECUTION_MATRIX.md",
+        "docs/ai/context_db.json",
+        "docs/ai/handoff/CURRENT_HANDOFF.md"
+      ],
+      "notes": [
+        "Activated `tip_helper` in the tool registry as an enabled dedicated surface and added canonical + tool-definition coverage.",
+        "Implemented dedicated Tip Helper modal interactions: locale-aware presets, split control, rounding mode, and explicit tip/total/per-person breakdown lines.",
+        "Mapped Tip Helper into `money_shopping` lens to satisfy canonical discoverability constraints.",
+        "Updated deferred-matrix expectations and picker deferred-badge tests to remove Tip Helper from deferred status.",
+        "Added dedicated interaction regression test (`tip_helper_modal_interaction_test.dart`) and activation coverage from picker search."
+      ]
     }
   ],
   "project": {
@@ -3776,6 +4186,6 @@
     "tagline": "travel-first decoder ring; dual reality side-by-side"
   },
   "schema_version": "1.0",
-  "last_patch_id": "patch_2026-02-06_packj_weather_tool_redesign_backlog_lock",
+  "last_patch_id": "patch_2026-02-06_packf_tip_helper_activation_phase6",
   "last_patch_date": "2026-02-06"
 }

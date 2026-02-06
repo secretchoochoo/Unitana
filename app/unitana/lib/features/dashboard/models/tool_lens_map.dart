@@ -37,7 +37,10 @@ class ToolLensMap {
       CanonicalToolId.weight,
       CanonicalToolId.liquids,
     ],
-    ActivityLensId.moneyShopping: <String>[CanonicalToolId.currency],
+    ActivityLensId.moneyShopping: <String>[
+      CanonicalToolId.currency,
+      CanonicalToolId.tipHelper,
+    ],
     ActivityLensId.weatherTime: <String>[
       CanonicalToolId.weather,
       CanonicalToolId.time,
@@ -49,6 +52,8 @@ class ToolLensMap {
       CanonicalToolId.time,
       CanonicalToolId.distance,
       CanonicalToolId.shoeSizes,
+      CanonicalToolId.paperSizes,
+      CanonicalToolId.mattressSizes,
     ],
 
     // Quick Tools is a "fast entry" lens. Until its dedicated lookup tools
@@ -59,6 +64,7 @@ class ToolLensMap {
       CanonicalToolId.currency,
       CanonicalToolId.distance,
       CanonicalToolId.shoeSizes,
+      CanonicalToolId.paperSizes,
     ],
   };
 

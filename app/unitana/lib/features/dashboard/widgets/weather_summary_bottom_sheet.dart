@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../../../models/place.dart';
 import '../../../theme/dracula_palette.dart';
@@ -6,12 +7,6 @@ import '../../../utils/timezone_utils.dart';
 
 import '../models/dashboard_live_data.dart';
 
-/// Lightweight, provider-agnostic weather details sheet.
-///
-/// Contract:
-/// - Purely presentational (no network calls).
-/// - Device clock remains source of truth; timezone IDs are display-only.
-/// - Safe in hermetic/demo mode (shows placeholders when data is missing).
 class WeatherSummaryBottomSheet extends StatelessWidget {
   final DashboardLiveDataController liveData;
   final Place? home;
@@ -44,86 +39,155 @@ class WeatherSummaryBottomSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final cs = theme.colorScheme;
+    return AnimatedBuilder(
+      animation: liveData,
+      builder: (context, _) {
+        final theme = Theme.of(context);
+        final cs = theme.colorScheme;
 
-    final refreshedAt = liveData.lastRefreshedAt;
-    final refreshedLabel = refreshedAt == null
-        ? 'Not updated yet'
-        : 'Updated ${_relativeAge(now: DateTime.now(), then: refreshedAt)}';
+        final refreshedAt = liveData.lastRefreshedAt;
+        final isStale = liveData.isStale && !liveData.isRefreshing;
+        final refreshedLabel = refreshedAt == null
+            ? 'Not updated yet'
+            : 'Updated ${_relativeAge(now: DateTime.now(), then: refreshedAt)}';
 
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-        child: Column(
-          key: const ValueKey('weather_summary_sheet'),
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
+        final places = <Place>[
+          if (destination != null) destination!,
+          if (home != null) home!,
+        ];
+
+        Future<void> refreshNow() async {
+          if (liveData.isRefreshing || places.isEmpty) return;
+          await liveData.refreshAll(places: places);
+        }
+
+        return SafeArea(
+          child: FractionallySizedBox(
+            heightFactor: 0.9,
+            alignment: Alignment.bottomCenter,
+            child: ListView(
+              key: const ValueKey('weather_summary_sheet'),
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
               children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Weather',
-                        style: theme.textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        refreshedLabel,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: cs.onSurfaceVariant,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Tooltip(
-                  message: 'Close',
-                  child: OutlinedButton(
-                    key: const ValueKey('weather_summary_close'),
-                    style: OutlinedButton.styleFrom(
-                      minimumSize: const Size(44, 34),
-                      padding: const EdgeInsets.symmetric(horizontal: 10),
-                      visualDensity: VisualDensity.compact,
-                      side: BorderSide(
-                        color: DraculaPalette.comment.withAlpha(160),
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 96),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            'Weather',
+                            textAlign: TextAlign.center,
+                            style: GoogleFonts.robotoSlab(
+                              fontWeight: FontWeight.w800,
+                              fontSize: 24,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            refreshedLabel,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: cs.onSurfaceVariant,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            isStale
+                                ? 'Data may be stale'
+                                : 'Live updates enabled',
+                            key: const ValueKey('weather_summary_freshness'),
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              color: isStale
+                                  ? DraculaPalette.orange
+                                  : DraculaPalette.green,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    onPressed: () => Navigator.of(context).maybePop(),
-                    child: Icon(
-                      Icons.close_rounded,
-                      size: 18,
-                      color: DraculaPalette.foreground.withAlpha(220),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        Tooltip(
+                          message: 'Refresh',
+                          child: OutlinedButton(
+                            key: const ValueKey('weather_summary_refresh'),
+                            style: OutlinedButton.styleFrom(
+                              minimumSize: const Size(44, 34),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                              ),
+                              visualDensity: VisualDensity.compact,
+                              side: BorderSide(
+                                color: DraculaPalette.comment.withAlpha(160),
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            onPressed: liveData.isRefreshing
+                                ? null
+                                : refreshNow,
+                            child: Icon(
+                              liveData.isRefreshing
+                                  ? Icons.hourglass_top_rounded
+                                  : Icons.refresh_rounded,
+                              size: 18,
+                              color: DraculaPalette.foreground.withAlpha(220),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Tooltip(
+                          message: 'Close',
+                          child: OutlinedButton(
+                            key: const ValueKey('weather_summary_close'),
+                            style: OutlinedButton.styleFrom(
+                              minimumSize: const Size(44, 34),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                              ),
+                              visualDensity: VisualDensity.compact,
+                              side: BorderSide(
+                                color: DraculaPalette.comment.withAlpha(160),
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            onPressed: () => Navigator.of(context).maybePop(),
+                            child: Icon(
+                              Icons.close_rounded,
+                              size: 18,
+                              color: DraculaPalette.foreground.withAlpha(220),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'Manual refresh available. Auto-refresh runs with dashboard updates.',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: cs.onSurfaceVariant,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
+                const SizedBox(height: 10),
+                _placeCard(context, place: destination, label: 'Destination'),
+                const SizedBox(height: 10),
+                _placeCard(context, place: home, label: 'Home'),
               ],
             ),
-            const SizedBox(height: 12),
-            _placeCard(context, place: destination, label: 'Destination'),
-            const SizedBox(height: 10),
-            _placeCard(context, place: home, label: 'Home'),
-            const SizedBox(height: 12),
-            Text(
-              'Provider-agnostic: data comes from your selected backend.',
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: cs.onSurfaceVariant,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 
@@ -157,6 +221,7 @@ class WeatherSummaryBottomSheet extends StatelessWidget {
 
     final weather = liveData.weatherFor(place);
     final sun = liveData.sunFor(place);
+    final env = liveData.envFor(place);
 
     final preferMetric = (place.unitSystem == 'metric');
     final tempC = weather?.temperatureC;
@@ -189,6 +254,34 @@ class WeatherSummaryBottomSheet extends StatelessWidget {
         : preferMetric
         ? '${gustKmh.round()} km/h'
         : '${toMph(gustKmh)!.round()} mph';
+
+    final aqi = env?.usAqi;
+    final pollen = env?.pollenIndex;
+    String aqiBand(int value) {
+      if (value <= 50) return 'Good';
+      if (value <= 100) return 'Moderate';
+      if (value <= 150) return 'Unhealthy (Sensitive)';
+      if (value <= 200) return 'Unhealthy';
+      if (value <= 300) return 'Very Unhealthy';
+      return 'Hazardous';
+    }
+
+    final aqiText = aqi == null ? '—' : '$aqi (${aqiBand(aqi)})';
+    String pollenLabel(double value) {
+      String band;
+      if (value < 1.0) {
+        band = 'Low';
+      } else if (value < 2.5) {
+        band = 'Moderate';
+      } else if (value < 3.5) {
+        band = 'High';
+      } else {
+        band = 'Very High';
+      }
+      return '${value.toStringAsFixed(1)}/5 ($band)';
+    }
+
+    final pollenText = pollen == null ? '—' : pollenLabel(pollen);
 
     String sunCell(DateTime? utc) {
       if (utc == null) return '--:--';
@@ -273,6 +366,12 @@ class WeatherSummaryBottomSheet extends StatelessWidget {
               headers: const ['🌬️', '💨'],
               values: [windPrimary, gustPrimary],
             ),
+            const SizedBox(height: 8),
+            _iconTable(
+              context,
+              headers: const ['🌫️ AQI (US)', '🌼 Pollen (0-5)'],
+              values: [aqiText, pollenText],
+            ),
           ],
         ),
       ),
@@ -346,7 +445,6 @@ class WeatherSummaryBottomSheet extends StatelessWidget {
     if (cc.length != 2) return '🏳️';
     final a = cc.codeUnitAt(0);
     final b = cc.codeUnitAt(1);
-    // Regional indicator symbols start at 0x1F1E6 for 'A'.
     const base = 0x1F1E6;
     final first = base + (a - 65);
     final second = base + (b - 65);
