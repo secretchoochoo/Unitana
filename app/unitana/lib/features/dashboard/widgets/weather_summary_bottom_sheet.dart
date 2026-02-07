@@ -89,7 +89,7 @@ class WeatherSummaryBottomSheet extends StatelessWidget {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Text(
-                            DashboardCopy.weatherTitle,
+                            DashboardCopy.weatherTitle(context),
                             textAlign: TextAlign.center,
                             style: GoogleFonts.robotoSlab(
                               fontWeight: FontWeight.w800,
@@ -111,7 +111,7 @@ class WeatherSummaryBottomSheet extends StatelessWidget {
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
                         Tooltip(
-                          message: DashboardCopy.refreshWeatherTooltip,
+                          message: DashboardCopy.refreshWeatherTooltip(context),
                           child: OutlinedButton(
                             key: const ValueKey('weather_summary_refresh'),
                             style: OutlinedButton.styleFrom(
@@ -141,7 +141,7 @@ class WeatherSummaryBottomSheet extends StatelessWidget {
                         ),
                         const SizedBox(width: 8),
                         Tooltip(
-                          message: DashboardCopy.closeWeatherTooltip,
+                          message: DashboardCopy.closeWeatherTooltip(context),
                           child: OutlinedButton(
                             key: const ValueKey('weather_summary_close'),
                             style: OutlinedButton.styleFrom(
@@ -173,13 +173,13 @@ class WeatherSummaryBottomSheet extends StatelessWidget {
                 _placeCard(
                   context,
                   place: destination,
-                  label: DashboardCopy.destinationLabel,
+                  label: DashboardCopy.destinationLabel(context),
                 ),
                 const SizedBox(height: 6),
                 _placeCard(
                   context,
                   place: home,
-                  label: DashboardCopy.homeLabel,
+                  label: DashboardCopy.homeLabel(context),
                 ),
               ],
             ),

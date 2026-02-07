@@ -1,13 +1,116 @@
+import 'package:flutter/material.dart';
+
+import '../../../l10n/dashboard_localizations.dart';
 import 'jet_lag_planner.dart';
 
 class DashboardCopy {
   const DashboardCopy._();
 
-  static const String weatherTitle = 'Weather';
-  static const String refreshWeatherTooltip = 'Refresh weather';
-  static const String closeWeatherTooltip = 'Close weather';
-  static const String destinationLabel = 'Destination';
-  static const String homeLabel = 'Home';
+  static String weatherTitle(BuildContext context) => DashboardLocalizations.of(
+    context,
+  ).text('dashboard.weather.title', fallback: 'Weather');
+  static String refreshWeatherTooltip(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.weather.tooltip.refresh', fallback: 'Refresh weather');
+  static String closeWeatherTooltip(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.weather.tooltip.close', fallback: 'Close weather');
+  static String destinationLabel(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.weather.section.destination', fallback: 'Destination');
+  static String homeLabel(BuildContext context) => DashboardLocalizations.of(
+    context,
+  ).text('dashboard.weather.section.home', fallback: 'Home');
+
+  static String closeToolTooltip(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.tool.tooltip.close', fallback: 'Close tool');
+  static String historyTitle(BuildContext context) => DashboardLocalizations.of(
+    context,
+  ).text('dashboard.tool.history.title', fallback: 'History');
+  static String clearCta(BuildContext context) => DashboardLocalizations.of(
+    context,
+  ).text('dashboard.tool.history.clear', fallback: 'Clear');
+  static String swapCta(BuildContext context) => DashboardLocalizations.of(
+    context,
+  ).text('dashboard.tool.cta.swap', fallback: 'Swap');
+  static String addWidgetCta(BuildContext context) => DashboardLocalizations.of(
+    context,
+  ).text('dashboard.tool.cta.addWidget', fallback: '+ Add Widget');
+
+  static String timeFromZoneTitle(
+    BuildContext context, {
+    required bool isJetLagTool,
+  }) {
+    final key = isJetLagTool
+        ? 'dashboard.time.fromZone.jetLag'
+        : 'dashboard.time.fromZone.standard';
+    final fallback = isJetLagTool ? 'Home Time Zone' : 'From Time Zone';
+    return DashboardLocalizations.of(context).text(key, fallback: fallback);
+  }
+
+  static String timeToZoneTitle(
+    BuildContext context, {
+    required bool isJetLagTool,
+  }) {
+    final key = isJetLagTool
+        ? 'dashboard.time.toZone.jetLag'
+        : 'dashboard.time.toZone.standard';
+    final fallback = isJetLagTool ? 'Destination Time Zone' : 'To Time Zone';
+    return DashboardLocalizations.of(context).text(key, fallback: fallback);
+  }
+
+  static String convertLocalTimeTitle(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.time.converter.title', fallback: 'Convert Local Time');
+  static String convertLocalTimeHelper(
+    BuildContext context,
+    String fromDisplayLabel,
+  ) => DashboardLocalizations.of(context).text(
+    'dashboard.time.converter.helper',
+    params: <String, String>{'fromDisplayLabel': fromDisplayLabel},
+    fallback: 'Enter as YYYY-MM-DD HH:MM in $fromDisplayLabel',
+  );
+  static String convertTimeCta(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.time.converter.cta', fallback: 'Convert Time');
+
+  static String factsTitle(BuildContext context, {required bool isJetLagTool}) {
+    final key = isJetLagTool
+        ? 'dashboard.jetLag.facts.title'
+        : 'dashboard.time.currentClocks.title';
+    final fallback = isJetLagTool ? 'Travel Facts' : 'Current Clocks';
+    return DashboardLocalizations.of(context).text(key, fallback: fallback);
+  }
+
+  static String jetLagPlanTitle(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.jetLag.plan.title', fallback: 'Jet Lag Plan');
+  static String quickTipsTitle(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.jetLag.tips.title', fallback: 'Quick Tips');
+  static String callWindowsTitle(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.jetLag.callWindows.title', fallback: 'Call Windows');
+  static String showCallWindowsCta(BuildContext context) =>
+      DashboardLocalizations.of(context).text(
+        'dashboard.jetLag.callWindows.cta.show',
+        fallback: 'Show call windows',
+      );
+  static String overlapIntro(BuildContext context) =>
+      DashboardLocalizations.of(context).text(
+        'dashboard.jetLag.callWindows.intro',
+        fallback: 'Quick check before scheduling calls:',
+      );
 
   static const String updating = 'Updating…';
   static const String notUpdated = 'Not updated';
@@ -27,32 +130,6 @@ class DashboardCopy {
   static const String currencyUsingCachedRates =
       'Using cached rates. They may be stale.';
   static const String retryRatesCta = 'Retry rates';
-
-  static const String closeToolTooltip = 'Close tool';
-  static const String historyTitle = 'History';
-  static const String clearCta = 'Clear';
-  static const String swapCta = 'Swap';
-  static const String addWidgetCta = '+ Add Widget';
-
-  static String timeFromZoneTitle({required bool isJetLagTool}) =>
-      isJetLagTool ? 'Home Time Zone' : 'From Time Zone';
-
-  static String timeToZoneTitle({required bool isJetLagTool}) =>
-      isJetLagTool ? 'Destination Time Zone' : 'To Time Zone';
-
-  static const String convertLocalTimeTitle = 'Convert Local Time';
-  static String convertLocalTimeHelper(String fromDisplayLabel) =>
-      'Enter as YYYY-MM-DD HH:MM in $fromDisplayLabel';
-  static const String convertTimeCta = 'Convert Time';
-
-  static String factsTitle({required bool isJetLagTool}) =>
-      isJetLagTool ? 'Travel Facts' : 'Current Clocks';
-
-  static const String jetLagPlanTitle = 'Jet Lag Plan';
-  static const String quickTipsTitle = 'Quick Tips';
-  static const String callWindowsTitle = 'Call Windows';
-  static const String showCallWindowsCta = 'Show call windows';
-  static const String overlapIntro = 'Quick check before scheduling calls:';
 
   static String dateImpactTitleCase(String dateImpactRaw) {
     return switch (dateImpactRaw.toLowerCase()) {

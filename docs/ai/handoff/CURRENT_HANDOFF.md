@@ -267,6 +267,25 @@
     - `dart format .`
     - `flutter analyze`
     - `flutter test`
+- Pack H localization pilot wiring (phase 2, 2026-02-07):
+  - added minimal runtime localization lookup layer (seed-key based, English fallback):
+    - `app/unitana/lib/l10n/dashboard_localizations.dart`
+    - resolves by locale language code, falls back to `en`, supports `{placeholder}` substitution.
+  - expanded localization seed map for pilot runtime usage:
+    - added `dashboard.time.currentClocks.title` key in `app/unitana/lib/l10n/localization_seed.dart`.
+  - wired pilot subset of dashboard/tool UI copy through runtime lookup via `DashboardCopy`:
+    - weather sheet title/tooltips + home/destination section labels
+    - tool modal close tooltip
+    - Time-family labels (`From/To Time Zone`, converter title/helper/CTA)
+    - action/history labels (`Swap`, `+ Add Widget`, `History`, `Clear`)
+    - Jet Lag section headings (`Travel Facts`, `Jet Lag Plan`, `Quick Tips`, `Call Windows`) and overlap reveal label/intro.
+  - added runtime localization regression coverage:
+    - `app/unitana/test/dashboard_localizations_runtime_test.dart`
+      - seeded key resolution
+      - placeholder substitution
+      - non-English locale fallback to English
+      - explicit fallback for missing keys.
+  - full gates re-run and green (`dart format .`, `flutter analyze`, `flutter test`).
 - Pack F activation bundle (phase 1):
   - activated `world_clock_delta` and `jet_lag_delta` entries in tool registry.
   - wired both entries to the existing mature Time modal flow as interim E2E activation.

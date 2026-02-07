@@ -1,4 +1,4 @@
-NEXT CHAT PROMPT — Pack H Localization Pilot Wiring (Phase 2)
+NEXT CHAT PROMPT — Pack H Localization Expansion (Phase 2.5)
 
 You are taking over Unitana (Flutter) in a fresh, high-context window.
 
@@ -23,21 +23,21 @@ Then execute using this contract.
   - goldens opt-in only
 
 ## Mission
-Start real localization runtime wiring on a low-risk pilot subset using the existing key seed and centralized copy seams.
+Expand runtime localization coverage from the pilot subset while preserving current UX and reliability contracts.
 
 ## Required outcomes
-1) Pack H pilot runtime seam
-- Introduce minimal localization provider/plumbing suitable for gradual rollout.
-- Wire a small dashboard/tool subset to runtime key lookups (not full app migration yet).
-- Keep current English copy as default/fallback behavior.
+1) Pack H runtime seam expansion
+- Continue migrating high-traffic hardcoded strings to `DashboardCopy` + runtime lookup (`DashboardLocalizations`).
+- Prioritize dashboard/tool modal labels, tooltips, stale/error/fallback states, and instructional helper text.
+- Keep English behavior as fallback.
 
-2) Seed-to-runtime mapping contract
-- Reuse `app/unitana/lib/l10n/localization_seed.dart` keys.
-- Ensure placeholder values are supported for seeded templates (for example `{age}`).
-- Add deterministic tests that lock fallback behavior and key resolution.
+2) Localization plumbing hardening
+- Keep seeded key usage deterministic (`localization_seed.dart`).
+- Add/adjust tests to guard key lookup fallback and migrated-surface behavior.
+- Avoid full translation rollout; keep scope to migration-safe wiring.
 
 3) Regression lock
-- Keep reliability copy and stale/retry contracts stable.
+- Keep Pack B/C reliability messaging stable.
 - Keep Pack N/M behavior green:
   - city-first picker + advanced fallback
   - overlap reveal contract
@@ -50,7 +50,7 @@ Start real localization runtime wiring on a low-risk pilot subset using the exis
   - `docs/ai/prompts/NEXT_CHAT_PROMPT.md` (if scope shifts again)
 
 ## Definition of done
-- Localization runtime pilot exists and is test-guarded.
-- Existing UX remains unchanged with English fallback.
-- Pack N/M and reliability contracts remain green.
+- More user-facing surfaces run through runtime localization lookup.
+- Localization fallback behavior remains deterministic and test-guarded.
+- Reliability and Pack N/M contracts remain green.
 - Repo is green (`format`, `analyze`, `test`).

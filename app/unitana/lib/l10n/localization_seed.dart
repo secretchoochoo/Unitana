@@ -38,6 +38,7 @@ class LocalizationSeed {
         'Enter as YYYY-MM-DD HH:MM in {fromDisplayLabel}',
     'dashboard.time.converter.cta': 'Convert Time',
     'dashboard.jetLag.facts.title': 'Travel Facts',
+    'dashboard.time.currentClocks.title': 'Current Clocks',
     'dashboard.jetLag.plan.title': 'Jet Lag Plan',
     'dashboard.jetLag.tips.title': 'Quick Tips',
     'dashboard.jetLag.callWindows.title': 'Call Windows',

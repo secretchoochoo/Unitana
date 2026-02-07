@@ -2832,6 +2832,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
 
     Widget buildCurrentClocksCard() {
       final factsTitle = DashboardCopy.factsTitle(
+        context,
         isJetLagTool: _isJetLagDeltaTool,
       );
       final dateImpact = JetLagPlanner.dateImpactLabel(
@@ -3121,7 +3122,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              DashboardCopy.jetLagPlanTitle,
+              DashboardCopy.jetLagPlanTitle(context),
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.w900,
                 color: DraculaPalette.orange,
@@ -3227,7 +3228,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
             ],
             const SizedBox(height: 8),
             Text(
-              DashboardCopy.quickTipsTitle,
+              DashboardCopy.quickTipsTitle(context),
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                 color: DraculaPalette.orange,
                 fontWeight: FontWeight.w800,
@@ -3253,7 +3254,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
             if (showOverlapHints) ...[
               const SizedBox(height: 8),
               Text(
-                DashboardCopy.callWindowsTitle,
+                DashboardCopy.callWindowsTitle(context),
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: DraculaPalette.orange,
                   fontWeight: FontWeight.w800,
@@ -3274,7 +3275,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                         _jetLagOverlapExpanded = true;
                       });
                     },
-                    child: const Text(DashboardCopy.showCallWindowsCta),
+                    child: Text(DashboardCopy.showCallWindowsCta(context)),
                   ),
                 ),
               if (showOverlapDetails)
@@ -3283,7 +3284,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      DashboardCopy.overlapIntro,
+                      DashboardCopy.overlapIntro(context),
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         fontWeight: FontWeight.w700,
                         color: DraculaPalette.comment.withAlpha(232),
@@ -3331,6 +3332,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                 dense: true,
                 title: Text(
                   DashboardCopy.timeFromZoneTitle(
+                    context,
                     isJetLagTool: _isJetLagDeltaTool,
                   ),
                 ),
@@ -3344,6 +3346,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                 dense: true,
                 title: Text(
                   DashboardCopy.timeToZoneTitle(
+                    context,
                     isJetLagTool: _isJetLagDeltaTool,
                   ),
                 ),
@@ -3382,7 +3385,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                           color: accent,
                         ),
                         label: Text(
-                          DashboardCopy.addWidgetCta,
+                          DashboardCopy.addWidgetCta(context),
                           style: Theme.of(context).textTheme.labelLarge
                               ?.copyWith(
                                 fontWeight: FontWeight.w700,
@@ -3400,7 +3403,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                   key: const ValueKey('tool_time_swap_zones'),
                   onPressed: _swapTimeZones,
                   icon: const Icon(Icons.swap_horiz_rounded, size: 18),
-                  label: const Text(DashboardCopy.swapCta),
+                  label: Text(DashboardCopy.swapCta(context)),
                 ),
               ),
             ),
@@ -3428,7 +3431,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  DashboardCopy.convertLocalTimeTitle,
+                  DashboardCopy.convertLocalTimeTitle(context),
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.w800,
                     color: DraculaPalette.purple,
@@ -3436,7 +3439,10 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  DashboardCopy.convertLocalTimeHelper(fromDisplayLabel),
+                  DashboardCopy.convertLocalTimeHelper(
+                    context,
+                    fromDisplayLabel,
+                  ),
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: DraculaPalette.comment.withAlpha(220),
                     fontWeight: FontWeight.w700,
@@ -3458,7 +3464,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                   child: FilledButton(
                     key: const ValueKey('tool_time_convert_run'),
                     onPressed: _runTimeZoneConversion,
-                    child: const Text(DashboardCopy.convertTimeCta),
+                    child: Text(DashboardCopy.convertTimeCta(context)),
                   ),
                 ),
                 const SizedBox(height: 10),
@@ -3479,7 +3485,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
               crossAxisAlignment: WrapCrossAlignment.center,
               children: [
                 Text(
-                  DashboardCopy.historyTitle,
+                  DashboardCopy.historyTitle(context),
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.w800,
                     color: DraculaPalette.purple,
@@ -3498,7 +3504,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                             UnitanaNoticeKind.success,
                           );
                         },
-                  child: const Text(DashboardCopy.clearCta),
+                  child: Text(DashboardCopy.clearCta(context)),
                 ),
               ],
             ),
@@ -3640,7 +3646,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                           ),
                         ),
                         Tooltip(
-                          message: DashboardCopy.closeToolTooltip,
+                          message: DashboardCopy.closeToolTooltip(context),
                           child: OutlinedButton(
                             key: ValueKey('tool_close_${widget.tool.id}'),
                             style: OutlinedButton.styleFrom(
@@ -3741,9 +3747,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                                       Icons.refresh_rounded,
                                       size: 16,
                                     ),
-                                    label: const Text(
-                                      DashboardCopy.retryRatesCta,
-                                    ),
+                                    label: Text(DashboardCopy.retryRatesCta),
                                   ),
                                 ),
                               ],
@@ -4247,7 +4251,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                                   crossAxisAlignment: WrapCrossAlignment.center,
                                   children: [
                                     Text(
-                                      DashboardCopy.historyTitle,
+                                      DashboardCopy.historyTitle(context),
                                       style: Theme.of(context)
                                           .textTheme
                                           .titleMedium
