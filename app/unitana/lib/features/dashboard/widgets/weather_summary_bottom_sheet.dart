@@ -287,7 +287,7 @@ class WeatherSummaryBottomSheet extends StatelessWidget {
       } else {
         band = 'Very High';
       }
-      return '${value.toStringAsFixed(1)}/5 ($band)';
+      return '${value.toStringAsFixed(1)} ($band)';
     }
 
     final pollenText = pollen == null ? '—' : pollenLabel(pollen);
