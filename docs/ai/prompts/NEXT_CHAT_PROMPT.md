@@ -1,4 +1,4 @@
-NEXT CHAT PROMPT — Pack H Localization Expansion (Phase 9)
+NEXT CHAT PROMPT — Pack H Localization Expansion (Phase 10)
 
 You are taking over Unitana (Flutter) in a fresh, high-context window.
 
@@ -28,8 +28,8 @@ Continue localization runtime migration for remaining high-traffic dashboard/too
 ## Required outcomes
 1) Runtime seam expansion
 - Migrate the next focused batch of hardcoded microcopy from:
-  - remaining weather/status/dashboard edge surfaces
-  - any remaining profile/settings/devtools stragglers
+  - remaining low-frequency hero/weather/status/dashboard edge surfaces
+  - any remaining profile/settings/devtools/tool-picker stragglers
   - remaining time/jet-lag helper leftovers (if any)
 - Preserve current English UX behavior.
 

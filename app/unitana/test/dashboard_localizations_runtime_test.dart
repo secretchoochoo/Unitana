@@ -101,6 +101,19 @@ void main() {
       key: 'dashboard.devtools.weather.freshness.updated',
       params: const <String, String>{'source': 'Demo', 'age': '2m ago'},
     );
+    final toolPickerTitle = DashboardLocalizations.resolveForLocale(
+      locale: const Locale('en'),
+      key: 'dashboard.toolPicker.title',
+    );
+    final removeTitle = DashboardLocalizations.resolveForLocale(
+      locale: const Locale('en'),
+      key: 'dashboard.toolPicker.action.removeTitle',
+      params: const <String, String>{'label': 'Weather'},
+    );
+    final timeMode = DashboardLocalizations.resolveForLocale(
+      locale: const Locale('en'),
+      key: 'dashboard.time.picker.mode.advancedZones',
+    );
     expect(clearTitle, 'Clear history?');
     expect(hint, 'tap copies result; long-press copies input');
     expect(refreshNotice, 'Refreshing rates…');
@@ -119,5 +132,8 @@ void main() {
       'Source: Live: Open-Meteo\nForce hero weather scenes during development',
     );
     expect(devtoolsFreshness, 'Demo: Last update: 2m ago');
+    expect(toolPickerTitle, 'Choose a tool');
+    expect(removeTitle, 'Remove Weather?');
+    expect(timeMode, 'Advanced: Time Zones');
   });
 }

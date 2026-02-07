@@ -1653,9 +1653,11 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                   children: [
                     Expanded(
                       child: Text(
-                        _isCurrencyTool
-                            ? (isFrom ? 'From Currency' : 'To Currency')
-                            : (isFrom ? 'From Unit' : 'To Unit'),
+                        DashboardCopy.unitPickerTitle(
+                          context,
+                          isCurrencyTool: _isCurrencyTool,
+                          isFrom: isFrom,
+                        ),
                         style: Theme.of(context).textTheme.titleMedium
                             ?.copyWith(
                               fontWeight: FontWeight.w800,
@@ -1667,7 +1669,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                       key: ValueKey(
                         'tool_unit_picker_close_${widget.tool.id}_${isFrom ? 'from' : 'to'}',
                       ),
-                      tooltip: 'Close picker',
+                      tooltip: DashboardCopy.unitPickerCloseTooltip(context),
                       onPressed: () => Navigator.of(context).pop(),
                       icon: const Icon(Icons.close_rounded),
                     ),
@@ -2645,7 +2647,9 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                           key: ValueKey(
                             'tool_time_picker_mode_${isFrom ? 'from' : 'to'}_city',
                           ),
-                          label: const Text('Cities'),
+                          label: Text(
+                            DashboardCopy.timePickerModeCities(context),
+                          ),
                           selected: !advancedMode,
                           onSelected: (selected) {
                             if (!selected) return;
@@ -2657,7 +2661,9 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                           key: ValueKey(
                             'tool_time_picker_mode_${isFrom ? 'from' : 'to'}_zone',
                           ),
-                          label: const Text('Advanced: Time Zones'),
+                          label: Text(
+                            DashboardCopy.timePickerModeAdvancedZones(context),
+                          ),
                           selected: advancedMode,
                           onSelected: (selected) {
                             if (!selected) return;
@@ -2675,9 +2681,10 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                       ),
                       onChanged: (value) => setModalState(() => query = value),
                       decoration: InputDecoration(
-                        hintText: advancedMode
-                            ? 'Search timezone ID or city'
-                            : 'Search city or country',
+                        hintText: DashboardCopy.timePickerSearchHint(
+                          context,
+                          advancedMode: advancedMode,
+                        ),
                         prefixIcon: Icon(Icons.search_rounded),
                         isDense: true,
                       ),
@@ -4277,7 +4284,9 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                                         minimumSize: const Size(0, 52),
                                       ),
                                       onPressed: _runConversion,
-                                      child: const Text('Convert'),
+                                      child: Text(
+                                        DashboardCopy.convertCta(context),
+                                      ),
                                     ),
                                   );
 

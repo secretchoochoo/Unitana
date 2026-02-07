@@ -359,6 +359,16 @@
     - developer tools title/description/reset-and-restart labels + forced/no-override subtitle templates.
   - expanded localization seed/runtime tests for new devtools keys and placeholder substitutions.
   - full gates re-run and green (`dart format .`, `flutter analyze`, `flutter test`).
+- Pack H localization expansion (phase 9, 2026-02-07):
+  - migrated additional picker/action microcopy to runtime localization-backed `DashboardCopy` methods:
+    - tool picker title/search hint/close tooltip/most-recent label
+    - `Deferred`/`Soon` disabled badge labels
+    - replace/remove tile labels and remove-confirmation copy
+    - time picker mode chips (`Cities`, `Advanced: Time Zones`) and mode-specific search hints
+    - unit picker titles (`From/To Unit`, `From/To Currency`) and close tooltip
+    - generic convert CTA label (`Convert`)
+  - expanded localization seed/runtime tests for the new picker/action keys and placeholder substitutions.
+  - full gates re-run and green (`dart format .`, `flutter analyze`, `flutter test`).
 - Pack F activation bundle (phase 1):
   - activated `world_clock_delta` and `jet_lag_delta` entries in tool registry.
   - wired both entries to the existing mature Time modal flow as interim E2E activation.
@@ -572,7 +582,7 @@ Backlog has been reprioritized away from small, fragmented slices into larger ex
 13) **Icebox:** Optional radio feature.
 
 Current execution focus:
-- **Now:** continue Pack H runtime seam expansion on remaining low-frequency weather/status edge copy and cleanup any straggler hardcoded dashboard text.
+- **Now:** continue Pack H runtime seam expansion on remaining low-frequency hero/weather/status edge copy and cleanup any straggler hardcoded dashboard text.
 - **Next:** harden ARB transition artifacts (seed export/review workflow + l10n mapping prep) with deterministic fallback contracts.
 - **Later:** Pack E production facelift and Pack H full localization rollout.
 

@@ -803,6 +803,102 @@ class DashboardCopy {
         'dashboard.unitPrice.invalidProductA',
         fallback: 'Enter valid price and quantity for Product A.',
       );
+  static String toolPickerTitle(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.toolPicker.title', fallback: 'Choose a tool');
+  static String toolPickerSearchHint(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.toolPicker.searchHint', fallback: 'Search tools');
+  static String toolPickerCloseTooltip(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.toolPicker.tooltip.close', fallback: 'Close tools');
+  static String toolPickerMostRecent(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.toolPicker.mostRecent', fallback: 'Most recent');
+  static String toolPickerDisabledBadge(
+    BuildContext context, {
+    required bool isDeferred,
+  }) => DashboardLocalizations.of(context).text(
+    isDeferred
+        ? 'dashboard.toolPicker.badge.deferred'
+        : 'dashboard.toolPicker.badge.soon',
+    fallback: isDeferred ? 'Deferred' : 'Soon',
+  );
+  static String toolPickerActionReplace(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.toolPicker.action.replace', fallback: 'Replace tile');
+  static String toolPickerActionRemove(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.toolPicker.action.remove', fallback: 'Remove tile');
+  static String toolPickerActionRemoveConfirmTitle(
+    BuildContext context,
+    String label,
+  ) => DashboardLocalizations.of(context).text(
+    'dashboard.toolPicker.action.removeTitle',
+    params: <String, String>{'label': label},
+    fallback: 'Remove $label?',
+  );
+  static String toolPickerActionRemoveConfirmMessage(BuildContext context) =>
+      DashboardLocalizations.of(context).text(
+        'dashboard.toolPicker.action.removeMessage',
+        fallback: 'This tile will be removed from your dashboard.',
+      );
+  static String toolPickerActionRemoveConfirmCta(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.toolPicker.action.removeCta', fallback: 'Remove');
+  static String convertCta(BuildContext context) => DashboardLocalizations.of(
+    context,
+  ).text('dashboard.tool.cta.convert', fallback: 'Convert');
+  static String unitPickerTitle(
+    BuildContext context, {
+    required bool isCurrencyTool,
+    required bool isFrom,
+  }) {
+    final key = isCurrencyTool
+        ? (isFrom
+              ? 'dashboard.tool.unitPicker.fromCurrency'
+              : 'dashboard.tool.unitPicker.toCurrency')
+        : (isFrom
+              ? 'dashboard.tool.unitPicker.fromUnit'
+              : 'dashboard.tool.unitPicker.toUnit');
+    final fallback = isCurrencyTool
+        ? (isFrom ? 'From Currency' : 'To Currency')
+        : (isFrom ? 'From Unit' : 'To Unit');
+    return DashboardLocalizations.of(context).text(key, fallback: fallback);
+  }
+
+  static String unitPickerCloseTooltip(BuildContext context) =>
+      DashboardLocalizations.of(context).text(
+        'dashboard.tool.unitPicker.tooltip.close',
+        fallback: 'Close picker',
+      );
+  static String timePickerModeCities(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.time.picker.mode.cities', fallback: 'Cities');
+  static String timePickerModeAdvancedZones(BuildContext context) =>
+      DashboardLocalizations.of(context).text(
+        'dashboard.time.picker.mode.advancedZones',
+        fallback: 'Advanced: Time Zones',
+      );
+  static String timePickerSearchHint(
+    BuildContext context, {
+    required bool advancedMode,
+  }) => DashboardLocalizations.of(context).text(
+    advancedMode
+        ? 'dashboard.time.picker.searchHint.advanced'
+        : 'dashboard.time.picker.searchHint.city',
+    fallback: advancedMode
+        ? 'Search timezone ID or city'
+        : 'Search city or country',
+  );
 
   static String dateImpactTitleCase(String dateImpactRaw) {
     return switch (dateImpactRaw.toLowerCase()) {

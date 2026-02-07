@@ -73,5 +73,17 @@ void main() {
       LocalizationSeed.enUs['dashboard.devtools.resetRestart.title'],
       'Reset and Restart',
     );
+    expect(
+      LocalizationSeed.enUs['dashboard.toolPicker.title'],
+      'Choose a tool',
+    );
+    expect(
+      LocalizationSeed.enUs['dashboard.tool.unitPicker.fromCurrency'],
+      'From Currency',
+    );
+    expect(
+      LocalizationSeed.enUs['dashboard.time.picker.mode.cities'],
+      'Cities',
+    );
   });
 }

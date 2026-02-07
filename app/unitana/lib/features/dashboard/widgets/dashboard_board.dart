@@ -10,6 +10,7 @@ import '../../../models/place.dart';
 import '../../../common/feedback/unitana_toast.dart';
 import '../../../utils/timezone_utils.dart';
 import '../models/dashboard_board_item.dart';
+import '../models/dashboard_copy.dart';
 import '../models/dashboard_live_data.dart';
 import '../models/dashboard_layout_controller.dart';
 import '../models/dashboard_session_controller.dart';
@@ -912,9 +913,9 @@ class _DashboardBoardState extends State<DashboardBoard>
   Future<bool> _confirmRemoveTile(BuildContext context, String label) async {
     return showDestructiveConfirmationSheet(
       context,
-      title: 'Remove $label?',
-      message: 'This tile will be removed from your dashboard.',
-      confirmLabel: 'Remove',
+      title: DashboardCopy.toolPickerActionRemoveConfirmTitle(context, label),
+      message: DashboardCopy.toolPickerActionRemoveConfirmMessage(context),
+      confirmLabel: DashboardCopy.toolPickerActionRemoveConfirmCta(context),
     );
   }
 
@@ -935,7 +936,7 @@ class _DashboardBoardState extends State<DashboardBoard>
               ListTile(
                 key: ValueKey('dashboard_tile_action_replace_${item.id}'),
                 leading: const Icon(Icons.swap_horiz),
-                title: const Text('Replace tile'),
+                title: Text(DashboardCopy.toolPickerActionReplace(context)),
                 onTap: () =>
                     Navigator.of(sheetContext).pop(_TileEditAction.replace),
               ),
@@ -943,7 +944,7 @@ class _DashboardBoardState extends State<DashboardBoard>
                 key: ValueKey('dashboard_tile_action_remove_${item.id}'),
                 leading: Icon(Icons.delete_outline, color: scheme.error),
                 title: Text(
-                  'Remove tile',
+                  DashboardCopy.toolPickerActionRemove(context),
                   style: TextStyle(color: scheme.error),
                 ),
                 onTap: () =>
@@ -1410,14 +1411,17 @@ class _ToolPickerSheetState extends State<ToolPickerSheet> {
 
   DashboardSessionController? get _session => widget.session;
 
-  String _disabledBadgeFor(ToolRegistryTool tool) {
+  String _disabledBadgeFor(BuildContext context, ToolRegistryTool tool) {
     switch (tool.surfaceType) {
       case ToolSurfaceType.deferred:
-        return 'Deferred';
+        return DashboardCopy.toolPickerDisabledBadge(context, isDeferred: true);
       case ToolSurfaceType.aliasPreset:
       case ToolSurfaceType.configurableTemplate:
       case ToolSurfaceType.dedicated:
-        return 'Soon';
+        return DashboardCopy.toolPickerDisabledBadge(
+          context,
+          isDeferred: false,
+        );
     }
   }
 
@@ -1553,7 +1557,7 @@ class _ToolPickerSheetState extends State<ToolPickerSheet> {
             trailing: t.isEnabled
                 ? const Icon(Icons.chevron_right_rounded)
                 : Text(
-                    _disabledBadgeFor(t),
+                    _disabledBadgeFor(context, t),
                     style: theme.textTheme.labelMedium?.copyWith(
                       color: scheme.onSurfaceVariant,
                     ),
@@ -1646,7 +1650,7 @@ class _ToolPickerSheetState extends State<ToolPickerSheet> {
           trailing: t.isEnabled
               ? const Icon(Icons.chevron_right_rounded)
               : Text(
-                  _disabledBadgeFor(t),
+                  _disabledBadgeFor(context, t),
                   style: theme.textTheme.labelMedium?.copyWith(
                     color: scheme.onSurfaceVariant,
                   ),
@@ -1709,7 +1713,7 @@ class _ToolPickerSheetState extends State<ToolPickerSheet> {
     return ListTile(
       key: const ValueKey('toolpicker_recent'),
       leading: const Icon(Icons.history_rounded),
-      title: const Text('Most recent'),
+      title: Text(DashboardCopy.toolPickerMostRecent(context)),
       subtitle: Text(tool.label),
       trailing: const Icon(Icons.chevron_right_rounded),
       onTap: () => Navigator.of(context).pop(mapped),
@@ -1723,9 +1727,9 @@ class _ToolPickerSheetState extends State<ToolPickerSheet> {
         key: const ValueKey('toolpicker_search'),
         controller: _searchController,
         textInputAction: TextInputAction.search,
-        decoration: const InputDecoration(
-          prefixIcon: Icon(Icons.search_rounded),
-          hintText: 'Search tools',
+        decoration: InputDecoration(
+          prefixIcon: const Icon(Icons.search_rounded),
+          hintText: DashboardCopy.toolPickerSearchHint(context),
           isDense: true,
         ),
         onChanged: (v) {
@@ -1764,13 +1768,13 @@ class _ToolPickerSheetState extends State<ToolPickerSheet> {
               children: [
                 Expanded(
                   child: Text(
-                    'Choose a tool',
+                    DashboardCopy.toolPickerTitle(context),
                     style: theme.textTheme.titleMedium,
                   ),
                 ),
                 IconButton(
                   key: const ValueKey('toolpicker_close'),
-                  tooltip: 'Close tools',
+                  tooltip: DashboardCopy.toolPickerCloseTooltip(context),
                   icon: const Icon(Icons.close_rounded),
                   onPressed: () => Navigator.of(context).maybePop(),
                 ),
