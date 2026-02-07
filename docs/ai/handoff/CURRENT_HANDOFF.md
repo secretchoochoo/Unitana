@@ -6,6 +6,17 @@
 - **Operating mode:** Codex is now the primary workflow; apply edits directly in-repo (do not require patch zip workflow unless explicitly requested).
 
 ## Latest changes (2026-02-07)
+- Pack E phase 6c redundant label audit shipped:
+  - removed remaining redundant `Home` / `Destination` role labels where city+flag context already implies meaning.
+  - Jet Lag zone card titles now use neutral `From Time Zone` / `To Time Zone`.
+  - profile and hero missing-city fallback labels now use neutral `City not set` / `Set city` wording.
+  - localization seed + English seed snapshot updated to match the new wording.
+  - full gates re-run and green:
+    - `dart format .`
+    - `flutter analyze`
+    - `flutter test`
+
+## Latest changes (2026-02-07)
 - Pack E phase 6b in-card marquee polish shipped:
   - weather-sheet city cards now use responsive mini-marquee sizing in the header so phone-width layouts stay readable.
   - top-row hierarchy was tuned for small phones (scene width/height + primary temperature typography adapt at tighter widths).

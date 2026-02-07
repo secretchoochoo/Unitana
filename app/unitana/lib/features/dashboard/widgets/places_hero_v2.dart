@@ -231,9 +231,9 @@ class _SegmentedRealityToggle extends StatelessWidget {
     final r = (layout?.radiusButton ?? 16.0) - 6;
 
     final leftLabel =
-        '${_flagEmojiFromIso2(destination?.countryCode)} ${destination?.cityName ?? 'Destination'}';
+        '${_flagEmojiFromIso2(destination?.countryCode)} ${destination?.cityName ?? 'Set city'}';
     final rightLabel =
-        '${_flagEmojiFromIso2(home?.countryCode)} ${home?.cityName ?? 'Home'}';
+        '${_flagEmojiFromIso2(home?.countryCode)} ${home?.cityName ?? 'Set city'}';
 
     return Container(
       height: compact ? 40 : 44,

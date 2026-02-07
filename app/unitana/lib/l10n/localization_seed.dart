@@ -136,8 +136,8 @@ class LocalizationSeed {
     'dashboard.profiles.badge.active': 'Active',
     'dashboard.profiles.tooltip.edit': 'Edit this profile',
     'dashboard.profiles.tooltip.delete': 'Delete this profile',
-    'dashboard.profiles.homeFallback': 'Home',
-    'dashboard.profiles.destinationFallback': 'Destination',
+    'dashboard.profiles.homeFallback': 'City not set',
+    'dashboard.profiles.destinationFallback': 'City not set',
     'dashboard.devtools.weather.title': 'Weather',
     'dashboard.devtools.weather.sourceHeading': 'Weather Source',
     'dashboard.devtools.weather.sourceSummary':
@@ -200,8 +200,8 @@ class LocalizationSeed {
     'dashboard.toolPicker.moreCount': '+{count} more',
     'dashboard.time.fromZone.standard': 'From Time Zone',
     'dashboard.time.toZone.standard': 'To Time Zone',
-    'dashboard.time.fromZone.jetLag': 'Home Time Zone',
-    'dashboard.time.toZone.jetLag': 'Destination Time Zone',
+    'dashboard.time.fromZone.jetLag': 'From Time Zone',
+    'dashboard.time.toZone.jetLag': 'To Time Zone',
     'dashboard.time.converter.title': 'Convert Local Time',
     'dashboard.time.converter.helper':
         'Enter as YYYY-MM-DD HH:MM in {fromDisplayLabel}',

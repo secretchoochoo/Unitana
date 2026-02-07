@@ -1,4 +1,4 @@
-NEXT CHAT PROMPT — Pack E Phase 6c (Redundant Home/Destination Label Audit)
+NEXT CHAT PROMPT — Pack E Phase 6d (City Picker Quality + Clarity)
 
 You are taking over Unitana (Flutter) in a fresh, high-context window.
 
@@ -24,20 +24,20 @@ Then execute using this contract.
   - goldens opt-in only
 
 ## Mission
-Remove redundant `Home` / `Destination` UI labels where city+flag context already communicates intent, while preserving places/reality behavior and clarity.
+Improve Time/Jet Lag city-picker quality so results feel mainstream, clean, and predictable while preserving seeded defaults and advanced timezone fallback behavior.
 
 ## Required outcomes
 1) Scope guard
 - Do not change dashboard hero marquee semantics.
 - Keep weather-sheet work constrained to per-city cards (middle bridge card remains removed).
 
-2) Label audit slice
-- Audit Time/Weather/Jet Lag/profile surfaces for `Home` / `Destination` labels that are redundant next to city+flag context.
-- Keep labels where they are semantically required (for role disambiguation, accessibility clarity, or empty-state fallback).
-- Keep implementation low-risk and avoid behavior changes to zone seeding, swap actions, and reality toggles.
+2) Picker quality slice
+- Reduce odd/low-signal city rows in default list ordering and improve first-screen relevance for mainstream city selection.
+- Ensure selected-state indicators are clear and non-confusing (no misleading multiple-check appearance).
+- Keep advanced timezone mode available for power users and preserve EST/abbreviation search behavior.
 
 3) Readability and layout safety
-- Ensure resulting copy remains legible on small phones and does not crowd neighboring weather sections.
+- Ensure picker row copy remains legible on small phones and does not crowd the sheet.
 - Preserve hero grid contracts and avoid overlap/clipping on small phones.
 - Keep existing interaction behavior unchanged.
 - Prevent jank from dynamic weather updates and avoid extra key collisions.
@@ -54,6 +54,6 @@ Remove redundant `Home` / `Destination` UI labels where city+flag context alread
   - `docs/ai/prompts/NEXT_CHAT_PROMPT.md` (advance to next slice)
 
 ## Definition of done
-- Redundant `Home` / `Destination` text is removed where city/flag context already implies meaning, without harming usability.
+- City-first picker feels cleaner and less confusing for mainstream users while retaining power-user timezone fallback.
 - No regressions in collapse behavior, readability, or interaction.
 - Repo is green (`format`, `analyze`, `test`).

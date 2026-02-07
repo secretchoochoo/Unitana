@@ -207,7 +207,7 @@
     }
   ],
   "current_state": {
-    "current_slice": "Pack E phase 6b shipped: weather-sheet in-card mini-marquee layout now adapts cleanly to tighter phone widths",
+    "current_slice": "Pack E phase 6c shipped: redundant Home/Destination labels removed where city+flag context already implies meaning",
     "notes": [
       "Codex-first workflow allows larger execution packs while keeping gates green.",
       "Pack A city data platform foundation is complete with canonical schema + validation guards.",
@@ -289,12 +289,14 @@
       "Time-family picker follow-up shipped: seeded zone labels no longer include `Home ·` / `Destination ·` prefixes, while seeded-zone prioritization remains intact."
       ,
       "Pack E phase 6b shipped: weather-sheet per-card mini-marquee treatment now uses responsive header sizing so narrow phone widths preserve city/condition/temp readability.",
-      "Pack E phase 6b shipped: weather summary smoke test now asserts removed middle bridge key stays absent (`weather_summary_bridge_split`)."
+      "Pack E phase 6b shipped: weather summary smoke test now asserts removed middle bridge key stays absent (`weather_summary_bridge_split`).",
+      "Pack E phase 6c shipped: Jet Lag zone headers now use neutral `From Time Zone` / `To Time Zone` wording instead of Home/Destination role labels.",
+      "Pack E phase 6c shipped: profile + hero fallback labels now use neutral city-missing wording (`City not set`, `Set city`) where role labels were redundant."
     ],
     "overall_health": "Stable with full gates passing; canonical city data coverage is now enforced for all in-scope records.",
     "status": "GREEN",
     "focus": {
-      "now": "Execute Pack E phase 6c: audit remaining Home/Destination UI labels and remove redundant cases where city/flag context already implies meaning.",
+      "now": "Execute Pack E phase 6d: clean up city-picker result quality and duplicate/checkmark clarity for Time/Jet Lag selection flows.",
       "next": "Re-evaluate whether any bridge-era docs/tests can be retired now that in-card marquees are the locked weather-sheet direction.",
       "later": [
         "Pack H localization full rollout (multi-language ARB + language settings)"

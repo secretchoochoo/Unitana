@@ -136,7 +136,7 @@ class DashboardCopy {
     final key = isJetLagTool
         ? 'dashboard.time.fromZone.jetLag'
         : 'dashboard.time.fromZone.standard';
-    final fallback = isJetLagTool ? 'Home Time Zone' : 'From Time Zone';
+    final fallback = 'From Time Zone';
     return DashboardLocalizations.of(context).text(key, fallback: fallback);
   }
 
@@ -147,7 +147,7 @@ class DashboardCopy {
     final key = isJetLagTool
         ? 'dashboard.time.toZone.jetLag'
         : 'dashboard.time.toZone.standard';
-    final fallback = isJetLagTool ? 'Destination Time Zone' : 'To Time Zone';
+    final fallback = 'To Time Zone';
     return DashboardLocalizations.of(context).text(key, fallback: fallback);
   }
 
@@ -637,11 +637,12 @@ class DashboardCopy {
   static String profilesBoardHomeFallback(BuildContext context) =>
       DashboardLocalizations.of(
         context,
-      ).text('dashboard.profiles.homeFallback', fallback: 'Home');
+      ).text('dashboard.profiles.homeFallback', fallback: 'City not set');
   static String profilesBoardDestinationFallback(BuildContext context) =>
-      DashboardLocalizations.of(
-        context,
-      ).text('dashboard.profiles.destinationFallback', fallback: 'Destination');
+      DashboardLocalizations.of(context).text(
+        'dashboard.profiles.destinationFallback',
+        fallback: 'City not set',
+      );
 
   static String tipBillAmountLabel(BuildContext context, String currencyCode) =>
       DashboardLocalizations.of(context).text(
