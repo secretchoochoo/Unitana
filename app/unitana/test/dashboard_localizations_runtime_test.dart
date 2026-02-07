@@ -59,9 +59,17 @@ void main() {
       locale: const Locale('en'),
       key: 'dashboard.currency.notice.refreshing',
     );
+    final toolInputHint = DashboardLocalizations.resolveForLocale(
+      locale: const Locale('en'),
+      key: 'dashboard.tool.input.hint',
+    );
     final tipInvalid = DashboardLocalizations.resolveForLocale(
       locale: const Locale('en'),
       key: 'dashboard.tip.invalidAmount',
+    );
+    final tipInputHint = DashboardLocalizations.resolveForLocale(
+      locale: const Locale('en'),
+      key: 'dashboard.tip.inputHint.amount',
     );
     final unitCompare = DashboardLocalizations.resolveForLocale(
       locale: const Locale('en'),
@@ -118,6 +126,10 @@ void main() {
       locale: const Locale('en'),
       key: 'dashboard.time.picker.mode.advancedZones',
     );
+    final timeInputHint = DashboardLocalizations.resolveForLocale(
+      locale: const Locale('en'),
+      key: 'dashboard.time.converter.inputHint',
+    );
     final moreCount = DashboardLocalizations.resolveForLocale(
       locale: const Locale('en'),
       key: 'dashboard.toolPicker.moreCount',
@@ -167,10 +179,24 @@ void main() {
       locale: const Locale('en'),
       key: 'dashboard.cityPicker.searchHint.cityAndTimezone',
     );
+    final taxInputHint = DashboardLocalizations.resolveForLocale(
+      locale: const Locale('en'),
+      key: 'dashboard.tax.inputHint.amount',
+    );
+    final unitPriceInputHint = DashboardLocalizations.resolveForLocale(
+      locale: const Locale('en'),
+      key: 'dashboard.unitPrice.inputHint.price',
+    );
+    final unitQtyInputHint = DashboardLocalizations.resolveForLocale(
+      locale: const Locale('en'),
+      key: 'dashboard.unitPrice.inputHint.quantity',
+    );
     expect(clearTitle, 'Clear history?');
     expect(hint, 'tap copies result; long-press copies input');
     expect(refreshNotice, 'Refreshing rates…');
+    expect(toolInputHint, 'Enter Value');
     expect(tipInvalid, 'Enter a valid amount to calculate tip.');
+    expect(tipInputHint, '100.00');
     expect(unitCompare, 'Product A is cheaper by 12.3%.');
     expect(lookupFrom, 'From: US');
     expect(comingSoon, 'Settings: coming soon');
@@ -189,6 +215,7 @@ void main() {
     expect(toolPickerTitle, 'Choose a tool');
     expect(removeTitle, 'Remove Weather?');
     expect(timeMode, 'Advanced: Time Zones');
+    expect(timeInputHint, '2026-02-06 18:30');
     expect(moreCount, '+5 more');
     expect(pickerHint, 'Search city, country, timezone, or EST');
     expect(searching, 'Searching…');
@@ -201,5 +228,8 @@ void main() {
     expect(thunderRain, 'Thunderstorm');
     expect(cityOnlyHint, 'Search city or country');
     expect(cityAndTimezoneHint, 'Search city, country, timezone, or EST');
+    expect(taxInputHint, '100.00');
+    expect(unitPriceInputHint, '4.99');
+    expect(unitQtyInputHint, '500');
   });
 }

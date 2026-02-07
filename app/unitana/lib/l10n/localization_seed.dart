@@ -30,6 +30,7 @@ class LocalizationSeed {
     'dashboard.tool.cta.swap': 'Swap',
     'dashboard.tool.cta.addWidget': '+ Add Widget',
     'dashboard.tool.input.editValue': 'Edit Value',
+    'dashboard.tool.input.hint': 'Enter Value',
     'dashboard.tool.history.title': 'History',
     'dashboard.tool.history.clear': 'Clear',
     'dashboard.tool.history.clearTitle': 'Clear history?',
@@ -82,6 +83,7 @@ class LocalizationSeed {
     'dashboard.tip.line.perPerson': 'Per person ({count})',
     'dashboard.tip.roundingAdjustment':
         'Rounding adjustment: {sign}{deltaAmount}',
+    'dashboard.tip.inputHint.amount': '100.00',
     'dashboard.tax.subtotalLabel': 'Subtotal ({currencyCode})',
     'dashboard.tax.totalLabel': 'Total ({currencyCode})',
     'dashboard.tax.mode.addOn': 'Add-on tax',
@@ -92,6 +94,7 @@ class LocalizationSeed {
     'dashboard.tax.line.total': 'Total',
     'dashboard.tax.mode.help.addOn': 'Mode: add tax on top of subtotal',
     'dashboard.tax.mode.help.inclusive': 'Mode: tax already included in total',
+    'dashboard.tax.inputHint.amount': '100.00',
     'dashboard.unitPrice.compareInvalid':
         'Comparison needs valid values in the same unit family.',
     'dashboard.unitPrice.compareA': 'Product A is cheaper by {percent}%.',
@@ -103,6 +106,8 @@ class LocalizationSeed {
     'dashboard.unitPrice.title.productA': 'Product A',
     'dashboard.unitPrice.title.productB': 'Product B',
     'dashboard.unitPrice.compareToggle': 'Compare with Product B',
+    'dashboard.unitPrice.inputHint.price': '4.99',
+    'dashboard.unitPrice.inputHint.quantity': '500',
     'dashboard.unitPrice.invalidProductA':
         'Enter valid price and quantity for Product A.',
     'dashboard.dashboard.comingSoon': '{label}: coming soon',
@@ -229,6 +234,7 @@ class LocalizationSeed {
     'dashboard.time.converter.title': 'Convert Local Time',
     'dashboard.time.converter.helper':
         'Enter as YYYY-MM-DD HH:MM in {fromDisplayLabel}',
+    'dashboard.time.converter.inputHint': '2026-02-06 18:30',
     'dashboard.time.converter.cta': 'Convert Time',
     'dashboard.jetLag.facts.title': 'Travel Facts',
     'dashboard.time.currentClocks.title': 'Current Clocks',

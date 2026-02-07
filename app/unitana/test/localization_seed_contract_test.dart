@@ -26,17 +26,32 @@ void main() {
       'Convert Local Time',
     );
     expect(
+      LocalizationSeed.enUs['dashboard.time.converter.inputHint'],
+      '2026-02-06 18:30',
+    );
+    expect(
       LocalizationSeed.enUs['dashboard.tool.history.clearTitle'],
       'Clear history?',
     );
+    expect(LocalizationSeed.enUs['dashboard.tool.input.hint'], 'Enter Value');
     expect(
       LocalizationSeed.enUs['dashboard.tip.invalidAmount'],
       'Enter a valid amount to calculate tip.',
     );
+    expect(LocalizationSeed.enUs['dashboard.tip.inputHint.amount'], '100.00');
     expect(LocalizationSeed.enUs['dashboard.tax.mode.addOn'], 'Add-on tax');
+    expect(LocalizationSeed.enUs['dashboard.tax.inputHint.amount'], '100.00');
     expect(
       LocalizationSeed.enUs['dashboard.unitPrice.compareToggle'],
       'Compare with Product B',
+    );
+    expect(
+      LocalizationSeed.enUs['dashboard.unitPrice.inputHint.price'],
+      '4.99',
+    );
+    expect(
+      LocalizationSeed.enUs['dashboard.unitPrice.inputHint.quantity'],
+      '500',
     );
     expect(LocalizationSeed.enUs['dashboard.lookup.sizeMatrix'], 'Size Matrix');
     expect(

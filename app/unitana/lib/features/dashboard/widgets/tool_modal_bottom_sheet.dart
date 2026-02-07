@@ -961,7 +961,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
               context,
               _tipCurrencyCode(),
             ),
-            hintText: '100.00',
+            hintText: DashboardCopy.tipAmountHint(context),
           ),
           onChanged: (_) => setState(() {}),
         ),
@@ -1134,7 +1134,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
               isAddOn: isAddOn,
               currencyCode: _tipCurrencyCode(),
             ),
-            hintText: '100.00',
+            hintText: DashboardCopy.taxAmountHint(context),
           ),
           onChanged: (_) => setState(() {}),
         ),
@@ -1335,7 +1335,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                   context,
                   _tipCurrencyCode(),
                 ),
-                hintText: '4.99',
+                hintText: DashboardCopy.unitPricePriceHint(context),
               ),
               onChanged: (_) => setState(() {}),
             ),
@@ -1351,7 +1351,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                     ),
                     decoration: InputDecoration(
                       labelText: DashboardCopy.unitPriceLabelQuantity(context),
-                      hintText: '500',
+                      hintText: DashboardCopy.unitPriceQuantityHint(context),
                     ),
                     onChanged: (_) => setState(() {}),
                   ),
@@ -4009,8 +4009,8 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                   key: const ValueKey('tool_time_convert_input'),
                   controller: _timeConvertController,
                   keyboardType: TextInputType.datetime,
-                  decoration: const InputDecoration(
-                    hintText: '2026-02-06 18:30',
+                  decoration: InputDecoration(
+                    hintText: DashboardCopy.timeConverterInputHint(context),
                   ),
                   onSubmitted: (_) => _runTimeZoneConversion(),
                 ),
@@ -4387,8 +4387,10 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                                                   policy: numericPolicy,
                                                 ),
                                               ],
-                                        decoration: const InputDecoration(
-                                          hintText: 'Enter Value',
+                                        decoration: InputDecoration(
+                                          hintText: DashboardCopy.toolInputHint(
+                                            context,
+                                          ),
                                         ),
                                         onSubmitted: (_) => _runConversion(),
                                       ),

@@ -169,6 +169,11 @@ class DashboardCopy {
       DashboardLocalizations.of(
         context,
       ).text('dashboard.time.converter.cta', fallback: 'Convert Time');
+  static String timeConverterInputHint(BuildContext context) =>
+      DashboardLocalizations.of(context).text(
+        'dashboard.time.converter.inputHint',
+        fallback: '2026-02-06 18:30',
+      );
 
   static String factsTitle(BuildContext context, {required bool isJetLagTool}) {
     final key = isJetLagTool
@@ -701,6 +706,10 @@ class DashboardCopy {
     params: <String, String>{'sign': sign, 'deltaAmount': deltaAmount},
     fallback: 'Rounding adjustment: $sign$deltaAmount',
   );
+  static String tipAmountHint(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.tip.inputHint.amount', fallback: '100.00');
 
   static String taxAmountLabel(
     BuildContext context, {
@@ -755,11 +764,24 @@ class DashboardCopy {
     return DashboardLocalizations.of(context).text(key, fallback: fallback);
   }
 
+  static String taxAmountHint(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.tax.inputHint.amount', fallback: '100.00');
+
   static String unitPriceCompareInvalid(BuildContext context) =>
       DashboardLocalizations.of(context).text(
         'dashboard.unitPrice.compareInvalid',
         fallback: 'Comparison needs valid values in the same unit family.',
       );
+  static String unitPricePriceHint(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.unitPrice.inputHint.price', fallback: '4.99');
+  static String unitPriceQuantityHint(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.unitPrice.inputHint.quantity', fallback: '500');
   static String unitPriceCompareA(BuildContext context, String percent) =>
       DashboardLocalizations.of(context).text(
         'dashboard.unitPrice.compareA',
@@ -863,6 +885,10 @@ class DashboardCopy {
   static String convertCta(BuildContext context) => DashboardLocalizations.of(
     context,
   ).text('dashboard.tool.cta.convert', fallback: 'Convert');
+  static String toolInputHint(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.tool.input.hint', fallback: 'Enter Value');
   static String unitPickerTitle(
     BuildContext context, {
     required bool isCurrencyTool,
