@@ -6,6 +6,17 @@
 - **Operating mode:** Codex is now the primary workflow; apply edits directly in-repo (do not require patch zip workflow unless explicitly requested).
 
 ## Latest changes (2026-02-07)
+- Dashboard split-marquee experiment was reverted (scope correction):
+  - dashboard hero marquee remains unchanged from the Pack E kickoff baseline.
+  - split-marquee concept is deferred for future **weather-sheet-only** exploration (middle bridge area between destination/home weather sections).
+  - reusable notes captured in:
+    - `docs/ai/reference/PACK_E_SPLIT_MARQUEE_DEFERRED_NOTES.md`
+  - full gates re-run and green after revert:
+    - `dart format .`
+    - `flutter analyze`
+    - `flutter test`
+
+## Latest changes (2026-02-07)
 - Pack E kickoff (vertical-fill feasibility pass) shipped:
   - rebalanced Places Hero vertical budget so the marquee region gets more usable height on phone layouts without changing text sizes:
     - reduced non-content chrome vertical footprint (outer vertical padding, segmented toggle height, clock header spacing)
