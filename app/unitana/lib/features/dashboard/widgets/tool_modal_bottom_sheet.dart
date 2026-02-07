@@ -2474,7 +2474,8 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
     required List<TimeZoneCityOption> cityOptions,
   }) {
     if (cityOptions.isEmpty) return const <TimeZoneCityOption>[];
-    return TimeZoneCatalog.mainstreamCityOptions(
+    return TimeZoneCatalog.mainstreamCityOptionsFromAll(
+      all: cityOptions,
       home: widget.home,
       destination: widget.destination,
       limit: 24,
@@ -2497,6 +2498,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
     required String rawQuery,
     required List<TimeZoneCityOption> featured,
     required List<TimeZoneCityOption> all,
+    Map<String, String>? indexedHaystackByKey,
   }) {
     final normalized = _normalizeTimeSearch(rawQuery);
     if (normalized.isEmpty) return featured;
@@ -2514,9 +2516,11 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
     }
 
     for (final option in candidates) {
-      final haystack = _normalizeTimeSearch(
-        '${option.label} ${option.subtitle} ${option.timeZoneId}',
-      );
+      final haystack =
+          indexedHaystackByKey?[option.key] ??
+          _normalizeTimeSearch(
+            '${option.label} ${option.subtitle} ${option.timeZoneId}',
+          );
       if (!haystack.contains(normalized) &&
           !tokens.every((token) => haystack.contains(token)) &&
           !aliasZones.contains(option.timeZoneId)) {
@@ -2564,6 +2568,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
   List<TimeZoneOption> _searchZoneOptions({
     required String rawQuery,
     required List<TimeZoneOption> options,
+    Map<String, String>? indexedHaystackById,
   }) {
     final query = rawQuery.trim();
     if (query.isEmpty) return const <TimeZoneOption>[];
@@ -2577,9 +2582,11 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
     }
 
     for (final option in options) {
-      final haystack = _normalizeTimeSearch(
-        '${option.label} ${option.subtitle ?? ''} ${option.id}',
-      );
+      final haystack =
+          indexedHaystackById?[option.id] ??
+          _normalizeTimeSearch(
+            '${option.label} ${option.subtitle ?? ''} ${option.id}',
+          );
       final idLower = option.id.toLowerCase();
       final queryLower = query.toLowerCase();
       if (!haystack.contains(normalized) && !aliasZones.contains(option.id)) {
@@ -2783,6 +2790,18 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
       home: widget.home,
       destination: widget.destination,
     );
+    final citySearchIndex = <String, String>{
+      for (final option in allCityOptions)
+        option.key: _normalizeTimeSearch(
+          '${option.label} ${option.subtitle} ${option.timeZoneId}',
+        ),
+    };
+    final zoneSearchIndex = <String, String>{
+      for (final option in zoneOptions)
+        option.id: _normalizeTimeSearch(
+          '${option.label} ${option.subtitle ?? ''} ${option.id}',
+        ),
+    };
     final featuredCityOptions = _featuredCityOptions(
       cityOptions: allCityOptions,
     );
@@ -2798,10 +2817,12 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
             rawQuery: query,
             featured: featuredCityOptions,
             all: allCityOptions,
+            indexedHaystackByKey: citySearchIndex,
           );
           final filteredZone = _searchZoneOptions(
             rawQuery: query,
             options: zoneOptions,
+            indexedHaystackById: zoneSearchIndex,
           );
           final currentZoneId = isFrom ? _timeFromZoneId : _timeToZoneId;
           final selectedCityKey =
