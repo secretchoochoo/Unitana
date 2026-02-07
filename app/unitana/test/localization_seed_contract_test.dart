@@ -61,5 +61,17 @@ void main() {
       LocalizationSeed.enUs['dashboard.profiles.delete.message'],
       'Delete "{profileName}"? This cannot be undone.',
     );
+    expect(
+      LocalizationSeed.enUs['dashboard.devtools.weather.sourceHeading'],
+      'Weather Source',
+    );
+    expect(
+      LocalizationSeed.enUs['dashboard.devtools.clock.title'],
+      'Clock Override',
+    );
+    expect(
+      LocalizationSeed.enUs['dashboard.devtools.resetRestart.title'],
+      'Reset and Restart',
+    );
   });
 }

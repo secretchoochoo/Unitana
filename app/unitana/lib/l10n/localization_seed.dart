@@ -138,6 +138,40 @@ class LocalizationSeed {
     'dashboard.profiles.tooltip.delete': 'Delete this profile',
     'dashboard.profiles.homeFallback': 'Home',
     'dashboard.profiles.destinationFallback': 'Destination',
+    'dashboard.devtools.weather.title': 'Weather',
+    'dashboard.devtools.weather.sourceHeading': 'Weather Source',
+    'dashboard.devtools.weather.sourceSummary':
+        'Source: {sourceLabel}\nForce hero weather scenes during development',
+    'dashboard.devtools.weather.noApiKey': 'No API key required',
+    'dashboard.devtools.weather.requiresApiKey': 'Requires WEATHERAPI_KEY',
+    'dashboard.devtools.weather.missingApiKey':
+        'Not configured (missing WEATHERAPI_KEY)',
+    'dashboard.devtools.weather.freshness.never':
+        '{source}: Last update: never',
+    'dashboard.devtools.weather.freshness.updated':
+        '{source}: Last update: {age}',
+    'dashboard.devtools.weather.time.auto': 'Auto',
+    'dashboard.devtools.weather.time.sun': 'Sun',
+    'dashboard.devtools.weather.time.night': 'Night',
+    'dashboard.devtools.weather.defaultChoice': 'Default (no visual override)',
+    'dashboard.devtools.clock.title': 'Clock Override',
+    'dashboard.devtools.clock.subtitle.device': 'Device clock (no offset)',
+    'dashboard.devtools.clock.subtitle.offset': 'Offset: {offset}',
+    'dashboard.devtools.clock.enableTitle': 'Enable clock offset',
+    'dashboard.devtools.clock.enableHelp':
+        'Applies a temporary UTC offset for simulator testing and screenshots.',
+    'dashboard.devtools.clock.offsetHoursLabel': 'Offset (hours)',
+    'dashboard.devtools.title': 'Developer Tools',
+    'dashboard.devtools.subtitle': 'Temporary tools for development and QA',
+    'dashboard.devtools.resetRestart.title': 'Reset and Restart',
+    'dashboard.devtools.resetRestart.subtitle':
+        'Restore defaults and clear cached data',
+    'dashboard.devtools.source.noOverride':
+        'Source: {sourceLabel} · No override',
+    'dashboard.devtools.source.forced':
+        'Source: {sourceLabel} · Forced: {forcedLabel}{suffix}',
+    'dashboard.devtools.suffix.night': ' (night)',
+    'dashboard.devtools.suffix.sun': ' (sun)',
     'dashboard.time.fromZone.standard': 'From Time Zone',
     'dashboard.time.toZone.standard': 'To Time Zone',
     'dashboard.time.fromZone.jetLag': 'Home Time Zone',

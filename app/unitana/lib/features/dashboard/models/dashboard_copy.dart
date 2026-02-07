@@ -437,6 +437,158 @@ class DashboardCopy {
         'dashboard.dashboard.resetDefaults.success',
         fallback: 'Dashboard reset to defaults.',
       );
+  static String devtoolsWeatherTitle(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.devtools.weather.title', fallback: 'Weather');
+  static String devtoolsWeatherSourceHeading(BuildContext context) =>
+      DashboardLocalizations.of(context).text(
+        'dashboard.devtools.weather.sourceHeading',
+        fallback: 'Weather Source',
+      );
+  static String devtoolsWeatherSourceSummary(
+    BuildContext context,
+    String sourceLabel,
+  ) => DashboardLocalizations.of(context).text(
+    'dashboard.devtools.weather.sourceSummary',
+    params: <String, String>{'sourceLabel': sourceLabel},
+    fallback:
+        'Source: $sourceLabel\nForce hero weather scenes during development',
+  );
+  static String devtoolsWeatherNoApiKey(BuildContext context) =>
+      DashboardLocalizations.of(context).text(
+        'dashboard.devtools.weather.noApiKey',
+        fallback: 'No API key required',
+      );
+  static String devtoolsWeatherRequiresApiKey(BuildContext context) =>
+      DashboardLocalizations.of(context).text(
+        'dashboard.devtools.weather.requiresApiKey',
+        fallback: 'Requires WEATHERAPI_KEY',
+      );
+  static String devtoolsWeatherMissingApiKey(BuildContext context) =>
+      DashboardLocalizations.of(context).text(
+        'dashboard.devtools.weather.missingApiKey',
+        fallback: 'Not configured (missing WEATHERAPI_KEY)',
+      );
+  static String devtoolsWeatherFreshnessNever(
+    BuildContext context, {
+    required String sourceShortLabel,
+  }) => DashboardLocalizations.of(context).text(
+    'dashboard.devtools.weather.freshness.never',
+    params: <String, String>{'source': sourceShortLabel},
+    fallback: '$sourceShortLabel: Last update: never',
+  );
+  static String devtoolsWeatherFreshnessUpdated(
+    BuildContext context, {
+    required String sourceShortLabel,
+    required String age,
+  }) => DashboardLocalizations.of(context).text(
+    'dashboard.devtools.weather.freshness.updated',
+    params: <String, String>{'source': sourceShortLabel, 'age': age},
+    fallback: '$sourceShortLabel: Last update: $age',
+  );
+  static String devtoolsWeatherTimeAuto(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.devtools.weather.time.auto', fallback: 'Auto');
+  static String devtoolsWeatherTimeSun(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.devtools.weather.time.sun', fallback: 'Sun');
+  static String devtoolsWeatherTimeNight(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.devtools.weather.time.night', fallback: 'Night');
+  static String devtoolsWeatherDefaultChoice(BuildContext context) =>
+      DashboardLocalizations.of(context).text(
+        'dashboard.devtools.weather.defaultChoice',
+        fallback: 'Default (no visual override)',
+      );
+  static String devtoolsClockTitle(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.devtools.clock.title', fallback: 'Clock Override');
+  static String devtoolsClockDeviceSubtitle(BuildContext context) =>
+      DashboardLocalizations.of(context).text(
+        'dashboard.devtools.clock.subtitle.device',
+        fallback: 'Device clock (no offset)',
+      );
+  static String devtoolsClockOffsetSubtitle(
+    BuildContext context, {
+    required String offsetText,
+  }) => DashboardLocalizations.of(context).text(
+    'dashboard.devtools.clock.subtitle.offset',
+    params: <String, String>{'offset': offsetText},
+    fallback: 'Offset: $offsetText',
+  );
+  static String devtoolsClockEnableTitle(BuildContext context) =>
+      DashboardLocalizations.of(context).text(
+        'dashboard.devtools.clock.enableTitle',
+        fallback: 'Enable clock offset',
+      );
+  static String devtoolsClockEnableHelp(
+    BuildContext context,
+  ) => DashboardLocalizations.of(context).text(
+    'dashboard.devtools.clock.enableHelp',
+    fallback:
+        'Applies a temporary UTC offset for simulator testing and screenshots.',
+  );
+  static String devtoolsClockOffsetHoursLabel(BuildContext context) =>
+      DashboardLocalizations.of(context).text(
+        'dashboard.devtools.clock.offsetHoursLabel',
+        fallback: 'Offset (hours)',
+      );
+  static String devtoolsTitle(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.devtools.title', fallback: 'Developer Tools');
+  static String devtoolsSubtitle(BuildContext context) =>
+      DashboardLocalizations.of(context).text(
+        'dashboard.devtools.subtitle',
+        fallback: 'Temporary tools for development and QA',
+      );
+  static String devtoolsResetRestartTitle(BuildContext context) =>
+      DashboardLocalizations.of(context).text(
+        'dashboard.devtools.resetRestart.title',
+        fallback: 'Reset and Restart',
+      );
+  static String devtoolsResetRestartSubtitle(BuildContext context) =>
+      DashboardLocalizations.of(context).text(
+        'dashboard.devtools.resetRestart.subtitle',
+        fallback: 'Restore defaults and clear cached data',
+      );
+  static String devtoolsSourceNoOverride(
+    BuildContext context, {
+    required String sourceLabel,
+  }) => DashboardLocalizations.of(context).text(
+    'dashboard.devtools.source.noOverride',
+    params: <String, String>{'sourceLabel': sourceLabel},
+    fallback: 'Source: $sourceLabel · No override',
+  );
+  static String devtoolsSourceForced(
+    BuildContext context, {
+    required String sourceLabel,
+    required String forcedLabel,
+    required String suffix,
+  }) => DashboardLocalizations.of(context).text(
+    'dashboard.devtools.source.forced',
+    params: <String, String>{
+      'sourceLabel': sourceLabel,
+      'forcedLabel': forcedLabel,
+      'suffix': suffix,
+    },
+    fallback: 'Source: $sourceLabel · Forced: $forcedLabel$suffix',
+  );
+  static String devtoolsNightSuffix(
+    BuildContext context, {
+    required bool night,
+  }) => night
+      ? DashboardLocalizations.of(
+          context,
+        ).text('dashboard.devtools.suffix.night', fallback: ' (night)')
+      : DashboardLocalizations.of(
+          context,
+        ).text('dashboard.devtools.suffix.sun', fallback: ' (sun)');
   static String profilesBoardTitle(BuildContext context) =>
       DashboardLocalizations.of(
         context,

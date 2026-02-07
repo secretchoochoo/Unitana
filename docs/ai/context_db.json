@@ -207,7 +207,7 @@
     }
   ],
   "current_state": {
-    "current_slice": "Pack H phase 7 shipped: dashboard menu/editor + profiles-board high-traffic microcopy migrated to runtime localization-backed copy helpers with deterministic fallback behavior",
+    "current_slice": "Pack H phase 8 shipped: weather/devtools/clock-override microcopy migrated to runtime localization-backed copy helpers with deterministic fallback behavior",
     "notes": [
       "Codex-first workflow allows larger execution packs while keeping gates green.",
       "Pack A city data platform foundation is complete with canonical schema + validation guards.",
@@ -266,12 +266,14 @@
       "Pack H phase 6 shipped: added seeded keys + runtime tests for direction/facts/plan labels and lookup matrix copy; Pack N/M contracts and full gates remain green.",
       "Pack H phase 7 shipped: dashboard tool/menu/refresh tooltips, editor action labels, reset-defaults confirmation copy, and Profiles board delete/edit/status copy now resolve via runtime localization-backed `DashboardCopy` methods.",
       "Pack H phase 7 shipped: localization seed + runtime tests expanded for new dashboard/profiles keys, with full gates green.",
-      "Pack E follow-up captured: evaluate vertical marquee region expansion into unused space above Sunrise/Sunset and Wind/Gust row while preserving hero grid contracts."
+      "Pack E follow-up captured: evaluate vertical marquee region expansion into unused space above Sunrise/Sunset and Wind/Gust row while preserving hero grid contracts.",
+      "Pack H phase 8 shipped: weather/devtools/clock override labels, helper copy, and freshness/status templates now resolve through runtime localization-backed `DashboardCopy` methods.",
+      "Pack H phase 8 shipped: localization seed + runtime tests expanded for new devtools keys/placeholders; full gates remain green."
     ],
     "overall_health": "Stable with full gates passing; canonical city data coverage is now enforced for all in-scope records.",
     "status": "GREEN",
     "focus": {
-      "now": "Continue Pack H runtime seam expansion by migrating remaining weather/devtools/settings edge microcopy and fallback notices to localization-backed helpers.",
+      "now": "Continue Pack H runtime seam expansion by migrating remaining low-frequency weather/status/dashboard edge microcopy and fallback notices to localization-backed helpers.",
       "next": "Harden ARB-generation rollout artifacts (l10n config + seed-to-ARB workflow + reviewable export outputs) while preserving deterministic English fallback behavior.",
       "later": [
         "Pack E marquee scene V2 production",

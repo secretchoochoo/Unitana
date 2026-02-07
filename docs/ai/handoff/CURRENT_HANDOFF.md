@@ -349,6 +349,16 @@
   - expanded localization seed + runtime contract tests for the new dashboard/profile keys and placeholder coverage.
   - captured Pack E UX follow-up in backlog docs: evaluate vertical marquee expansion into unused space above the Sunrise/Sunset + Wind/Gust row while preserving hero grid contracts.
   - full gates re-run and green (`dart format .`, `flutter analyze`, `flutter test`).
+- Pack H localization expansion (phase 8, 2026-02-07):
+  - migrated weather/devtools/clock-override microcopy in dashboard sheets to runtime localization-backed `DashboardCopy` methods:
+    - weather override title/source heading/source summary/default-choice labels
+    - WeatherAPI key helper subtitles
+    - devtools weather freshness lines (`Last update: never` / age-based status)
+    - time-of-day segment labels (`Auto`, `Sun`, `Night`)
+    - clock override title/subtitle/enable helper/offset label + footer `Done`
+    - developer tools title/description/reset-and-restart labels + forced/no-override subtitle templates.
+  - expanded localization seed/runtime tests for new devtools keys and placeholder substitutions.
+  - full gates re-run and green (`dart format .`, `flutter analyze`, `flutter test`).
 - Pack F activation bundle (phase 1):
   - activated `world_clock_delta` and `jet_lag_delta` entries in tool registry.
   - wired both entries to the existing mature Time modal flow as interim E2E activation.
@@ -562,7 +572,7 @@ Backlog has been reprioritized away from small, fragmented slices into larger ex
 13) **Icebox:** Optional radio feature.
 
 Current execution focus:
-- **Now:** continue Pack H runtime seam expansion on remaining weather/devtools/settings/profile-edge microcopy and notices.
+- **Now:** continue Pack H runtime seam expansion on remaining low-frequency weather/status edge copy and cleanup any straggler hardcoded dashboard text.
 - **Next:** harden ARB transition artifacts (seed export/review workflow + l10n mapping prep) with deterministic fallback contracts.
 - **Later:** Pack E production facelift and Pack H full localization rollout.
 

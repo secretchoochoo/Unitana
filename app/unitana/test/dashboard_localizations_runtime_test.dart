@@ -91,6 +91,16 @@ void main() {
       key: 'dashboard.profiles.delete.message',
       params: const <String, String>{'profileName': 'Weekend Trip'},
     );
+    final devtoolsSourceSummary = DashboardLocalizations.resolveForLocale(
+      locale: const Locale('en'),
+      key: 'dashboard.devtools.weather.sourceSummary',
+      params: const <String, String>{'sourceLabel': 'Live: Open-Meteo'},
+    );
+    final devtoolsFreshness = DashboardLocalizations.resolveForLocale(
+      locale: const Locale('en'),
+      key: 'dashboard.devtools.weather.freshness.updated',
+      params: const <String, String>{'source': 'Demo', 'age': '2m ago'},
+    );
     expect(clearTitle, 'Clear history?');
     expect(hint, 'tap copies result; long-press copies input');
     expect(refreshNotice, 'Refreshing rates…');
@@ -104,5 +114,10 @@ void main() {
       profileDeleteMessage,
       'Delete "Weekend Trip"? This cannot be undone.',
     );
+    expect(
+      devtoolsSourceSummary,
+      'Source: Live: Open-Meteo\nForce hero weather scenes during development',
+    );
+    expect(devtoolsFreshness, 'Demo: Last update: 2m ago');
   });
 }

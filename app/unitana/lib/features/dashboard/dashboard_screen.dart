@@ -357,7 +357,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           const SizedBox(width: 10),
                           Expanded(
                             child: Text(
-                              'Weather',
+                              DashboardCopy.devtoolsWeatherTitle(context),
                               key: const ValueKey('devtools_weather_title'),
                               style: Theme.of(context).textTheme.titleLarge,
                             ),
@@ -369,7 +369,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     Padding(
                       padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
                       child: Text(
-                        'Source: ${backendLabel(selectedBackend)}\nForce hero weather scenes during development',
+                        DashboardCopy.devtoolsWeatherSourceSummary(
+                          context,
+                          backendLabel(selectedBackend),
+                        ),
                         style: Theme.of(context).textTheme.bodyMedium,
                       ),
                     ),
@@ -377,7 +380,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
                       child: Text(
-                        'Weather Source',
+                        DashboardCopy.devtoolsWeatherSourceHeading(context),
                         style: Theme.of(context).textTheme.labelLarge,
                       ),
                     ),
@@ -408,7 +411,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               'devtools_weather_source_openmeteo',
                             ),
                             title: Text(backendLabel(WeatherBackend.openMeteo)),
-                            subtitle: const Text('No API key required'),
+                            subtitle: Text(
+                              DashboardCopy.devtoolsWeatherNoApiKey(context),
+                            ),
                             value: WeatherBackend.openMeteo,
                             enabled: _liveData.weatherNetworkAllowed,
                           ),
@@ -421,8 +426,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             ),
                             subtitle: Text(
                               _liveData.canUseWeatherApi
-                                  ? 'Requires WEATHERAPI_KEY'
-                                  : 'Not configured (missing WEATHERAPI_KEY)',
+                                  ? DashboardCopy.devtoolsWeatherRequiresApiKey(
+                                      context,
+                                    )
+                                  : DashboardCopy.devtoolsWeatherMissingApiKey(
+                                      context,
+                                    ),
                             ),
                             value: WeatherBackend.weatherApi,
                             enabled:
@@ -447,8 +456,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           final line = _liveData.isRefreshing
                               ? '$src: ${DashboardCopy.updating(context)}'
                               : last == null
-                              ? '$src: Last update: never'
-                              : '$src: Last update: ${FreshnessCopy.relativeAgeShort(now: DateTime.now(), then: last)}';
+                              ? DashboardCopy.devtoolsWeatherFreshnessNever(
+                                  context,
+                                  sourceShortLabel: src,
+                                )
+                              : DashboardCopy.devtoolsWeatherFreshnessUpdated(
+                                  context,
+                                  sourceShortLabel: src,
+                                  age: FreshnessCopy.relativeAgeShort(
+                                    now: DateTime.now(),
+                                    then: last,
+                                  ),
+                                );
 
                           return Text(
                             line,
@@ -467,18 +486,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       ),
                       child: SegmentedButton<_DevWeatherTimeOfDay>(
                         key: const ValueKey('devtools_weather_time_of_day'),
-                        segments: const [
+                        segments: [
                           ButtonSegment(
                             value: _DevWeatherTimeOfDay.auto,
-                            label: Text('Auto'),
+                            label: Text(
+                              DashboardCopy.devtoolsWeatherTimeAuto(context),
+                            ),
                           ),
                           ButtonSegment(
                             value: _DevWeatherTimeOfDay.sun,
-                            label: Text('Sun'),
+                            label: Text(
+                              DashboardCopy.devtoolsWeatherTimeSun(context),
+                            ),
                           ),
                           ButtonSegment(
                             value: _DevWeatherTimeOfDay.night,
-                            label: Text('Night'),
+                            label: Text(
+                              DashboardCopy.devtoolsWeatherTimeNight(context),
+                            ),
                           ),
                         ],
                         selected: {selectedTimeOfDay},
@@ -495,7 +520,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     ),
                     choiceTile(
                       key: const ValueKey('devtools_weather_default'),
-                      title: 'Default (no visual override)',
+                      title: DashboardCopy.devtoolsWeatherDefaultChoice(
+                        context,
+                      ),
                       value: null,
                     ),
                     for (final option in options)
@@ -514,16 +541,26 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  String _clockOverrideSubtitle(Duration? offset) {
-    if (offset == null) return 'Device clock (no offset)';
+  String _clockOverrideSubtitle(BuildContext context, Duration? offset) {
+    if (offset == null) {
+      return DashboardCopy.devtoolsClockDeviceSubtitle(context);
+    }
     final totalMinutes = offset.inMinutes;
     final sign = totalMinutes >= 0 ? '+' : '-';
     final absMinutes = totalMinutes.abs();
     final hours = absMinutes ~/ 60;
     final minutes = absMinutes % 60;
-    if (minutes == 0) return 'Offset: $sign${hours}h';
+    if (minutes == 0) {
+      return DashboardCopy.devtoolsClockOffsetSubtitle(
+        context,
+        offsetText: '$sign${hours}h',
+      );
+    }
     final padded = minutes.toString().padLeft(2, '0');
-    return 'Offset: $sign${hours}h ${padded}m';
+    return DashboardCopy.devtoolsClockOffsetSubtitle(
+      context,
+      offsetText: '$sign${hours}h ${padded}m',
+    );
   }
 
   void _openClockOverrideSheet() {
@@ -551,6 +588,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         return StatefulBuilder(
           builder: (context, setState) {
             final subtitle = _clockOverrideSubtitle(
+              context,
               enabled ? Duration(minutes: minutesValue.round()) : null,
             );
 
@@ -567,7 +605,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         const SizedBox(width: 10),
                         Expanded(
                           child: Text(
-                            'Clock Override',
+                            DashboardCopy.devtoolsClockTitle(context),
                             style: Theme.of(context).textTheme.titleLarge,
                           ),
                         ),
@@ -583,9 +621,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     SwitchListTile(
                       key: const ValueKey('devtools_clock_enabled'),
                       contentPadding: EdgeInsets.zero,
-                      title: const Text('Enable clock offset'),
-                      subtitle: const Text(
-                        'Applies a temporary UTC offset for simulator testing and screenshots.',
+                      title: Text(
+                        DashboardCopy.devtoolsClockEnableTitle(context),
+                      ),
+                      subtitle: Text(
+                        DashboardCopy.devtoolsClockEnableHelp(context),
                       ),
                       value: enabled,
                       onChanged: (value) {
@@ -604,7 +644,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Offset (hours)',
+                              DashboardCopy.devtoolsClockOffsetHoursLabel(
+                                context,
+                              ),
                               style: Theme.of(context).textTheme.labelLarge,
                             ),
                             Slider(
@@ -635,7 +677,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         onPressed: () {
                           Navigator.of(sheetContext).pop();
                         },
-                        child: const Text('Done'),
+                        child: Text(DashboardCopy.dashboardEditDone(context)),
                       ),
                     ),
                   ],
@@ -662,21 +704,38 @@ class _DashboardScreenState extends State<DashboardScreen> {
         };
         final String weatherSubtitle;
         if (weatherOverride == null) {
-          weatherSubtitle = 'Source: $sourceLabel · No override';
+          weatherSubtitle = DashboardCopy.devtoolsSourceNoOverride(
+            sheetContext,
+            sourceLabel: sourceLabel,
+          );
         } else if (weatherOverride is WeatherDebugOverrideCoarse) {
           final suffix = weatherOverride.isNightOverride == null
               ? ''
-              : (weatherOverride.isNightOverride! ? ' (night)' : ' (sun)');
-          weatherSubtitle =
-              'Source: $sourceLabel · Forced: ${_weatherLabel(weatherOverride.condition)}$suffix';
+              : DashboardCopy.devtoolsNightSuffix(
+                  sheetContext,
+                  night: weatherOverride.isNightOverride!,
+                );
+          weatherSubtitle = DashboardCopy.devtoolsSourceForced(
+            sheetContext,
+            sourceLabel: sourceLabel,
+            forcedLabel: _weatherLabel(weatherOverride.condition),
+            suffix: suffix,
+          );
         } else {
           final api = weatherOverride as WeatherDebugOverrideWeatherApi;
-          final nightSuffix = api.isNight ? ' (night)' : '';
-          weatherSubtitle =
-              'Source: $sourceLabel · Forced: ${api.text} (#${api.code})$nightSuffix';
+          final nightSuffix = api.isNight
+              ? DashboardCopy.devtoolsNightSuffix(sheetContext, night: true)
+              : '';
+          weatherSubtitle = DashboardCopy.devtoolsSourceForced(
+            sheetContext,
+            sourceLabel: sourceLabel,
+            forcedLabel: '${api.text} (#${api.code})',
+            suffix: nightSuffix,
+          );
         }
 
         final clockSubtitle = _clockOverrideSubtitle(
+          sheetContext,
           _liveData.debugClockOffset,
         );
 
@@ -693,7 +752,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     const SizedBox(width: 10),
                     Expanded(
                       child: Text(
-                        'Developer Tools',
+                        DashboardCopy.devtoolsTitle(sheetContext),
                         style: Theme.of(sheetContext).textTheme.titleLarge,
                       ),
                     ),
@@ -704,15 +763,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
                 child: Text(
-                  'Temporary tools for development and QA',
+                  DashboardCopy.devtoolsSubtitle(sheetContext),
                   style: Theme.of(sheetContext).textTheme.bodyMedium,
                 ),
               ),
               ListTile(
                 key: const ValueKey('devtools_reset_restart'),
                 leading: const Icon(Icons.restart_alt),
-                title: const Text('Reset and Restart'),
-                subtitle: const Text('Restore defaults and clear cached data'),
+                title: Text(DashboardCopy.devtoolsResetRestartTitle(context)),
+                subtitle: Text(
+                  DashboardCopy.devtoolsResetRestartSubtitle(context),
+                ),
                 onTap: () {
                   Navigator.of(sheetContext).pop();
                   _resetAndRestart();
@@ -721,7 +782,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ListTile(
                 key: const ValueKey('devtools_weather_menu'),
                 leading: const Icon(Icons.wb_sunny_outlined),
-                title: const Text('Weather'),
+                title: Text(DashboardCopy.devtoolsWeatherTitle(context)),
                 subtitle: Text(weatherSubtitle),
                 onTap: () {
                   Navigator.of(sheetContext).pop();
@@ -731,7 +792,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ListTile(
                 key: const ValueKey('devtools_clock_menu'),
                 leading: const Icon(Icons.schedule),
-                title: const Text('Clock Override'),
+                title: Text(DashboardCopy.devtoolsClockTitle(context)),
                 subtitle: Text(clockSubtitle),
                 onTap: () {
                   Navigator.of(sheetContext).pop();
