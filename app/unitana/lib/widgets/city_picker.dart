@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../data/cities.dart';
+import '../data/city_label_utils.dart';
 
 class CityPicker extends StatefulWidget {
   final List<City> cities;
@@ -125,7 +126,9 @@ class _CityPickerState extends State<CityPicker> {
                                     ).colorScheme.primary,
                                   )
                                 : const Icon(Icons.location_city_outlined),
-                            title: Text(_sanitizeLabel(city.cityName)),
+                            title: Text(
+                              CityLabelUtils.cleanCityName(city.cityName),
+                            ),
                             subtitle: Text(_subtitle(city)),
                             onTap: () => Navigator.of(context).pop(city),
                           );
@@ -154,12 +157,6 @@ class _CityPickerState extends State<CityPicker> {
     }
 
     return parts.join(' • ');
-  }
-
-  String _sanitizeLabel(String raw) {
-    final trimmed = raw.trim();
-    if (trimmed.isEmpty) return raw;
-    return trimmed.replaceFirst(RegExp(r"^[^A-Za-z0-9]+"), '');
   }
 
   List<City> _filter(List<City> all, String queryRaw) {
@@ -213,6 +210,8 @@ class _CityPickerState extends State<CityPicker> {
       if (cityName.contains(' $q')) score += 100;
       if (country.startsWith(q) || country.contains(' $q')) score += 70;
       if (c.timeZoneId.toLowerCase().contains(q)) score += 50;
+      if (RegExp(r'^[^A-Za-z0-9]').hasMatch(c.cityName.trim())) score -= 120;
+      if (RegExp(r'\d').hasMatch(c.cityName)) score -= 35;
       score -= cityName.length ~/ 4;
       ranked.add((city: c, score: score));
       if (ranked.length >= maxResults) break;

@@ -8,6 +8,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../../common/widgets/unitana_notice_card.dart';
 import '../../../data/cities.dart' show kCuratedCities, kCurrencySymbols;
+import '../../../data/city_label_utils.dart';
 import '../../../data/city_repository.dart';
 import '../../../data/country_currency_map.dart';
 import '../../../theme/dracula_palette.dart';
@@ -2574,6 +2575,13 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
       if (option.timeZoneId.toLowerCase().contains(rawLower)) {
         score += 70;
       }
+      final labelRaw = option.label.trim();
+      if (RegExp(r'^[^A-Za-z0-9]').hasMatch(labelRaw)) {
+        score -= 120;
+      }
+      if (RegExp(r'\d').hasMatch(labelRaw)) {
+        score -= 35;
+      }
       if (_featuredZoneIds.contains(option.timeZoneId)) score += 40;
       score -= option.label.length ~/ 3;
       scored.add((option: option, score: score));
@@ -2621,12 +2629,6 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
     }
     scored.sort((a, b) => b.score.compareTo(a.score));
     return scored.map((item) => item.option).take(12).toList(growable: false);
-  }
-
-  String _sanitizeCityPickerLabel(String raw) {
-    final trimmed = raw.trim();
-    if (trimmed.isEmpty) return raw;
-    return trimmed.replaceFirst(RegExp(r"^[^A-Za-z0-9]+"), '');
   }
 
   void _seedTimeToolDefaults() {
@@ -2917,7 +2919,9 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                             key: ValueKey(
                               'tool_time_city_item_${isFrom ? 'from' : 'to'}_${_sanitizeUnitKey(option.key)}',
                             ),
-                            title: Text(_sanitizeCityPickerLabel(option.label)),
+                            title: Text(
+                              CityLabelUtils.cleanCityName(option.label),
+                            ),
                             subtitle: Text(
                               option.subtitle == option.timeZoneId
                                   ? option.timeZoneId
@@ -2926,7 +2930,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                             selected: option.label == currentLabel,
                             onTap: () => Navigator.of(context).pop((
                               zoneId: option.timeZoneId,
-                              displayLabel: _sanitizeCityPickerLabel(
+                              displayLabel: CityLabelUtils.cleanCityName(
                                 option.label,
                               ),
                             )),

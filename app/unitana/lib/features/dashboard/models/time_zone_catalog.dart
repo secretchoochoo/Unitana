@@ -1,4 +1,5 @@
 import '../../../data/cities.dart';
+import '../../../data/city_label_utils.dart';
 import '../../../data/city_repository.dart';
 import '../../../models/place.dart';
 
@@ -103,7 +104,8 @@ class TimeZoneCatalog {
       add(
         key: 'home|${home.cityName}|${home.countryCode}|${home.timeZoneId}',
         zoneId: home.timeZoneId,
-        label: '${home.cityName}, ${home.countryCode.toUpperCase()}',
+        label:
+            '${CityLabelUtils.cleanCityName(home.cityName)}, ${home.countryCode.toUpperCase()}',
         subtitle: 'Home',
       );
     }
@@ -113,7 +115,7 @@ class TimeZoneCatalog {
             'destination|${destination.cityName}|${destination.countryCode}|${destination.timeZoneId}',
         zoneId: destination.timeZoneId,
         label:
-            '${destination.cityName}, ${destination.countryCode.toUpperCase()}',
+            '${CityLabelUtils.cleanCityName(destination.cityName)}, ${destination.countryCode.toUpperCase()}',
         subtitle: 'Destination',
       );
     }
@@ -137,7 +139,8 @@ class TimeZoneCatalog {
       add(
         key: '${city.cityName}|${city.countryCode}|${city.timeZoneId}',
         zoneId: city.timeZoneId,
-        label: '${city.cityName}, ${_cityCountryLabel(city)}',
+        label:
+            '${CityLabelUtils.cleanCityName(city.cityName)}, ${_cityCountryLabel(city)}',
         subtitle: city.timeZoneId,
       );
     }
@@ -145,9 +148,7 @@ class TimeZoneCatalog {
   }
 
   static String _cityCountryLabel(City city) {
-    final name = (city.countryName ?? '').trim();
-    if (name.isNotEmpty) return name;
-    return city.countryCode.toUpperCase();
+    return CityLabelUtils.cleanCountryLabel(city);
   }
 
   static String _friendlyFallbackLabel(String zone) {
