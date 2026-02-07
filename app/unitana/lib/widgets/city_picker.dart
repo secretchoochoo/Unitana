@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../common/debug/picker_perf_trace.dart';
 import '../data/cities.dart';
+import '../data/city_picker_engine.dart';
 import '../data/city_label_utils.dart';
-import '../data/city_picker_ranking.dart';
 import '../l10n/city_picker_copy.dart';
 
 class CityPicker extends StatefulWidget {
@@ -19,7 +19,7 @@ class CityPicker extends StatefulWidget {
 class _CityPickerState extends State<CityPicker> {
   final TextEditingController _searchController = TextEditingController();
   late final Set<String> _curatedIds;
-  late List<_IndexedCity> _indexedCities;
+  late List<CityPickerEngineEntry<City>> _indexedCities;
   late List<City> _defaultTopCities;
 
   String _query = '';
@@ -51,7 +51,7 @@ class _CityPickerState extends State<CityPicker> {
   @override
   Widget build(BuildContext context) {
     final cities = _filter(widget.cities, _query);
-    final hasQuery = _normQuery(_query).isNotEmpty;
+    final hasQuery = CityPickerEngine.normalizeQuery(_query).isNotEmpty;
 
     return FractionallySizedBox(
       heightFactor: 0.88,
@@ -190,7 +190,7 @@ class _CityPickerState extends State<CityPicker> {
 
   List<City> _filter(List<City> all, String queryRaw) {
     final sw = PickerPerfTrace.start('wizard_city_filter');
-    final q = _normQuery(queryRaw);
+    final q = CityPickerEngine.normalizeQuery(queryRaw);
     if (q.isEmpty) {
       PickerPerfTrace.logElapsed(
         'wizard_city_filter',
@@ -200,58 +200,14 @@ class _CityPickerState extends State<CityPicker> {
       return _defaultTopCities;
     }
 
-    final tokens = _tokenize(q);
-    final shortQuery = q.length <= 3;
-
-    bool hasTokenBoundary(String haystack, String token) {
-      final escaped = RegExp.escape(token);
-      return RegExp('(^| )$escaped').hasMatch(haystack);
-    }
-
-    // Safety valve: keep the list snappy on broad searches.
-    const maxResults = 220;
-    final ranked = <({City city, int score, String sortKey})>[];
-    for (final idx in _indexedCities) {
-      var ok = true;
-      for (final t in tokens) {
-        if (!idx.haystack.contains(t)) {
-          ok = false;
-          break;
-        }
-      }
-      if (!ok) continue;
-      if (shortQuery &&
-          !hasTokenBoundary(idx.cityNameNorm, q) &&
-          !idx.cityNameNorm.startsWith(q) &&
-          !hasTokenBoundary(idx.countryNorm, q) &&
-          !idx.countryNorm.startsWith(q)) {
-        continue;
-      }
-      var score = idx.baseScore;
-      if (idx.cityNameNorm.startsWith(q)) score += 180;
-      if (idx.cityNameNorm.contains(' $q')) score += 100;
-      if (idx.countryNorm.startsWith(q) || idx.countryNorm.contains(' $q')) {
-        score += 70;
-      }
-      ranked.add((city: idx.city, score: score, sortKey: idx.cityNameNorm));
-      if (ranked.length >= maxResults) break;
-    }
-
-    ranked.sort((a, b) {
-      final byScore = b.score.compareTo(a.score);
-      if (byScore != 0) return byScore;
-      return a.sortKey.compareTo(b.sortKey);
-    });
-
-    final deduped = <City>[];
-    final seen = <String>{};
-    for (final row in ranked) {
-      final key =
-          '${_normQuery(row.city.cityName)}|${row.city.countryCode.toUpperCase()}|${row.city.timeZoneId}';
-      if (!seen.add(key)) continue;
-      deduped.add(row.city);
-      if (deduped.length >= 100) break;
-    }
+    final results = CityPickerEngine.searchEntries(
+      entries: _indexedCities,
+      queryRaw: q,
+      maxCandidates: 220,
+      maxResults: 100,
+      dedupeByTimeZone: false,
+    );
+    final deduped = results.map((r) => r.value).toList(growable: false);
     PickerPerfTrace.logElapsed(
       'wizard_city_filter',
       sw,
@@ -261,59 +217,40 @@ class _CityPickerState extends State<CityPicker> {
     return deduped;
   }
 
-  String _buildHaystack(City c) {
-    final parts = <String>[
-      c.cityName,
-      c.countryCode,
-      c.countryName ?? '',
-      c.iso3 ?? '',
-      c.admin1Name ?? '',
-      c.admin1Code ?? '',
-      c.continent ?? '',
-      _continentName(c.continent),
-      c.currencyCode,
-      c.currencySymbol ?? '',
-      c.currencySymbolNarrow ?? '',
-      c.currencySymbolNative ?? '',
-    ];
-
-    // Add common shorthand.
-    if (c.countryCode.toUpperCase() == 'US') {
-      parts.addAll(['USA', 'UNITED STATES', 'U S']);
-    }
-    if (c.countryCode.toUpperCase() == 'GB') {
-      parts.addAll(['UK', 'UNITED KINGDOM', 'GREAT BRITAIN']);
-    }
-
-    return _normQuery(parts.join(' '));
-  }
-
   void _rebuildIndex() {
     final sw = PickerPerfTrace.start('wizard_city_index');
-    _indexedCities = widget.cities
-        .map((city) {
-          final cityNorm = _normQuery(city.cityName);
-          final countryNorm = _normQuery(city.countryName ?? city.countryCode);
-          var baseScore = 0;
-          if (_curatedIds.contains(city.id)) baseScore += 260;
-          baseScore += CityPickerRanking.hubPriorityBonus(city.timeZoneId);
-          if (CityPickerRanking.isMainstreamCountryCode(city.countryCode)) {
-            baseScore += 60;
-          }
-          if (RegExp(r'^[^A-Za-z0-9]').hasMatch(city.cityName.trim())) {
-            baseScore -= 120;
-          }
-          if (RegExp(r'\d').hasMatch(city.cityName)) baseScore -= 35;
-          baseScore -= cityNorm.length ~/ 4;
-          return _IndexedCity(
-            city: city,
-            haystack: _buildHaystack(city),
-            cityNameNorm: cityNorm,
-            countryNorm: countryNorm,
-            baseScore: baseScore,
-          );
-        })
-        .toList(growable: false);
+    _indexedCities = CityPickerEngine.buildEntries<City>(
+      items: widget.cities,
+      keyOf: (c) => c.id,
+      cityNameOf: (c) => c.cityName,
+      countryCodeOf: (c) => c.countryCode,
+      countryNameOf: (c) => c.countryName ?? c.countryCode,
+      timeZoneIdOf: (c) => c.timeZoneId,
+      isCurated: (c) => _curatedIds.contains(c.id),
+      mainstreamCountryBonus: 60,
+      extraSearchTermsOf: (c) => <String>[
+        c.iso3 ?? '',
+        c.admin1Name ?? '',
+        c.admin1Code ?? '',
+        c.continent ?? '',
+        CityPickerEngine.continentName(c.continent),
+        c.currencyCode,
+        c.currencySymbol ?? '',
+        c.currencySymbolNarrow ?? '',
+        c.currencySymbolNative ?? '',
+        if (c.countryCode.toUpperCase() == 'US') ...const <String>[
+          'USA',
+          'UNITED STATES',
+          'U S',
+        ],
+        if (c.countryCode.toUpperCase() == 'GB') ...const <String>[
+          'UK',
+          'UNITED KINGDOM',
+          'GREAT BRITAIN',
+        ],
+      ],
+    );
+    _indexedCities = CityPickerEngine.sortByBaseScore(_indexedCities);
     _defaultTopCities = _buildDefaultTopCities();
     PickerPerfTrace.logElapsed(
       'wizard_city_index',
@@ -324,153 +261,19 @@ class _CityPickerState extends State<CityPicker> {
   }
 
   List<City> _buildDefaultTopCities() {
-    final ranked = _indexedCities.toList(growable: false)
-      ..sort((a, b) {
-        final byScore = b.baseScore.compareTo(a.baseScore);
-        if (byScore != 0) return byScore;
-        return a.cityNameNorm.compareTo(b.cityNameNorm);
-      });
-    final out = <City>[];
-    final seenZones = <String>{};
-    final seenCityTokens = <String>{};
-    for (final row in ranked) {
-      if (!seenZones.add(row.city.timeZoneId)) continue;
-      final cityToken = row.cityNameNorm.split(' ').join();
-      if (cityToken.isNotEmpty && !seenCityTokens.add(cityToken)) continue;
-      out.add(row.city);
-      if (out.length >= 24) break;
-    }
-    return out;
+    final top = CityPickerEngine.topEntries(
+      rankedEntries: _indexedCities,
+      limit: 24,
+      dedupeByTimeZone: true,
+      dedupeByCityToken: true,
+    );
+    return top.map((e) => e.value).toList(growable: false);
   }
-
-  List<String> _tokenize(String q) {
-    final raw = q
-        .split(' ')
-        .where((t) => t.trim().isNotEmpty)
-        .toList(growable: false);
-
-    // If the user typed an abbreviation as spaced letters ("u s a"), collapse it.
-    if (raw.length >= 2 && raw.every((t) => t.length == 1)) {
-      return [raw.join()];
-    }
-
-    return raw;
-  }
-
-  String _normQuery(String input) {
-    var s = input.trim();
-    if (s.isEmpty) return '';
-
-    // Fold diacritics.
-    s = CityPickerUtils.foldDiacritics(s);
-
-    // Keep letters/numbers, turn other chars into spaces.
-    s = s.toLowerCase();
-    s = s.replaceAll(RegExp(r'[^a-z0-9]+'), ' ');
-    s = s.replaceAll(RegExp(r'\s+'), ' ').trim();
-    return s;
-  }
-
-  String _continentName(String? code) {
-    switch ((code ?? '').toUpperCase()) {
-      case 'NA':
-        return 'north america';
-      case 'SA':
-        return 'south america';
-      case 'EU':
-        return 'europe';
-      case 'AF':
-        return 'africa';
-      case 'AS':
-        return 'asia';
-      case 'OC':
-        return 'oceania';
-      default:
-        return '';
-    }
-  }
-}
-
-class _IndexedCity {
-  final City city;
-  final String haystack;
-  final String cityNameNorm;
-  final String countryNorm;
-  final int baseScore;
-
-  const _IndexedCity({
-    required this.city,
-    required this.haystack,
-    required this.cityNameNorm,
-    required this.countryNorm,
-    required this.baseScore,
-  });
 }
 
 /// Shared helpers, kept separate so CityRepository can reuse without importing UI.
 class CityPickerUtils {
   static String foldDiacritics(String input) {
-    var s = input;
-    const map = {
-      'à': 'a',
-      'á': 'a',
-      'â': 'a',
-      'ã': 'a',
-      'ä': 'a',
-      'å': 'a',
-      'ç': 'c',
-      'è': 'e',
-      'é': 'e',
-      'ê': 'e',
-      'ë': 'e',
-      'ì': 'i',
-      'í': 'i',
-      'î': 'i',
-      'ï': 'i',
-      'ñ': 'n',
-      'ò': 'o',
-      'ó': 'o',
-      'ô': 'o',
-      'õ': 'o',
-      'ö': 'o',
-      'ù': 'u',
-      'ú': 'u',
-      'û': 'u',
-      'ü': 'u',
-      'ý': 'y',
-      'ÿ': 'y',
-      'À': 'A',
-      'Á': 'A',
-      'Â': 'A',
-      'Ã': 'A',
-      'Ä': 'A',
-      'Å': 'A',
-      'Ç': 'C',
-      'È': 'E',
-      'É': 'E',
-      'Ê': 'E',
-      'Ë': 'E',
-      'Ì': 'I',
-      'Í': 'I',
-      'Î': 'I',
-      'Ï': 'I',
-      'Ñ': 'N',
-      'Ò': 'O',
-      'Ó': 'O',
-      'Ô': 'O',
-      'Õ': 'O',
-      'Ö': 'O',
-      'Ù': 'U',
-      'Ú': 'U',
-      'Û': 'U',
-      'Ü': 'U',
-      'Ý': 'Y',
-    };
-
-    map.forEach((k, v) {
-      s = s.replaceAll(k, v);
-    });
-
-    return s;
+    return CityPickerEngine.foldDiacritics(input);
   }
 }

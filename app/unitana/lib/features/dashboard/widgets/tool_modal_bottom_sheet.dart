@@ -9,6 +9,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../common/widgets/unitana_notice_card.dart';
 import '../../../common/debug/picker_perf_trace.dart';
 import '../../../data/cities.dart' show kCurrencySymbols;
+import '../../../data/city_picker_engine.dart';
 import '../../../data/city_label_utils.dart';
 import '../../../data/city_repository.dart';
 import '../../../data/country_currency_map.dart';
@@ -2429,30 +2430,6 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
     );
   }
 
-  static const Set<String> _featuredZoneIds = <String>{
-    'UTC',
-    'America/New_York',
-    'America/Chicago',
-    'America/Denver',
-    'America/Los_Angeles',
-    'Europe/London',
-    'Europe/Lisbon',
-    'Europe/Madrid',
-    'Europe/Paris',
-    'Europe/Berlin',
-    'Europe/Rome',
-    'Asia/Tokyo',
-    'Asia/Seoul',
-    'Asia/Shanghai',
-    'Asia/Singapore',
-    'Asia/Hong_Kong',
-    'Asia/Kolkata',
-    'Australia/Sydney',
-    'Pacific/Auckland',
-    'America/Sao_Paulo',
-    'America/Mexico_City',
-  };
-
   static const Map<String, List<String>> _tzAbbrevAliases =
       <String, List<String>>{
         'UTC': <String>['UTC'],
@@ -2483,13 +2460,6 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
     );
   }
 
-  String _normalizeTimeSearch(String input) {
-    var s = input.toLowerCase().trim();
-    s = s.replaceAll('_', ' ').replaceAll('/', ' ');
-    s = s.replaceAll(RegExp(r'[^a-z0-9\s]'), ' ');
-    return s.replaceAll(RegExp(r'\s+'), ' ').trim();
-  }
-
   List<String> _aliasZonesForQuery(String rawQuery) {
     final token = rawQuery.trim().toUpperCase();
     return _tzAbbrevAliases[token] ?? const <String>[];
@@ -2498,11 +2468,11 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
   List<TimeZoneCityOption> _searchCityOptions({
     required String rawQuery,
     required List<TimeZoneCityOption> featured,
-    required List<TimeZoneCityOption> all,
-    Map<String, String>? indexedHaystackByKey,
+    required List<CityPickerEngineEntry<TimeZoneCityOption>> allEntries,
+    required List<CityPickerEngineEntry<TimeZoneCityOption>> featuredEntries,
   }) {
     final sw = PickerPerfTrace.start('time_city_filter');
-    final normalized = _normalizeTimeSearch(rawQuery);
+    final normalized = CityPickerEngine.normalizeQuery(rawQuery);
     if (normalized.isEmpty) {
       PickerPerfTrace.logElapsed(
         'time_city_filter',
@@ -2512,65 +2482,21 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
       return featured;
     }
     final aliasZones = _aliasZonesForQuery(rawQuery).toSet();
-    final shortQuery = normalized.length <= 3;
-    final candidates = normalized.length < 3 ? featured : all;
-    final seenZones = <String>{};
-    final scored = <({TimeZoneCityOption option, int score})>[];
-    final tokens = normalized.split(' ').where((t) => t.isNotEmpty).toList();
-    final rawLower = rawQuery.trim().toLowerCase();
-
-    bool hasTokenBoundary(String haystack, String token) {
-      final escaped = RegExp.escape(token);
-      return RegExp('(^| )$escaped').hasMatch(haystack);
-    }
-
-    for (final option in candidates) {
-      final haystack =
-          indexedHaystackByKey?[option.key] ??
-          _normalizeTimeSearch(
-            '${option.label} ${option.subtitle} ${option.timeZoneId}',
-          );
-      if (!haystack.contains(normalized) &&
-          !tokens.every((token) => haystack.contains(token)) &&
-          !aliasZones.contains(option.timeZoneId)) {
-        continue;
-      }
-      if (shortQuery &&
-          !aliasZones.contains(option.timeZoneId) &&
-          !hasTokenBoundary(haystack, normalized) &&
-          !option.timeZoneId.toLowerCase().startsWith(rawLower)) {
-        continue;
-      }
-      var score = 0;
-      if (option.timeZoneId == widget.home?.timeZoneId ||
-          option.timeZoneId == widget.destination?.timeZoneId) {
-        score += 260;
-      }
-      if (aliasZones.contains(option.timeZoneId)) score += 220;
-      if (haystack.startsWith(normalized)) score += 140;
-      if (haystack.contains(' $normalized')) score += 90;
-      if (option.timeZoneId.toLowerCase().contains(rawLower)) {
-        score += 70;
-      }
-      final labelRaw = option.label.trim();
-      if (RegExp(r'^[^A-Za-z0-9]').hasMatch(labelRaw)) {
-        score -= 120;
-      }
-      if (RegExp(r'\d').hasMatch(labelRaw)) {
-        score -= 35;
-      }
-      if (_featuredZoneIds.contains(option.timeZoneId)) score += 40;
-      score -= option.label.length ~/ 3;
-      scored.add((option: option, score: score));
-    }
-
-    scored.sort((a, b) => b.score.compareTo(a.score));
-    final out = <TimeZoneCityOption>[];
-    for (final item in scored) {
-      if (!seenZones.add(item.option.timeZoneId)) continue;
-      out.add(item.option);
-      if (out.length >= 40) break;
-    }
+    final preferredZones = <String>{
+      if (widget.home != null) widget.home!.timeZoneId,
+      if (widget.destination != null) widget.destination!.timeZoneId,
+    };
+    final sourceEntries = normalized.length < 3 ? featuredEntries : allEntries;
+    final out = CityPickerEngine.searchEntries(
+      entries: sourceEntries,
+      queryRaw: rawQuery,
+      preferredTimeZoneIds: preferredZones,
+      aliasTimeZoneIds: aliasZones,
+      maxCandidates: 260,
+      maxResults: 40,
+      shortQueryAllowsTimeZonePrefix: true,
+      dedupeByTimeZone: true,
+    ).map((entry) => entry.value).toList(growable: false);
     PickerPerfTrace.logElapsed(
       'time_city_filter',
       sw,
@@ -2582,8 +2508,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
 
   List<TimeZoneOption> _searchZoneOptions({
     required String rawQuery,
-    required List<TimeZoneOption> options,
-    Map<String, String>? indexedHaystackById,
+    required List<CityPickerEngineEntry<TimeZoneOption>> entries,
   }) {
     final sw = PickerPerfTrace.start('time_zone_filter');
     final query = rawQuery.trim();
@@ -2591,50 +2516,22 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
       PickerPerfTrace.logElapsed('time_zone_filter', sw, extra: 'query=empty');
       return const <TimeZoneOption>[];
     }
-    final normalized = _normalizeTimeSearch(query);
+    final normalized = CityPickerEngine.normalizeQuery(query);
     final aliasZones = _aliasZonesForQuery(query).toSet();
-    final shortQuery = normalized.length <= 3;
-    final scored = <({TimeZoneOption option, int score})>[];
-    bool hasTokenBoundary(String haystack, String token) {
-      final escaped = RegExp.escape(token);
-      return RegExp('(^| )$escaped').hasMatch(haystack);
-    }
-
-    for (final option in options) {
-      final haystack =
-          indexedHaystackById?[option.id] ??
-          _normalizeTimeSearch(
-            '${option.label} ${option.subtitle ?? ''} ${option.id}',
-          );
-      final idLower = option.id.toLowerCase();
-      final queryLower = query.toLowerCase();
-      if (!haystack.contains(normalized) && !aliasZones.contains(option.id)) {
-        continue;
-      }
-      if (shortQuery &&
-          !aliasZones.contains(option.id) &&
-          !idLower.startsWith(queryLower) &&
-          !hasTokenBoundary(haystack, normalized)) {
-        continue;
-      }
-      var score = 0;
-      if (aliasZones.contains(option.id)) score += 260;
-      if (idLower == queryLower) score += 220;
-      if (idLower.startsWith(queryLower)) score += 130;
-      if ((option.subtitle ?? '').toLowerCase().contains(queryLower)) {
-        score += 70;
-      }
-      if (option.id == widget.home?.timeZoneId ||
-          option.id == widget.destination?.timeZoneId) {
-        score += 40;
-      }
-      scored.add((option: option, score: score));
-    }
-    scored.sort((a, b) => b.score.compareTo(a.score));
-    final out = scored
-        .map((item) => item.option)
-        .take(12)
-        .toList(growable: false);
+    final preferredZones = <String>{
+      if (widget.home != null) widget.home!.timeZoneId,
+      if (widget.destination != null) widget.destination!.timeZoneId,
+    };
+    final out = CityPickerEngine.searchEntries(
+      entries: entries,
+      queryRaw: query,
+      preferredTimeZoneIds: preferredZones,
+      aliasTimeZoneIds: aliasZones,
+      maxCandidates: 180,
+      maxResults: 12,
+      shortQueryAllowsTimeZonePrefix: true,
+      dedupeByTimeZone: false,
+    ).map((entry) => entry.value).toList(growable: false);
     PickerPerfTrace.logElapsed(
       'time_zone_filter',
       sw,
@@ -2822,20 +2719,39 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
       home: widget.home,
       destination: widget.destination,
     );
-    final citySearchIndex = <String, String>{
-      for (final option in allCityOptions)
-        option.key: _normalizeTimeSearch(
-          '${option.label} ${option.subtitle} ${option.timeZoneId}',
-        ),
-    };
-    final zoneSearchIndex = <String, String>{
-      for (final option in zoneOptions)
-        option.id: _normalizeTimeSearch(
-          '${option.label} ${option.subtitle ?? ''} ${option.id}',
-        ),
-    };
     final featuredCityOptions = _featuredCityOptions(
       cityOptions: allCityOptions,
+    );
+    final allCityEntries = CityPickerEngine.sortByBaseScore(
+      CityPickerEngine.buildEntries<TimeZoneCityOption>(
+        items: allCityOptions,
+        keyOf: (o) => o.key,
+        cityNameOf: (o) => o.label,
+        countryCodeOf: (o) => o.countryCode,
+        countryNameOf: (o) => o.countryCode,
+        timeZoneIdOf: (o) => o.timeZoneId,
+        extraSearchTermsOf: (o) => <String>[o.subtitle],
+        mainstreamCountryBonus: 70,
+      ),
+    );
+    final cityEntryByKey = <String, CityPickerEngineEntry<TimeZoneCityOption>>{
+      for (final entry in allCityEntries) entry.key: entry,
+    };
+    final featuredCityEntries = featuredCityOptions
+        .map((o) => cityEntryByKey[o.key])
+        .whereType<CityPickerEngineEntry<TimeZoneCityOption>>()
+        .toList(growable: false);
+    final zoneEntries = CityPickerEngine.sortByBaseScore(
+      CityPickerEngine.buildEntries<TimeZoneOption>(
+        items: zoneOptions,
+        keyOf: (o) => o.id,
+        cityNameOf: (o) => o.label,
+        countryCodeOf: (_) => '',
+        countryNameOf: (_) => '',
+        timeZoneIdOf: (o) => o.id,
+        extraSearchTermsOf: (o) => <String>[o.subtitle ?? '', o.id],
+        mainstreamCountryBonus: 0,
+      ),
     );
     PickerPerfTrace.logElapsed(
       'time_picker_catalog_ready_${isFrom ? 'from' : 'to'}',
@@ -2864,13 +2780,12 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
           final filteredCity = _searchCityOptions(
             rawQuery: query,
             featured: featuredCityOptions,
-            all: allCityOptions,
-            indexedHaystackByKey: citySearchIndex,
+            allEntries: allCityEntries,
+            featuredEntries: featuredCityEntries,
           );
           final filteredZone = _searchZoneOptions(
             rawQuery: query,
-            options: zoneOptions,
-            indexedHaystackById: zoneSearchIndex,
+            entries: zoneEntries,
           );
           final currentZoneId = isFrom ? _timeFromZoneId : _timeToZoneId;
           final selectedCityKey =

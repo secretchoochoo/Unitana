@@ -1,6 +1,6 @@
 import '../../../data/cities.dart';
 import '../../../data/city_label_utils.dart';
-import '../../../data/city_picker_ranking.dart';
+import '../../../data/city_picker_engine.dart';
 import '../../../data/city_repository.dart';
 import '../../../models/place.dart';
 
@@ -266,31 +266,28 @@ class TimeZoneCatalog {
     List<City> sourceCities,
   ) {
     final curatedZoneIds = kCuratedCities.map((c) => c.timeZoneId).toSet();
-    final sorted = sourceCities.toList(growable: false)
-      ..sort((a, b) {
-        final scoreA = _catalogScore(city: a, curatedZoneIds: curatedZoneIds);
-        final scoreB = _catalogScore(city: b, curatedZoneIds: curatedZoneIds);
-        if (scoreA != scoreB) return scoreB.compareTo(scoreA);
-        final city = a.cityName.toLowerCase().compareTo(
-          b.cityName.toLowerCase(),
-        );
-        if (city != 0) return city;
-        final country = _cityCountryLabel(
-          a,
-        ).toLowerCase().compareTo(_cityCountryLabel(b).toLowerCase());
-        if (country != 0) return country;
-        return a.timeZoneId.toLowerCase().compareTo(b.timeZoneId.toLowerCase());
-      });
+    final entries = CityPickerEngine.buildEntries<City>(
+      items: sourceCities,
+      keyOf: (c) => '${c.cityName}|${c.countryCode}|${c.timeZoneId}',
+      cityNameOf: (c) => c.cityName,
+      countryCodeOf: (c) => c.countryCode,
+      countryNameOf: _cityCountryLabel,
+      timeZoneIdOf: (c) => c.timeZoneId,
+      isCurated: (c) => curatedZoneIds.contains(c.timeZoneId),
+      mainstreamCountryBonus: 70,
+    );
+    final sorted = CityPickerEngine.sortByBaseScore(entries);
     return sorted
         .map(
-          (city) => (
-            key: '${city.cityName}|${city.countryCode}|${city.timeZoneId}'
-                .toLowerCase(),
-            timeZoneId: city.timeZoneId.trim(),
+          (entry) => (
+            key:
+                '${entry.value.cityName}|${entry.value.countryCode}|${entry.value.timeZoneId}'
+                    .toLowerCase(),
+            timeZoneId: entry.value.timeZoneId.trim(),
             label:
-                '${CityLabelUtils.cleanCityName(city.cityName)}, ${_cityCountryLabel(city)}',
-            subtitle: city.timeZoneId,
-            countryCode: city.countryCode,
+                '${CityLabelUtils.cleanCityName(entry.value.cityName)}, ${_cityCountryLabel(entry.value)}',
+            subtitle: entry.value.timeZoneId,
+            countryCode: entry.value.countryCode,
           ),
         )
         .toList(growable: false);
@@ -305,22 +302,5 @@ class TimeZoneCatalog {
     final pieces = zone.split('/');
     final tail = pieces.isEmpty ? zone : pieces.last.replaceAll('_', ' ');
     return '$tail ($zone)';
-  }
-
-  static int _catalogScore({
-    required City city,
-    required Set<String> curatedZoneIds,
-  }) {
-    var score = 0;
-    if (curatedZoneIds.contains(city.timeZoneId)) score += 240;
-    score += CityPickerRanking.hubPriorityBonus(city.timeZoneId);
-    if (CityPickerRanking.isMainstreamCountryCode(city.countryCode)) {
-      score += 70;
-    }
-    final clean = CityLabelUtils.cleanCityName(city.cityName);
-    if (RegExp(r'^[^A-Za-z0-9]').hasMatch(clean)) score -= 220;
-    if (RegExp(r'\d').hasMatch(clean)) score -= 50;
-    score -= clean.length ~/ 4;
-    return score;
   }
 }

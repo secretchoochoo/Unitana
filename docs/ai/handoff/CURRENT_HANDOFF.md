@@ -2,8 +2,23 @@
 
 ## Snapshot
 - **Date:** 2026-02-07
-- **Status:** Repo is green (`dart format`, `flutter analyze`, `flutter test`) after Pack E 6e/6f/6g + Pack H expansion bundle.
+- **Status:** Repo is green (`dart format`, `flutter analyze`, `flutter test`) after shared city-picker engine rollout + perf budget contracts.
 - **Operating mode:** Codex is now the primary workflow; apply edits directly in-repo (do not require patch zip workflow unless explicitly requested).
+
+## Latest changes (2026-02-07)
+- Pack E 6h/6i infrastructure pass shipped as a shared engine migration + perf hardening:
+  - added shared filtering/ranking engine in `app/unitana/lib/data/city_picker_engine.dart`.
+  - wizard city picker now uses shared engine end-to-end for index, default top list, and search behavior.
+  - Time/Jet Lag picker city and direct-timezone filtering now use the same shared engine scoring pipeline.
+  - TimeZoneCatalog base city ordering now uses shared engine scoring for cross-surface ranking consistency.
+  - preserved timezone alias behavior (`EST`, `CST`, `PST`, etc.), short-query relevance, and seeded home/destination prioritization.
+- Added deterministic performance contract coverage:
+  - `app/unitana/test/city_picker_perf_budget_test.dart` validates index/search budgets on full canonical dataset (`cities_v1.json`).
+  - documented perf baseline and thresholds in `docs/ai/reference/CITY_PICKER_PERF_BUDGET.md`.
+- full gates re-run and green:
+  - `dart format .`
+  - `flutter analyze`
+  - `flutter test`
 
 ## Latest changes (2026-02-07)
 - Pack E 6e/6f/6g + Pack H overnight bundle shipped:
