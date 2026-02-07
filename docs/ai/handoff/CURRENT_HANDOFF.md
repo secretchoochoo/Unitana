@@ -6,19 +6,6 @@
 - **Operating mode:** Codex is now the primary workflow; apply edits directly in-repo (do not require patch zip workflow unless explicitly requested).
 
 ## Latest changes (2026-02-07)
-- Pack E phase 2 (dual-city split marquee prototype) shipped:
-  - marquee now renders lightweight split city chips (flag + city) at the top of the scene, showing both active locations.
-  - chips follow reality swaps (left/right city context updates with hero reality toggle) while preserving existing marquee animation and condition-chip readability.
-  - decision: **keep** the split marquee treatment as current default for Pack E iteration; no revert/flag needed after QA pass.
-  - added regression assertions in `app/unitana/test/dashboard_places_hero_v2_test.dart` for:
-    - split city chip presence
-    - expected city mapping before/after reality swap
-  - full gates re-run and green:
-    - `dart format .`
-    - `flutter analyze`
-    - `flutter test`
-
-## Latest changes (2026-02-07)
 - Pack E kickoff (vertical-fill feasibility pass) shipped:
   - rebalanced Places Hero vertical budget so the marquee region gets more usable height on phone layouts without changing text sizes:
     - reduced non-content chrome vertical footprint (outer vertical padding, segmented toggle height, clock header spacing)

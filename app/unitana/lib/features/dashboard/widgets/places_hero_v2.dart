@@ -606,8 +606,6 @@ class _HeroBandsBody extends StatelessWidget {
               child: Align(
                 alignment: Alignment.bottomCenter,
                 child: _RightMarqueeSlot(
-                  primary: primary,
-                  secondary: secondary,
                   compact: compact,
                   isNight: isNight,
                   sceneKey: sceneKey,
@@ -1508,8 +1506,6 @@ class _HeroCurrencyCard extends StatelessWidget {
 }
 
 class _RightMarqueeSlot extends StatelessWidget {
-  final Place? primary;
-  final Place? secondary;
   final bool compact;
   final bool isNight;
   final SceneKey? sceneKey;
@@ -1519,8 +1515,6 @@ class _RightMarqueeSlot extends StatelessWidget {
   final bool renderConditionLabel;
 
   const _RightMarqueeSlot({
-    required this.primary,
-    required this.secondary,
     required this.compact,
     required this.isNight,
     required this.sceneKey,
@@ -1640,40 +1634,6 @@ class _RightMarqueeSlot extends StatelessWidget {
                     conditionLabel: conditionLabel,
                     renderConditionLabel: renderConditionLabel,
                   ),
-                  if (primary != null && secondary != null)
-                    Positioned(
-                      left: compact ? 4 : 6,
-                      right: compact ? 4 : 6,
-                      top: compact ? 4 : 6,
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Align(
-                              alignment: Alignment.centerLeft,
-                              child: _MarqueeCityChip(
-                                key: includeTestKeys
-                                    ? const ValueKey('hero_marquee_city_left')
-                                    : null,
-                                compact: compact,
-                                city: primary!,
-                              ),
-                            ),
-                          ),
-                          Expanded(
-                            child: Align(
-                              alignment: Alignment.centerRight,
-                              child: _MarqueeCityChip(
-                                key: includeTestKeys
-                                    ? const ValueKey('hero_marquee_city_right')
-                                    : null,
-                                compact: compact,
-                                city: secondary!,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
                   // Subtle scrim so the condition chip stays readable over any scene.
                   if (!renderConditionLabel)
                     IgnorePointer(
@@ -1736,44 +1696,6 @@ class _RightMarqueeSlot extends StatelessWidget {
           ),
         );
       },
-    );
-  }
-}
-
-class _MarqueeCityChip extends StatelessWidget {
-  final Place city;
-  final bool compact;
-
-  const _MarqueeCityChip({
-    super.key,
-    required this.city,
-    required this.compact,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    return Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: compact ? 6 : 8,
-        vertical: compact ? 2 : 3,
-      ),
-      decoration: BoxDecoration(
-        color: cs.surface.withAlpha(176),
-        borderRadius: BorderRadius.circular(compact ? 8 : 10),
-        border: Border.all(color: cs.outlineVariant.withAlpha(165), width: 1),
-      ),
-      child: Text(
-        '${_flagEmojiFromIso2(city.countryCode)} ${city.cityName}',
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        style: GoogleFonts.inconsolata(
-          fontSize: compact ? 9 : 10,
-          fontWeight: FontWeight.w800,
-          color: cs.onSurface.withAlpha(245),
-          height: 1.0,
-        ),
-      ),
     );
   }
 }
