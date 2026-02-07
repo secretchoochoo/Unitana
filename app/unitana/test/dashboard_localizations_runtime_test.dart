@@ -45,4 +45,22 @@ void main() {
     );
     expect(value, 'fallback value');
   });
+
+  test('DashboardLocalizations resolves migrated tool microcopy keys', () {
+    final clearTitle = DashboardLocalizations.resolveForLocale(
+      locale: const Locale('en'),
+      key: 'dashboard.tool.history.clearTitle',
+    );
+    final hint = DashboardLocalizations.resolveForLocale(
+      locale: const Locale('en'),
+      key: 'dashboard.tool.history.copyHint',
+    );
+    final refreshNotice = DashboardLocalizations.resolveForLocale(
+      locale: const Locale('en'),
+      key: 'dashboard.currency.notice.refreshing',
+    );
+    expect(clearTitle, 'Clear history?');
+    expect(hint, 'tap copies result; long-press copies input');
+    expect(refreshNotice, 'Refreshing rates…');
+  });
 }

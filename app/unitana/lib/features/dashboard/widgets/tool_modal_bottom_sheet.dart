@@ -1746,9 +1746,9 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
   Future<bool> _confirmClearHistory(BuildContext context) async {
     return showDestructiveConfirmationSheet(
       context,
-      title: 'Clear history?',
-      message: 'Remove the last 10 conversions for this tool.',
-      confirmLabel: 'Clear',
+      title: DashboardCopy.clearHistoryTitle(context),
+      message: DashboardCopy.clearHistoryMessage(context),
+      confirmLabel: DashboardCopy.clearCta(context),
     );
   }
 
@@ -3496,11 +3496,13 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                   onPressed: timeConverterHistory.isEmpty
                       ? null
                       : () async {
+                          final historyClearedLabel =
+                              DashboardCopy.historyClearedNotice(context);
                           final confirmed = await _confirmClearHistory(context);
                           if (!confirmed) return;
                           widget.session.clearHistory(widget.tool.id);
                           _showNotice(
-                            'History cleared',
+                            historyClearedLabel,
                             UnitanaNoticeKind.success,
                           );
                         },
@@ -3728,17 +3730,25 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                                       'tool_currency_retry_${widget.tool.id}',
                                     ),
                                     onPressed: () async {
+                                      final refreshingRatesLabel =
+                                          DashboardCopy.refreshingRatesNotice(
+                                            context,
+                                          );
+                                      final refreshRatesFailedLabel =
+                                          DashboardCopy.refreshRatesFailedNotice(
+                                            context,
+                                          );
                                       try {
                                         await widget.onRetryCurrencyNow!.call();
                                         if (!mounted) return;
                                         _showNotice(
-                                          'Refreshing rates…',
+                                          refreshingRatesLabel,
                                           UnitanaNoticeKind.info,
                                         );
                                       } catch (_) {
                                         if (!mounted) return;
                                         _showNotice(
-                                          'Could not refresh rates',
+                                          refreshRatesFailedLabel,
                                           UnitanaNoticeKind.error,
                                         );
                                       }
@@ -3792,7 +3802,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                                         CrossAxisAlignment.start,
                                     children: [
                                       Text(
-                                        'Edit Value',
+                                        DashboardCopy.editValueLabel(context),
                                         style: Theme.of(context)
                                             .textTheme
                                             .labelLarge
@@ -4263,7 +4273,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                                           ),
                                     ),
                                     Text(
-                                      'tap copies result; long-press copies input',
+                                      DashboardCopy.historyCopyHint(context),
                                       style: Theme.of(context)
                                           .textTheme
                                           .labelMedium
@@ -4436,6 +4446,10 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                                   onPressed: history.isEmpty
                                       ? null
                                       : () async {
+                                          final historyClearedLabel =
+                                              DashboardCopy.historyClearedNotice(
+                                                context,
+                                              );
                                           final ok = await _confirmClearHistory(
                                             context,
                                           );
@@ -4449,7 +4463,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                                             _resultLine = null;
                                           });
                                           _showNotice(
-                                            'History cleared',
+                                            historyClearedLabel,
                                             UnitanaNoticeKind.success,
                                           );
                                         },
@@ -4461,7 +4475,9 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                                     foregroundColor: const Color(0xFFFBBF24),
                                   ),
                                   child: Text(
-                                    'Clear History',
+                                    DashboardCopy.clearHistoryButtonLabel(
+                                      context,
+                                    ),
                                     style: Theme.of(context)
                                         .textTheme
                                         .labelLarge

@@ -29,12 +29,38 @@ class DashboardCopy {
       DashboardLocalizations.of(
         context,
       ).text('dashboard.tool.tooltip.close', fallback: 'Close tool');
+  static String editValueLabel(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.tool.input.editValue', fallback: 'Edit Value');
   static String historyTitle(BuildContext context) => DashboardLocalizations.of(
     context,
   ).text('dashboard.tool.history.title', fallback: 'History');
   static String clearCta(BuildContext context) => DashboardLocalizations.of(
     context,
   ).text('dashboard.tool.history.clear', fallback: 'Clear');
+  static String clearHistoryTitle(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.tool.history.clearTitle', fallback: 'Clear history?');
+  static String clearHistoryMessage(BuildContext context) =>
+      DashboardLocalizations.of(context).text(
+        'dashboard.tool.history.clearMessage',
+        fallback: 'Remove the last 10 conversions for this tool.',
+      );
+  static String historyCopyHint(BuildContext context) =>
+      DashboardLocalizations.of(context).text(
+        'dashboard.tool.history.copyHint',
+        fallback: 'tap copies result; long-press copies input',
+      );
+  static String historyClearedNotice(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.tool.history.cleared', fallback: 'History cleared');
+  static String clearHistoryButtonLabel(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.tool.history.clearButton', fallback: 'Clear History');
   static String swapCta(BuildContext context) => DashboardLocalizations.of(
     context,
   ).text('dashboard.tool.cta.swap', fallback: 'Swap');
@@ -155,6 +181,16 @@ class DashboardCopy {
       DashboardLocalizations.of(
         context,
       ).text('dashboard.currency.cta.retry', fallback: 'Retry rates');
+  static String refreshingRatesNotice(BuildContext context) =>
+      DashboardLocalizations.of(context).text(
+        'dashboard.currency.notice.refreshing',
+        fallback: 'Refreshing rates…',
+      );
+  static String refreshRatesFailedNotice(BuildContext context) =>
+      DashboardLocalizations.of(context).text(
+        'dashboard.currency.notice.refreshFailed',
+        fallback: 'Could not refresh rates',
+      );
 
   static String dateImpactTitleCase(String dateImpactRaw) {
     return switch (dateImpactRaw.toLowerCase()) {

@@ -100,7 +100,11 @@ class _DataRefreshStatusLabelState extends State<DataRefreshStatusLabel> {
         if (text == null) return const SizedBox.shrink();
 
         final cs = Theme.of(context).colorScheme;
-        final bool isStale = text.startsWith('Stale');
+        final last = widget.liveData.lastRefreshedAt;
+        final bool isStale =
+            !widget.liveData.isRefreshing &&
+            last != null &&
+            DateTime.now().difference(last) > widget.staleAfter;
         final Color labelColor = isStale
             ? DraculaPalette.orange.withAlpha(235)
             : DraculaPalette.purple.withAlpha(220);

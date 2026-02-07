@@ -25,5 +25,9 @@ void main() {
       LocalizationSeed.enUs['dashboard.time.converter.title'],
       'Convert Local Time',
     );
+    expect(
+      LocalizationSeed.enUs['dashboard.tool.history.clearTitle'],
+      'Clear history?',
+    );
   });
 }

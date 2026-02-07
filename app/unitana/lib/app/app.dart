@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 
 import '../features/dashboard/dashboard_screen.dart';
 import '../features/first_run/first_run_screen.dart';
@@ -38,6 +39,12 @@ class _UnitanaAppState extends State<UnitanaApp> {
       theme: UnitanaTheme.dark(),
       darkTheme: UnitanaTheme.dark(),
       themeMode: ThemeMode.dark,
+      supportedLocales: const <Locale>[Locale('en')],
+      localizationsDelegates: const <LocalizationsDelegate<dynamic>>[
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
       home: _ready
           ? _HomeRouter(state: _state)
           : const Scaffold(body: Center(child: CircularProgressIndicator())),

@@ -299,6 +299,24 @@
   - expanded runtime localization tests:
     - `dashboard_localizations_runtime_test.dart` now covers currency stale/retry placeholder resolution.
   - full gates re-run and green (`dart format .`, `flutter analyze`, `flutter test`).
+- Pack H localization expansion + delegate readiness bundle (phase 3 + phase 4, 2026-02-07):
+  - migrated additional high-traffic tool microcopy to runtime localization-backed copy helpers:
+    - clear-history confirmation title/message/CTA
+    - `Edit Value` label
+    - history helper hint (`tap copies result; long-press copies input`)
+    - history-cleared notice
+    - currency retry notices (`Refreshing rates…`, `Could not refresh rates`)
+    - `Clear History` action label
+  - improved stale-label color logic in `DataRefreshStatusLabel` to avoid language-dependent prefix checks (`startsWith('Stale')`), using state semantics instead.
+  - added app-level localization delegate scaffolding in `MaterialApp`:
+    - `supportedLocales: [Locale('en')]`
+    - `GlobalMaterialLocalizations`, `GlobalWidgetsLocalizations`, `GlobalCupertinoLocalizations`
+    - dependency added: `flutter_localizations` (SDK).
+  - expanded localization seed map and tests:
+    - new seed keys for migrated microcopy in `localization_seed.dart`
+    - `dashboard_localizations_runtime_test.dart` expanded for migrated keys
+    - new `app_localization_scaffold_test.dart` verifies app delegate/locale wiring.
+  - full gates re-run and green (`dart format .`, `flutter analyze`, `flutter test`).
 - Pack F activation bundle (phase 1):
   - activated `world_clock_delta` and `jet_lag_delta` entries in tool registry.
   - wired both entries to the existing mature Time modal flow as interim E2E activation.

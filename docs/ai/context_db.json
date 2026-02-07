@@ -206,7 +206,7 @@
     }
   ],
   "current_state": {
-    "current_slice": "Pack H localization expansion phase 2.5 shipped: freshness/currency stale-retry paths now use runtime localization lookup with placeholder support",
+    "current_slice": "Pack H phase 3+4 bundle shipped: additional tool microcopy migrated to runtime localization and app-level localization delegates scaffolded",
     "notes": [
       "Codex-first workflow allows larger execution packs while keeping gates green.",
       "Pack A city data platform foundation is complete with canonical schema + validation guards.",
@@ -253,13 +253,17 @@
       "Added runtime localization tests in `dashboard_localizations_runtime_test.dart` for seeded lookup, parameter substitution, locale fallback, and explicit fallback behavior.",
       "Pack H phase 2.5 shipped: freshness labels and currency stale/retry/cached messaging now resolve through runtime lookup-backed `DashboardCopy` methods (including `{age}` placeholder substitution).",
       "Rewired reliability-critical surfaces (`DataRefreshStatusLabel`, weather sheet freshness line, currency status banner, devtools updating line) to the runtime localization seam while preserving existing UX text.",
-      "Expanded runtime localization tests with currency stale/retry placeholder assertions."
+      "Expanded runtime localization tests with currency stale/retry placeholder assertions.",
+      "Pack H phase 3+4 bundle shipped: additional tool microcopy (clear-history confirmation, edit-value label, history helper hint, history-cleared notice, currency retry notices, clear-history action label) now resolves through runtime localization-backed copy helpers.",
+      "App-level localization delegate scaffolding is now in place: `supportedLocales: [en]` and Flutter global localization delegates configured in `MaterialApp`, with `flutter_localizations` SDK dependency added.",
+      "DataRefreshStatusLabel stale color logic no longer depends on English string prefixes; it now uses refresh-state semantics for locale safety.",
+      "Added localization wiring tests: `app_localization_scaffold_test.dart` (delegate/locale config) and expanded runtime seed lookup assertions for newly migrated microcopy."
     ],
     "overall_health": "Stable with full gates passing; canonical city data coverage is now enforced for all in-scope records.",
     "status": "GREEN",
     "focus": {
-      "now": "Continue Pack H runtime seam expansion by migrating remaining high-traffic dashboard/tool hardcoded copy (helper lines, confirmations, status microcopy) into localization-backed copy helpers.",
-      "next": "Introduce ARB-generation-compatible plumbing/delegates and locale-selection scaffolding while preserving English fallback behavior.",
+      "now": "Continue Pack H runtime seam expansion by migrating remaining hardcoded dashboard/tool microcopy (lookup/tip/tax/unit-price helper text and notices) into localization-backed copy helpers.",
+      "next": "Begin ARB-generation-compatible rollout planning (l10n config, key-to-ARB mapping artifacts, and gradual delegate/provider integration beyond seed tables) while preserving English fallback behavior.",
       "later": [
         "Pack E marquee scene V2 production",
         "Pack H localization"

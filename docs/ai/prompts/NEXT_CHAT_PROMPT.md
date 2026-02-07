@@ -1,4 +1,4 @@
-NEXT CHAT PROMPT — Pack H Localization Expansion (Phase 3)
+NEXT CHAT PROMPT — Pack H Localization Expansion (Phase 5)
 
 You are taking over Unitana (Flutter) in a fresh, high-context window.
 
@@ -23,18 +23,17 @@ Then execute using this contract.
   - goldens opt-in only
 
 ## Mission
-Expand runtime localization wiring to remaining high-traffic dashboard/tool microcopy while preparing for ARB/delegate rollout.
+Continue runtime localization migration on remaining high-traffic dashboard/tool microcopy and prepare the next ARB-compatible transition seams.
 
 ## Required outcomes
-1) Pack H runtime seam expansion
-- Migrate additional hardcoded dashboard/tool strings to localization-backed copy helpers.
-- Prioritize helper/instruction lines, stale/error states, and confirmation/status microcopy.
-- Preserve current English wording and UX behavior.
+1) Runtime seam expansion
+- Migrate another focused batch of hardcoded dashboard/tool microcopy to localization-backed copy helpers.
+- Prioritize helper text in active calculator/tool bodies (tip/tax/unit-price/lookup/time guidance), notices, and confirmations.
+- Preserve current English UX wording and behavior.
 
-2) ARB/delegate readiness prep
-- Keep using seeded stable keys.
-- Add minimal scaffolding notes/code seams needed for future Flutter localization delegate/ARB generation integration.
-- Do not attempt full translation rollout yet.
+2) ARB transition prep
+- Keep seeded key usage deterministic.
+- Add low-risk scaffolding artifacts for future ARB/key export workflow (without enabling full translation rollout).
 
 3) Regression lock
 - Keep Pack B/C reliability messaging stable.
@@ -50,7 +49,7 @@ Expand runtime localization wiring to remaining high-traffic dashboard/tool micr
   - `docs/ai/prompts/NEXT_CHAT_PROMPT.md` (if scope shifts again)
 
 ## Definition of done
-- More high-impact dashboard/tool microcopy is runtime-localization backed.
-- Fallback and placeholder behavior remains deterministic and test-guarded.
+- Additional high-traffic microcopy is runtime-localization backed.
+- Delegate/fallback behavior remains deterministic and test-guarded.
 - Reliability and Pack N/M contracts remain green.
 - Repo is green (`format`, `analyze`, `test`).
