@@ -2537,17 +2537,31 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
     final normalized = _normalizeTimeSearch(rawQuery);
     if (normalized.isEmpty) return featured;
     final aliasZones = _aliasZonesForQuery(rawQuery).toSet();
+    final shortQuery = normalized.length <= 3;
+    final candidates = normalized.length < 3 ? featured : all;
     final seenZones = <String>{};
     final scored = <({TimeZoneCityOption option, int score})>[];
     final tokens = normalized.split(' ').where((t) => t.isNotEmpty).toList();
+    final rawLower = rawQuery.trim().toLowerCase();
 
-    for (final option in all) {
+    bool hasTokenBoundary(String haystack, String token) {
+      final escaped = RegExp.escape(token);
+      return RegExp('(^| )$escaped').hasMatch(haystack);
+    }
+
+    for (final option in candidates) {
       final haystack = _normalizeTimeSearch(
         '${option.label} ${option.subtitle} ${option.timeZoneId}',
       );
       if (!haystack.contains(normalized) &&
           !tokens.every((token) => haystack.contains(token)) &&
           !aliasZones.contains(option.timeZoneId)) {
+        continue;
+      }
+      if (shortQuery &&
+          !aliasZones.contains(option.timeZoneId) &&
+          !hasTokenBoundary(haystack, normalized) &&
+          !option.timeZoneId.toLowerCase().startsWith(rawLower)) {
         continue;
       }
       var score = 0;
@@ -2557,9 +2571,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
       if (aliasZones.contains(option.timeZoneId)) score += 220;
       if (haystack.startsWith(normalized)) score += 140;
       if (haystack.contains(' $normalized')) score += 90;
-      if (option.timeZoneId.toLowerCase().contains(
-        rawQuery.trim().toLowerCase(),
-      )) {
+      if (option.timeZoneId.toLowerCase().contains(rawLower)) {
         score += 70;
       }
       if (_featuredZoneIds.contains(option.timeZoneId)) score += 40;
@@ -2609,6 +2621,12 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
     }
     scored.sort((a, b) => b.score.compareTo(a.score));
     return scored.map((item) => item.option).take(12).toList(growable: false);
+  }
+
+  String _sanitizeCityPickerLabel(String raw) {
+    final trimmed = raw.trim();
+    if (trimmed.isEmpty) return raw;
+    return trimmed.replaceFirst(RegExp(r"^[^A-Za-z0-9]+"), '');
   }
 
   void _seedTimeToolDefaults() {
@@ -2833,14 +2851,16 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                             key: ValueKey(
                               'tool_time_city_item_${isFrom ? 'from' : 'to'}_${_sanitizeUnitKey(option.key)}',
                             ),
-                            title: Text(option.label),
+                            title: Text(_sanitizeCityPickerLabel(option.label)),
                             subtitle: Text(
                               '${option.subtitle} · ${option.timeZoneId}',
                             ),
                             selected: option.label == currentLabel,
                             onTap: () => Navigator.of(context).pop((
                               zoneId: option.timeZoneId,
-                              displayLabel: option.label,
+                              displayLabel: _sanitizeCityPickerLabel(
+                                option.label,
+                              ),
                             )),
                           ),
                         if (filteredZone.isNotEmpty) ...[
@@ -3363,6 +3383,14 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
           color: DraculaPalette.cyan.withAlpha(238),
           fontWeight: FontWeight.w800,
         );
+        final timeStyle = baseStyle?.copyWith(
+          color: DraculaPalette.foreground.withAlpha(248),
+          fontWeight: FontWeight.w900,
+        );
+
+        final timeMatches = RegExp(
+          r'\b\d{1,2}:\d{2}\b',
+        ).allMatches(line).toList();
 
         final spans = <InlineSpan>[];
         var cursor = 0;
@@ -3371,10 +3399,20 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
           final fromMatchAt = fromCity.isEmpty
               ? -1
               : line.indexOf(fromCity, cursor);
+          var timeMatchAt = -1;
+          Match? nextTimeMatch;
+          for (final match in timeMatches) {
+            if (match.start >= cursor) {
+              timeMatchAt = match.start;
+              nextTimeMatch = match;
+              break;
+            }
+          }
 
           final hasToMatch = toMatchAt >= 0;
           final hasFromMatch = fromMatchAt >= 0;
-          if (!hasToMatch && !hasFromMatch) {
+          final hasTimeMatch = timeMatchAt >= 0 && nextTimeMatch != null;
+          if (!hasToMatch && !hasFromMatch && !hasTimeMatch) {
             spans.add(TextSpan(text: line.substring(cursor), style: baseStyle));
             break;
           }
@@ -3382,10 +3420,14 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
           var matchStart = -1;
           var matchToken = '';
           var matchStyle = baseStyle;
-          if (hasToMatch &&
-              (!hasFromMatch ||
-                  toMatchAt < fromMatchAt ||
-                  toMatchAt == fromMatchAt)) {
+          if (hasTimeMatch &&
+              (!hasToMatch || timeMatchAt <= toMatchAt) &&
+              (!hasFromMatch || timeMatchAt <= fromMatchAt)) {
+            matchStart = timeMatchAt;
+            matchToken = nextTimeMatch.group(0) ?? '';
+            matchStyle = timeStyle;
+          } else if (hasToMatch &&
+              (!hasFromMatch || toMatchAt <= fromMatchAt)) {
             matchStart = toMatchAt;
             matchToken = toCity;
             matchStyle = toCityStyle;
