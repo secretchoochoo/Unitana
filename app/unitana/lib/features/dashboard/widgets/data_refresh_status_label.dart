@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../../theme/dracula_palette.dart';
 
+import '../models/dashboard_copy.dart';
+import '../models/freshness_copy.dart';
 import '../models/dashboard_live_data.dart';
 
 /// Small, provider-agnostic "last refresh" label for live data.
@@ -71,33 +73,22 @@ class _DataRefreshStatusLabelState extends State<DataRefreshStatusLabel> {
         liveData.weatherBackend != WeatherBackend.mock;
     if (!isLive && widget.hideWhenUnavailable) return null;
 
-    if (liveData.isRefreshing) return 'Updating…';
+    if (liveData.isRefreshing) return DashboardCopy.updating;
 
     final last = liveData.lastRefreshedAt;
-    if (last == null) return 'Not updated';
+    if (last == null) return DashboardCopy.notUpdated;
 
     final age = DateTime.now().difference(last);
-    final ageText = _ageText(age);
+    final ageText = FreshnessCopy.relativeAgeShort(
+      now: DateTime.now(),
+      then: last,
+    );
 
     if (age > widget.staleAfter) {
-      return 'Stale ($ageText)';
+      return DashboardCopy.stale(ageText);
     }
 
-    return 'Updated $ageText';
-  }
-
-  static String _ageText(Duration age) {
-    final secs = age.inSeconds;
-    if (secs < 60) return 'just now';
-
-    final mins = age.inMinutes;
-    if (mins < 60) return '${mins}m ago';
-
-    final hours = age.inHours;
-    if (hours < 24) return '${hours}h ago';
-
-    final days = age.inDays;
-    return '${days}d ago';
+    return DashboardCopy.updated(ageText);
   }
 
   @override

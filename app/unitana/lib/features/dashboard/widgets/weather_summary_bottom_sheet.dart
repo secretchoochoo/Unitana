@@ -5,6 +5,8 @@ import '../../../models/place.dart';
 import '../../../theme/dracula_palette.dart';
 import '../../../utils/timezone_utils.dart';
 
+import '../models/dashboard_copy.dart';
+import '../models/freshness_copy.dart';
 import '../models/dashboard_live_data.dart';
 
 class WeatherSummaryBottomSheet extends StatelessWidget {
@@ -46,13 +48,18 @@ class WeatherSummaryBottomSheet extends StatelessWidget {
         final cs = theme.colorScheme;
 
         final refreshedAt = liveData.lastRefreshedAt;
-        final staleSuffix =
-            (liveData.isStale && !liveData.isRefreshing && refreshedAt != null)
-            ? ' (stale)'
-            : '';
+        final staleSuffix = DashboardCopy.weatherStaleSuffix(
+          isStale:
+              liveData.isStale && !liveData.isRefreshing && refreshedAt != null,
+        );
         final refreshedLabelBase = refreshedAt == null
-            ? 'Not updated yet'
-            : 'Updated ${_relativeAge(now: DateTime.now(), then: refreshedAt)}';
+            ? DashboardCopy.notUpdated
+            : DashboardCopy.updated(
+                FreshnessCopy.relativeAgeShort(
+                  now: DateTime.now(),
+                  then: refreshedAt,
+                ),
+              );
         final refreshedLabel = '$refreshedLabelBase$staleSuffix';
 
         final places = <Place>[
@@ -438,16 +445,6 @@ class WeatherSummaryBottomSheet extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  static String _relativeAge({required DateTime now, required DateTime then}) {
-    final diff = now.difference(then);
-    if (diff.inSeconds < 10) return 'just now';
-    if (diff.inMinutes < 1) return '${diff.inSeconds}s ago';
-    if (diff.inMinutes == 1) return '1 minute ago';
-    if (diff.inMinutes < 60) return '${diff.inMinutes} minutes ago';
-    if (diff.inHours == 1) return '1 hour ago';
-    return '${diff.inHours} hours ago';
   }
 
   static String _flagEmoji(String countryCode) {

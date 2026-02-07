@@ -206,7 +206,7 @@
     }
   ],
   "current_state": {
-    "current_slice": "Pack N J2 shipped: city-first Time-family picker with advanced timezone fallback plus Jet Lag overlap utility gating/call-window framing; full repo gates green",
+    "current_slice": "Pack B/C reliability closure follow-up shipped (freshness/currency copy normalization + shared short-age helper) and Pack H bootstrap prep started via centralized dashboard/tool copy seam",
     "notes": [
       "Codex-first workflow allows larger execution packs while keeping gates green.",
       "Pack A city data platform foundation is complete with canonical schema + validation guards.",
@@ -240,13 +240,16 @@
       "Backlog expanded with Pack O for separate skippable tutorial overlays by tool family, with per-category completion persistence and Settings replay entry.",
       "Height imperial shorthand now accepts `6.4` style input as `6 ft 4 in`; deeper two-field Height UX and Jet Lag Delta dedicated-mode follow-ups are scoped in PACK_F_SCOPE_FOLLOWUPS_JETLAG_WEIGHT_HEIGHT.md.",
       "Weather sheet now uses a compact layout, removes redundant refresh explainer copy, and renders dual-context values for time (12h/24h) and wind (km/h + mph).",
-      "Currency modal now exposes stale/retry status messaging using controller currency health signals."
+      "Currency modal now exposes stale/retry status messaging using controller currency health signals.",
+      "Reliability follow-up shipped: freshness relative-age wording is now consistent (`just now`, `Xm ago`, `Xh ago`, `Xd ago`) across weather sheet, refresh status label, currency stale banner, and devtools weather freshness line.",
+      "Pack H bootstrap prep started: key dashboard/tool user-facing copy is now centralized in `dashboard_copy.dart` (freshness, currency stale/retry, and Time/Jet Lag headings/overlap labels) to reduce future ARB migration churn.",
+      "Jet Lag tip text was refreshed for plain-language readability while preserving deterministic rotation and overlap reveal behavior contracts."
     ],
     "overall_health": "Stable with full gates passing; canonical city data coverage is now enforced for all in-scope records.",
     "status": "GREEN",
     "focus": {
-      "now": "Proceed with Pack B/C reliability closure and data freshness hardening while keeping Pack N/M regressions locked.",
-      "next": "Start Pack H localization bootstrap once reliability closure tasks are complete.",
+      "now": "Continue Pack H localization bootstrap by expanding centralized copy seams to additional high-traffic tool surfaces and introducing ARB-ready key mapping.",
+      "next": "Begin low-risk localization pilot wiring on dashboard/tool entry surfaces after seam extraction is complete.",
       "later": [
         "Pack E marquee scene V2 production",
         "Pack H localization"

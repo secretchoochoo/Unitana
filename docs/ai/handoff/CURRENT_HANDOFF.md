@@ -234,6 +234,24 @@
     - `app/unitana/test/time_zone_catalog_test.dart`
     - `app/unitana/test/time_tool_modal_interaction_test.dart`
     - `app/unitana/test/jet_lag_delta_modal_interaction_test.dart`
+- Pack B/C reliability closure + Pack H bootstrap prep follow-up (2026-02-07):
+  - freshness/status phrasing now uses a shared short-age utility (`just now`, `Xm ago`, `Xh ago`, `Xd ago`) across:
+    - weather summary sheet
+    - refresh status label
+    - currency stale/error status copy
+    - devtools weather freshness line
+  - currency stale state copy is normalized for retry-now vs backoff vs stale-cache-only scenarios.
+  - added centralized dashboard/tool copy seam (`app/unitana/lib/features/dashboard/models/dashboard_copy.dart`) for Pack H migration prep:
+    - freshness labels (`Updating…`, `Not updated`, `Updated`, `Stale`)
+    - currency stale/retry messaging
+    - Time/Jet Lag titles (`Travel Facts`, `Jet Lag Plan`, `Quick Tips`, `Call Windows`) and overlap reveal labels
+    - Jet Lag tip pool text now reads more plainly for general audiences
+  - regression checks re-run and green:
+    - `currency_tool_stale_status_banner_test.dart`
+    - `weather_summary_tile_open_smoke_test.dart`
+    - `jet_lag_delta_modal_interaction_test.dart`
+    - `time_tool_modal_interaction_test.dart`
+    - full `flutter analyze` + `flutter test`
 - Pack F activation bundle (phase 1):
   - activated `world_clock_delta` and `jet_lag_delta` entries in tool registry.
   - wired both entries to the existing mature Time modal flow as interim E2E activation.

@@ -9,6 +9,7 @@ import 'models/dashboard_live_data.dart';
 import 'models/dashboard_layout_controller.dart';
 import 'models/dashboard_session_controller.dart';
 import 'models/dashboard_exceptions.dart';
+import 'models/freshness_copy.dart';
 import 'models/tool_definitions.dart';
 import 'widgets/dashboard_board.dart';
 import 'widgets/data_refresh_status_label.dart';
@@ -431,13 +432,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       ),
                       child: Builder(
                         builder: (context) {
-                          String ago(Duration d) {
-                            if (d.inMinutes < 1) return 'just now';
-                            if (d.inMinutes < 60) return '${d.inMinutes}m ago';
-                            if (d.inHours < 24) return '${d.inHours}h ago';
-                            return '${d.inDays}d ago';
-                          }
-
                           final src = backendLabel(selectedBackend)
                               .replaceAll('Live: ', '')
                               .replaceAll('Demo (no network)', 'Demo');
@@ -447,7 +441,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               ? '$src: Updating…'
                               : last == null
                               ? '$src: Last update: never'
-                              : '$src: Last update: ${ago(DateTime.now().difference(last))}';
+                              : '$src: Last update: ${FreshnessCopy.relativeAgeShort(now: DateTime.now(), then: last)}';
 
                           return Text(
                             line,

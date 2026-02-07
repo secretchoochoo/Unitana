@@ -1,4 +1,4 @@
-NEXT CHAT PROMPT — Pack B/C Reliability Closure + Localization Bootstrap Prep
+NEXT CHAT PROMPT — Pack H Localization Bootstrap (Phase 1.5)
 
 You are taking over Unitana (Flutter) in a fresh, high-context window.
 
@@ -23,23 +23,24 @@ Then execute using this contract.
   - goldens opt-in only
 
 ## Mission
-Close remaining reliability visibility gaps (especially stale/cache/retry clarity) across live-data tools, then prep the codebase for Pack H localization with minimal churn.
+Expand localization-ready copy seams with minimal churn, then prepare the first ARB-ready mapping pass for high-traffic dashboard/tool text.
 
 ## Required outcomes
-1) Reliability closure follow-up (Pack B/C)
-- Audit current stale/cache/retry UI states for weather, currency, and any remaining live surfaces.
-- Normalize user-facing freshness/status phrasing where inconsistent.
-- Add any missing deterministic test coverage for stale/retry edge paths.
+1) Pack H seam expansion
+- Continue extracting hardcoded user-facing strings from high-traffic dashboard/tool surfaces into centralized copy helpers.
+- Keep behavior and visual layout unchanged.
+- Prioritize strings that currently appear in tests and stale/error states.
 
-2) Time/Jet Lag regression lock
-- Ensure recent Pack N/M behavior remains guarded:
-  - city-first picker + advanced timezone fallback
-  - call-window overlap reveal behavior
-  - action-row alignment contract
+2) ARB-ready key mapping prep
+- Define a deterministic key naming scheme for extracted copy (without full translation rollout yet).
+- Add a lightweight mapping scaffold (or TODO contract) that makes the future ARB migration mostly mechanical.
 
-3) Localization bootstrap prep (Pack H readiness)
-- Identify and isolate hardcoded user strings on key dashboard/tool surfaces into a localization-ready structure.
-- Do not attempt full translation rollout yet; focus on clean extraction seams and low-risk migration prep.
+3) Reliability/Time regression lock
+- Re-verify stale/retry/freshness copy contracts.
+- Keep Pack N/M regressions green:
+  - city-first picker + advanced fallback
+  - overlap reveal contract
+  - action-row alignment
 
 4) Docs update
 - Update:
@@ -48,7 +49,7 @@ Close remaining reliability visibility gaps (especially stale/cache/retry clarit
   - `docs/ai/prompts/NEXT_CHAT_PROMPT.md` (if scope shifts again)
 
 ## Definition of done
-- Reliability/status messaging is consistent and test-guarded on in-scope live surfaces.
-- Pack N/M regressions remain green.
-- Localization bootstrap prep is in place without UI regressions.
+- More user-facing copy is centralized and localization-ready.
+- ARB migration path is clearer with stable keys/scaffold.
+- Reliability and Pack N/M contracts remain green.
 - Repo is green (`format`, `analyze`, `test`).

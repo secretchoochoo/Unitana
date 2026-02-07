@@ -116,7 +116,7 @@ void main() {
           findsOneWidget,
         );
 
-        // Refresh label can be either "Not updated yet" (hermetic) or
+        // Refresh label can be either "Not updated" (hermetic) or
         // "Updated X ago" (if Dashboard triggers an auto-refresh on open).
         final refreshText = textInSheetWhere(
           (t) => t.startsWith('Updated ') || t.contains('Not updated'),

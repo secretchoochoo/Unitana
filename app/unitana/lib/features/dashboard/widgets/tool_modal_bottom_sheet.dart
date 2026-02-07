@@ -15,8 +15,10 @@ import '../../../models/place.dart';
 import '../../../utils/timezone_utils.dart';
 
 import '../models/dashboard_session_controller.dart';
+import '../models/dashboard_copy.dart';
 import '../models/dashboard_exceptions.dart';
 import '../models/flight_time_estimator.dart';
+import '../models/freshness_copy.dart';
 import '../models/jet_lag_planner.dart';
 import '../models/lens_accents.dart';
 import '../models/numeric_input_policy.dart';
@@ -446,52 +448,10 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
   }
 
   List<String> _jetLagTipsForPlan(JetLagPlan plan, String destinationLabel) {
-    if (plan.isNoShift) {
-      return const <String>[
-        'No reset needed. Keep your usual sleep schedule tonight.',
-        'Get morning light and stay hydrated to stay on track.',
-      ];
-    }
-
-    const mild = <String>[
-      'Keep caffeine to the morning and skip late boosts.',
-      'Get some morning daylight after arrival.',
-    ];
-    const moderate = <String>[
-      'Shift meal times with your new sleep schedule.',
-      'If needed, take one short nap (20-30 min).',
-    ];
-    const high = <String>[
-      'If you can, start shifting your schedule one night before travel.',
-      'Use bright light in the morning and dim light at night.',
-    ];
-
-    switch (plan.band) {
-      case JetLagBand.extreme:
-      case JetLagBand.high:
-        return <String>[
-          'Big time change for $destinationLabel. Keep tonight simple and steady.',
-          ...high,
-          ...moderate,
-          ...mild,
-        ];
-      case JetLagBand.moderate:
-        return <String>[
-          'Moderate shift for $destinationLabel. Small daily steps work best.',
-          ...moderate,
-          ...mild,
-        ];
-      case JetLagBand.mild:
-        return <String>[
-          'Small shift for $destinationLabel. You should settle quickly.',
-          ...mild,
-        ];
-      case JetLagBand.minimal:
-        return const <String>[
-          'Very small shift. Keep your routine steady.',
-          'Morning light plus hydration is usually enough.',
-        ];
-    }
+    return DashboardCopy.jetLagTips(
+      plan: plan,
+      destinationLabel: destinationLabel,
+    );
   }
 
   Future<void> _pickJetLagTime({required bool bedtime}) async {
@@ -2871,7 +2831,9 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
     );
 
     Widget buildCurrentClocksCard() {
-      final factsTitle = _isJetLagDeltaTool ? 'Travel Facts' : 'Current Clocks';
+      final factsTitle = DashboardCopy.factsTitle(
+        isJetLagTool: _isJetLagDeltaTool,
+      );
       final dateImpact = JetLagPlanner.dateImpactLabel(
         fromLocal: fromNow.local,
         toLocal: toNow.local,
@@ -2890,12 +2852,9 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
       final dateImpactCompactRaw = dateImpact
           .replaceFirst('Destination is ', '')
           .replaceFirst('calendar ', '');
-      final dateImpactCompact = switch (dateImpactCompactRaw.toLowerCase()) {
-        'next day' => 'Next Day',
-        'same day' => 'Same Day',
-        'previous day' => 'Previous Day',
-        _ => dateImpactCompactRaw,
-      };
+      final dateImpactCompact = DashboardCopy.dateImpactTitleCase(
+        dateImpactCompactRaw,
+      );
 
       Widget factsMetaLine({
         required String label,
@@ -3162,7 +3121,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Jet Lag Plan',
+              DashboardCopy.jetLagPlanTitle,
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.w900,
                 color: DraculaPalette.orange,
@@ -3268,7 +3227,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
             ],
             const SizedBox(height: 8),
             Text(
-              'Quick Tips',
+              DashboardCopy.quickTipsTitle,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                 color: DraculaPalette.orange,
                 fontWeight: FontWeight.w800,
@@ -3294,7 +3253,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
             if (showOverlapHints) ...[
               const SizedBox(height: 8),
               Text(
-                'Call Windows',
+                DashboardCopy.callWindowsTitle,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: DraculaPalette.orange,
                   fontWeight: FontWeight.w800,
@@ -3315,7 +3274,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                         _jetLagOverlapExpanded = true;
                       });
                     },
-                    child: const Text('Show call windows'),
+                    child: const Text(DashboardCopy.showCallWindowsCta),
                   ),
                 ),
               if (showOverlapDetails)
@@ -3324,7 +3283,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Quick check before scheduling calls:',
+                      DashboardCopy.overlapIntro,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         fontWeight: FontWeight.w700,
                         color: DraculaPalette.comment.withAlpha(232),
@@ -3589,25 +3548,26 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
     if (!widget.currencyIsStale && errorAt == null) return null;
 
     if (errorAt != null) {
-      final age = DateTime.now().difference(errorAt);
-      final minutes = age.inMinutes;
-      final ageLabel = minutes <= 1 ? '1m ago' : '${minutes}m ago';
+      final ageLabel = FreshnessCopy.relativeAgeShort(
+        now: DateTime.now(),
+        then: errorAt,
+      );
       if (widget.currencyShouldRetryNow) {
         return (
-          'Rates stale (last error $ageLabel). Retry available now.',
+          DashboardCopy.currencyStaleRetryNow(ageLabel),
           DraculaPalette.orange,
           true,
         );
       }
       return (
-        'Rates stale (last error $ageLabel). Auto-retry is backing off.',
+        DashboardCopy.currencyStaleRetrySoon(ageLabel),
         DraculaPalette.comment,
         false,
       );
     }
 
     return (
-      'Rates may be stale. Showing latest cached values.',
+      DashboardCopy.currencyUsingCachedRates,
       DraculaPalette.orange,
       false,
     );
@@ -3777,7 +3737,9 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                                       Icons.refresh_rounded,
                                       size: 16,
                                     ),
-                                    label: const Text('Retry rates'),
+                                    label: const Text(
+                                      DashboardCopy.retryRatesCta,
+                                    ),
                                   ),
                                 ),
                               ],

@@ -72,7 +72,7 @@ void main() {
         const ValueKey('tool_currency_status_currency_convert'),
       );
       expect(banner, findsOneWidget);
-      expect(find.textContaining('Rates stale'), findsOneWidget);
+      expect(find.textContaining('Rates are stale'), findsOneWidget);
     },
   );
 
@@ -116,5 +116,37 @@ void main() {
 
     expect(called, 1);
     expect(find.text('Refreshing rates…'), findsOneWidget);
+  });
+
+  testWidgets(
+    'currency tool shows backoff message when retry is not available yet',
+    (tester) async {
+      final errorAt = DateTime.now().subtract(const Duration(minutes: 3));
+      await pumpCurrencyTool(
+        tester,
+        isStale: true,
+        shouldRetryNow: false,
+        errorAt: errorAt,
+      );
+
+      expect(find.textContaining('Retrying in a moment.'), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('tool_currency_retry_currency_convert')),
+        findsNothing,
+      );
+    },
+  );
+
+  testWidgets('currency tool shows cached-rates message for stale-only state', (
+    tester,
+  ) async {
+    await pumpCurrencyTool(
+      tester,
+      isStale: true,
+      shouldRetryNow: false,
+      errorAt: null,
+    );
+
+    expect(find.textContaining('Using cached rates'), findsOneWidget);
   });
 }
