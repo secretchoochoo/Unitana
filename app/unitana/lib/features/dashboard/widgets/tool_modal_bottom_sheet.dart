@@ -3144,6 +3144,66 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
         );
       }
 
+      InlineSpan styledCallWindowLine(String line) {
+        final baseStyle = Theme.of(context).textTheme.bodySmall?.copyWith(
+          fontWeight: FontWeight.w700,
+          color: DraculaPalette.foreground.withAlpha(235),
+        );
+        final toCityStyle = baseStyle?.copyWith(
+          color: DraculaPalette.orange.withAlpha(242),
+          fontWeight: FontWeight.w800,
+        );
+        final fromCityStyle = baseStyle?.copyWith(
+          color: DraculaPalette.cyan.withAlpha(238),
+          fontWeight: FontWeight.w800,
+        );
+
+        final spans = <InlineSpan>[];
+        var cursor = 0;
+        while (cursor < line.length) {
+          final toMatchAt = toCity.isEmpty ? -1 : line.indexOf(toCity, cursor);
+          final fromMatchAt = fromCity.isEmpty
+              ? -1
+              : line.indexOf(fromCity, cursor);
+
+          final hasToMatch = toMatchAt >= 0;
+          final hasFromMatch = fromMatchAt >= 0;
+          if (!hasToMatch && !hasFromMatch) {
+            spans.add(TextSpan(text: line.substring(cursor), style: baseStyle));
+            break;
+          }
+
+          var matchStart = -1;
+          var matchToken = '';
+          var matchStyle = baseStyle;
+          if (hasToMatch &&
+              (!hasFromMatch ||
+                  toMatchAt < fromMatchAt ||
+                  toMatchAt == fromMatchAt)) {
+            matchStart = toMatchAt;
+            matchToken = toCity;
+            matchStyle = toCityStyle;
+          } else if (hasFromMatch) {
+            matchStart = fromMatchAt;
+            matchToken = fromCity;
+            matchStyle = fromCityStyle;
+          }
+
+          if (matchStart > cursor) {
+            spans.add(
+              TextSpan(
+                text: line.substring(cursor, matchStart),
+                style: baseStyle,
+              ),
+            );
+          }
+          spans.add(TextSpan(text: matchToken, style: matchStyle));
+          cursor = matchStart + matchToken.length;
+        }
+
+        return TextSpan(children: spans, style: baseStyle);
+      }
+
       return Container(
         key: const ValueKey('tool_time_planner_card'),
         padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
@@ -3277,33 +3337,39 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
             ],
             const SizedBox(height: 8),
             Text(
-              DashboardCopy.quickTipsTitle(context),
+              '💡 ${DashboardCopy.quickTipsTitle(context)}',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                 color: DraculaPalette.orange,
                 fontWeight: FontWeight.w800,
               ),
             ),
             const SizedBox(height: 4),
-            AnimatedSwitcher(
-              key: const ValueKey('tool_jetlag_tip_rotator'),
-              duration: const Duration(milliseconds: 350),
-              switchInCurve: Curves.easeOut,
-              switchOutCurve: Curves.easeIn,
-              transitionBuilder: (child, animation) =>
-                  FadeTransition(opacity: animation, child: child),
-              child: Text(
-                tipText,
-                key: ValueKey('tool_jetlag_tip_text_$tipIndex'),
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: DraculaPalette.comment.withAlpha(236),
-                  fontWeight: FontWeight.w700,
+            SizedBox(
+              height: 42,
+              child: Align(
+                alignment: Alignment.topLeft,
+                child: AnimatedSwitcher(
+                  key: const ValueKey('tool_jetlag_tip_rotator'),
+                  duration: const Duration(milliseconds: 350),
+                  switchInCurve: Curves.easeOut,
+                  switchOutCurve: Curves.easeIn,
+                  transitionBuilder: (child, animation) =>
+                      FadeTransition(opacity: animation, child: child),
+                  child: Text(
+                    tipText,
+                    key: ValueKey('tool_jetlag_tip_text_$tipIndex'),
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: DraculaPalette.comment.withAlpha(236),
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
                 ),
               ),
             ),
             if (showOverlapHints) ...[
               const SizedBox(height: 8),
               Text(
-                DashboardCopy.callWindowsTitle(context),
+                '📞 ${DashboardCopy.callWindowsTitle(context)}',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: DraculaPalette.orange,
                   fontWeight: FontWeight.w800,
@@ -3341,29 +3407,25 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                       ),
                     ),
                     const SizedBox(height: 4),
-                    Text(
-                      DashboardCopy.jetLagCallWindowMorning(
-                        context,
-                        toCity: toCity,
-                        overlapMorning: overlapMorning,
-                        fromCity: fromCity,
-                      ),
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        fontWeight: FontWeight.w700,
-                        color: DraculaPalette.foreground.withAlpha(235),
+                    Text.rich(
+                      styledCallWindowLine(
+                        DashboardCopy.jetLagCallWindowMorning(
+                          context,
+                          toCity: toCity,
+                          overlapMorning: overlapMorning,
+                          fromCity: fromCity,
+                        ),
                       ),
                     ),
                     const SizedBox(height: 2),
-                    Text(
-                      DashboardCopy.jetLagCallWindowEvening(
-                        context,
-                        toCity: toCity,
-                        overlapEvening: overlapEvening,
-                        fromCity: fromCity,
-                      ),
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        fontWeight: FontWeight.w700,
-                        color: DraculaPalette.foreground.withAlpha(235),
+                    Text.rich(
+                      styledCallWindowLine(
+                        DashboardCopy.jetLagCallWindowEvening(
+                          context,
+                          toCity: toCity,
+                          overlapEvening: overlapEvening,
+                          fromCity: fromCity,
+                        ),
                       ),
                     ),
                   ],

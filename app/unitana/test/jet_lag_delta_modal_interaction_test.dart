@@ -64,8 +64,8 @@ void main() {
       find.byKey(const ValueKey('tool_jetlag_tip_rotator')),
       findsOneWidget,
     );
-    expect(find.text('Quick Tips'), findsOneWidget);
-    expect(find.text('Call Windows'), findsOneWidget);
+    expect(find.textContaining('Quick Tips'), findsOneWidget);
+    expect(find.textContaining('Call Windows'), findsOneWidget);
     expect(
       find.byKey(const ValueKey('tool_jetlag_overlap_panel')),
       findsOneWidget,
