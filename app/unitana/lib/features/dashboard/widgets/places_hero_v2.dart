@@ -1525,67 +1525,6 @@ class _RightMarqueeSlot extends StatelessWidget {
     this.renderConditionLabel = true,
   });
 
-  String _fallbackLabel(BuildContext context, SceneKey? key) {
-    switch (key) {
-      case SceneKey.clear:
-        return 'Clear';
-      case SceneKey.partlyCloudy:
-        return 'Partly cloudy';
-      case SceneKey.cloudy:
-        return 'Cloudy';
-      case SceneKey.overcast:
-        return 'Overcast';
-      case SceneKey.mist:
-        return 'Mist';
-      case SceneKey.fog:
-        return 'Fog';
-      case SceneKey.drizzle:
-        return 'Drizzle';
-      case SceneKey.freezingDrizzle:
-        return 'Freezing drizzle';
-      case SceneKey.rainLight:
-        return 'Light rain';
-      case SceneKey.rainModerate:
-        return 'Rain';
-      case SceneKey.rainHeavy:
-        return 'Heavy rain';
-      case SceneKey.freezingRain:
-        return 'Freezing rain';
-      case SceneKey.sleet:
-        return 'Sleet';
-      case SceneKey.snowLight:
-        return 'Light snow';
-      case SceneKey.snowModerate:
-        return 'Snow';
-      case SceneKey.snowHeavy:
-        return 'Heavy snow';
-      case SceneKey.blowingSnow:
-        return 'Blowing snow';
-      case SceneKey.blizzard:
-        return 'Blizzard';
-      case SceneKey.icePellets:
-        return 'Ice pellets';
-      case SceneKey.thunderRain:
-        return 'Thunderstorm';
-      case SceneKey.thunderSnow:
-        return 'Thunder snow';
-      case SceneKey.hazeDust:
-        return 'Haze';
-      case SceneKey.smokeWildfire:
-        return 'Smoke';
-      case SceneKey.ashfall:
-        return 'Ash';
-      case SceneKey.windy:
-        return 'Windy';
-      case SceneKey.tornado:
-        return 'Tornado';
-      case SceneKey.squall:
-        return 'Squall';
-      case null:
-        return DashboardCopy.weatherTitle(context);
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
@@ -1596,9 +1535,11 @@ class _RightMarqueeSlot extends StatelessWidget {
     // is bounded by the hero layout. This makes the animation feel intentional
     // (not a small stamp) while keeping micro/test harness constraints safe.
     final desiredH = compact ? 56.0 : 172.0;
-    final label = (conditionLabel ?? '').trim().isNotEmpty
-        ? conditionLabel!.trim()
-        : _fallbackLabel(context, sceneKey);
+    final label = DashboardCopy.weatherConditionLabel(
+      context,
+      sceneKey: sceneKey,
+      rawText: conditionLabel,
+    );
 
     return LayoutBuilder(
       builder: (context, c) {

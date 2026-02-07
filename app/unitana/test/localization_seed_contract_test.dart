@@ -115,6 +115,14 @@ void main() {
       'Very High',
     );
     expect(
+      LocalizationSeed.enUs['dashboard.weather.condition.thunderRain'],
+      'Thunderstorm',
+    );
+    expect(
+      LocalizationSeed.enUs['dashboard.weather.condition.weather'],
+      'Weather',
+    );
+    expect(
       LocalizationSeed.enUs['dashboard.cityPicker.searchHint.cityOnly'],
       'Search city or country',
     );

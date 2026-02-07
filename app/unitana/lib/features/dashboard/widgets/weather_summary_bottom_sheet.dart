@@ -249,7 +249,11 @@ class WeatherSummaryBottomSheet extends StatelessWidget {
         ? '${tempF!.round()}°F'
         : '${tempC.round()}°C';
 
-    final condition = (weather?.conditionText ?? '—').trim();
+    final condition = DashboardCopy.weatherConditionLabel(
+      context,
+      sceneKey: weather?.sceneKey,
+      rawText: weather?.conditionText,
+    );
 
     final windKmh = weather?.windKmh;
     final gustKmh = weather?.gustKmh;

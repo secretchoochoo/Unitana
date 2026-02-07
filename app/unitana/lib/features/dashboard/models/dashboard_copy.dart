@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../l10n/city_picker_copy.dart';
 import '../../../l10n/dashboard_localizations.dart';
+import 'dashboard_live_data.dart';
 import 'jet_lag_planner.dart';
 
 class DashboardCopy {
@@ -993,6 +994,126 @@ class DashboardCopy {
           _ => bandKey,
         },
       );
+  static String weatherConditionByScene(
+    BuildContext context,
+    SceneKey? sceneKey,
+  ) {
+    final keySuffix = switch (sceneKey) {
+      SceneKey.clear => 'clear',
+      SceneKey.partlyCloudy => 'partlyCloudy',
+      SceneKey.cloudy => 'cloudy',
+      SceneKey.overcast => 'overcast',
+      SceneKey.mist => 'mist',
+      SceneKey.fog => 'fog',
+      SceneKey.drizzle => 'drizzle',
+      SceneKey.freezingDrizzle => 'freezingDrizzle',
+      SceneKey.rainLight => 'rainLight',
+      SceneKey.rainModerate => 'rainModerate',
+      SceneKey.rainHeavy => 'rainHeavy',
+      SceneKey.freezingRain => 'freezingRain',
+      SceneKey.sleet => 'sleet',
+      SceneKey.snowLight => 'snowLight',
+      SceneKey.snowModerate => 'snowModerate',
+      SceneKey.snowHeavy => 'snowHeavy',
+      SceneKey.blowingSnow => 'blowingSnow',
+      SceneKey.blizzard => 'blizzard',
+      SceneKey.icePellets => 'icePellets',
+      SceneKey.thunderRain => 'thunderRain',
+      SceneKey.thunderSnow => 'thunderSnow',
+      SceneKey.hazeDust => 'hazeDust',
+      SceneKey.smokeWildfire => 'smokeWildfire',
+      SceneKey.ashfall => 'ashfall',
+      SceneKey.windy => 'windy',
+      SceneKey.tornado => 'tornado',
+      SceneKey.squall => 'squall',
+      null => 'weather',
+    };
+    final fallback = switch (sceneKey) {
+      SceneKey.clear => 'Clear',
+      SceneKey.partlyCloudy => 'Partly cloudy',
+      SceneKey.cloudy => 'Cloudy',
+      SceneKey.overcast => 'Overcast',
+      SceneKey.mist => 'Mist',
+      SceneKey.fog => 'Fog',
+      SceneKey.drizzle => 'Drizzle',
+      SceneKey.freezingDrizzle => 'Freezing drizzle',
+      SceneKey.rainLight => 'Light rain',
+      SceneKey.rainModerate => 'Rain',
+      SceneKey.rainHeavy => 'Heavy rain',
+      SceneKey.freezingRain => 'Freezing rain',
+      SceneKey.sleet => 'Sleet',
+      SceneKey.snowLight => 'Light snow',
+      SceneKey.snowModerate => 'Snow',
+      SceneKey.snowHeavy => 'Heavy snow',
+      SceneKey.blowingSnow => 'Blowing snow',
+      SceneKey.blizzard => 'Blizzard',
+      SceneKey.icePellets => 'Ice pellets',
+      SceneKey.thunderRain => 'Thunderstorm',
+      SceneKey.thunderSnow => 'Thunder snow',
+      SceneKey.hazeDust => 'Haze',
+      SceneKey.smokeWildfire => 'Smoke',
+      SceneKey.ashfall => 'Ash',
+      SceneKey.windy => 'Windy',
+      SceneKey.tornado => 'Tornado',
+      SceneKey.squall => 'Squall',
+      null => 'Weather',
+    };
+    return DashboardLocalizations.of(
+      context,
+    ).text('dashboard.weather.condition.$keySuffix', fallback: fallback);
+  }
+
+  static String weatherConditionLabel(
+    BuildContext context, {
+    required SceneKey? sceneKey,
+    required String? rawText,
+  }) {
+    final raw = (rawText ?? '').trim();
+    if (raw.isEmpty || raw == '—') {
+      return weatherConditionByScene(context, sceneKey);
+    }
+    final normalized = raw.toLowerCase();
+    final mapped = _conditionRawToScene[normalized];
+    if (mapped != null) {
+      return weatherConditionByScene(context, mapped);
+    }
+    return raw;
+  }
+
+  static const Map<String, SceneKey> _conditionRawToScene = <String, SceneKey>{
+    'clear': SceneKey.clear,
+    'mostly clear': SceneKey.partlyCloudy,
+    'partly cloudy': SceneKey.partlyCloudy,
+    'cloudy': SceneKey.cloudy,
+    'overcast': SceneKey.overcast,
+    'mist': SceneKey.mist,
+    'fog': SceneKey.fog,
+    'drizzle': SceneKey.drizzle,
+    'freezing drizzle': SceneKey.freezingDrizzle,
+    'light rain': SceneKey.rainLight,
+    'rain': SceneKey.rainModerate,
+    'heavy rain': SceneKey.rainHeavy,
+    'freezing rain': SceneKey.freezingRain,
+    'rain showers': SceneKey.rainModerate,
+    'sleet': SceneKey.sleet,
+    'light snow': SceneKey.snowLight,
+    'snow': SceneKey.snowModerate,
+    'heavy snow': SceneKey.snowHeavy,
+    'snow grains': SceneKey.snowLight,
+    'snow showers': SceneKey.snowModerate,
+    'blowing snow': SceneKey.blowingSnow,
+    'blizzard': SceneKey.blizzard,
+    'ice pellets': SceneKey.icePellets,
+    'thunderstorm': SceneKey.thunderRain,
+    'thunder snow': SceneKey.thunderSnow,
+    'haze': SceneKey.hazeDust,
+    'smoke': SceneKey.smokeWildfire,
+    'ash': SceneKey.ashfall,
+    'windy': SceneKey.windy,
+    'tornado': SceneKey.tornado,
+    'squall': SceneKey.squall,
+    'weather': SceneKey.overcast,
+  };
   static String toolPickerNoMatchingTools(BuildContext context) =>
       DashboardLocalizations.of(context).text(
         'dashboard.toolPicker.noMatchingTools',

@@ -151,6 +151,14 @@ void main() {
       locale: const Locale('en'),
       key: 'dashboard.weather.pollen.veryHigh',
     );
+    final rainLight = DashboardLocalizations.resolveForLocale(
+      locale: const Locale('en'),
+      key: 'dashboard.weather.condition.rainLight',
+    );
+    final thunderRain = DashboardLocalizations.resolveForLocale(
+      locale: const Locale('en'),
+      key: 'dashboard.weather.condition.thunderRain',
+    );
     final cityOnlyHint = DashboardLocalizations.resolveForLocale(
       locale: const Locale('en'),
       key: 'dashboard.cityPicker.searchHint.cityOnly',
@@ -189,6 +197,8 @@ void main() {
     expect(cityFallback, 'City not set');
     expect(aqiBand, 'Very Unhealthy');
     expect(pollenBand, 'Very High');
+    expect(rainLight, 'Light rain');
+    expect(thunderRain, 'Thunderstorm');
     expect(cityOnlyHint, 'Search city or country');
     expect(cityAndTimezoneHint, 'Search city, country, timezone, or EST');
   });
