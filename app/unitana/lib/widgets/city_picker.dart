@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../data/cities.dart';
 import '../data/city_label_utils.dart';
+import '../data/city_picker_ranking.dart';
 
 class CityPicker extends StatefulWidget {
   final List<City> cities;
@@ -14,45 +15,6 @@ class CityPicker extends StatefulWidget {
 }
 
 class _CityPickerState extends State<CityPicker> {
-  static const List<String> _mainstreamHubZonePriority = <String>[
-    'America/New_York',
-    'America/Los_Angeles',
-    'America/Chicago',
-    'Europe/London',
-    'Europe/Paris',
-    'Europe/Berlin',
-    'Europe/Madrid',
-    'Asia/Tokyo',
-    'Asia/Singapore',
-    'Asia/Hong_Kong',
-    'Asia/Seoul',
-    'Asia/Kolkata',
-    'Australia/Sydney',
-    'America/Toronto',
-    'America/Vancouver',
-    'America/Mexico_City',
-    'America/Sao_Paulo',
-    'Pacific/Auckland',
-    'UTC',
-  ];
-  static final Set<String> _mainstreamCountryCodes = <String>{
-    'US',
-    'GB',
-    'FR',
-    'DE',
-    'ES',
-    'IT',
-    'JP',
-    'SG',
-    'HK',
-    'KR',
-    'IN',
-    'CA',
-    'AU',
-    'NZ',
-    'MX',
-    'BR',
-  };
   final TextEditingController _searchController = TextEditingController();
   late final Set<String> _curatedIds;
   late List<_IndexedCity> _indexedCities;
@@ -308,11 +270,8 @@ class _CityPickerState extends State<CityPicker> {
           final countryNorm = _normQuery(city.countryName ?? city.countryCode);
           var baseScore = 0;
           if (_curatedIds.contains(city.id)) baseScore += 260;
-          final hubIndex = _mainstreamHubZonePriority.indexOf(city.timeZoneId);
-          if (hubIndex != -1) baseScore += 220 - (hubIndex * 6);
-          if (_mainstreamCountryCodes.contains(
-            city.countryCode.toUpperCase(),
-          )) {
+          baseScore += CityPickerRanking.hubPriorityBonus(city.timeZoneId);
+          if (CityPickerRanking.isMainstreamCountryCode(city.countryCode)) {
             baseScore += 60;
           }
           if (RegExp(r'^[^A-Za-z0-9]').hasMatch(city.cityName.trim())) {
