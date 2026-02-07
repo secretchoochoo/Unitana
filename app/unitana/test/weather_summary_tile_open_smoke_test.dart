@@ -162,6 +162,24 @@ void main() {
           ),
           findsOneWidget,
         );
+        expect(
+          find.descendant(
+            of: sheetFinder,
+            matching: find.byKey(
+              const ValueKey('weather_summary_bridge_scene_dest'),
+            ),
+          ),
+          findsOneWidget,
+        );
+        expect(
+          find.descendant(
+            of: sheetFinder,
+            matching: find.byKey(
+              const ValueKey('weather_summary_bridge_scene_home'),
+            ),
+          ),
+          findsOneWidget,
+        );
 
         expect(
           find.byKey(const ValueKey('weather_summary_refresh')),

@@ -6,6 +6,19 @@
 - **Operating mode:** Codex is now the primary workflow; apply edits directly in-repo (do not require patch zip workflow unless explicitly requested).
 
 ## Latest changes (2026-02-07)
+- Pack E phase 5 bridge visual upgrade shipped (weather-sheet only):
+  - upgraded bridge halves in `WeatherSummaryBottomSheet` from text-only to include compact per-city scene previews (using `HeroAliveMarquee` in compact mode).
+  - preserved canonical hero key uniqueness by forcing `includeTestKeys: false` for bridge preview marquees.
+  - kept dashboard hero marquee semantics unchanged (scope guard preserved).
+  - expanded weather-sheet smoke coverage to lock bridge scene preview presence:
+    - `weather_summary_bridge_scene_dest`
+    - `weather_summary_bridge_scene_home`
+  - full gates re-run and green:
+    - `dart format .`
+    - `flutter analyze`
+    - `flutter test`
+
+## Latest changes (2026-02-07)
 - Pack E phase 4 scaffold shipped (weather-sheet bridge only):
   - added a middle bridge split card between Destination and Home weather sections in `WeatherSummaryBottomSheet`.
   - bridge currently shows side-by-side city context (`flag + city`) plus each side's primary weather summary (`temp · condition`).

@@ -1,4 +1,4 @@
-NEXT CHAT PROMPT — Pack E Phase 5 (Weather-Sheet Bridge Visual Upgrade)
+NEXT CHAT PROMPT — Pack E Phase 6 (Weather-Sheet Bridge Motion Polish)
 
 You are taking over Unitana (Flutter) in a fresh, high-context window.
 
@@ -24,21 +24,23 @@ Then execute using this contract.
   - goldens opt-in only
 
 ## Mission
-Upgrade the weather-sheet middle bridge from a text split scaffold toward a richer dual-city visual treatment while preserving dashboard marquee behavior.
+Apply a low-risk motion polish pass to the weather-sheet middle bridge so dual-city context feels alive without harming readability or layout stability.
 
 ## Required outcomes
 1) Scope guard
 - Do not change dashboard hero marquee semantics.
 - Keep split concept work constrained to the weather-sheet middle bridge area.
 
-2) Bridge visual upgrade slice
-- Build on the existing bridge scaffold and introduce a stronger visual representation of both cities' weather context.
+2) Bridge motion polish slice
+- Build on the existing bridge visual card and evaluate subtle, low-noise motion polish within each bridge half.
 - Keep the implementation low-risk and bounded to weather-sheet contracts (no dashboard hero marquee changes).
+- If motion harms scanability on phone surfaces, keep static visuals and document that decision.
 
 3) Readability and layout safety
 - Ensure bridge content remains legible on small phones and does not crowd neighboring weather sections.
 - Preserve hero grid contracts and avoid overlap/clipping on small phones.
 - Keep existing interaction behavior unchanged.
+- Prevent jank from dynamic weather updates and avoid extra key collisions.
 
 4) Regression lock
 - Keep pinned collapsing header behavior stable.
@@ -52,6 +54,8 @@ Upgrade the weather-sheet middle bridge from a text split scaffold toward a rich
   - `docs/ai/prompts/NEXT_CHAT_PROMPT.md` (advance to next slice)
 
 ## Definition of done
-- Weather-sheet bridge has a clearer dual-city visual treatment with stable readability on phone surfaces.
+- Weather-sheet bridge retains strong dual-city readability and either:
+  - gains subtle motion polish that remains stable on phone surfaces, or
+  - intentionally remains static with documented rationale.
 - No regressions in collapse behavior, readability, or interaction.
 - Repo is green (`format`, `analyze`, `test`).

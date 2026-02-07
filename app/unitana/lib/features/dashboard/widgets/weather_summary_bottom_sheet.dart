@@ -8,6 +8,7 @@ import '../../../utils/timezone_utils.dart';
 import '../models/dashboard_copy.dart';
 import '../models/freshness_copy.dart';
 import '../models/dashboard_live_data.dart';
+import 'hero_alive_marquee.dart';
 
 class WeatherSummaryBottomSheet extends StatelessWidget {
   final DashboardLiveDataController liveData;
@@ -234,6 +235,7 @@ class WeatherSummaryBottomSheet extends StatelessWidget {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
     final weather = liveData.weatherFor(place);
+    final sun = liveData.sunFor(place);
     final preferMetric = (place.unitSystem == 'metric');
     final tempC = weather?.temperatureC;
     final tempF = tempC == null ? null : (tempC * 9 / 5) + 32;
@@ -243,10 +245,29 @@ class WeatherSummaryBottomSheet extends StatelessWidget {
         ? '${tempC.round()}°C'
         : '${tempF!.round()}°F';
     final condition = (weather?.conditionText ?? '—').trim();
+    final sceneKey = weather?.sceneKey;
+    final isNight = _isNightForPlace(place, sun: sun);
     return Column(
       key: ValueKey('weather_summary_bridge_city_${place.id}'),
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        ClipRRect(
+          borderRadius: BorderRadius.circular(10),
+          child: SizedBox(
+            key: ValueKey('weather_summary_bridge_scene_${place.id}'),
+            height: 44,
+            width: double.infinity,
+            child: HeroAliveMarquee(
+              includeTestKeys: false,
+              compact: true,
+              isNight: isNight,
+              sceneKey: sceneKey,
+              conditionLabel: condition,
+              renderConditionLabel: false,
+            ),
+          ),
+        ),
+        const SizedBox(height: 4),
         Text(
           '${_flagEmoji(place.countryCode)} ${place.cityName}',
           style: theme.textTheme.bodyMedium?.copyWith(
@@ -268,6 +289,30 @@ class WeatherSummaryBottomSheet extends StatelessWidget {
         ),
       ],
     );
+  }
+
+  bool _isNightForPlace(Place place, {required SunTimesSnapshot? sun}) {
+    final nowUtc = liveData.nowUtc;
+    if (sun != null) {
+      final now = TimezoneUtils.nowInZone(
+        place.timeZoneId,
+        nowUtc: nowUtc,
+      ).local;
+      final sunriseLocal = TimezoneUtils.nowInZone(
+        place.timeZoneId,
+        nowUtc: sun.sunriseUtc,
+      ).local;
+      final sunsetLocal = TimezoneUtils.nowInZone(
+        place.timeZoneId,
+        nowUtc: sun.sunsetUtc,
+      ).local;
+      return now.isBefore(sunriseLocal) || now.isAfter(sunsetLocal);
+    }
+    final hour = TimezoneUtils.nowInZone(
+      place.timeZoneId,
+      nowUtc: nowUtc,
+    ).local.hour;
+    return hour < 6 || hour >= 20;
   }
 
   Widget _placeCard(
