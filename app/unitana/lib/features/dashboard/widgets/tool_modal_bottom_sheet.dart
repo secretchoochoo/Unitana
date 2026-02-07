@@ -2846,6 +2846,19 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                   Expanded(
                     child: ListView(
                       children: [
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 2, 16, 6),
+                          child: Text(
+                            query.trim().isEmpty
+                                ? 'Popular Cities'
+                                : 'Best Matches',
+                            style: Theme.of(context).textTheme.labelLarge
+                                ?.copyWith(
+                                  color: DraculaPalette.comment.withAlpha(232),
+                                  fontWeight: FontWeight.w700,
+                                ),
+                          ),
+                        ),
                         for (final option in filteredCity)
                           ListTile(
                             key: ValueKey(
@@ -2853,7 +2866,9 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                             ),
                             title: Text(_sanitizeCityPickerLabel(option.label)),
                             subtitle: Text(
-                              '${option.subtitle} · ${option.timeZoneId}',
+                              option.subtitle == option.timeZoneId
+                                  ? option.timeZoneId
+                                  : '${option.subtitle} · ${option.timeZoneId}',
                             ),
                             selected: option.label == currentLabel,
                             onTap: () => Navigator.of(context).pop((
@@ -2862,6 +2877,20 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                                 option.label,
                               ),
                             )),
+                          ),
+                        if (filteredCity.isEmpty && filteredZone.isEmpty)
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(16, 10, 16, 6),
+                            child: Text(
+                              'No matches yet. Try city, country, timezone, or EST.',
+                              style: Theme.of(context).textTheme.bodySmall
+                                  ?.copyWith(
+                                    color: DraculaPalette.comment.withAlpha(
+                                      220,
+                                    ),
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                            ),
                           ),
                         if (filteredZone.isNotEmpty) ...[
                           const SizedBox(height: 4),
