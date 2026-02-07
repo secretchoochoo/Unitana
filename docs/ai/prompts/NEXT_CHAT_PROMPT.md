@@ -1,4 +1,4 @@
-NEXT CHAT PROMPT — Pack H Localization Expansion (Phase 6)
+NEXT CHAT PROMPT — Pack H Localization Expansion (Phase 7)
 
 You are taking over Unitana (Flutter) in a fresh, high-context window.
 
@@ -23,19 +23,19 @@ Then execute using this contract.
   - goldens opt-in only
 
 ## Mission
-Continue localization runtime migration for remaining high-traffic dashboard/tool text and tighten ARB-transition artifacts.
+Continue localization runtime migration for remaining high-traffic dashboard/tool text and harden ARB transition artifacts for repeatable review.
 
 ## Required outcomes
 1) Runtime seam expansion
-- Migrate another focused batch of hardcoded microcopy from:
-  - lookup shell text
-  - time/jet-lag helper lines
-  - tool-picker/dashboard notices and confirmations
+- Migrate the next focused batch of hardcoded microcopy from:
+  - weather and profile/settings feedback surfaces
+  - dashboard editor and tool-picker edge-state notices
+  - remaining time/jet-lag helper leftovers (if any)
 - Preserve current English UX behavior.
 
 2) ARB-transition artifact hardening
 - Keep using seeded stable keys.
-- Extend seed export workflow/artifacts so key inventory remains deterministic and reviewable.
+- Extend seed export workflow/artifacts so key inventory remains deterministic and easy to diff/review.
 - Do not do full translation rollout yet.
 
 3) Regression lock
@@ -49,10 +49,10 @@ Continue localization runtime migration for remaining high-traffic dashboard/too
 - Update:
   - `docs/ai/context_db.json`
   - `docs/ai/handoff/CURRENT_HANDOFF.md`
-  - `docs/ai/prompts/NEXT_CHAT_PROMPT.md` (if scope shifts again)
+  - `docs/ai/prompts/NEXT_CHAT_PROMPT.md` (advance phase if scope shifts again)
 
 ## Definition of done
 - Additional high-impact microcopy is runtime-localization backed.
-- Seed/export and fallback behavior remain deterministic and test-guarded.
+- Seed/export and fallback behavior remain deterministic, test-guarded, and reviewable.
 - Reliability and Pack N/M contracts remain green.
 - Repo is green (`format`, `analyze`, `test`).

@@ -869,7 +869,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   void _comingSoon(BuildContext context, String label) {
-    UnitanaToast.showInfo(context, '$label: coming soon');
+    UnitanaToast.showInfo(
+      context,
+      DashboardCopy.dashboardComingSoon(context, label),
+    );
   }
 
   Future<void> _openEditProfileWizard({
@@ -928,7 +931,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     await _openEditProfileWizard(
       reopenSwitcherOnCancel: false,
-      successToast: 'Profile updated',
+      successToast: DashboardCopy.dashboardProfileUpdated(context),
     );
     if (!mounted) return;
 
@@ -1009,14 +1012,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
       reopenSwitcherOnCancel: reopenOnCancel,
       discardProfileIdOnCancel: profile.id,
       returnToProfileIdOnCancel: previousProfileId,
-      successToast: 'Profile created',
+      successToast: DashboardCopy.dashboardProfileCreated(context),
     );
   }
 
   Widget _sheetCloseButton(BuildContext context) {
     return IconButton(
       icon: const Icon(Icons.close_rounded),
-      tooltip: 'Close this panel',
+      tooltip: DashboardCopy.dashboardClosePanelTooltip(context),
       onPressed: () => Navigator.of(context).maybePop(),
     );
   }
@@ -1040,7 +1043,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       _focusTileId = null;
     });
     if (!mounted) return;
-    UnitanaToast.showSuccess(context, 'Dashboard updated');
+    UnitanaToast.showSuccess(context, DashboardCopy.dashboardUpdated(context));
   }
 
   void _maybeAutoRefreshWeather(List<Place> places) {

@@ -68,10 +68,22 @@ void main() {
       key: 'dashboard.unitPrice.compareA',
       params: const <String, String>{'percent': '12.3'},
     );
+    final lookupFrom = DashboardLocalizations.resolveForLocale(
+      locale: const Locale('en'),
+      key: 'dashboard.lookup.from',
+      params: const <String, String>{'value': 'US'},
+    );
+    final comingSoon = DashboardLocalizations.resolveForLocale(
+      locale: const Locale('en'),
+      key: 'dashboard.dashboard.comingSoon',
+      params: const <String, String>{'label': 'Settings'},
+    );
     expect(clearTitle, 'Clear history?');
     expect(hint, 'tap copies result; long-press copies input');
     expect(refreshNotice, 'Refreshing rates…');
     expect(tipInvalid, 'Enter a valid amount to calculate tip.');
     expect(unitCompare, 'Product A is cheaper by 12.3%.');
+    expect(lookupFrom, 'From: US');
+    expect(comingSoon, 'Settings: coming soon');
   });
 }

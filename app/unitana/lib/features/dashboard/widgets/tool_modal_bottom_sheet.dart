@@ -2146,9 +2146,10 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
       required String value,
       required String label,
     }) async {
+      final copiedLabel = DashboardCopy.copiedNotice(context, label);
       await Clipboard.setData(ClipboardData(text: value));
       if (!mounted) return;
-      _showNotice('Copied $label', UnitanaNoticeKind.info);
+      _showNotice(copiedLabel, UnitanaNoticeKind.info);
     }
 
     Widget matrixHeaderCell(String text, {required Alignment alignment}) {
@@ -2216,7 +2217,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
               child: OutlinedButton(
                 key: ValueKey('tool_lookup_from_${widget.tool.id}'),
                 onPressed: () => _pickLookupSystem(isFrom: true),
-                child: Text('From: $from'),
+                child: Text(DashboardCopy.lookupFromLabel(context, from)),
               ),
             ),
             const SizedBox(width: 8),
@@ -2230,7 +2231,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
               child: OutlinedButton(
                 key: ValueKey('tool_lookup_to_${widget.tool.id}'),
                 onPressed: () => _pickLookupSystem(isFrom: false),
-                child: Text('To: $to'),
+                child: Text(DashboardCopy.lookupToLabel(context, to)),
               ),
             ),
           ],
@@ -2241,7 +2242,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
           onPressed: _pickLookupEntry,
           child: Align(
             alignment: Alignment.centerLeft,
-            child: Text('Size: ${row.label}'),
+            child: Text(DashboardCopy.lookupSizeLabel(context, row.label)),
           ),
         ),
         const SizedBox(height: 8),
@@ -2257,7 +2258,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                 ? _resetUnitSelectionToDefaults
                 : null,
             icon: const Icon(Icons.restart_alt_rounded, size: 18),
-            label: const Text('Reset Defaults'),
+            label: Text(DashboardCopy.lookupResetDefaults(context)),
           ),
         ),
         const SizedBox(height: 8),
@@ -2280,7 +2281,9 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
         if (row.note != null) ...[
           const SizedBox(height: 8),
           Text(
-            row.approximate ? 'Approximate: ${row.note}' : row.note!,
+            row.approximate
+                ? DashboardCopy.lookupApproximate(context, row.note!)
+                : row.note!,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
               color: DraculaPalette.comment.withAlpha(230),
               fontWeight: FontWeight.w600,
@@ -2290,7 +2293,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
         if (proximityRows.isNotEmpty) ...[
           const SizedBox(height: 12),
           Text(
-            'Size Matrix',
+            DashboardCopy.lookupSizeMatrix(context),
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
               fontWeight: FontWeight.w800,
               color: DraculaPalette.purple,
@@ -2298,7 +2301,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
           ),
           const SizedBox(height: 2),
           Text(
-            'Selected row centered when possible. Tap a value cell to copy.',
+            DashboardCopy.lookupMatrixHelp(context),
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
               color: DraculaPalette.comment.withAlpha(230),
               fontWeight: FontWeight.w600,
@@ -2822,22 +2825,25 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
 
     Future<void> addWidgetIfRequested() async {
       if (!widget.canAddWidget || widget.onAddWidget == null) return;
+      final addedLabel = DashboardCopy.addedWidgetNotice(
+        context,
+        widget.tool.title,
+      );
+      final duplicateLabel = DashboardCopy.duplicateWidgetNotice(
+        context,
+        widget.tool.title,
+      );
+      final failedLabel = DashboardCopy.addWidgetFailedNotice(context);
       try {
         await widget.onAddWidget!.call();
         if (!mounted) return;
-        _showNotice(
-          'Added ${widget.tool.title} to dashboard',
-          UnitanaNoticeKind.success,
-        );
+        _showNotice(addedLabel, UnitanaNoticeKind.success);
       } on DuplicateDashboardWidgetException catch (_) {
         if (!mounted) return;
-        _showNotice(
-          '${widget.tool.title} is already on your dashboard',
-          UnitanaNoticeKind.info,
-        );
+        _showNotice(duplicateLabel, UnitanaNoticeKind.info);
       } catch (_) {
         if (!mounted) return;
-        _showNotice('Could not add widget', UnitanaNoticeKind.error);
+        _showNotice(failedLabel, UnitanaNoticeKind.error);
       }
     }
 
@@ -2867,11 +2873,10 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
       final toFlag = _countryFlag(widget.destination?.countryCode ?? '');
       final fromPrefix = fromFlag.isEmpty ? '' : '$fromFlag ';
       final toPrefix = toFlag.isEmpty ? '' : '$toFlag ';
-      final directionCompact = jetLagPlan.direction == JetLagDirection.none
-          ? 'Same zone'
-          : (jetLagPlan.direction == JetLagDirection.eastbound
-                ? 'Eastbound'
-                : 'Westbound');
+      final directionCompact = DashboardCopy.timeDirection(
+        context: context,
+        direction: jetLagPlan.direction,
+      );
       final dateImpactCompactRaw = dateImpact
           .replaceFirst('Destination is ', '')
           .replaceFirst('calendar ', '');
@@ -2971,7 +2976,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
             const SizedBox(height: 8),
             if (_isJetLagDeltaTool)
               factsMetaLine(
-                label: 'Offset:',
+                label: DashboardCopy.timeFactsOffsetLabel(context),
                 value:
                     '$toPrefix$toCity vs $fromPrefix$fromCity: $deltaMetricLabel · $directionCompact',
                 valueColor: DraculaPalette.foreground.withAlpha(240),
@@ -2979,14 +2984,14 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
               )
             else
               factsMetaLine(
-                label: 'Offset:',
+                label: DashboardCopy.timeFactsOffsetLabel(context),
                 value:
                     '${labelFor(toId)} vs ${labelFor(fromId)}: $deltaMetricLabel',
               ),
             if (_isJetLagDeltaTool) ...[
               const SizedBox(height: 4),
               factsMetaLine(
-                label: 'Date:',
+                label: DashboardCopy.timeFactsDateLabel(context),
                 value: dateImpactCompact,
                 labelColor: DraculaPalette.comment.withAlpha(220),
                 valueColor: DraculaPalette.foreground.withAlpha(240),
@@ -2994,7 +2999,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
               if (flightEstimate != null) ...[
                 const SizedBox(height: 4),
                 factsMetaLine(
-                  label: 'Flight:',
+                  label: DashboardCopy.timeFactsFlightLabel(context),
                   value: flightEstimate.factsLabel.replaceFirst(
                     'Estimated flight time: ',
                     '',
@@ -3045,7 +3050,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
         return TextSpan(
           children: [
             TextSpan(
-              text: 'Sleep ',
+              text: DashboardCopy.jetLagSleepPrefix(context),
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                 color: DraculaPalette.comment.withAlpha(236),
                 fontWeight: FontWeight.w700,
@@ -3059,7 +3064,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
               ),
             ),
             TextSpan(
-              text: ' · Wake ',
+              text: DashboardCopy.jetLagWakePrefix(context),
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                 color: DraculaPalette.comment.withAlpha(236),
                 fontWeight: FontWeight.w700,
@@ -3151,16 +3156,19 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
               ),
             ),
             const SizedBox(height: 8),
-            planMetaLine(label: 'Offset:', value: deltaMetricLabel),
+            planMetaLine(
+              label: DashboardCopy.timeFactsOffsetLabel(context),
+              value: deltaMetricLabel,
+            ),
             const SizedBox(height: 4),
             planMetaLine(
-              label: 'Band:',
+              label: DashboardCopy.jetLagBandLabel(context),
               value:
                   '${jetLagPlan.bandLabel} · ~${jetLagPlan.adjustmentDays} days',
             ),
             const SizedBox(height: 4),
             planMetaLine(
-              label: 'Daily Shift:',
+              label: DashboardCopy.jetLagDailyShiftLabel(context),
               value: jetLagPlan.dailyShiftLabel,
             ),
             const SizedBox(height: 8),
@@ -3176,7 +3184,13 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                     ),
                     onPressed: () => _pickJetLagTime(bedtime: true),
                     child: Text(
-                      'Bedtime: ${_formatMinutesOfDay(_jetLagBedtimeMinutes, use24h: widget.prefer24h)}',
+                      DashboardCopy.jetLagBedtimeButton(
+                        context,
+                        _formatMinutesOfDay(
+                          _jetLagBedtimeMinutes,
+                          use24h: widget.prefer24h,
+                        ),
+                      ),
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         fontSize: 13.5,
                         fontWeight: FontWeight.w800,
@@ -3195,7 +3209,13 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                     ),
                     onPressed: () => _pickJetLagTime(bedtime: false),
                     child: Text(
-                      'Wake: ${_formatMinutesOfDay(_jetLagWakeMinutes, use24h: widget.prefer24h)}',
+                      DashboardCopy.jetLagWakeButton(
+                        context,
+                        _formatMinutesOfDay(
+                          _jetLagWakeMinutes,
+                          use24h: widget.prefer24h,
+                        ),
+                      ),
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         fontSize: 13.5,
                         fontWeight: FontWeight.w800,
@@ -3211,7 +3231,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
               TextSpan(
                 children: [
                   TextSpan(
-                    text: 'Tonight Target: ',
+                    text: DashboardCopy.jetLagTonightTargetLabel(context),
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       color: DraculaPalette.orange.withAlpha(218),
                       fontWeight: FontWeight.w800,
@@ -3234,7 +3254,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                 TextSpan(
                   children: [
                     TextSpan(
-                      text: 'Baseline: ',
+                      text: DashboardCopy.jetLagBaselineLabel(context),
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: DraculaPalette.orange.withAlpha(218),
                         fontWeight: FontWeight.w800,
@@ -3315,7 +3335,12 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      '09:00 in $toCity = $overlapMorning in $fromCity',
+                      DashboardCopy.jetLagCallWindowMorning(
+                        context,
+                        toCity: toCity,
+                        overlapMorning: overlapMorning,
+                        fromCity: fromCity,
+                      ),
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         fontWeight: FontWeight.w700,
                         color: DraculaPalette.foreground.withAlpha(235),
@@ -3323,7 +3348,12 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      '20:00 in $toCity = $overlapEvening in $fromCity',
+                      DashboardCopy.jetLagCallWindowEvening(
+                        context,
+                        toCity: toCity,
+                        overlapEvening: overlapEvening,
+                        fromCity: fromCity,
+                      ),
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         fontWeight: FontWeight.w700,
                         color: DraculaPalette.foreground.withAlpha(235),
@@ -4121,12 +4151,26 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                                                 ),
                                               ),
                                               onPressed: () async {
+                                                final addedLabel =
+                                                    DashboardCopy.addedWidgetNotice(
+                                                      context,
+                                                      widget.tool.title,
+                                                    );
+                                                final duplicateLabel =
+                                                    DashboardCopy.duplicateWidgetNotice(
+                                                      context,
+                                                      widget.tool.title,
+                                                    );
+                                                final failedLabel =
+                                                    DashboardCopy.addWidgetFailedNotice(
+                                                      context,
+                                                    );
                                                 try {
                                                   await widget.onAddWidget!
                                                       .call();
                                                   if (!mounted) return;
                                                   _showNotice(
-                                                    'Added ${widget.tool.title} to dashboard',
+                                                    addedLabel,
                                                     UnitanaNoticeKind.success,
                                                   );
                                                 } on DuplicateDashboardWidgetException catch (
@@ -4134,13 +4178,13 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                                                 ) {
                                                   if (!mounted) return;
                                                   _showNotice(
-                                                    '${widget.tool.title} is already on your dashboard',
+                                                    duplicateLabel,
                                                     UnitanaNoticeKind.info,
                                                   );
                                                 } catch (_) {
                                                   if (!mounted) return;
                                                   _showNotice(
-                                                    'Could not add widget',
+                                                    failedLabel,
                                                     UnitanaNoticeKind.error,
                                                   );
                                                 }
@@ -4151,7 +4195,9 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                                                 color: accent,
                                               ),
                                               label: Text(
-                                                '+ Add Widget',
+                                                DashboardCopy.addWidgetCta(
+                                                  context,
+                                                ),
                                                 maxLines: 1,
                                                 softWrap: false,
                                                 overflow: TextOverflow.ellipsis,

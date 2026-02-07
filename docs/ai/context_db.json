@@ -206,7 +206,7 @@
     }
   ],
   "current_state": {
-    "current_slice": "Pack H phase 5 shipped: Tip/Tax/Unit Price microcopy migrated to runtime localization and seed-export helper added for ARB transition workflows",
+    "current_slice": "Pack H phase 6 shipped: lookup/time/jet-lag/dashboard high-traffic microcopy migrated to runtime localization-backed copy helpers with deterministic fallback behavior",
     "notes": [
       "Codex-first workflow allows larger execution packs while keeping gates green.",
       "Pack A city data platform foundation is complete with canonical schema + validation guards.",
@@ -260,13 +260,15 @@
       "Added localization wiring tests: `app_localization_scaffold_test.dart` (delegate/locale config) and expanded runtime seed lookup assertions for newly migrated microcopy.",
       "Pack H phase 5 shipped: Tip Helper, Tax/VAT, and Unit Price high-traffic microcopy now resolves through runtime localization-backed `DashboardCopy` methods while preserving existing English UX wording.",
       "Added deterministic ARB-transition export helper `tools/export_localization_seed.dart` to emit sorted seed key inventory as JSON.",
-      "Localization seed and runtime tests expanded again for Tip/Tax/Unit Price keys and placeholder substitutions."
+      "Localization seed and runtime tests expanded again for Tip/Tax/Unit Price keys and placeholder substitutions.",
+      "Pack H phase 6 shipped: Lookup shell, Time/Jet Lag helper labels, and dashboard/tool notices now route through runtime localization-backed `DashboardCopy` methods while preserving current English UX copy.",
+      "Pack H phase 6 shipped: added seeded keys + runtime tests for direction/facts/plan labels and lookup matrix copy; Pack N/M contracts and full gates remain green."
     ],
     "overall_health": "Stable with full gates passing; canonical city data coverage is now enforced for all in-scope records.",
     "status": "GREEN",
     "focus": {
-      "now": "Continue Pack H runtime seam expansion by migrating remaining lookup/time/jet-lag/tool-picker microcopy and confirmation copy to localization-backed helpers.",
-      "next": "Start ARB-generation-compatible rollout planning and artifacts (l10n config + seed-to-ARB mapping/export workflow) while preserving deterministic English fallback behavior.",
+      "now": "Continue Pack H runtime seam expansion by migrating remaining weather/settings/profile/editor microcopy and edge-state notices to localization-backed helpers.",
+      "next": "Harden ARB-generation rollout artifacts (l10n config + seed-to-ARB workflow + reviewable export outputs) while preserving deterministic English fallback behavior.",
       "later": [
         "Pack E marquee scene V2 production",
         "Pack H localization"

@@ -61,12 +61,73 @@ class DashboardCopy {
       DashboardLocalizations.of(
         context,
       ).text('dashboard.tool.history.clearButton', fallback: 'Clear History');
+  static String copiedNotice(BuildContext context, String label) =>
+      DashboardLocalizations.of(context).text(
+        'dashboard.tool.notice.copied',
+        params: <String, String>{'label': label},
+        fallback: 'Copied $label',
+      );
+  static String addedWidgetNotice(BuildContext context, String title) =>
+      DashboardLocalizations.of(context).text(
+        'dashboard.tool.notice.addedWidget',
+        params: <String, String>{'title': title},
+        fallback: 'Added $title to dashboard',
+      );
+  static String duplicateWidgetNotice(BuildContext context, String title) =>
+      DashboardLocalizations.of(context).text(
+        'dashboard.tool.notice.duplicateWidget',
+        params: <String, String>{'title': title},
+        fallback: '$title is already on your dashboard',
+      );
+  static String addWidgetFailedNotice(BuildContext context) =>
+      DashboardLocalizations.of(context).text(
+        'dashboard.tool.notice.addWidgetFailed',
+        fallback: 'Could not add widget',
+      );
   static String swapCta(BuildContext context) => DashboardLocalizations.of(
     context,
   ).text('dashboard.tool.cta.swap', fallback: 'Swap');
   static String addWidgetCta(BuildContext context) => DashboardLocalizations.of(
     context,
   ).text('dashboard.tool.cta.addWidget', fallback: '+ Add Widget');
+  static String lookupFromLabel(BuildContext context, String value) =>
+      DashboardLocalizations.of(context).text(
+        'dashboard.lookup.from',
+        params: <String, String>{'value': value},
+        fallback: 'From: $value',
+      );
+  static String lookupToLabel(BuildContext context, String value) =>
+      DashboardLocalizations.of(context).text(
+        'dashboard.lookup.to',
+        params: <String, String>{'value': value},
+        fallback: 'To: $value',
+      );
+  static String lookupSizeLabel(BuildContext context, String value) =>
+      DashboardLocalizations.of(context).text(
+        'dashboard.lookup.size',
+        params: <String, String>{'value': value},
+        fallback: 'Size: $value',
+      );
+  static String lookupResetDefaults(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.lookup.resetDefaults', fallback: 'Reset Defaults');
+  static String lookupSizeMatrix(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.lookup.sizeMatrix', fallback: 'Size Matrix');
+  static String lookupMatrixHelp(BuildContext context) =>
+      DashboardLocalizations.of(context).text(
+        'dashboard.lookup.matrixHelp',
+        fallback:
+            'Selected row centered when possible. Tap a value cell to copy.',
+      );
+  static String lookupApproximate(BuildContext context, String note) =>
+      DashboardLocalizations.of(context).text(
+        'dashboard.lookup.approximate',
+        params: <String, String>{'note': note},
+        fallback: 'Approximate: $note',
+      );
 
   static String timeFromZoneTitle(
     BuildContext context, {
@@ -137,6 +198,105 @@ class DashboardCopy {
         'dashboard.jetLag.callWindows.intro',
         fallback: 'Quick check before scheduling calls:',
       );
+  static String timeDirection({
+    required BuildContext context,
+    required JetLagDirection direction,
+  }) {
+    switch (direction) {
+      case JetLagDirection.none:
+        return DashboardLocalizations.of(
+          context,
+        ).text('dashboard.time.direction.sameZone', fallback: 'Same zone');
+      case JetLagDirection.eastbound:
+        return DashboardLocalizations.of(
+          context,
+        ).text('dashboard.time.direction.eastbound', fallback: 'Eastbound');
+      case JetLagDirection.westbound:
+        return DashboardLocalizations.of(
+          context,
+        ).text('dashboard.time.direction.westbound', fallback: 'Westbound');
+    }
+  }
+
+  static String timeFactsOffsetLabel(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.time.facts.offset', fallback: 'Offset:');
+  static String timeFactsDateLabel(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.time.facts.date', fallback: 'Date:');
+  static String timeFactsFlightLabel(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.time.facts.flight', fallback: 'Flight:');
+  static String jetLagBandLabel(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.jetLag.plan.band', fallback: 'Band:');
+  static String jetLagDailyShiftLabel(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.jetLag.plan.dailyShift', fallback: 'Daily Shift:');
+  static String jetLagTonightTargetLabel(BuildContext context) =>
+      DashboardLocalizations.of(context).text(
+        'dashboard.jetLag.plan.tonightTarget',
+        fallback: 'Tonight Target: ',
+      );
+  static String jetLagBaselineLabel(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.jetLag.plan.baseline', fallback: 'Baseline: ');
+  static String jetLagSleepPrefix(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.jetLag.plan.sleep', fallback: 'Sleep ');
+  static String jetLagWakePrefix(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.jetLag.plan.wake', fallback: ' · Wake ');
+  static String jetLagBedtimeButton(BuildContext context, String time) =>
+      DashboardLocalizations.of(context).text(
+        'dashboard.jetLag.plan.bedtimeButton',
+        params: <String, String>{'time': time},
+        fallback: 'Bedtime: $time',
+      );
+  static String jetLagWakeButton(BuildContext context, String time) =>
+      DashboardLocalizations.of(context).text(
+        'dashboard.jetLag.plan.wakeButton',
+        params: <String, String>{'time': time},
+        fallback: 'Wake: $time',
+      );
+  static String jetLagCallWindowMorning(
+    BuildContext context, {
+    required String toCity,
+    required String overlapMorning,
+    required String fromCity,
+  }) => DashboardLocalizations.of(context).text(
+    'dashboard.jetLag.callWindows.morning',
+    params: <String, String>{
+      'destTime': '09:00',
+      'toCity': toCity,
+      'homeTime': overlapMorning,
+      'fromCity': fromCity,
+    },
+    fallback: '09:00 in $toCity = $overlapMorning in $fromCity',
+  );
+  static String jetLagCallWindowEvening(
+    BuildContext context, {
+    required String toCity,
+    required String overlapEvening,
+    required String fromCity,
+  }) => DashboardLocalizations.of(context).text(
+    'dashboard.jetLag.callWindows.evening',
+    params: <String, String>{
+      'destTime': '20:00',
+      'toCity': toCity,
+      'homeTime': overlapEvening,
+      'fromCity': fromCity,
+    },
+    fallback: '20:00 in $toCity = $overlapEvening in $fromCity',
+  );
 
   static String updating(BuildContext context) => DashboardLocalizations.of(
     context,
@@ -191,6 +351,29 @@ class DashboardCopy {
         'dashboard.currency.notice.refreshFailed',
         fallback: 'Could not refresh rates',
       );
+  static String dashboardComingSoon(BuildContext context, String label) =>
+      DashboardLocalizations.of(context).text(
+        'dashboard.dashboard.comingSoon',
+        params: <String, String>{'label': label},
+        fallback: '$label: coming soon',
+      );
+  static String dashboardProfileUpdated(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.dashboard.profileUpdated', fallback: 'Profile updated');
+  static String dashboardProfileCreated(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.dashboard.profileCreated', fallback: 'Profile created');
+  static String dashboardClosePanelTooltip(BuildContext context) =>
+      DashboardLocalizations.of(context).text(
+        'dashboard.dashboard.closePanelTooltip',
+        fallback: 'Close this panel',
+      );
+  static String dashboardUpdated(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.dashboard.updated', fallback: 'Dashboard updated');
 
   static String tipBillAmountLabel(BuildContext context, String currencyCode) =>
       DashboardLocalizations.of(context).text(

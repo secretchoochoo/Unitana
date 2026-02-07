@@ -329,6 +329,16 @@
     - `app/unitana/lib/l10n/localization_seed.dart` includes new Tip/Tax/Unit Price keys.
     - `app/unitana/test/dashboard_localizations_runtime_test.dart` + `app/unitana/test/localization_seed_contract_test.dart` updated with new key/placeholder assertions.
   - full gates re-run and green (`dart format .`, `flutter analyze`, `flutter test`).
+- Pack H localization expansion (phase 6, 2026-02-07):
+  - migrated additional high-traffic lookup/time/jet-lag/dashboard microcopy to runtime localization-backed `DashboardCopy` methods:
+    - lookup shell labels and helper copy (`From`, `To`, `Size`, `Reset Defaults`, `Size Matrix`, matrix helper, approximation prefix).
+    - time/jet-lag direction + facts/plan labels and personalized helper lines (`Same zone`, `Eastbound`, `Westbound`, `Offset`, `Date`, `Flight`, `Tonight Target`, `Baseline`, `Sleep`, `Wake`).
+    - tool/dashboard notices (`Copied`, add-widget added/duplicate/failure, profile updated/created, dashboard updated, close-panel tooltip, coming-soon notice).
+  - expanded localization seed + runtime coverage:
+    - `app/unitana/lib/l10n/localization_seed.dart`
+    - `app/unitana/test/dashboard_localizations_runtime_test.dart`
+    - `app/unitana/test/localization_seed_contract_test.dart`
+  - retained Pack N/M behavior contracts and reran full gates green (`dart format .`, `flutter analyze`, `flutter test`).
 - Pack F activation bundle (phase 1):
   - activated `world_clock_delta` and `jet_lag_delta` entries in tool registry.
   - wired both entries to the existing mature Time modal flow as interim E2E activation.

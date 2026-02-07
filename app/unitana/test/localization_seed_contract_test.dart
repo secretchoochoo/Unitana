@@ -38,5 +38,15 @@ void main() {
       LocalizationSeed.enUs['dashboard.unitPrice.compareToggle'],
       'Compare with Product B',
     );
+    expect(LocalizationSeed.enUs['dashboard.lookup.sizeMatrix'], 'Size Matrix');
+    expect(
+      LocalizationSeed.enUs['dashboard.dashboard.updated'],
+      'Dashboard updated',
+    );
+    expect(
+      LocalizationSeed.enUs['dashboard.time.direction.eastbound'],
+      'Eastbound',
+    );
+    expect(LocalizationSeed.enUs['dashboard.lookup.from'], 'From: {value}');
   });
 }
