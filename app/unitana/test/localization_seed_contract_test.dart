@@ -106,6 +106,19 @@ void main() {
           .enUs['dashboard.devtools.weather.condition.thunderstorm'],
       'Thunderstorm',
     );
+    expect(LocalizationSeed.enUs['dashboard.hero.env.label.aqi'], 'AQI');
+    expect(
+      LocalizationSeed.enUs['dashboard.hero.env.bandShort.aqi.veryUnhealthy'],
+      'VUnh',
+    );
+    expect(
+      LocalizationSeed.enUs['dashboard.hero.details.title.wind'],
+      'Wind • Gust',
+    );
+    expect(
+      LocalizationSeed.enUs['dashboard.hero.currency.rate.sameCurrency'],
+      'Rate: same currency',
+    );
     expect(
       LocalizationSeed.enUs['dashboard.devtools.resetRestart.title'],
       'Reset and Restart',

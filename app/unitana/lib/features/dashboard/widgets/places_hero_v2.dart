@@ -956,7 +956,7 @@ class _HeroEnvPill extends StatelessWidget {
     );
 
     final isAqi = envMode == HeroEnvPillMode.aqi;
-    final label = isAqi ? 'AQI' : 'Pollen';
+    final label = DashboardCopy.heroEnvLabel(context, isAqi: isAqi);
 
     Color aqiColor(int? v) {
       if (v == null) return cs.onSurface.withAlpha(120);
@@ -970,20 +970,76 @@ class _HeroEnvPill extends StatelessWidget {
 
     String aqiBandShort(int? v) {
       if (v == null) return '—';
-      if (v <= 50) return 'Good';
-      if (v <= 100) return 'Mod';
-      if (v <= 150) return 'USG';
-      if (v <= 200) return 'Unh';
-      if (v <= 300) return 'VUnh';
-      return 'Haz';
+      if (v <= 50) {
+        return DashboardCopy.heroEnvBandShort(
+          context,
+          isAqi: true,
+          bandKey: 'good',
+        );
+      }
+      if (v <= 100) {
+        return DashboardCopy.heroEnvBandShort(
+          context,
+          isAqi: true,
+          bandKey: 'moderate',
+        );
+      }
+      if (v <= 150) {
+        return DashboardCopy.heroEnvBandShort(
+          context,
+          isAqi: true,
+          bandKey: 'usg',
+        );
+      }
+      if (v <= 200) {
+        return DashboardCopy.heroEnvBandShort(
+          context,
+          isAqi: true,
+          bandKey: 'unhealthy',
+        );
+      }
+      if (v <= 300) {
+        return DashboardCopy.heroEnvBandShort(
+          context,
+          isAqi: true,
+          bandKey: 'veryUnhealthy',
+        );
+      }
+      return DashboardCopy.heroEnvBandShort(
+        context,
+        isAqi: true,
+        bandKey: 'hazardous',
+      );
     }
 
     String pollenBandShort(double? v) {
       if (v == null) return '—';
-      if (v <= 1.0) return 'Low';
-      if (v <= 2.0) return 'Med';
-      if (v <= 3.0) return 'High';
-      return 'VHigh';
+      if (v <= 1.0) {
+        return DashboardCopy.heroEnvBandShort(
+          context,
+          isAqi: false,
+          bandKey: 'low',
+        );
+      }
+      if (v <= 2.0) {
+        return DashboardCopy.heroEnvBandShort(
+          context,
+          isAqi: false,
+          bandKey: 'medium',
+        );
+      }
+      if (v <= 3.0) {
+        return DashboardCopy.heroEnvBandShort(
+          context,
+          isAqi: false,
+          bandKey: 'high',
+        );
+      }
+      return DashboardCopy.heroEnvBandShort(
+        context,
+        isAqi: false,
+        bandKey: 'veryHigh',
+      );
     }
 
     // Env values are location metrics, not unit conversions. Per hero semantics,
@@ -993,9 +1049,10 @@ class _HeroEnvPill extends StatelessWidget {
     final pollen = primaryEnv?.pollenIndex;
     final valueText = isAqi ? _fmtInt(aqi) : _fmt1(pollen);
 
-    final semanticsLabel = isAqi
-        ? 'Air quality index for the selected city. Tap to show pollen index.'
-        : 'Pollen index for the selected city. Tap to show air quality index.';
+    final semanticsLabel = DashboardCopy.heroEnvSemantics(
+      context,
+      isAqi: isAqi,
+    );
 
     Widget body(bool forceExpand, bool applyMinHeight) {
       return Semantics(
@@ -1252,6 +1309,7 @@ class _HeroCurrencyCard extends StatelessWidget {
     final layout = Theme.of(context).extension<UnitanaLayoutTokens>();
 
     final currencyLines = _currencyLines(
+      context: context,
       primary: primary,
       secondary: secondary,
       pairRate: (primary == null || secondary == null)
@@ -1309,7 +1367,7 @@ class _HeroCurrencyCard extends StatelessWidget {
       required TextStyle? labelStyle,
     }) {
       final trimmed = line.trim();
-      const prefix = 'Rate:';
+      final prefix = DashboardCopy.heroCurrencyRatePrefix(context);
       if (trimmed.startsWith(prefix)) {
         final rest = trimmed.substring(prefix.length);
         return TextSpan(
@@ -1812,9 +1870,10 @@ class _SunTimesPill extends StatelessWidget {
     }
 
     final isWind = detailsMode == HeroDetailsPillMode.wind;
-    final semanticsLabel = isWind
-        ? 'Wind details. Tap to show sunrise and sunset.'
-        : 'Sunrise and sunset details. Tap to show wind.';
+    final semanticsLabel = DashboardCopy.heroDetailsSemantics(
+      context,
+      isWind: isWind,
+    );
 
     Widget titleRow(String icon, String text) {
       final hasIcon = icon.trim().isNotEmpty;
@@ -1995,7 +2054,10 @@ class _SunTimesPill extends StatelessWidget {
                   children: [
                     // Contract: title row is text-only; emoji/iconography lives
                     // on the data rows so the hierarchy reads cleanly.
-                    titleRow('', isWind ? 'Wind • Gust' : 'Sunrise • Sunset'),
+                    titleRow(
+                      '',
+                      DashboardCopy.heroDetailsTitle(context, isWind: isWind),
+                    ),
                     SizedBox(height: compact ? 2 : 3),
                     if (isWind) windContent() else sunContent(),
                   ],
@@ -2127,6 +2189,7 @@ String _formattedCurrencyToken(String code, double amount) {
 }
 
 (String, String) _currencyLines({
+  required BuildContext context,
   required Place? primary,
   required Place? secondary,
   required double? pairRate,
@@ -2137,14 +2200,14 @@ String _formattedCurrencyToken(String code, double amount) {
   if (from.toUpperCase() == to.toUpperCase()) {
     return (
       '${_formattedCurrencyToken(from, 1)}≈${_formattedCurrencyToken(from, 1)}',
-      'Rate: same currency',
+      DashboardCopy.heroCurrencyRateSameCurrency(context),
     );
   }
 
   if (pairRate == null || pairRate <= 0) {
     final left = _formattedCurrencyToken(from, 1);
     final right = '\u2066${_currencySymbol(to)}—\u2069';
-    return ('$left≈$right', 'Rate: —');
+    return ('$left≈$right', DashboardCopy.heroCurrencyRateUnavailable(context));
   }
 
   final base = _displayBaseAmountForPair(pairRate);
@@ -2154,7 +2217,14 @@ String _formattedCurrencyToken(String code, double amount) {
   final leftRate = _formattedCurrencyToken(from, 1);
   final rightRate = _formattedCurrencyToken(to, pairRate);
 
-  return ('$left≈$right', 'Rate: $leftRate = $rightRate');
+  return (
+    '$left≈$right',
+    DashboardCopy.heroCurrencyRatePair(
+      context,
+      leftRate: leftRate,
+      rightRate: rightRate,
+    ),
+  );
 }
 
 double _displayBaseAmountForPair(double pairRate) {

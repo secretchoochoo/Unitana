@@ -1172,6 +1172,89 @@ class DashboardCopy {
     return raw;
   }
 
+  static String heroEnvLabel(BuildContext context, {required bool isAqi}) =>
+      DashboardLocalizations.of(context).text(
+        isAqi
+            ? 'dashboard.hero.env.label.aqi'
+            : 'dashboard.hero.env.label.pollen',
+        fallback: isAqi ? 'AQI' : 'Pollen',
+      );
+  static String heroEnvBandShort(
+    BuildContext context, {
+    required bool isAqi,
+    required String bandKey,
+  }) => DashboardLocalizations.of(context).text(
+    isAqi
+        ? 'dashboard.hero.env.bandShort.aqi.$bandKey'
+        : 'dashboard.hero.env.bandShort.pollen.$bandKey',
+    fallback: switch (bandKey) {
+      'good' => 'Good',
+      'moderate' => 'Mod',
+      'usg' => 'USG',
+      'unhealthy' => 'Unh',
+      'veryUnhealthy' => 'VUnh',
+      'hazardous' => 'Haz',
+      'low' => 'Low',
+      'medium' => 'Med',
+      'high' => 'High',
+      'veryHigh' => 'VHigh',
+      _ => bandKey,
+    },
+  );
+  static String heroEnvSemantics(
+    BuildContext context, {
+    required bool isAqi,
+  }) => DashboardLocalizations.of(context).text(
+    isAqi
+        ? 'dashboard.hero.env.semantics.aqi'
+        : 'dashboard.hero.env.semantics.pollen',
+    fallback: isAqi
+        ? 'Air quality index for the selected city. Tap to show pollen index.'
+        : 'Pollen index for the selected city. Tap to show air quality index.',
+  );
+  static String heroDetailsSemantics(
+    BuildContext context, {
+    required bool isWind,
+  }) => DashboardLocalizations.of(context).text(
+    isWind
+        ? 'dashboard.hero.details.semantics.wind'
+        : 'dashboard.hero.details.semantics.sun',
+    fallback: isWind
+        ? 'Wind details. Tap to show sunrise and sunset.'
+        : 'Sunrise and sunset details. Tap to show wind.',
+  );
+  static String heroDetailsTitle(
+    BuildContext context, {
+    required bool isWind,
+  }) => DashboardLocalizations.of(context).text(
+    isWind
+        ? 'dashboard.hero.details.title.wind'
+        : 'dashboard.hero.details.title.sun',
+    fallback: isWind ? 'Wind • Gust' : 'Sunrise • Sunset',
+  );
+  static String heroCurrencyRatePrefix(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.hero.currency.ratePrefix', fallback: 'Rate:');
+  static String heroCurrencyRateSameCurrency(BuildContext context) =>
+      DashboardLocalizations.of(context).text(
+        'dashboard.hero.currency.rate.sameCurrency',
+        fallback: 'Rate: same currency',
+      );
+  static String heroCurrencyRateUnavailable(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.hero.currency.rate.unavailable', fallback: 'Rate: —');
+  static String heroCurrencyRatePair(
+    BuildContext context, {
+    required String leftRate,
+    required String rightRate,
+  }) => DashboardLocalizations.of(context).text(
+    'dashboard.hero.currency.rate.pair',
+    params: <String, String>{'leftRate': leftRate, 'rightRate': rightRate},
+    fallback: 'Rate: $leftRate = $rightRate',
+  );
+
   static const Map<String, SceneKey> _conditionRawToScene = <String, SceneKey>{
     'clear': SceneKey.clear,
     'mostly clear': SceneKey.partlyCloudy,

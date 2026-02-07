@@ -2,8 +2,28 @@
 
 ## Snapshot
 - **Date:** 2026-02-07
-- **Status:** Repo is green (`dart format`, `flutter analyze`, `flutter test`) after Pack H devtools/profile residual localization + Pack E ambiguity v2 tuning.
+- **Status:** Repo is green (`dart format`, `flutter analyze`, `flutter test`) after Pack H hero residual localization + Pack E ambiguity v3 (same-country collision) tuning.
 - **Operating mode:** Codex is now the primary workflow; apply edits directly in-repo (do not require patch zip workflow unless explicitly requested).
+
+## Latest changes (2026-02-07)
+- Pack H final residual hero/localization sweep shipped:
+  - migrated remaining high-traffic hero literals in `places_hero_v2.dart` through runtime localization-backed `DashboardCopy`:
+    - Env labels and short bands (`AQI`, `Pollen`, `Good/Mod/...`, `Low/Med/...`)
+    - Env/details semantic labels
+    - details pill titles (`Sunrise • Sunset`, `Wind • Gust`)
+    - currency rate line templates (`Rate:` / same-currency / unavailable / pair format)
+  - added stable `dashboard.hero.*` keys in `localization_seed.dart` for these migrated strings.
+  - expanded localization contracts:
+    - `app/unitana/test/localization_seed_contract_test.dart`
+    - `app/unitana/test/dashboard_localizations_runtime_test.dart`
+- Pack E ambiguity v3 shipped for same-country collisions:
+  - introduced exact-city disambiguation bonus map in `CityPickerRanking` (`portland|US -> America/Los_Angeles`).
+  - wired exact-city disambiguation bonus into `CityPickerEngine.searchEntries`.
+  - expanded dataset-backed regression contract in `city_picker_engine_test.dart`:
+    - `portland` now asserts US + `America/Los_Angeles` as top row under city+country dedupe.
+- focused and full validation run:
+  - focused tests: `city_picker_engine_test.dart`, localization runtime/seed tests, `dashboard_places_hero_v2_test.dart`
+  - full gates: `dart format .`, `flutter analyze`, `flutter test`
 
 ## Latest changes (2026-02-07)
 - Pack H residual localization expansion shipped on dashboard/time/profile/devtools surfaces:

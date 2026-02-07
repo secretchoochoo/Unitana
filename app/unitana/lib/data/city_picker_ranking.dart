@@ -50,4 +50,22 @@ class CityPickerRanking {
   static bool isMainstreamCountryCode(String countryCode) {
     return mainstreamCountryCodes.contains(countryCode.toUpperCase());
   }
+
+  static const Map<String, String> _preferredZoneByCityCountry =
+      <String, String>{
+        // Ambiguity v3: prefer mainstream travel-default rows for same-city
+        // same-country collisions where multiple zones exist in data.
+        'portland|US': 'America/Los_Angeles',
+      };
+
+  static int exactCityDisambiguationBonus({
+    required String cityNameNorm,
+    required String countryCode,
+    required String timeZoneId,
+  }) {
+    final key = '${cityNameNorm.toLowerCase()}|${countryCode.toUpperCase()}';
+    final preferredZone = _preferredZoneByCityCountry[key];
+    if (preferredZone == null) return 0;
+    return timeZoneId == preferredZone ? 160 : -45;
+  }
 }

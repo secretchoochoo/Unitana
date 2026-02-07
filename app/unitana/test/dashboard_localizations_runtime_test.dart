@@ -129,6 +129,23 @@ void main() {
       locale: const Locale('en'),
       key: 'dashboard.devtools.weather.condition.clear',
     );
+    final heroEnvLabel = DashboardLocalizations.resolveForLocale(
+      locale: const Locale('en'),
+      key: 'dashboard.hero.env.label.aqi',
+    );
+    final heroEnvBand = DashboardLocalizations.resolveForLocale(
+      locale: const Locale('en'),
+      key: 'dashboard.hero.env.bandShort.pollen.medium',
+    );
+    final heroDetailsTitle = DashboardLocalizations.resolveForLocale(
+      locale: const Locale('en'),
+      key: 'dashboard.hero.details.title.sun',
+    );
+    final heroCurrencyRate = DashboardLocalizations.resolveForLocale(
+      locale: const Locale('en'),
+      key: 'dashboard.hero.currency.rate.pair',
+      params: const <String, String>{'leftRate': '\$1', 'rightRate': '€0.92'},
+    );
     final toolPickerTitle = DashboardLocalizations.resolveForLocale(
       locale: const Locale('en'),
       key: 'dashboard.toolPicker.title',
@@ -236,6 +253,10 @@ void main() {
     expect(devtoolsBackend, 'Live: Open-Meteo');
     expect(devtoolsBackendShort, 'Demo');
     expect(devtoolsCondition, 'Clear');
+    expect(heroEnvLabel, 'AQI');
+    expect(heroEnvBand, 'Med');
+    expect(heroDetailsTitle, 'Sunrise • Sunset');
+    expect(heroCurrencyRate, 'Rate: \$1 = €0.92');
     expect(toolPickerTitle, 'Choose a tool');
     expect(removeTitle, 'Remove Weather?');
     expect(timeMode, 'Advanced: Time Zones');

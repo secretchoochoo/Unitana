@@ -320,5 +320,31 @@ class LocalizationSeed {
     'dashboard.weather.condition.tornado': 'Tornado',
     'dashboard.weather.condition.squall': 'Squall',
     'dashboard.weather.condition.weather': 'Weather',
+    'dashboard.hero.env.label.aqi': 'AQI',
+    'dashboard.hero.env.label.pollen': 'Pollen',
+    'dashboard.hero.env.bandShort.aqi.good': 'Good',
+    'dashboard.hero.env.bandShort.aqi.moderate': 'Mod',
+    'dashboard.hero.env.bandShort.aqi.usg': 'USG',
+    'dashboard.hero.env.bandShort.aqi.unhealthy': 'Unh',
+    'dashboard.hero.env.bandShort.aqi.veryUnhealthy': 'VUnh',
+    'dashboard.hero.env.bandShort.aqi.hazardous': 'Haz',
+    'dashboard.hero.env.bandShort.pollen.low': 'Low',
+    'dashboard.hero.env.bandShort.pollen.medium': 'Med',
+    'dashboard.hero.env.bandShort.pollen.high': 'High',
+    'dashboard.hero.env.bandShort.pollen.veryHigh': 'VHigh',
+    'dashboard.hero.env.semantics.aqi':
+        'Air quality index for the selected city. Tap to show pollen index.',
+    'dashboard.hero.env.semantics.pollen':
+        'Pollen index for the selected city. Tap to show air quality index.',
+    'dashboard.hero.details.semantics.wind':
+        'Wind details. Tap to show sunrise and sunset.',
+    'dashboard.hero.details.semantics.sun':
+        'Sunrise and sunset details. Tap to show wind.',
+    'dashboard.hero.details.title.wind': 'Wind • Gust',
+    'dashboard.hero.details.title.sun': 'Sunrise • Sunset',
+    'dashboard.hero.currency.ratePrefix': 'Rate:',
+    'dashboard.hero.currency.rate.sameCurrency': 'Rate: same currency',
+    'dashboard.hero.currency.rate.unavailable': 'Rate: —',
+    'dashboard.hero.currency.rate.pair': 'Rate: {leftRate} = {rightRate}',
   };
 }

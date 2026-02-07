@@ -199,6 +199,11 @@ class CityPickerEngine {
       if (query == row.cityNameNorm) {
         score += 280;
         if (row.timeZoneNorm.contains(query)) score += 60;
+        score += CityPickerRanking.exactCityDisambiguationBonus(
+          cityNameNorm: row.cityNameNorm,
+          countryCode: row.countryCode,
+          timeZoneId: row.timeZoneId,
+        );
       }
       if (_queryIncludesCountryHint(query: query, row: row)) score += 90;
       if (row.countryNorm.startsWith(query) ||

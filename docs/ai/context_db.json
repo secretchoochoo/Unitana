@@ -207,7 +207,7 @@
     }
   ],
   "current_state": {
-    "current_slice": "Pack H residual devtools/profile/time copy migration shipped + Pack E ambiguity v2 scoring/contract pass on shared city-picker engine",
+    "current_slice": "Pack H final hero residual localization sweep shipped + Pack E ambiguity v3 same-country collision tuning on shared city-picker engine",
     "notes": [
       "Codex-first workflow allows larger execution packs while keeping gates green.",
       "Pack A city data platform foundation is complete with canonical schema + validation guards.",
@@ -313,13 +313,17 @@
       "Pack H residual expansion shipped: localization seed/runtime tests were extended for new devtools/backend/condition and jet-lag/profile keys.",
       "Pack E ambiguity v2 shipped: `CityPickerEngine.searchEntries` now separates city-country matching from timezone matching, adds city-exact and multi-token phrase calibration, and de-prioritizes timezone-only rows for non-timezone queries.",
       "Pack E ambiguity v2 shipped: wizard city picker now enforces city-only matching (no timezone-only rows), while Time/Jet Lag direct zone search keeps timezone-priority behavior.",
-      "Pack E ambiguity v2 shipped: dataset-backed ambiguity tests expanded for `san jose`, `london`, `vancouver`, `portland` plus timezone-only de-prioritization coverage."
+      "Pack E ambiguity v2 shipped: dataset-backed ambiguity tests expanded for `san jose`, `london`, `vancouver`, `portland` plus timezone-only de-prioritization coverage.",
+      "Pack H final residual sweep shipped: remaining high-traffic hero env/details/currency rate literals now resolve via runtime-localized `dashboard.hero.*` keys through `DashboardCopy`.",
+      "Pack H final residual sweep shipped: hero semantics, short-band labels, and details pill titles are now deterministic runtime-localized copy with fallback safety.",
+      "Pack E ambiguity v3 shipped: added exact-city same-country disambiguation bonus mapping (`portland|US` prefers `America/Los_Angeles`) in shared ranking heuristics.",
+      "Pack E ambiguity v3 shipped: dataset contract expanded to assert top-row `portland` mainstream-zone selection under city+country dedupe while keeping perf/test gates green."
     ],
     "overall_health": "Stable with full gates passing; canonical city data coverage is now enforced for all in-scope records.",
     "status": "GREEN",
     "focus": {
-      "now": "Run a final residual sweep for hero weather/env microcopy hardcoded strings and migrate remaining high-traffic literals through DashboardCopy/runtime keys.",
-      "next": "Tune Pack E ambiguity v3 for same-country same-name collisions (e.g., Portland OR/ME) without regressing perf or alias/direct-zone behavior.",
+      "now": "Run a strict final residual audit for any remaining high-traffic hardcoded dashboard copy outside migrated `dashboard.hero.*` / devtools/profile/time paths.",
+      "next": "Calibrate Pack E ambiguity v4 for additional same-country families and direct-state hints without regressing timezone alias/direct-zone behavior or perf budgets.",
       "later": [
         "Pack H localization full rollout (multi-language ARB + language settings)",
         "Pack E optional search-budget UX tuning for lower-end devices (debounce window/indicator behavior) with perf-contract guardrails."
