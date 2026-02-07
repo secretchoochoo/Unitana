@@ -127,7 +127,10 @@ class _CityPickerState extends State<CityPicker> {
                                   )
                                 : const Icon(Icons.location_city_outlined),
                             title: Text(
-                              CityLabelUtils.cleanCityName(city.cityName),
+                              [
+                                CityLabelUtils.countryFlag(city.countryCode),
+                                CityLabelUtils.cleanCityName(city.cityName),
+                              ].where((part) => part.isNotEmpty).join(' '),
                             ),
                             subtitle: Text(_subtitle(city)),
                             onTap: () => Navigator.of(context).pop(city),

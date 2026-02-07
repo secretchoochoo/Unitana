@@ -16,13 +16,13 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Popular Cities'), findsOneWidget);
-    expect(find.textContaining('New York'), findsWidgets);
+    expect(find.textContaining('🇺🇸 New York'), findsWidgets);
 
     await tester.enterText(find.byType(TextField), 'est');
     await tester.pumpAndSettle();
 
     expect(find.text('Best Matches'), findsOneWidget);
-    expect(find.textContaining('New York'), findsWidgets);
+    expect(find.textContaining('🇺🇸 New York'), findsWidgets);
   });
 
   testWidgets('CityPicker shows clear empty-state guidance', (tester) async {

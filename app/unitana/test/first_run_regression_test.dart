@@ -50,7 +50,12 @@ void main() {
       await tester.pumpAndSettle();
 
       // Tap the matching city.
-      final tile = find.widgetWithText(ListTile, cityName);
+      final cityText = find.textContaining(cityName);
+      expect(cityText, findsWidgets);
+      final tile = find.ancestor(
+        of: cityText.first,
+        matching: find.byType(ListTile),
+      );
       expect(tile, findsWidgets);
       await tester.tap(tile.first, warnIfMissed: false);
       await tester.pumpAndSettle();

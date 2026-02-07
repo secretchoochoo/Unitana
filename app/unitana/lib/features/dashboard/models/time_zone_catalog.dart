@@ -9,6 +9,7 @@ typedef TimeZoneCityOption = ({
   String timeZoneId,
   String label,
   String subtitle,
+  String countryCode,
 });
 
 class TimeZoneCatalog {
@@ -88,6 +89,7 @@ class TimeZoneCatalog {
       required String zoneId,
       required String label,
       required String subtitle,
+      required String countryCode,
     }) {
       final norm = key.trim().toLowerCase();
       final normZone = zoneId.trim();
@@ -97,6 +99,7 @@ class TimeZoneCatalog {
         timeZoneId: normZone,
         label: label,
         subtitle: subtitle,
+        countryCode: countryCode,
       ));
     }
 
@@ -107,6 +110,7 @@ class TimeZoneCatalog {
         label:
             '${CityLabelUtils.cleanCityName(home.cityName)}, ${home.countryCode.toUpperCase()}',
         subtitle: 'Home',
+        countryCode: home.countryCode,
       );
     }
     if (destination != null) {
@@ -117,6 +121,7 @@ class TimeZoneCatalog {
         label:
             '${CityLabelUtils.cleanCityName(destination.cityName)}, ${destination.countryCode.toUpperCase()}',
         subtitle: 'Destination',
+        countryCode: destination.countryCode,
       );
     }
 
@@ -142,6 +147,7 @@ class TimeZoneCatalog {
         label:
             '${CityLabelUtils.cleanCityName(city.cityName)}, ${_cityCountryLabel(city)}',
         subtitle: city.timeZoneId,
+        countryCode: city.countryCode,
       );
     }
     return out;

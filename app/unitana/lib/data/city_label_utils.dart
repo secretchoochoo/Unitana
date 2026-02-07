@@ -2,6 +2,19 @@ import 'cities.dart';
 
 /// Shared city/country display cleanup used across pickers.
 class CityLabelUtils {
+  static String countryFlag(String countryCode) {
+    final cc = countryCode.trim().toUpperCase();
+    if (cc.length != 2) return '';
+    final first = cc.codeUnitAt(0);
+    final second = cc.codeUnitAt(1);
+    final a = 'A'.codeUnitAt(0);
+    final z = 'Z'.codeUnitAt(0);
+    if (first < a || first > z || second < a || second > z) return '';
+    const base = 0x1F1E6;
+    return String.fromCharCode(base + (first - a)) +
+        String.fromCharCode(base + (second - a));
+  }
+
   static String cleanCityName(String raw) {
     var s = raw.trim();
     if (s.isEmpty) return raw;

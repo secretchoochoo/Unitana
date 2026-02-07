@@ -50,7 +50,12 @@ Future<void> _pickCity(
   expect(searchField, findsOneWidget);
   await tester.enterText(searchField, query);
   await _pumpFor(tester);
-  final cityTile = find.widgetWithText(ListTile, city);
+  final cityText = find.textContaining(city);
+  expect(cityText, findsWidgets);
+  final cityTile = find.ancestor(
+    of: cityText.first,
+    matching: find.byType(ListTile),
+  );
   expect(cityTile, findsWidgets);
   await tester.tap(cityTile.first);
   await _pumpFor(tester);

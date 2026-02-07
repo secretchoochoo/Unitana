@@ -2502,6 +2502,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
         timeZoneId: city.timeZoneId,
         label: '${city.cityName}, $countryLabel',
         subtitle: city.timeZoneId,
+        countryCode: city.countryCode,
       ));
     }
 
@@ -2920,7 +2921,10 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                               'tool_time_city_item_${isFrom ? 'from' : 'to'}_${_sanitizeUnitKey(option.key)}',
                             ),
                             title: Text(
-                              CityLabelUtils.cleanCityName(option.label),
+                              [
+                                CityLabelUtils.countryFlag(option.countryCode),
+                                CityLabelUtils.cleanCityName(option.label),
+                              ].where((part) => part.isNotEmpty).join(' '),
                             ),
                             subtitle: Text(
                               option.subtitle == option.timeZoneId
