@@ -197,6 +197,7 @@ class LocalizationSeed {
     'dashboard.time.picker.searchHint.city': 'Search city or country',
     'dashboard.time.picker.searchHint.expanded':
         'Search city, country, timezone, or EST',
+    'dashboard.time.picker.searching': 'Searching…',
     'dashboard.time.picker.quick.EST': 'New York',
     'dashboard.time.picker.quick.CST': 'Chicago',
     'dashboard.time.picker.quick.PST': 'Los Angeles',

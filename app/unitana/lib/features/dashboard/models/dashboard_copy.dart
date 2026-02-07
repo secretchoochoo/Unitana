@@ -907,6 +907,10 @@ class DashboardCopy {
   );
   static String timePickerExpandedSearchHint(BuildContext context) =>
       CityPickerCopy.searchHint(context, mode: CityPickerMode.cityAndTimezone);
+  static String timePickerSearching(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.time.picker.searching', fallback: 'Searching…');
   static String timePickerQuickChipDetail(BuildContext context, String code) =>
       DashboardLocalizations.of(context).text(
         'dashboard.time.picker.quick.$code',

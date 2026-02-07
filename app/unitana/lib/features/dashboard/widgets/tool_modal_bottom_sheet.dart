@@ -2763,257 +2763,327 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
     );
     if (zoneOptions.isEmpty) return;
     final currentLabel = isFrom ? _timeFromDisplayLabel : _timeToDisplayLabel;
-    var query = '';
+    Timer? searchDebounce;
+    var modalActive = true;
+    var liveQuery = '';
+    var appliedQuery = '';
     var firstBuildLogged = false;
-    final selected = await showModalBottomSheet<_TimeZonePickerSelection>(
-      context: context,
-      showDragHandle: true,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setModalState) {
-          if (!firstBuildLogged) {
-            firstBuildLogged = true;
-            PickerPerfTrace.logElapsed(
-              'time_picker_first_build_${isFrom ? 'from' : 'to'}',
-              openSw,
-              extra: 'initialQuery="${query.trim()}"',
-            );
-          }
-          final filteredCity = _searchCityOptions(
-            rawQuery: query,
-            featured: featuredCityOptions,
-            allEntries: allCityEntries,
-            featuredEntries: featuredCityEntries,
-          );
-          final filteredZone = _searchZoneOptions(
-            rawQuery: query,
-            entries: zoneEntries,
-          );
-          final currentZoneId = isFrom ? _timeFromZoneId : _timeToZoneId;
-          final selectedCityKey =
-              filteredCity
-                  .where((o) => o.label == currentLabel)
-                  .map((o) => o.key)
-                  .cast<String?>()
-                  .firstWhere((k) => k != null, orElse: () => null) ??
-              filteredCity
-                  .where((o) => o.timeZoneId == currentZoneId)
-                  .map((o) => o.key)
-                  .cast<String?>()
-                  .firstWhere((k) => k != null, orElse: () => null);
-          final hasSelectedCityRow = filteredCity.any(
-            (o) => o.key == selectedCityKey,
-          );
-          return SafeArea(
-            child: SizedBox(
-              height: MediaQuery.of(context).size.height * 0.72,
-              child: Column(
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 10),
-                    child: TextField(
-                      key: ValueKey(
-                        'tool_time_zone_search_${isFrom ? 'from' : 'to'}',
-                      ),
-                      onChanged: (value) => setModalState(() => query = value),
-                      decoration: InputDecoration(
-                        hintText: DashboardCopy.timePickerExpandedSearchHint(
-                          context,
-                        ),
-                        prefixIcon: Icon(Icons.search_rounded),
-                        isDense: true,
-                      ),
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-                    child: Wrap(
-                      spacing: 8,
-                      runSpacing: 6,
-                      children: [
-                        _TimeZoneQuickChip(
-                          label: 'EST',
-                          detail: DashboardCopy.timePickerQuickChipDetail(
-                            context,
-                            'EST',
+    final selected =
+        await showModalBottomSheet<_TimeZonePickerSelection>(
+          context: context,
+          showDragHandle: true,
+          builder: (context) => StatefulBuilder(
+            builder: (context, setModalState) {
+              if (!firstBuildLogged) {
+                firstBuildLogged = true;
+                PickerPerfTrace.logElapsed(
+                  'time_picker_first_build_${isFrom ? 'from' : 'to'}',
+                  openSw,
+                  extra: 'initialQuery="${appliedQuery.trim()}"',
+                );
+              }
+              final filteredCity = _searchCityOptions(
+                rawQuery: appliedQuery,
+                featured: featuredCityOptions,
+                allEntries: allCityEntries,
+                featuredEntries: featuredCityEntries,
+              );
+              final filteredZone = _searchZoneOptions(
+                rawQuery: appliedQuery,
+                entries: zoneEntries,
+              );
+              final isSearching = liveQuery.trim() != appliedQuery.trim();
+              final currentZoneId = isFrom ? _timeFromZoneId : _timeToZoneId;
+              final selectedCityKey =
+                  filteredCity
+                      .where((o) => o.label == currentLabel)
+                      .map((o) => o.key)
+                      .cast<String?>()
+                      .firstWhere((k) => k != null, orElse: () => null) ??
+                  filteredCity
+                      .where((o) => o.timeZoneId == currentZoneId)
+                      .map((o) => o.key)
+                      .cast<String?>()
+                      .firstWhere((k) => k != null, orElse: () => null);
+              final hasSelectedCityRow = filteredCity.any(
+                (o) => o.key == selectedCityKey,
+              );
+              return SafeArea(
+                child: SizedBox(
+                  height: MediaQuery.of(context).size.height * 0.72,
+                  child: Column(
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 8, 16, 10),
+                        child: TextField(
+                          key: ValueKey(
+                            'tool_time_zone_search_${isFrom ? 'from' : 'to'}',
                           ),
-                          onTap: () => Navigator.of(context).pop((
-                            zoneId: 'America/New_York',
-                            displayLabel: _displayLabelForZone(
-                              'America/New_York',
-                              zoneOptions,
-                            ),
-                          )),
-                        ),
-                        _TimeZoneQuickChip(
-                          label: 'CST',
-                          detail: DashboardCopy.timePickerQuickChipDetail(
-                            context,
-                            'CST',
-                          ),
-                          onTap: () => Navigator.of(context).pop((
-                            zoneId: 'America/Chicago',
-                            displayLabel: _displayLabelForZone(
-                              'America/Chicago',
-                              zoneOptions,
-                            ),
-                          )),
-                        ),
-                        _TimeZoneQuickChip(
-                          label: 'PST',
-                          detail: DashboardCopy.timePickerQuickChipDetail(
-                            context,
-                            'PST',
-                          ),
-                          onTap: () => Navigator.of(context).pop((
-                            zoneId: 'America/Los_Angeles',
-                            displayLabel: _displayLabelForZone(
-                              'America/Los_Angeles',
-                              zoneOptions,
-                            ),
-                          )),
-                        ),
-                        _TimeZoneQuickChip(
-                          label: 'UTC',
-                          detail: DashboardCopy.timePickerQuickChipDetail(
-                            context,
-                            'UTC',
-                          ),
-                          onTap: () => Navigator.of(context).pop((
-                            zoneId: 'UTC',
-                            displayLabel: _displayLabelForZone(
-                              'UTC',
-                              zoneOptions,
-                            ),
-                          )),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Expanded(
-                    child: ListView(
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(16, 2, 16, 6),
-                          child: Text(
-                            DashboardCopy.timePickerPrimaryHeader(
-                              context,
-                              hasQuery: query.trim().isNotEmpty,
-                            ),
-                            style: Theme.of(context).textTheme.labelLarge
-                                ?.copyWith(
-                                  color: DraculaPalette.comment.withAlpha(232),
-                                  fontWeight: FontWeight.w700,
-                                ),
-                          ),
-                        ),
-                        for (final option in filteredCity)
-                          Builder(
-                            builder: (context) {
-                              final isSelected = option.key == selectedCityKey;
-                              return ListTile(
-                                key: ValueKey(
-                                  'tool_time_city_item_${isFrom ? 'from' : 'to'}_${_sanitizeUnitKey(option.key)}',
-                                ),
-                                title: Text(
-                                  [
-                                    CityLabelUtils.countryFlag(
-                                      option.countryCode,
-                                    ),
-                                    CityLabelUtils.cleanCityName(option.label),
-                                  ].where((part) => part.isNotEmpty).join(' '),
-                                ),
-                                subtitle: Text(
-                                  option.subtitle == option.timeZoneId
-                                      ? option.timeZoneId
-                                      : '${option.subtitle} · ${option.timeZoneId}',
-                                ),
-                                selected: isSelected,
-                                trailing: isSelected
-                                    ? Icon(
-                                        Icons.check_rounded,
-                                        color: DraculaPalette.purple.withAlpha(
-                                          238,
-                                        ),
-                                      )
-                                    : null,
-                                onTap: () => Navigator.of(context).pop((
-                                  zoneId: option.timeZoneId,
-                                  displayLabel: CityLabelUtils.cleanCityName(
-                                    option.label,
-                                  ),
-                                )),
-                              );
-                            },
-                          ),
-                        if (filteredCity.isEmpty && filteredZone.isEmpty)
-                          Padding(
-                            padding: const EdgeInsets.fromLTRB(16, 10, 16, 6),
-                            child: Text(
-                              DashboardCopy.timePickerNoMatchesHint(context),
-                              style: Theme.of(context).textTheme.bodySmall
-                                  ?.copyWith(
-                                    color: DraculaPalette.comment.withAlpha(
-                                      220,
-                                    ),
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                            ),
-                          ),
-                        if (filteredZone.isNotEmpty) ...[
-                          const SizedBox(height: 4),
-                          Padding(
-                            padding: const EdgeInsets.fromLTRB(16, 2, 16, 6),
-                            child: Text(
-                              DashboardCopy.timePickerDirectZonesHeader(
-                                context,
-                              ),
-                              style: Theme.of(context).textTheme.labelLarge
-                                  ?.copyWith(
-                                    color: DraculaPalette.comment.withAlpha(
-                                      232,
-                                    ),
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                            ),
-                          ),
-                          for (final option in filteredZone)
-                            Builder(
-                              builder: (context) {
-                                final isSelected =
-                                    !hasSelectedCityRow &&
-                                    option.id == currentZoneId;
-                                return ListTile(
-                                  key: ValueKey(
-                                    'tool_time_zone_item_${isFrom ? 'from' : 'to'}_${_sanitizeUnitKey(option.id)}',
-                                  ),
-                                  title: Text(option.label),
-                                  subtitle: Text(option.subtitle ?? option.id),
-                                  selected: isSelected,
-                                  trailing: isSelected
-                                      ? Icon(
-                                          Icons.check_rounded,
-                                          color: DraculaPalette.purple
-                                              .withAlpha(238),
-                                        )
-                                      : null,
-                                  onTap: () => Navigator.of(context).pop((
-                                    zoneId: option.id,
-                                    displayLabel: option.label,
-                                  )),
-                                );
+                          onChanged: (value) {
+                            setModalState(() {
+                              liveQuery = value;
+                            });
+                            searchDebounce?.cancel();
+                            searchDebounce = Timer(
+                              const Duration(milliseconds: 110),
+                              () {
+                                if (!mounted || !modalActive) return;
+                                setModalState(() {
+                                  appliedQuery = value;
+                                });
                               },
+                            );
+                          },
+                          decoration: InputDecoration(
+                            hintText:
+                                DashboardCopy.timePickerExpandedSearchHint(
+                                  context,
+                                ),
+                            prefixIcon: const Icon(Icons.search_rounded),
+                            isDense: true,
+                          ),
+                        ),
+                      ),
+                      if (isSearching)
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                          child: Row(
+                            children: [
+                              const SizedBox(
+                                width: 12,
+                                height: 12,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                DashboardCopy.timePickerSearching(context),
+                                style: Theme.of(context).textTheme.bodySmall
+                                    ?.copyWith(
+                                      color: DraculaPalette.comment.withAlpha(
+                                        220,
+                                      ),
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                        child: Wrap(
+                          spacing: 8,
+                          runSpacing: 6,
+                          children: [
+                            _TimeZoneQuickChip(
+                              label: 'EST',
+                              detail: DashboardCopy.timePickerQuickChipDetail(
+                                context,
+                                'EST',
+                              ),
+                              onTap: () => Navigator.of(context).pop((
+                                zoneId: 'America/New_York',
+                                displayLabel: _displayLabelForZone(
+                                  'America/New_York',
+                                  zoneOptions,
+                                ),
+                              )),
                             ),
-                        ],
-                      ],
-                    ),
+                            _TimeZoneQuickChip(
+                              label: 'CST',
+                              detail: DashboardCopy.timePickerQuickChipDetail(
+                                context,
+                                'CST',
+                              ),
+                              onTap: () => Navigator.of(context).pop((
+                                zoneId: 'America/Chicago',
+                                displayLabel: _displayLabelForZone(
+                                  'America/Chicago',
+                                  zoneOptions,
+                                ),
+                              )),
+                            ),
+                            _TimeZoneQuickChip(
+                              label: 'PST',
+                              detail: DashboardCopy.timePickerQuickChipDetail(
+                                context,
+                                'PST',
+                              ),
+                              onTap: () => Navigator.of(context).pop((
+                                zoneId: 'America/Los_Angeles',
+                                displayLabel: _displayLabelForZone(
+                                  'America/Los_Angeles',
+                                  zoneOptions,
+                                ),
+                              )),
+                            ),
+                            _TimeZoneQuickChip(
+                              label: 'UTC',
+                              detail: DashboardCopy.timePickerQuickChipDetail(
+                                context,
+                                'UTC',
+                              ),
+                              onTap: () => Navigator.of(context).pop((
+                                zoneId: 'UTC',
+                                displayLabel: _displayLabelForZone(
+                                  'UTC',
+                                  zoneOptions,
+                                ),
+                              )),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Expanded(
+                        child: ListView(
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(16, 2, 16, 6),
+                              child: Text(
+                                DashboardCopy.timePickerPrimaryHeader(
+                                  context,
+                                  hasQuery: appliedQuery.trim().isNotEmpty,
+                                ),
+                                style: Theme.of(context).textTheme.labelLarge
+                                    ?.copyWith(
+                                      color: DraculaPalette.comment.withAlpha(
+                                        232,
+                                      ),
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                              ),
+                            ),
+                            for (final option in filteredCity)
+                              Builder(
+                                builder: (context) {
+                                  final isSelected =
+                                      option.key == selectedCityKey;
+                                  return ListTile(
+                                    key: ValueKey(
+                                      'tool_time_city_item_${isFrom ? 'from' : 'to'}_${_sanitizeUnitKey(option.key)}',
+                                    ),
+                                    title: Text(
+                                      [
+                                            CityLabelUtils.countryFlag(
+                                              option.countryCode,
+                                            ),
+                                            CityLabelUtils.cleanCityName(
+                                              option.label,
+                                            ),
+                                          ]
+                                          .where((part) => part.isNotEmpty)
+                                          .join(' '),
+                                    ),
+                                    subtitle: Text(
+                                      option.subtitle == option.timeZoneId
+                                          ? option.timeZoneId
+                                          : '${option.subtitle} · ${option.timeZoneId}',
+                                    ),
+                                    selected: isSelected,
+                                    trailing: isSelected
+                                        ? Icon(
+                                            Icons.check_rounded,
+                                            color: DraculaPalette.purple
+                                                .withAlpha(238),
+                                          )
+                                        : null,
+                                    onTap: () => Navigator.of(context).pop((
+                                      zoneId: option.timeZoneId,
+                                      displayLabel:
+                                          CityLabelUtils.cleanCityName(
+                                            option.label,
+                                          ),
+                                    )),
+                                  );
+                                },
+                              ),
+                            if (filteredCity.isEmpty && filteredZone.isEmpty)
+                              Padding(
+                                padding: const EdgeInsets.fromLTRB(
+                                  16,
+                                  10,
+                                  16,
+                                  6,
+                                ),
+                                child: Text(
+                                  DashboardCopy.timePickerNoMatchesHint(
+                                    context,
+                                  ),
+                                  style: Theme.of(context).textTheme.bodySmall
+                                      ?.copyWith(
+                                        color: DraculaPalette.comment.withAlpha(
+                                          220,
+                                        ),
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                ),
+                              ),
+                            if (filteredZone.isNotEmpty) ...[
+                              const SizedBox(height: 4),
+                              Padding(
+                                padding: const EdgeInsets.fromLTRB(
+                                  16,
+                                  2,
+                                  16,
+                                  6,
+                                ),
+                                child: Text(
+                                  DashboardCopy.timePickerDirectZonesHeader(
+                                    context,
+                                  ),
+                                  style: Theme.of(context).textTheme.labelLarge
+                                      ?.copyWith(
+                                        color: DraculaPalette.comment.withAlpha(
+                                          232,
+                                        ),
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                ),
+                              ),
+                              for (final option in filteredZone)
+                                Builder(
+                                  builder: (context) {
+                                    final isSelected =
+                                        !hasSelectedCityRow &&
+                                        option.id == currentZoneId;
+                                    return ListTile(
+                                      key: ValueKey(
+                                        'tool_time_zone_item_${isFrom ? 'from' : 'to'}_${_sanitizeUnitKey(option.id)}',
+                                      ),
+                                      title: Text(option.label),
+                                      subtitle: Text(
+                                        option.subtitle ?? option.id,
+                                      ),
+                                      selected: isSelected,
+                                      trailing: isSelected
+                                          ? Icon(
+                                              Icons.check_rounded,
+                                              color: DraculaPalette.purple
+                                                  .withAlpha(238),
+                                            )
+                                          : null,
+                                      onTap: () => Navigator.of(context).pop((
+                                        zoneId: option.id,
+                                        displayLabel: option.label,
+                                      )),
+                                    );
+                                  },
+                                ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-            ),
-          );
-        },
-      ),
-    );
+                ),
+              );
+            },
+          ),
+        ).whenComplete(() {
+          modalActive = false;
+          searchDebounce?.cancel();
+        });
     PickerPerfTrace.logElapsed(
       'time_picker_closed_${isFrom ? 'from' : 'to'}',
       openSw,

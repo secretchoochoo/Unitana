@@ -127,6 +127,10 @@ void main() {
       locale: const Locale('en'),
       key: 'dashboard.time.picker.searchHint.expanded',
     );
+    final searching = DashboardLocalizations.resolveForLocale(
+      locale: const Locale('en'),
+      key: 'dashboard.time.picker.searching',
+    );
     final zoneHeader = DashboardLocalizations.resolveForLocale(
       locale: const Locale('en'),
       key: 'dashboard.time.picker.header.directZones',
@@ -179,6 +183,7 @@ void main() {
     expect(timeMode, 'Advanced: Time Zones');
     expect(moreCount, '+5 more');
     expect(pickerHint, 'Search city, country, timezone, or EST');
+    expect(searching, 'Searching…');
     expect(zoneHeader, 'Direct Time Zones');
     expect(invalidInput, 'Enter date/time as YYYY-MM-DD HH:MM');
     expect(cityFallback, 'City not set');

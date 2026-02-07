@@ -91,6 +91,10 @@ void main() {
       'Search city, country, timezone, or EST',
     );
     expect(
+      LocalizationSeed.enUs['dashboard.time.picker.searching'],
+      'Searching…',
+    );
+    expect(
       LocalizationSeed.enUs['dashboard.time.picker.header.directZones'],
       'Direct Time Zones',
     );
