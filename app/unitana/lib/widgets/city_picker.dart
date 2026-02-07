@@ -34,6 +34,7 @@ class _CityPickerState extends State<CityPicker> {
   @override
   Widget build(BuildContext context) {
     final cities = _filter(widget.cities, _query);
+    final hasQuery = _normQuery(_query).isNotEmpty;
 
     return FractionallySizedBox(
       heightFactor: 0.88,
@@ -85,26 +86,49 @@ class _CityPickerState extends State<CityPicker> {
                 ),
               ),
               const SizedBox(height: 12),
-              Expanded(
-                child: ListView.builder(
-                  itemCount: cities.length,
-                  itemBuilder: (context, index) {
-                    final city = cities[index];
-                    final selected = widget.selected?.id == city.id;
-
-                    return ListTile(
-                      leading: selected
-                          ? Icon(
-                              Icons.check_circle,
-                              color: Theme.of(context).colorScheme.primary,
-                            )
-                          : const Icon(Icons.location_city_outlined),
-                      title: Text(city.cityName),
-                      subtitle: Text(_subtitle(city)),
-                      onTap: () => Navigator.of(context).pop(city),
-                    );
-                  },
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  hasQuery ? 'Best Matches' : 'Popular Cities',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w700),
                 ),
+              ),
+              const SizedBox(height: 6),
+              Expanded(
+                child: cities.isEmpty
+                    ? Align(
+                        alignment: Alignment.topLeft,
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(4, 6, 4, 0),
+                          child: Text(
+                            'No matches yet. Try city, country, timezone, or EST.',
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                        ),
+                      )
+                    : ListView.builder(
+                        itemCount: cities.length,
+                        itemBuilder: (context, index) {
+                          final city = cities[index];
+                          final selected = widget.selected?.id == city.id;
+
+                          return ListTile(
+                            leading: selected
+                                ? Icon(
+                                    Icons.check_circle,
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.primary,
+                                  )
+                                : const Icon(Icons.location_city_outlined),
+                            title: Text(_sanitizeLabel(city.cityName)),
+                            subtitle: Text(_subtitle(city)),
+                            onTap: () => Navigator.of(context).pop(city),
+                          );
+                        },
+                      ),
               ),
             ],
           ),
@@ -130,6 +154,12 @@ class _CityPickerState extends State<CityPicker> {
     return parts.join(' • ');
   }
 
+  String _sanitizeLabel(String raw) {
+    final trimmed = raw.trim();
+    if (trimmed.isEmpty) return raw;
+    return trimmed.replaceFirst(RegExp(r"^[^A-Za-z0-9]+"), '');
+  }
+
   List<City> _filter(List<City> all, String queryRaw) {
     final q = _normQuery(queryRaw);
     if (q.isEmpty) {
@@ -146,6 +176,12 @@ class _CityPickerState extends State<CityPicker> {
     }
 
     final tokens = _tokenize(q);
+    final shortQuery = q.length <= 3;
+
+    bool hasTokenBoundary(String haystack, String token) {
+      final escaped = RegExp.escape(token);
+      return RegExp('(^| )$escaped').hasMatch(haystack);
+    }
 
     // Safety valve: keep the list snappy on very broad searches.
     const maxResults = 250;
@@ -161,6 +197,11 @@ class _CityPickerState extends State<CityPicker> {
         }
       }
       if (!ok) continue;
+      if (shortQuery &&
+          !hasTokenBoundary(haystack, q) &&
+          !(c.timeZoneId.toLowerCase().contains(q))) {
+        continue;
+      }
 
       results.add(c);
       if (results.length >= maxResults) break;
