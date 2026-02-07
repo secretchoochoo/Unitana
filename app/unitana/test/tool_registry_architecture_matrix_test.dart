@@ -12,8 +12,6 @@ void main() {
       'pace',
       'hydration',
       'energy',
-      'tax_vat_helper',
-      'unit_price_helper',
       'clothing_sizes',
     });
 
@@ -34,8 +32,8 @@ void main() {
     expect(byId['world_clock_delta']?.surfaceType, ToolSurfaceType.aliasPreset);
     expect(byId['world_clock_delta']?.aliasTargetToolId, 'time');
 
-    expect(byId['jet_lag_delta']?.surfaceType, ToolSurfaceType.aliasPreset);
-    expect(byId['jet_lag_delta']?.aliasTargetToolId, 'time');
+    expect(byId['jet_lag_delta']?.surfaceType, ToolSurfaceType.dedicated);
+    expect(byId['jet_lag_delta']?.aliasTargetToolId, isNull);
 
     expect(byId['timezone_lookup']?.surfaceType, ToolSurfaceType.aliasPreset);
     expect(byId['timezone_lookup']?.aliasTargetToolId, 'time_zone_converter');

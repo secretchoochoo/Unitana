@@ -126,6 +126,76 @@
       "priority": "P1"
     },
     {
+      "id": "PACK_K_context_aware_profile_auto_select",
+      "title": "Pack K (P1): Context-aware profile auto-selection (optional GPS assist)",
+      "summary": "Add an optional Settings feature that uses device location plus recency to auto-select the most relevant profile without surprising users.",
+      "notes": [
+        "Feature must be explicit opt-in in Settings with clear permission copy and a hard off switch.",
+        "Ranking policy: score each profile by destination/home geo match confidence and recency; prefer best score above threshold, else keep current profile; fallback to most-recent profile only when no reliable geo match exists.",
+        "Do not silently switch while the user is actively editing widgets/tools; schedule switch at safe boundaries (app foreground, profile picker open, or explicit prompt).",
+        "Require deterministic tie-breakers and explainability text (why this profile was selected).",
+        "Add privacy guardrails: coarse geofence matching first, no raw location history retention by default, and explicit retention policy if telemetry is added.",
+        "Add test matrix for permission denied, stale location, near-border ambiguity, and travel-day churn."
+      ],
+      "priority": "P1"
+    },
+    {
+      "id": "PACK_L_dual_theme_system_dark_light",
+      "title": "Pack L (P1): Dual theme system (Dracula dark + Solarized light mapping)",
+      "summary": "Introduce a first-class light theme option in Settings using a Solarized-inspired palette mapped against existing Dracula dark token roles.",
+      "notes": [
+        "Keep Dracula dark as default and add Settings theme mode: `System`, `Dark (Dracula)`, `Light (Solarized)`.",
+        "Create semantic token mapping (surface, text roles, borders, accents, status colors) instead of ad hoc hex swaps.",
+        "Preserve marquee art direction where appropriate, but ensure all text/controls meet contrast in light mode.",
+        "Add regression coverage for both themes on key surfaces (dashboard hero, tool tile, tool modal, weather sheet).",
+        "Document token map and accessibility constraints in a dedicated reference spec before implementation."
+      ],
+      "priority": "P1"
+    },
+    {
+      "id": "PACK_M_jet_lag_tool_rethink_actionable_planning",
+      "title": "Pack M (P1): Jet Lag tool redesign for actionable planning",
+      "summary": "Redesign Jet Lag around plain-language travel facts + adaptation planning, with consistent tile/modal math and optional flight-time estimation from existing city coordinates.",
+      "notes": [
+        "Split Jet Lag UI into `Travel Facts` (objective) and `Adaptation Plan` (heuristic) cards.",
+        "Use clear copy (`Time zone offset`, `Adjustment estimate`) and remove jargon-first phrasing.",
+        "Enforce zero-shift contract: `same zone (0h)` + `no adjustment needed` with no conflicting hints.",
+        "Centralize Jet Lag calculations in a shared engine so widget and modal never drift.",
+        "Phase 1 flight-duration estimate should be free/offline-friendly using city lat/lon distance + deterministic heuristic model.",
+        "Later phase can add route-aware data sources, but must keep deterministic fallback.",
+        "Requires global timezone handling expansion beyond the current limited helper to avoid false `0h` outcomes."
+      ],
+      "priority": "P1"
+    },
+    {
+      "id": "PACK_N_global_timezone_dataset_and_converter_support",
+      "title": "Pack N (P1): Global timezone dataset + full converter support",
+      "summary": "Expand timezone support from the current limited helper set to a complete IANA-backed city/timezone surface so Time-family and Jet Lag never produce misleading zero-offset outcomes.",
+      "notes": [
+        "Replace limited timezone pick lists with full, searchable timezone coverage (IANA zone IDs + friendly city/region labels).",
+        "Prefer reusing canonical city dataset where possible; add a dedicated timezone catalog only for zones/cities not already represented.",
+        "Ensure DST-aware offset correctness for any selected zone at arbitrary dates/times.",
+        "Unify timezone source for Time, Time Zone Converter, and Jet Lag so all surfaces share identical offset math.",
+        "Add tests for same-zone, opposite-direction, DST-boundary, and date-line edge cases.",
+        "Document fallback behavior when timezone metadata is missing or ambiguous."
+      ],
+      "priority": "P1"
+    },
+    {
+      "id": "PACK_O_contextual_tutorial_overlays_by_tool_family",
+      "title": "Pack O (P2): Contextual tutorial overlays by tool family",
+      "summary": "Extend tutorial strategy beyond a single walkthrough by adding lightweight, skippable overlays tailored to major tool families and unique UX surfaces.",
+      "notes": [
+        "Keep profile wizard tutorial as a separate flow and do not merge it with in-context tool tutorials.",
+        "Define tutorial categories (initial proposal): core converters, multi-unit/lookup tools, weather surfaces, time/jet-lag surfaces, and dashboard/widget editing flows.",
+        "Each category overlay must include dismiss/never-show controls and optional replay entry from Settings.",
+        "Copy should reference locked design contracts (layout, interaction, and terminology) to reduce user confusion on advanced tools.",
+        "Add completion-state persistence per tutorial category so users are not repeatedly interrupted.",
+        "Scope should remain lightweight: hints and interaction framing, not long-form onboarding."
+      ],
+      "priority": "P2"
+    },
+    {
       "id": "ICEBOX_radio_feature",
       "title": "Icebox: Optional radio feature",
       "summary": "Keep radio playback concept parked until core platform/data and product-critical slices are complete.",
@@ -136,7 +206,7 @@
     }
   ],
   "current_state": {
-    "current_slice": "Pack F contracted implementation + Pack C reliability visibility follow-up in progress: Time-family split, weather clarity semantics, deferred-tool matrix execution, tip-helper activation, and currency stale-status surfacing shipped",
+    "current_slice": "Pack N J2 shipped: city-first Time-family picker with advanced timezone fallback plus Jet Lag overlap utility gating/call-window framing; full repo gates green",
     "notes": [
       "Codex-first workflow allows larger execution packs while keeping gates green.",
       "Pack A city data platform foundation is complete with canonical schema + validation guards.",
@@ -148,13 +218,35 @@
       "Design-only decision matrix is now complete with implementation contracts for taxonomy, Time split, weather semantics/refresh behavior, and visual-system guardrails.",
       "Tool registry now encodes explicit architecture metadata (surface type, alias targets, defer reasons), and picker UI differentiates deferred tools with rationale.",
       "Tip Helper (`tip_helper`) is now activated as a dedicated tool surface with picker launch, modal interaction contract, and lens discoverability mapping.",
+      "Sales Tax / VAT Helper (`tax_vat_helper`) is now activated as a dedicated tool surface with add-on/inclusive mode workflow and picker launch coverage.",
+      "Unit Price Helper (`unit_price_helper`) is now activated as a dedicated tool surface with normalized compare workflow and picker launch coverage.",
+      "Jet Lag Delta (`jet_lag_delta`) is now a dedicated Time-family surface with planner guidance instead of routing to generic Time title flow.",
+      "Jet Lag copy now uses plain-language `Time zone offset` semantics and zero-shift messaging (`no adjustment needed`), with home->destination defaults for planning clarity.",
+      "Jet Lag dashboard tile preview now derives from live home/destination timezone math so tile and modal guidance stay consistent.",
+      "Jet Lag redesign slice is now documented in docs/ai/reference/JET_LAG_REDESIGN_SLICE_SPEC.md (facts vs plan IA, heuristic policy, free flight-time estimator phase, and widget contract).",
+      "Pack M J1 shipped: shared `JetLagPlanner` engine now drives both Jet Lag modal and widget labels/estimates, with deterministic unit coverage in `jet_lag_planner_test.dart`.",
+      "Pack M J2 shipped: Jet Lag modal now presents `Travel Facts` (offset, direction, date impact) and `Jet Lag Plan` (band + estimate + guidance) from shared planner outputs.",
+      "Pack M J3 shipped: Jet Lag widget preview now uses compact shared-plan labels (`+7h Eastbound`, `High • ~5d adapt`) with explicit same-zone fallback (`Same zone`, `No adjustment needed`).",
+      "Pack M J4 shipped: added deterministic phase-1 flight-time estimation from city coordinates (`FlightTimeEstimator`) and place->geo resolution (`PlaceGeoLookup`), now rendered in Travel Facts and Jet Lag widget summaries when coordinates are available.",
+      "Pack M J5 shipped: Jet Lag plan now supports personalized schedule inputs (`Bedtime`, `Wake`) and renders per-day target shifts using shared planner daily-shift rules (`~60/90 min/day`).",
+      "Pack N J1 shipped: `TimezoneUtils` now uses IANA timezone data via `timezone` package (global zone support + DST-aware local/UTC conversion) instead of two-zone hardcoded rules.",
+      "Pack N J1 shipped: Time-family zone picker now uses a broader catalog from city data with searchable selection (`Search timezone or city`) and offset display upgraded to `UTC±HH:MM`.",
+      "Pack N J2 shipped: timezone picker is now city-first by default (`Cities`) with city + country labels and implicit timezone mapping, while preserving advanced timezone-ID selection (`Advanced: Time Zones`) for power users.",
+      "Pack N J2 shipped: Time and Time Zone Converter behavior contracts remain stable (swap, conversion history, and home/destination seeding).",
+      "Pack N J2 shipped: Jet Lag overlap section now uses practical `Call Windows` framing and gates low-shift overlap details (2-3h) behind explicit reveal (`Show call windows`).",
+      "Jet Lag readability polish shipped: Travel Facts and Jet Lag Plan now use key/value emphasis with weight+color (no size inflation), action-first wording (`Tonight Target`), and clearer overlap phrasing.",
+      "Tool modal action-row alignment now standardizes centered `Swap` with left-aligned `+ Add Widget` when available for Time-family and converter-style modals.",
+      "Backlog expanded with Pack N to deliver full global timezone support for Time-family and Jet Lag correctness (IANA coverage + DST/date-line edge handling).",
+      "Backlog expanded with Pack O for separate skippable tutorial overlays by tool family, with per-category completion persistence and Settings replay entry.",
+      "Height imperial shorthand now accepts `6.4` style input as `6 ft 4 in`; deeper two-field Height UX and Jet Lag Delta dedicated-mode follow-ups are scoped in PACK_F_SCOPE_FOLLOWUPS_JETLAG_WEIGHT_HEIGHT.md.",
+      "Weather sheet now uses a compact layout, removes redundant refresh explainer copy, and renders dual-context values for time (12h/24h) and wind (km/h + mph).",
       "Currency modal now exposes stale/retry status messaging using controller currency health signals."
     ],
     "overall_health": "Stable with full gates passing; canonical city data coverage is now enforced for all in-scope records.",
     "status": "GREEN",
     "focus": {
-      "now": "Finish remaining Pack F residual implementation and polish after architecture-matrix + Time/Weather contract shipping.",
-      "next": "Proceed to Pack B/C reliability closure and then Pack H localization bootstrap.",
+      "now": "Proceed with Pack B/C reliability closure and data freshness hardening while keeping Pack N/M regressions locked.",
+      "next": "Start Pack H localization bootstrap once reliability closure tasks are complete.",
       "later": [
         "Pack E marquee scene V2 production",
         "Pack H localization"
@@ -4176,6 +4268,81 @@
         "Updated deferred-matrix expectations and picker deferred-badge tests to remove Tip Helper from deferred status.",
         "Added dedicated interaction regression test (`tip_helper_modal_interaction_test.dart`) and activation coverage from picker search."
       ]
+    },
+    {
+      "id": "patch_2026-02-06_packf_tax_vat_activation_phase7_weather_compact_followup",
+      "date": "2026-02-06",
+      "title": "Activate Sales Tax / VAT Helper and compact weather sheet with dual-context readability",
+      "files_changed": [
+        "app/unitana/lib/features/dashboard/models/tool_definitions.dart",
+        "app/unitana/lib/features/dashboard/models/tool_registry.dart",
+        "app/unitana/lib/features/dashboard/widgets/tool_modal_bottom_sheet.dart",
+        "app/unitana/lib/features/dashboard/widgets/weather_summary_bottom_sheet.dart",
+        "app/unitana/test/tool_registry_architecture_matrix_test.dart",
+        "app/unitana/test/toolpicker_activation_bundle_test.dart",
+        "app/unitana/test/toolpicker_deferred_badge_test.dart",
+        "app/unitana/test/tax_vat_helper_modal_interaction_test.dart",
+        "app/unitana/test/weather_summary_tile_open_smoke_test.dart",
+        "docs/ai/reference/DEFERRED_TOOLS_EXECUTION_MATRIX.md",
+        "docs/ai/context_db.json",
+        "docs/ai/handoff/CURRENT_HANDOFF.md"
+      ],
+      "notes": [
+        "Activated `tax_vat_helper` as an enabled dedicated tool surface and removed it from deferred registry expectations.",
+        "Implemented dedicated tax/VAT modal behavior with add-on vs inclusive modes, locale-aware presets, and subtotal/tax/total breakdown.",
+        "Updated picker activation and deferred-badge tests to reflect tax/VAT activation and keep deferred assertions on remaining tools.",
+        "Removed redundant weather refresh explainer copy and live-status line; freshness now reads via `Updated ...` with stale suffix when needed.",
+        "Applied compact spacing micro-pass to the weather sheet and added dual-context readability for sunrise/sunset (12h+24h) and wind/gust (km/h+mph)."
+      ]
+    },
+    {
+      "id": "patch_2026-02-06_packf_unit_price_activation_phase8_and_followup_scope",
+      "date": "2026-02-06",
+      "title": "Activate Unit Price Helper and scope Jet Lag/Body Weight/Height follow-up contracts",
+      "files_changed": [
+        "app/unitana/lib/features/dashboard/models/tool_definitions.dart",
+        "app/unitana/lib/features/dashboard/models/tool_registry.dart",
+        "app/unitana/lib/features/dashboard/widgets/tool_modal_bottom_sheet.dart",
+        "app/unitana/test/tool_registry_architecture_matrix_test.dart",
+        "app/unitana/test/toolpicker_activation_bundle_test.dart",
+        "app/unitana/test/toolpicker_deferred_badge_test.dart",
+        "app/unitana/test/unit_price_helper_modal_interaction_test.dart",
+        "docs/ai/reference/DEFERRED_TOOLS_EXECUTION_MATRIX.md",
+        "docs/ai/reference/PACK_F_SCOPE_FOLLOWUPS_JETLAG_WEIGHT_HEIGHT.md",
+        "docs/ai/context_db.json",
+        "docs/ai/handoff/CURRENT_HANDOFF.md"
+      ],
+      "notes": [
+        "Activated `unit_price_helper` as an enabled dedicated tool surface and removed it from deferred expectations.",
+        "Implemented Unit Price helper modal with Product A/B inputs, quantity-unit selection, normalized per-100/per-base outputs, and compare summary.",
+        "Updated activation and deferred-badge tests so deferred assertions now target remaining tools (for example `clothing_sizes`).",
+        "Improved imperial Height parsing to accept `6.4` shorthand as `6 ft 4 in` while preserving rich freeform parsing.",
+        "Added scope follow-up contract doc for Jet Lag Delta dedicated workflow, Body Weight preset differentiation, and Height two-field UX planning."
+      ]
+    },
+    {
+      "id": "patch_2026-02-06_packf_jet_lag_delta_dedicated_phase9",
+      "date": "2026-02-06",
+      "title": "Promote Jet Lag Delta to dedicated surface with planner contract",
+      "files_changed": [
+        "app/unitana/lib/features/dashboard/models/tool_definitions.dart",
+        "app/unitana/lib/features/dashboard/models/tool_registry.dart",
+        "app/unitana/lib/features/dashboard/widgets/dashboard_board.dart",
+        "app/unitana/lib/features/dashboard/widgets/tool_modal_bottom_sheet.dart",
+        "app/unitana/test/tool_registry_architecture_matrix_test.dart",
+        "app/unitana/test/toolpicker_activation_bundle_test.dart",
+        "app/unitana/test/jet_lag_delta_modal_interaction_test.dart",
+        "docs/ai/reference/PACK_F_SCOPE_FOLLOWUPS_JETLAG_WEIGHT_HEIGHT.md",
+        "docs/ai/context_db.json",
+        "docs/ai/handoff/CURRENT_HANDOFF.md"
+      ],
+      "notes": [
+        "Changed `jet_lag_delta` from alias metadata to dedicated surface metadata in registry architecture.",
+        "Added explicit ToolDefinition for `jet_lag_delta` and mapped picker routing to that definition instead of generic Time.",
+        "Added dedicated planner card in Time-family UI for Jet Lag Delta with adjustment window, direction-aware guidance, and overlap hints.",
+        "Kept Time and Time Zone Converter behavior intact to reduce regression risk.",
+        "Added dedicated interaction regression coverage and updated activation/architecture matrix expectations."
+      ]
     }
   ],
   "project": {
@@ -4186,6 +4353,6 @@
     "tagline": "travel-first decoder ring; dual reality side-by-side"
   },
   "schema_version": "1.0",
-  "last_patch_id": "patch_2026-02-06_packf_tip_helper_activation_phase6",
+  "last_patch_id": "patch_2026-02-06_packf_jet_lag_delta_dedicated_phase9",
   "last_patch_date": "2026-02-06"
 }

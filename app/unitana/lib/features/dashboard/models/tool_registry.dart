@@ -100,11 +100,10 @@ class ToolRegistry {
     ),
     ToolRegistryTool(
       toolId: 'jet_lag_delta',
-      label: 'Jet Lag Delta',
+      label: 'Jet Lag',
       icon: Icons.airline_seat_recline_normal,
       isEnabled: true,
-      surfaceType: ToolSurfaceType.aliasPreset,
-      aliasTargetToolId: 'time',
+      surfaceType: ToolSurfaceType.dedicated,
       lenses: <String>[ActivityLensId.travelEssentials],
       presetsByLens: <String, Map<String, Object?>>{
         ActivityLensId.travelEssentials: <String, Object?>{
@@ -291,16 +290,16 @@ class ToolRegistry {
       toolId: 'tax_vat_helper',
       label: 'Sales Tax / VAT Helper',
       icon: Icons.calculate_rounded,
-      surfaceType: ToolSurfaceType.deferred,
-      deferReason: 'Needs country/region tax model and disclosure rules.',
+      isEnabled: true,
+      surfaceType: ToolSurfaceType.dedicated,
       lenses: <String>[ActivityLensId.moneyShopping],
     ),
     ToolRegistryTool(
       toolId: 'unit_price_helper',
       label: 'Unit Price Helper',
       icon: Icons.local_offer_rounded,
-      surfaceType: ToolSurfaceType.deferred,
-      deferReason: 'Needs packaging/quantity normalization contract.',
+      isEnabled: true,
+      surfaceType: ToolSurfaceType.dedicated,
       lenses: <String>[ActivityLensId.moneyShopping],
     ),
 

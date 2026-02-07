@@ -26,6 +26,8 @@ Future<void> _enterEditMode(WidgetTester tester) async {
     return;
   }
 
+  await tester.tap(find.byKey(const Key('dashboard_menu_button')));
+  await _pumpFor(tester, const Duration(milliseconds: 220));
   await tester.tap(find.byKey(const Key('dashboard_edit_mode')));
   await _pumpFor(tester, const Duration(milliseconds: 260));
 

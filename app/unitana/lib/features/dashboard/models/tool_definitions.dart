@@ -189,6 +189,16 @@ class ToolDefinitions {
     defaultSecondary: '2026-02-06 10:30',
   );
 
+  static const jetLagDelta = ToolDefinition(
+    id: 'jet_lag_delta',
+    canonicalToolId: CanonicalToolId.time,
+    lensId: ActivityLensId.travelEssentials,
+    title: 'Jet Lag',
+    icon: Icons.airline_seat_recline_normal_rounded,
+    defaultPrimary: 'Destination +7h',
+    defaultSecondary: 'Adjust over 4 days',
+  );
+
   static const dataStorage = ToolDefinition(
     id: 'data_storage',
     canonicalToolId: CanonicalToolId.dataStorage,
@@ -274,6 +284,26 @@ class ToolDefinitions {
     defaultSecondary: '15% • Split 2',
   );
 
+  static const taxVatHelper = ToolDefinition(
+    id: 'tax_vat_helper',
+    canonicalToolId: 'tax_vat_helper',
+    lensId: ActivityLensId.moneyShopping,
+    title: 'Sales Tax / VAT Helper',
+    icon: Icons.calculate_rounded,
+    defaultPrimary: '\$100.00',
+    defaultSecondary: '8% • Add-on',
+  );
+
+  static const unitPriceHelper = ToolDefinition(
+    id: 'unit_price_helper',
+    canonicalToolId: 'unit_price_helper',
+    lensId: ActivityLensId.moneyShopping,
+    title: 'Unit Price Helper',
+    icon: Icons.local_offer_rounded,
+    defaultPrimary: '\$4.99',
+    defaultSecondary: '500 g',
+  );
+
   static const bodyWeight = ToolDefinition(
     id: 'body_weight',
     canonicalToolId: CanonicalToolId.weight,
@@ -302,6 +332,7 @@ class ToolDefinitions {
     temperature,
     ovenTemperature,
     time,
+    jetLagDelta,
     dataStorage,
     currencyConvert,
     shoeSizes,
@@ -311,6 +342,8 @@ class ToolDefinitions {
     bodyWeight,
     weatherSummary,
     tipHelper,
+    taxVatHelper,
+    unitPriceHelper,
   ];
 
   static const Map<String, ToolDefinition> _byId = {
@@ -326,6 +359,7 @@ class ToolDefinitions {
     'temperature': temperature,
     'oven_temperature': ovenTemperature,
     'time': time,
+    'jet_lag_delta': jetLagDelta,
     'time_zone_converter': timeZoneConverter,
     'data_storage': dataStorage,
     'currency_convert': currencyConvert,
@@ -336,6 +370,8 @@ class ToolDefinitions {
     'body_weight': bodyWeight,
     'weather_summary': weatherSummary,
     'tip_helper': tipHelper,
+    'tax_vat_helper': taxVatHelper,
+    'unit_price_helper': unitPriceHelper,
   };
 
   static ToolDefinition? byId(String toolId) => _byId[toolId];
@@ -911,6 +947,17 @@ class ToolConverters {
       final ft = int.tryParse(parts[0]);
       final inch = int.tryParse(parts[1]);
       if (ft != null && inch != null) {
+        final cm = (ft * 12 + inch) * 2.54;
+        return '${_fmt(cm)} cm';
+      }
+    }
+
+    // Common shorthand: 6.4 means 6 ft 4 in (not decimal feet).
+    final shorthand = RegExp(r'^(\d{1,2})[.,](\d{1,2})$').firstMatch(t);
+    if (shorthand != null) {
+      final ft = int.tryParse(shorthand.group(1) ?? '');
+      final inch = int.tryParse(shorthand.group(2) ?? '');
+      if (ft != null && inch != null && inch <= 11) {
         final cm = (ft * 12 + inch) * 2.54;
         return '${_fmt(cm)} cm';
       }

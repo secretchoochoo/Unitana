@@ -88,7 +88,10 @@ void main() {
     // Phone (2 columns).
     await pumpDashboard(const Size(390, 844));
 
-    // Enter edit mode via inline header action.
+    // Enter edit mode via the top-right menu.
+    await tester.tap(find.byKey(const Key('dashboard_menu_button')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 200));
     await tester.tap(find.byKey(const Key('dashboard_edit_mode')));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 250));

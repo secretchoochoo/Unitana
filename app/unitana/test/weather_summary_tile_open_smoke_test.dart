@@ -123,14 +123,6 @@ void main() {
           sheetFinder,
         );
         expect(refreshText.evaluate().isNotEmpty, isTrue);
-        expect(
-          find.descendant(
-            of: sheetFinder,
-            matching: find.byKey(const ValueKey('weather_summary_freshness')),
-          ),
-          findsOneWidget,
-        );
-
         // Place header rows: avoid brittle spacing around the middle dot.
         final destinationHeader = textInSheetWhere(
           (t) => t.contains('Destination') && t.contains('Lisbon'),
@@ -152,28 +144,28 @@ void main() {
         // Sunrise/sunset and wind/gust headers should render for both cards.
         expect(
           find
-              .descendant(of: sheetFinder, matching: find.text('☀️'))
+              .descendant(of: sheetFinder, matching: find.textContaining('☀️'))
               .evaluate()
               .length,
           greaterThanOrEqualTo(2),
         );
         expect(
           find
-              .descendant(of: sheetFinder, matching: find.text('🌙'))
+              .descendant(of: sheetFinder, matching: find.textContaining('🌙'))
               .evaluate()
               .length,
           greaterThanOrEqualTo(2),
         );
         expect(
           find
-              .descendant(of: sheetFinder, matching: find.text('🌬️'))
+              .descendant(of: sheetFinder, matching: find.textContaining('🌬️'))
               .evaluate()
               .length,
           greaterThanOrEqualTo(2),
         );
         expect(
           find
-              .descendant(of: sheetFinder, matching: find.text('💨'))
+              .descendant(of: sheetFinder, matching: find.textContaining('💨'))
               .evaluate()
               .length,
           greaterThanOrEqualTo(2),

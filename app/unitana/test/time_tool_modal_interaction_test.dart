@@ -194,4 +194,95 @@ void main() {
       findsOneWidget,
     );
   });
+
+  testWidgets('Time zone picker defaults to city-first search', (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    await tester.binding.setSurfaceSize(const Size(390, 900));
+    addTearDown(() async => tester.binding.setSurfaceSize(null));
+
+    final state = buildSeededState();
+    await pumpDashboard(tester, state);
+    await openTimeZoneConverterTool(tester);
+
+    await tester.tap(find.byKey(const ValueKey('tool_time_from_zone')));
+    await tester.pumpAndSettle(const Duration(milliseconds: 250));
+    await tester.enterText(
+      find.byKey(const ValueKey('tool_time_zone_search_from')),
+      'tokyo',
+    );
+    await tester.pumpAndSettle(const Duration(milliseconds: 200));
+
+    expect(
+      find.byKey(const ValueKey('tool_time_picker_mode_from_city')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('tool_time_picker_mode_from_zone')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(
+        const ValueKey('tool_time_city_item_from_tokyo_jp_asia_tokyo'),
+      ),
+      findsOneWidget,
+    );
+    await tester.ensureVisible(
+      find.byKey(
+        const ValueKey('tool_time_city_item_from_tokyo_jp_asia_tokyo'),
+      ),
+    );
+    await tester.tap(
+      find.byKey(
+        const ValueKey('tool_time_city_item_from_tokyo_jp_asia_tokyo'),
+      ),
+    );
+    await tester.pumpAndSettle(const Duration(milliseconds: 200));
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey('tool_time_from_zone')),
+        matching: find.textContaining('Tokyo'),
+      ),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('Time zone picker supports advanced timezone fallback', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    await tester.binding.setSurfaceSize(const Size(390, 900));
+    addTearDown(() async => tester.binding.setSurfaceSize(null));
+
+    final state = buildSeededState();
+    await pumpDashboard(tester, state);
+    await openTimeZoneConverterTool(tester);
+
+    await tester.tap(find.byKey(const ValueKey('tool_time_from_zone')));
+    await tester.pumpAndSettle(const Duration(milliseconds: 250));
+    await tester.tap(
+      find.byKey(const ValueKey('tool_time_picker_mode_from_zone')),
+    );
+    await tester.pumpAndSettle(const Duration(milliseconds: 150));
+    await tester.enterText(
+      find.byKey(const ValueKey('tool_time_zone_search_from')),
+      'asia/tokyo',
+    );
+    await tester.pumpAndSettle(const Duration(milliseconds: 200));
+
+    expect(
+      find.byKey(const ValueKey('tool_time_zone_item_from_Asia_Tokyo')),
+      findsOneWidget,
+    );
+    await tester.tap(
+      find.byKey(const ValueKey('tool_time_zone_item_from_Asia_Tokyo')),
+    );
+    await tester.pumpAndSettle(const Duration(milliseconds: 200));
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey('tool_time_from_zone')),
+        matching: find.textContaining('Tokyo'),
+      ),
+      findsOneWidget,
+    );
+  });
 }

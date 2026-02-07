@@ -42,7 +42,14 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.byKey(const ValueKey('tool_title_time')), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('tool_title_jet_lag_delta')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('tool_time_planner_card')),
+      findsOneWidget,
+    );
   });
 
   testWidgets('data storage is enabled and performs conversion in modal', (
@@ -187,6 +194,50 @@ void main() {
     expect(find.byKey(const ValueKey('tool_title_tip_helper')), findsOneWidget);
     expect(
       find.byKey(const ValueKey('tool_tip_result_tip_helper')),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('sales tax / VAT helper is enabled and opens dedicated modal', (
+    tester,
+  ) async {
+    await pumpDashboardForTest(tester);
+    await _openToolPicker(tester);
+    await _searchTool(tester, 'sales tax');
+
+    await tester.tap(
+      find.byKey(const ValueKey('toolpicker_search_tool_tax_vat_helper')),
+    );
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const ValueKey('tool_title_tax_vat_helper')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('tool_tax_result_tax_vat_helper')),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('unit price helper is enabled and opens dedicated modal', (
+    tester,
+  ) async {
+    await pumpDashboardForTest(tester);
+    await _openToolPicker(tester);
+    await _searchTool(tester, 'unit price');
+
+    await tester.tap(
+      find.byKey(const ValueKey('toolpicker_search_tool_unit_price_helper')),
+    );
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const ValueKey('tool_title_unit_price_helper')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('tool_unit_price_result_unit_price_helper')),
       findsOneWidget,
     );
   });

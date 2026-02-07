@@ -755,7 +755,7 @@ class _ProfileTile extends StatelessWidget {
                         const SizedBox(width: 2),
                         IconButton(
                           key: ValueKey('profiles_board_edit_${profile.id}'),
-                          tooltip: 'Edit profile',
+                          tooltip: 'Edit this profile',
                           visualDensity: VisualDensity.compact,
                           padding: const EdgeInsets.all(4),
                           constraints: BoxConstraints.tightFor(
@@ -768,7 +768,7 @@ class _ProfileTile extends StatelessWidget {
                         const SizedBox(width: 2),
                         IconButton(
                           key: ValueKey('profiles_board_delete_${profile.id}'),
-                          tooltip: 'Delete profile',
+                          tooltip: 'Delete this profile',
                           visualDensity: VisualDensity.compact,
                           padding: const EdgeInsets.all(4),
                           constraints: BoxConstraints.tightFor(

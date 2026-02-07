@@ -1,8 +1,8 @@
 # CURRENT_HANDOFF (Unitana) - Wizard, Collapsing Header, Multi-Profile
 
 ## Snapshot
-- **Date:** 2026-02-06
-- **Status:** Repo is green (`dart format`, `flutter analyze`, `flutter test`) after Pack A (city data platform foundation) implementation.
+- **Date:** 2026-02-07
+- **Status:** Repo is green (`dart format`, `flutter analyze`, `flutter test`) after Pack N J2 (city-first Time UX + Jet Lag overlap utility) implementation.
 - **Operating mode:** Codex is now the primary workflow; apply edits directly in-repo (do not require patch zip workflow unless explicitly requested).
 
 ## Latest changes (2026-02-05)
@@ -65,6 +65,128 @@
     - `tip_helper_modal_interaction_test.dart`
     - activation assertion in `toolpicker_activation_bundle_test.dart`
     - deferred/audit expectation updates in `tool_registry_architecture_matrix_test.dart`, `toolpicker_deferred_badge_test.dart`, and `tool_lens_map_test.dart` adjacency.
+- Pack F activation bundle (phase 7):
+  - activated `tax_vat_helper` as an enabled dedicated tool surface and removed it from deferred-only picker behavior.
+  - implemented dedicated Sales Tax / VAT modal workflow:
+    - add-on vs inclusive tax modes
+    - locale-aware percent presets
+    - subtotal/tax/total breakdown with explicit mode description
+  - weather sheet clarity + compact micro-pass:
+    - removed top-line `Live updates enabled` / stale status text row and removed manual-refresh explainer copy
+    - freshness now stays on `Updated ...` line (with stale suffix when applicable)
+    - added dual-context readability for weather details:
+      - sunrise/sunset now render both 12h and 24h formats
+      - wind/gust now render both `km/h` and `mph`
+    - tightened spacing/padding so the weather sheet fits more often without immediate scrolling.
+  - added/updated regression coverage:
+    - `tax_vat_helper_modal_interaction_test.dart`
+    - activation assertion in `toolpicker_activation_bundle_test.dart`
+    - deferred-row assertion moved to `unit_price_helper` in `toolpicker_deferred_badge_test.dart`
+    - weather sheet copy/header assertions refreshed in `weather_summary_tile_open_smoke_test.dart`.
+- Pack F activation bundle (phase 8):
+  - activated `unit_price_helper` as an enabled dedicated tool surface and removed it from deferred-only picker behavior.
+  - implemented dedicated Unit Price modal workflow:
+    - Product A price + quantity + unit selection
+    - optional Product B compare mode
+    - normalized value outputs (`per 100g/100mL` and `per kg/L`) plus cheaper-product summary
+  - improved Height imperial shorthand parsing (`6.4` => `6 ft 4 in`) in length conversion logic while keeping existing rich input forms.
+  - documented scoped follow-ups for deeper design work in:
+    - `docs/ai/reference/PACK_F_SCOPE_FOLLOWUPS_JETLAG_WEIGHT_HEIGHT.md`
+    - Jet Lag Delta deeper planning follow-up (after dedicated mode baseline)
+    - Body Weight vs Weight lens/default differentiation
+    - Height two-field (`ft` + `in`) input contract planning.
+  - added/updated regression coverage:
+    - `unit_price_helper_modal_interaction_test.dart`
+    - activation assertion in `toolpicker_activation_bundle_test.dart`
+    - deferred-row assertion moved to `clothing_sizes` in `toolpicker_deferred_badge_test.dart`
+    - deferred/audit expectation updates in `tool_registry_architecture_matrix_test.dart`.
+- Pack F activation bundle (phase 9):
+  - upgraded `jet_lag_delta` from alias behavior to a dedicated Time-family surface contract.
+  - picker no longer routes Jet Lag Delta into generic Time title/surface.
+  - added a dedicated Jet Lag planner card (`tool_time_planner_card`) with:
+    - explicit delta magnitude + adjustment-window estimate
+    - direction-aware bedtime shift guidance
+    - overlap hints between destination and home clocks
+  - kept `Time` and `Time Zone Converter` contracts unchanged to avoid regression:
+    - `Time` remains live clocks + delta
+    - `Time Zone Converter` remains explicit conversion/history surface
+  - added regression guard `jet_lag_delta_modal_interaction_test.dart` and updated activation + registry architecture expectations.
+- Settings backlog expansion (design scope, 2026-02-06):
+  - added planning spec `docs/ai/reference/SETTINGS_BACKLOG_GPS_THEME.md` for:
+    - optional GPS-assisted profile auto-selection (confidence-scored matching + safe fallback behavior)
+    - dual-theme roadmap (`Dark/Dracula` + `Light/Solarized` mapping) for future Settings implementation.
+- Backlog expansion (design scope, 2026-02-07):
+  - added Pack N for global timezone support expansion:
+    - move from limited timezone options to full searchable IANA-backed zone coverage.
+    - unify timezone math inputs across Time, Time Zone Converter, and Jet Lag.
+    - add DST/date-line edge-case coverage to prevent false `0h` outcomes.
+  - added Pack O for contextual tutorial overlays by scenario/tool family:
+    - keep profile wizard tutorial separate from in-tool hints.
+    - add lightweight, skippable tutorial categories (core converters, lookup/multi-unit, weather, time/jet-lag, dashboard/widget editing).
+    - persist completion state per category and allow replay via Settings.
+- Jet Lag redesign planning slice (design scope, 2026-02-06):
+  - added `docs/ai/reference/JET_LAG_REDESIGN_SLICE_SPEC.md` as the execution contract for Pack M:
+    - facts vs adaptation-plan IA split
+    - plain-language copy policy
+    - deterministic heuristic thresholds
+    - free phase-1 flight-time estimation approach from existing city lat/lon
+    - shared engine requirement to keep widget and modal outputs consistent.
+- Jet Lag redesign implementation (Pack M J1, 2026-02-06):
+  - added shared planner engine: `app/unitana/lib/features/dashboard/models/jet_lag_planner.dart`.
+  - removed duplicated jet-lag math from widget + modal; both now consume the same planner output contract.
+  - added deterministic unit coverage: `app/unitana/test/jet_lag_planner_test.dart` (`0h`, eastbound, westbound, extreme-offset clamp).
+- Jet Lag redesign implementation (Pack M J2, 2026-02-06):
+  - modal IA now splits into:
+    - `Travel Facts` (time zone offset, direction, date impact)
+    - `Jet Lag Plan` (adjustment band, estimate, actionable guidance)
+  - planner banding + date-impact helpers are now in the shared planner contract.
+  - modal contract test updated to assert facts/plan presence and adjustment-band copy.
+- Jet Lag redesign implementation (Pack M J3, 2026-02-06):
+  - dashboard tile copy now uses compact plan labels from shared planner output:
+    - primary: `+7h Eastbound` (or `Same zone`)
+    - secondary: `High • ~5d adapt` (or `No adjustment needed`)
+  - removed Jet Lag-specific title-prefix styling dependency tied to old `Destination ...` tile phrasing.
+- Jet Lag redesign implementation (Pack M J4, 2026-02-06):
+  - added deterministic phase-1 flight-time estimator:
+    - model: `app/unitana/lib/features/dashboard/models/flight_time_estimator.dart`
+    - heuristic: haversine distance + fixed overhead model (no paid API dependency)
+  - added place->coordinate resolver:
+    - `app/unitana/lib/features/dashboard/models/place_geo_lookup.dart`
+    - resolves from loaded city repository, with curated fallback.
+  - Jet Lag surfaces now show estimated flight time when coordinates are available:
+    - Travel Facts card (`Estimated flight time: ~Xh Ym flight`)
+    - widget summary (`~Xh flight • ~Nd adapt` for shifted routes).
+  - regression coverage added:
+    - `app/unitana/test/flight_time_estimator_test.dart`
+    - updated `app/unitana/test/jet_lag_delta_modal_interaction_test.dart`.
+- Jet Lag redesign implementation (Pack M J5, 2026-02-06):
+  - added personalized schedule controls in Jet Lag plan card:
+    - `Bedtime` and `Wake` selectors (`showTimePicker`)
+  - plan now renders personalized target-shift guidance using shared planner rules:
+    - daily shift derived from offset band (`~60 min/day` or `~90 min/day`)
+    - concrete target bedtime/wake recommendations for next adjustment step
+  - new modal test contract keys:
+    - `tool_jetlag_bedtime_button`
+    - `tool_jetlag_wake_button`
+    - `tool_jetlag_personalized_schedule`
+- Pack N implementation (J1, 2026-02-07):
+  - upgraded timezone engine from hardcoded zone rules to IANA-backed support via `timezone` package in `TimezoneUtils`.
+  - `nowInZone` / `localToUtc` now resolve arbitrary IANA IDs with DST-aware conversions and UTC fallback safety.
+  - Time-family timezone picker now uses a broader zone catalog sourced from city data + curated fallbacks, with searchable selection (`Search timezone or city`).
+  - zone meta copy now displays precise offsets in `UTC±HH:MM` format.
+  - added regression coverage:
+    - `app/unitana/test/timezone_utils_global_support_test.dart`
+    - `app/unitana/test/time_zone_catalog_test.dart`
+    - updated `app/unitana/test/time_tool_modal_interaction_test.dart` (searchable zone picker).
+- Jet Lag readability + action-row polish (2026-02-07):
+  - Travel Facts + Jet Lag Plan now follow weight/color emphasis without text-size inflation:
+    - key/value hierarchy via bold labels + controlled Dracula accents.
+    - action phrasing now uses title-case keys (`Tonight Target`, `Daily Shift`, etc.).
+  - overlap copy now reads in plain language (`When Barcelona is 09:00, Chicago is 02:00`).
+  - Time-family and converter-style modal action rows now align consistently:
+    - centered `Swap`
+    - left-aligned `+ Add Widget` when present.
+  - maintained reduced-motion-safe rotating tip behavior in Jet Lag plan card.
 - Pack F contracted implementation sprint (phase 1) shipped:
   - Time-family split implemented in tool surfaces:
     - `Time` now remains the live home/destination clocks + delta workflow.
@@ -73,7 +195,7 @@
   - Time tool live-update behavior hardened:
     - time surfaces now tick on a minute timer so live clocks/delta stay current while open.
   - Weather clarity/refresh contract implemented:
-    - weather sheet now shows freshness state (`Live updates enabled` vs `Data may be stale`) and a short manual/auto refresh policy line.
+    - weather sheet now keeps freshness on `Updated ...` (with stale suffix when needed) and no longer repeats live/refresh explainer labels.
     - AQI labeling upgraded to value + health band (example: `72 (Moderate)`).
     - pollen labeling upgraded to explicit scale semantics (`x.x/5 (Band)`).
     - headers clarified to `AQI (US)` and `Pollen (0-5)`.
@@ -82,9 +204,9 @@
   - Regression coverage added/updated:
     - `time_tool_modal_interaction_test.dart` now covers Time Zone Converter alias open + explicit conversion history behavior.
     - `toolpicker_activation_bundle_test.dart` now asserts timezone lookup opens `time_zone_converter`.
-    - `weather_summary_tile_open_smoke_test.dart` now asserts freshness indicator and updated AQI/Pollen labels.
+    - `weather_summary_tile_open_smoke_test.dart` now asserts updated header + AQI/Pollen + weather table label contracts.
 - Header controls follow-up:
-  - removed `Edit Widgets` from the menu and moved edit entry to an inline `✏ Edit` action on the status row.
+  - `Edit Widgets` is exposed in the top-right menu (inline status-row `✏ Edit` entry removed).
   - `Updated …` + refresh cluster is now visually centered to the same title axis with a small right optical nudge.
   - kept small-phone overflow safety via responsive scaling; devtools overflow regression remains green.
 - Profiles board add-slot balancing:
@@ -96,6 +218,22 @@
   - added `dashboard_currency_retry_cache_semantics_test.dart` for TTL/no-refetch, outage backoff suppression, and immediate retry behavior when configured.
 - Pack B global coverage hardening:
   - added `dashboard_live_data_global_city_coverage_test.dart` with representative city set (Tokyo/Cairo/Sao Paulo/Sydney/Nairobi/Reykjavik) for live weather/sun/AQI/pollen success path coverage.
+- Pack N implementation (J2, 2026-02-07):
+  - Time-family picker is now city-first by default with city + country context and implicit timezone mapping.
+  - advanced fallback mode was added for direct timezone-ID selection (`Advanced: Time Zones`) for power users.
+  - Time and Time Zone Converter behavior contracts remain intact:
+    - swap behavior unchanged
+    - converter local-time rebase behavior unchanged
+    - home/destination default seeding unchanged
+  - Jet Lag overlap utility pass shipped:
+    - overlap content reframed as practical `Call Windows`
+    - low-shift routes (2-3h) now gate overlap behind explicit reveal (`Show call windows`)
+    - larger shifts continue showing overlap guidance directly
+  - visual consistency pass kept no text-size inflation and retained weight/color/italic hierarchy tokens.
+  - regression coverage added/updated:
+    - `app/unitana/test/time_zone_catalog_test.dart`
+    - `app/unitana/test/time_tool_modal_interaction_test.dart`
+    - `app/unitana/test/jet_lag_delta_modal_interaction_test.dart`
 - Pack F activation bundle (phase 1):
   - activated `world_clock_delta` and `jet_lag_delta` entries in tool registry.
   - wired both entries to the existing mature Time modal flow as interim E2E activation.
@@ -203,8 +341,8 @@
   - Open-Meteo mapper test coverage now validates the full known WMO code set used by the backend contract (not only representative samples)
   - known codes must map to explicit labels (no generic fallback label for contracted codes).
 - Tools audit checkpoint:
-  - tool registry now has 7 deferred entries (coming-soon surfaces), so tools completion remains open under Pack F.
-  - Deferred IDs: `cups_grams_estimates`, `pace`, `hydration`, `energy`, `tax_vat_helper`, `unit_price_helper`, `clothing_sizes`.
+  - tool registry now has 5 deferred entries (coming-soon surfaces), so tools completion remains open under Pack F.
+  - Deferred IDs: `cups_grams_estimates`, `pace`, `hydration`, `energy`, `clothing_sizes`.
 - Profile UX rework (phase 1):
   - replaced split menu actions (`Switch profile` + `Add profile`) with a single `Profiles` entry.
   - added a dedicated tiled `Profiles Board` screen with:
@@ -218,7 +356,7 @@
 - Profile/currency UX parity follow-up:
   - profile board app bar now uses `Manage` -> edit-mode `X`/`✔` actions to align with tile-edit interaction patterns.
   - profile tiles now expose explicit drag/edit/delete affordances in edit mode and include additional add-profile `+` slots for denser grid parity with dashboard behavior.
-  - dashboard header now exposes inline `✏ Edit` action; menu no longer includes `Edit Widgets`.
+  - dashboard edit entry is menu-based (`Edit Widgets`) for better long-scroll ergonomics.
   - currency token formatting now isolates mixed-direction text runs and applies suffix placement for Arabic-script currencies to avoid bidi reorder defects (example IQD/AED family).
   - all required gates re-verified green after these updates (`dart format`, `flutter analyze`, `flutter test`).
 - Startup/profile flow hardening follow-up:
@@ -263,6 +401,11 @@
     - AQI and pollen must use user semantics (value + band/scale), no provider/dev copy.
     - manual refresh stays exposed; auto-refresh follows live-data cadence.
     - stale indicator appears when data age exceeds freshness threshold.
+  - Jet Lag clarity contract follow-up:
+    - planner phrasing now uses `Time zone offset` (not `Time difference`) and `Adjustment estimate`.
+    - zero-shift state now reads `same zone (0h)` + `no adjustment needed`.
+    - Jet Lag defaults always seed `Home -> Destination` for planning consistency (independent of active hero reality).
+    - dashboard Jet Lag tile now uses live home/destination timezone math so tile and modal stay consistent.
   - regression guardrails plan:
     - add targeted opt-in golden/screenshot coverage for Time base surface, Time Zone Converter core state, weather freshness/stale states, and title overflow behavior.
     - keep goldens opt-in only (`UNITANA_GOLDENS=1`).
@@ -293,11 +436,18 @@ Backlog has been reprioritized away from small, fragmented slices into larger ex
 - Current Weather modal must not remain a generic converter-style form.
 - Before implementation, run an explicit options pitch and choose direction: conversion utility vs richer weather cockpit with larger marquee + deeper API detail.
 - Selected direction must align with Unitana travel intent and established Dracula visual language.
-11) **Icebox:** Optional radio feature.
+11) **Pack N (P1): Global timezone dataset + full converter support**
+- Expand timezone coverage to full searchable IANA-backed zones with friendly labels.
+- Reuse canonical city data first, then augment with timezone catalog where needed.
+- Unify Time-family and Jet Lag offset math, including DST/date-line edge-case tests.
+12) **Pack O (P2): Contextual tutorial overlays by tool family**
+- Keep wizard tutorial separate; add lightweight, skippable overlays for tool categories and dashboard/widget editing.
+- Persist tutorial completion by category and expose replay in Settings.
+13) **Icebox:** Optional radio feature.
 
 Current execution focus:
-- **Now:** implement the locked design contracts in Pack F residual execution (tool taxonomy cleanup, Time-family split behavior, weather semantics/refresh clarity, visual tokenization, and targeted visual regression guards).
-- **Next:** complete remaining tools activation/defer decisions under the new architecture matrix and close high-value interaction/test gaps.
+- **Now:** run Pack N J2 city-first timezone UX pass (city picker default + advanced timezone fallback), then tighten Jet Lag overlap utility contract.
+- **Next:** complete remaining tools activation/defer decisions under the architecture matrix and close high-value interaction/test gaps.
 - **Later:** Pack E production facelift and Pack H localization.
 
 ## What’s true right now (high signal)

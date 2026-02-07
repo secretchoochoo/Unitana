@@ -10,6 +10,7 @@ class UnitanaTile extends StatelessWidget {
   final String primary;
   final String secondary;
   final String footer;
+  final String? primaryDeemphasizedPrefix;
   final String? hint;
   final VoidCallback? onTap;
   final VoidCallback? onLongPress;
@@ -30,6 +31,7 @@ class UnitanaTile extends StatelessWidget {
     required this.primary,
     required this.secondary,
     required this.footer,
+    this.primaryDeemphasizedPrefix,
     this.hint,
     this.onTap,
     this.onLongPress,
@@ -130,19 +132,51 @@ class UnitanaTile extends StatelessWidget {
             child: FittedBox(
               fit: BoxFit.scaleDown,
               alignment: Alignment.center,
-              child: Text(
-                safePrimary,
-                textAlign: TextAlign.center,
-                maxLines: 1,
-                overflow: TextOverflow.visible,
-                softWrap: false,
-                style: text.headlineMedium?.copyWith(
+              child: () {
+                final baseStyle = text.headlineMedium?.copyWith(
                   color: scheme.onSurface,
                   fontWeight: FontWeight.w800,
                   fontSize: primarySize,
                   height: 1.0,
-                ),
-              ),
+                );
+                final prefix = primaryDeemphasizedPrefix?.trim();
+                final hasPrefix =
+                    prefix != null &&
+                    prefix.isNotEmpty &&
+                    safePrimary.startsWith(prefix);
+
+                if (!hasPrefix) {
+                  return Text(
+                    safePrimary,
+                    textAlign: TextAlign.center,
+                    maxLines: 1,
+                    overflow: TextOverflow.visible,
+                    softWrap: false,
+                    style: baseStyle,
+                  );
+                }
+
+                final rest = safePrimary.substring(prefix.length);
+                return Text.rich(
+                  TextSpan(
+                    children: [
+                      TextSpan(
+                        text: prefix,
+                        style: baseStyle?.copyWith(
+                          fontSize: primarySize * 0.58,
+                          fontWeight: FontWeight.w700,
+                          color: scheme.onSurface.withAlpha(210),
+                        ),
+                      ),
+                      TextSpan(text: rest, style: baseStyle),
+                    ],
+                  ),
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.visible,
+                  softWrap: false,
+                );
+              }(),
             ),
           );
 

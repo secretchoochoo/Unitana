@@ -17,33 +17,31 @@ void main() {
 
     await tester.enterText(
       find.byKey(const ValueKey('toolpicker_search')),
-      'sales tax',
+      'clothing',
     );
     await tester.pumpAndSettle(const Duration(milliseconds: 250));
 
-    final taxRow = find.byKey(
-      const Key('toolpicker_search_tool_tax_vat_helper'),
-    );
-    expect(taxRow, findsOneWidget);
+    final row = find.byKey(const Key('toolpicker_search_tool_clothing_sizes'));
+    expect(row, findsOneWidget);
     expect(
-      find.descendant(of: taxRow, matching: find.text('Deferred')),
+      find.descendant(of: row, matching: find.text('Deferred')),
       findsOneWidget,
     );
     expect(
       find.descendant(
-        of: taxRow,
-        matching: find.textContaining('country/region tax model'),
+        of: row,
+        matching: find.textContaining('High brand variance'),
       ),
       findsOneWidget,
     );
 
-    await tester.tap(taxRow, warnIfMissed: false);
+    await tester.tap(row, warnIfMissed: false);
     await tester.pumpAndSettle(const Duration(milliseconds: 250));
 
     // Disabled row should not open a tool modal.
     expect(find.byType(BottomSheet), findsOneWidget);
     expect(
-      find.byKey(const ValueKey('tool_title_tax_vat_helper')),
+      find.byKey(const ValueKey('tool_title_clothing_sizes')),
       findsNothing,
     );
   });

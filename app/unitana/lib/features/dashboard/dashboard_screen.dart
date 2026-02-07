@@ -37,7 +37,7 @@ class DashboardScreen extends StatefulWidget {
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
-  static const double _kMenuSheetHeightFactor = 0.82;
+  static const double _kMenuSheetHeightFactor = 0.85;
   static const double _kEditAppBarActionFontSize = 14;
   static const double _kAppBarTitleMaxFontSize = 28;
   static const double _kAppBarTitleMinFontSize = 18;
@@ -807,10 +807,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Future<void> _openToolPickerAndRun(BuildContext context) async {
     final picked = await showModalBottomSheet<ToolDefinition>(
       context: context,
+      isScrollControlled: true,
       useSafeArea: true,
       showDragHandle: true,
       backgroundColor: Theme.of(context).colorScheme.surface,
-      builder: (ctx) => ToolPickerSheet(session: _session),
+      builder: (ctx) => FractionallySizedBox(
+        heightFactor: 0.85,
+        child: ToolPickerSheet(session: _session),
+      ),
     );
 
     if (picked == null) return;
@@ -1017,7 +1021,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget _sheetCloseButton(BuildContext context) {
     return IconButton(
       icon: const Icon(Icons.close_rounded),
-      tooltip: 'Close',
+      tooltip: 'Close this panel',
       onPressed: () => Navigator.of(context).maybePop(),
     );
   }
@@ -1116,7 +1120,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               padding: const EdgeInsets.only(left: 16),
               child: _HeaderIconButton(
                 key: const Key('dashboard_tools_button'),
-                tooltip: 'Tools',
+                tooltip: 'Open tools',
                 icon: Icons.handyman_rounded,
                 onTap: _openToolPickerFromMenu,
               ),
@@ -1169,7 +1173,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   padding: const EdgeInsets.only(right: 16),
                   child: _HeaderIconButton(
                     key: const Key('dashboard_menu_button'),
-                    tooltip: 'Menu',
+                    tooltip: 'Open menu',
                     icon: Icons.menu_rounded,
                     onTap: () {
                       showModalBottomSheet<void>(
@@ -1221,6 +1225,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                       _comingSoon(context, 'Settings');
                                     },
                                   ),
+                                  if (!_isEditingWidgets)
+                                    ListTile(
+                                      key: const Key('dashboard_edit_mode'),
+                                      leading: const Icon(Icons.edit),
+                                      title: const Text('Edit Widgets'),
+                                      onTap: () {
+                                        Navigator.of(sheetContext).pop();
+                                        Future.microtask(_enterEditWidgets);
+                                      },
+                                    ),
                                   ListTile(
                                     key: const ValueKey(
                                       'dashboard_menu_reset_defaults',
@@ -1331,7 +1345,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                       ),
                                       const SizedBox(width: 0),
                                       IconButton(
-                                        tooltip: 'Refresh',
+                                        tooltip: 'Refresh data',
                                         onPressed: _refreshAllNow,
                                         icon: const Icon(
                                           Icons.refresh_rounded,
@@ -1353,24 +1367,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               ),
                             ),
                           ),
-                          if (!_isEditingWidgets)
-                            Align(
-                              alignment: Alignment.centerRight,
-                              child: TextButton(
-                                key: const Key('dashboard_edit_mode'),
-                                onPressed: _enterEditWidgets,
-                                style: TextButton.styleFrom(
-                                  visualDensity: VisualDensity.compact,
-                                  tapTargetSize:
-                                      MaterialTapTargetSize.shrinkWrap,
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 6,
-                                  ),
-                                  minimumSize: const Size(0, 32),
-                                ),
-                                child: const Text('✏ Edit'),
-                              ),
-                            ),
                         ],
                       ),
                     ),

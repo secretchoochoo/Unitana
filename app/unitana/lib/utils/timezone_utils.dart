@@ -1,4 +1,6 @@
 import 'package:flutter/foundation.dart';
+import 'package:timezone/data/latest.dart' as tzdata;
+import 'package:timezone/timezone.dart' as tz;
 
 /// Lightweight timezone helpers for the two canonical Unitana places.
 ///
@@ -12,22 +14,46 @@ import 'package:flutter/foundation.dart';
 @immutable
 class ZoneTime {
   final DateTime local;
-  final int offsetHours;
+  final int offsetMinutes;
   final String abbreviation;
 
   const ZoneTime({
     required this.local,
-    required this.offsetHours,
+    int? offsetHours,
+    int? offsetMinutes,
     required this.abbreviation,
-  });
+  }) : offsetMinutes = offsetMinutes ?? ((offsetHours ?? 0) * 60);
+
+  int get offsetHours => offsetMinutes ~/ 60;
 }
 
 class TimezoneUtils {
+  static bool _tzReady = false;
+
+  static void _ensureTzReady() {
+    if (_tzReady) return;
+    tzdata.initializeTimeZones();
+    _tzReady = true;
+  }
+
   static ZoneTime nowInZone(String tzId, {DateTime? nowUtc}) {
+    _ensureTzReady();
     final utc = (nowUtc ?? DateTime.now().toUtc());
-    final zone = _zoneInfo(tzId, utc);
-    final local = utc.add(Duration(hours: zone.$1));
-    return ZoneTime(local: local, offsetHours: zone.$1, abbreviation: zone.$2);
+    if (tzId.trim().toUpperCase() == 'UTC') {
+      return ZoneTime(local: utc, offsetMinutes: 0, abbreviation: 'UTC');
+    }
+
+    try {
+      final location = tz.getLocation(tzId);
+      final local = tz.TZDateTime.from(utc, location);
+      return ZoneTime(
+        local: local,
+        offsetMinutes: local.timeZoneOffset.inMinutes,
+        abbreviation: local.timeZoneName,
+      );
+    } catch (_) {
+      return ZoneTime(local: utc, offsetMinutes: 0, abbreviation: 'UTC');
+    }
   }
 
   /// Convert a wall-clock local time in the given timezone into UTC.
@@ -36,24 +62,45 @@ class TimezoneUtils {
   /// full timezone database. It converges in a couple of iterations for
   /// whole-hour offsets and DST boundaries.
   static DateTime localToUtc(String tzId, DateTime local) {
-    var guessUtc = DateTime.utc(
-      local.year,
-      local.month,
-      local.day,
-      local.hour,
-      local.minute,
-      local.second,
-      local.millisecond,
-      local.microsecond,
-    );
-
-    for (var i = 0; i < 2; i++) {
-      final zt = nowInZone(tzId, nowUtc: guessUtc);
-      final error = zt.local.difference(local);
-      if (error.inMinutes == 0) break;
-      guessUtc = guessUtc.subtract(error);
+    _ensureTzReady();
+    if (tzId.trim().toUpperCase() == 'UTC') {
+      return DateTime.utc(
+        local.year,
+        local.month,
+        local.day,
+        local.hour,
+        local.minute,
+        local.second,
+        local.millisecond,
+        local.microsecond,
+      );
     }
-    return guessUtc;
+    try {
+      final location = tz.getLocation(tzId);
+      final zoned = tz.TZDateTime(
+        location,
+        local.year,
+        local.month,
+        local.day,
+        local.hour,
+        local.minute,
+        local.second,
+        local.millisecond,
+        local.microsecond,
+      );
+      return zoned.toUtc();
+    } catch (_) {
+      return DateTime.utc(
+        local.year,
+        local.month,
+        local.day,
+        local.hour,
+        local.minute,
+        local.second,
+        local.millisecond,
+        local.microsecond,
+      );
+    }
   }
 
   static String formatClock(ZoneTime zt, {required bool use24h}) {
@@ -94,104 +141,12 @@ class TimezoneUtils {
   }
 
   static int deltaHours(ZoneTime a, ZoneTime b) {
-    return a.offsetHours - b.offsetHours;
+    return ((a.offsetMinutes - b.offsetMinutes) / 60).round();
   }
 
   static String formatDeltaLabel(int deltaHours) {
     if (deltaHours == 0) return '0h';
     final sign = deltaHours > 0 ? '+' : '';
     return '$sign${deltaHours}h';
-  }
-
-  static (int, String) _zoneInfo(String tzId, DateTime utc) {
-    switch (tzId) {
-      case 'America/Denver':
-        return _denver(utc);
-      case 'Europe/Lisbon':
-        return _lisbon(utc);
-      default:
-        // Fall back to a stable UTC display so we never crash the dashboard.
-        return (0, 'UTC');
-    }
-  }
-
-  /// Denver: MST (UTC-7) or MDT (UTC-6).
-  /// US DST: starts second Sunday in March at 2:00 local, ends first Sunday in
-  /// November at 2:00 local.
-  static (int, String) _denver(DateTime utc) {
-    final year = utc.year;
-    final dstStartLocal = _nthWeekdayOfMonth(
-      year,
-      3,
-      DateTime.sunday,
-      2,
-      hour: 2,
-      baseOffsetHours: -7,
-    );
-
-    final dstEndLocal = _nthWeekdayOfMonth(
-      year,
-      11,
-      DateTime.sunday,
-      1,
-      hour: 2,
-      baseOffsetHours: -6,
-    );
-
-    final localAssumingStd = utc.add(const Duration(hours: -7));
-    final isDst =
-        !localAssumingStd.isBefore(dstStartLocal) &&
-        localAssumingStd.isBefore(dstEndLocal);
-
-    if (isDst) return (-6, 'MDT');
-    return (-7, 'MST');
-  }
-
-  /// Lisbon: WET (UTC+0) or WEST (UTC+1).
-  /// EU DST: starts last Sunday in March at 1:00 UTC, ends last Sunday in
-  /// October at 1:00 UTC.
-  static (int, String) _lisbon(DateTime utc) {
-    final year = utc.year;
-    final startUtc = _lastWeekdayOfMonthUtc(year, 3, DateTime.sunday, hour: 1);
-    final endUtc = _lastWeekdayOfMonthUtc(year, 10, DateTime.sunday, hour: 1);
-    final isDst = !utc.isBefore(startUtc) && utc.isBefore(endUtc);
-    if (isDst) return (1, 'WEST');
-    return (0, 'WET');
-  }
-
-  static DateTime _nthWeekdayOfMonth(
-    int year,
-    int month,
-    int weekday,
-    int n, {
-    required int hour,
-    required int baseOffsetHours,
-  }) {
-    // Compute the nth weekday in local time (base offset), then attach hour.
-    final firstLocal = DateTime.utc(
-      year,
-      month,
-      1,
-    ).add(Duration(hours: baseOffsetHours));
-
-    final firstWeekdayDelta = (weekday - firstLocal.weekday + 7) % 7;
-    final day = 1 + firstWeekdayDelta + (n - 1) * 7;
-    return DateTime(year, month, day, hour, 0, 0);
-  }
-
-  static DateTime _lastWeekdayOfMonthUtc(
-    int year,
-    int month,
-    int weekday, {
-    required int hour,
-  }) {
-    final nextMonth = month == 12 ? 1 : month + 1;
-    final nextYear = month == 12 ? year + 1 : year;
-    var dt = DateTime.utc(nextYear, nextMonth, 1, hour);
-    dt = dt.subtract(const Duration(days: 1));
-    while (dt.weekday != weekday) {
-      dt = dt.subtract(const Duration(days: 1));
-    }
-    return DateTime.utc(dt.year, dt.month, dt.day, hour);
   }
 }

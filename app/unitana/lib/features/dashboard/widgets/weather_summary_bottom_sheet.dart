@@ -46,10 +46,14 @@ class WeatherSummaryBottomSheet extends StatelessWidget {
         final cs = theme.colorScheme;
 
         final refreshedAt = liveData.lastRefreshedAt;
-        final isStale = liveData.isStale && !liveData.isRefreshing;
-        final refreshedLabel = refreshedAt == null
+        final staleSuffix =
+            (liveData.isStale && !liveData.isRefreshing && refreshedAt != null)
+            ? ' (stale)'
+            : '';
+        final refreshedLabelBase = refreshedAt == null
             ? 'Not updated yet'
             : 'Updated ${_relativeAge(now: DateTime.now(), then: refreshedAt)}';
+        final refreshedLabel = '$refreshedLabelBase$staleSuffix';
 
         final places = <Place>[
           if (destination != null) destination!,
@@ -63,11 +67,11 @@ class WeatherSummaryBottomSheet extends StatelessWidget {
 
         return SafeArea(
           child: FractionallySizedBox(
-            heightFactor: 0.9,
+            heightFactor: 0.94,
             alignment: Alignment.bottomCenter,
             child: ListView(
               key: const ValueKey('weather_summary_sheet'),
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+              padding: const EdgeInsets.fromLTRB(16, 6, 16, 14),
               children: [
                 Stack(
                   alignment: Alignment.center,
@@ -93,19 +97,6 @@ class WeatherSummaryBottomSheet extends StatelessWidget {
                               fontWeight: FontWeight.w600,
                             ),
                           ),
-                          const SizedBox(height: 2),
-                          Text(
-                            isStale
-                                ? 'Data may be stale'
-                                : 'Live updates enabled',
-                            key: const ValueKey('weather_summary_freshness'),
-                            style: theme.textTheme.labelSmall?.copyWith(
-                              color: isStale
-                                  ? DraculaPalette.orange
-                                  : DraculaPalette.green,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
                         ],
                       ),
                     ),
@@ -113,7 +104,7 @@ class WeatherSummaryBottomSheet extends StatelessWidget {
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
                         Tooltip(
-                          message: 'Refresh',
+                          message: 'Refresh weather',
                           child: OutlinedButton(
                             key: const ValueKey('weather_summary_refresh'),
                             style: OutlinedButton.styleFrom(
@@ -143,7 +134,7 @@ class WeatherSummaryBottomSheet extends StatelessWidget {
                         ),
                         const SizedBox(width: 8),
                         Tooltip(
-                          message: 'Close',
+                          message: 'Close weather',
                           child: OutlinedButton(
                             key: const ValueKey('weather_summary_close'),
                             style: OutlinedButton.styleFrom(
@@ -171,17 +162,9 @@ class WeatherSummaryBottomSheet extends StatelessWidget {
                     ),
                   ],
                 ),
-                const SizedBox(height: 12),
-                Text(
-                  'Manual refresh available. Auto-refresh runs with dashboard updates.',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: cs.onSurfaceVariant,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 8),
                 _placeCard(context, place: destination, label: 'Destination'),
-                const SizedBox(height: 10),
+                const SizedBox(height: 6),
                 _placeCard(context, place: home, label: 'Home'),
               ],
             ),
@@ -254,6 +237,16 @@ class WeatherSummaryBottomSheet extends StatelessWidget {
         : preferMetric
         ? '${gustKmh.round()} km/h'
         : '${toMph(gustKmh)!.round()} mph';
+    final windSecondary = windKmh == null
+        ? '—'
+        : preferMetric
+        ? '${toMph(windKmh)!.round()} mph'
+        : '${windKmh.round()} km/h';
+    final gustSecondary = gustKmh == null
+        ? '—'
+        : preferMetric
+        ? '${toMph(gustKmh)!.round()} mph'
+        : '${gustKmh.round()} km/h';
 
     final aqi = env?.usAqi;
     final pollen = env?.pollenIndex;
@@ -283,14 +276,16 @@ class WeatherSummaryBottomSheet extends StatelessWidget {
 
     final pollenText = pollen == null ? '—' : pollenLabel(pollen);
 
-    String sunCell(DateTime? utc) {
+    String sunCell(DateTime? utc, bool use24h) {
       if (utc == null) return '--:--';
       final zt = TimezoneUtils.nowInZone(place.timeZoneId, nowUtc: utc);
-      return TimezoneUtils.formatClock(zt, use24h: place.use24h);
+      return TimezoneUtils.formatClock(zt, use24h: use24h);
     }
 
-    final sunrise = sunCell(sun?.sunriseUtc);
-    final sunset = sunCell(sun?.sunsetUtc);
+    final sunrise = sunCell(sun?.sunriseUtc, place.use24h);
+    final sunset = sunCell(sun?.sunsetUtc, place.use24h);
+    final sunriseAlt = sunCell(sun?.sunriseUtc, !place.use24h);
+    final sunsetAlt = sunCell(sun?.sunsetUtc, !place.use24h);
 
     final flag = _flagEmoji(place.countryCode);
 
@@ -301,7 +296,7 @@ class WeatherSummaryBottomSheet extends StatelessWidget {
         border: Border.all(color: cs.outlineVariant),
       ),
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
+        padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -354,19 +349,21 @@ class WeatherSummaryBottomSheet extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 6),
             _iconTable(
               context,
-              headers: const ['☀️', '🌙'],
+              headers: const ['☀️ Sunrise', '🌙 Sunset'],
               values: [sunrise, sunset],
+              secondaryValues: [sunriseAlt, sunsetAlt],
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 4),
             _iconTable(
               context,
-              headers: const ['🌬️', '💨'],
+              headers: const ['🌬️ Wind', '💨 Gust'],
               values: [windPrimary, gustPrimary],
+              secondaryValues: [windSecondary, gustSecondary],
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 4),
             _iconTable(
               context,
               headers: const ['🌫️ AQI (US)', '🌼 Pollen (0-5)'],
@@ -382,6 +379,7 @@ class WeatherSummaryBottomSheet extends StatelessWidget {
     BuildContext context, {
     required List<String> headers,
     required List<String> values,
+    List<String>? secondaryValues,
   }) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
@@ -394,15 +392,19 @@ class WeatherSummaryBottomSheet extends StatelessWidget {
       fontWeight: FontWeight.w800,
       color: cs.onSurface.withAlpha(230),
     );
+    final secondaryStyle = theme.textTheme.bodySmall?.copyWith(
+      fontWeight: FontWeight.w700,
+      color: cs.onSurfaceVariant.withAlpha(220),
+    );
 
     return DecoratedBox(
       decoration: BoxDecoration(
         color: cs.surfaceContainerHighest.withAlpha(30),
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: cs.outlineVariant.withAlpha(160)),
       ),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         child: Row(
           children: [
             for (var i = 0; i < headers.length; i++)
@@ -421,6 +423,14 @@ class WeatherSummaryBottomSheet extends StatelessWidget {
                       style: valueStyle,
                       textAlign: TextAlign.center,
                     ),
+                    if (secondaryValues != null) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        secondaryValues[i],
+                        style: secondaryStyle,
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
                   ],
                 ),
               ),

@@ -392,7 +392,7 @@ class _FirstRunScreenState extends State<FirstRunScreen> {
                     alignment: Alignment.centerRight,
                     child: IconButton(
                       key: const Key('first_run_cancel_button'),
-                      tooltip: 'Cancel',
+                      tooltip: 'Cancel setup',
                       onPressed: _cancelAndClose,
                       icon: const Icon(Icons.close_rounded),
                     ),

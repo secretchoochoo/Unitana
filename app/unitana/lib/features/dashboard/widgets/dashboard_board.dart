@@ -8,10 +8,14 @@ import '../../../data/cities.dart' show kCurrencySymbols;
 import '../../../data/country_currency_map.dart';
 import '../../../models/place.dart';
 import '../../../common/feedback/unitana_toast.dart';
+import '../../../utils/timezone_utils.dart';
 import '../models/dashboard_board_item.dart';
 import '../models/dashboard_live_data.dart';
 import '../models/dashboard_layout_controller.dart';
 import '../models/dashboard_session_controller.dart';
+import '../models/flight_time_estimator.dart';
+import '../models/jet_lag_planner.dart';
+import '../models/place_geo_lookup.dart';
 import '../models/tool_definitions.dart';
 import '../models/activity_lenses.dart';
 import '../models/tool_registry.dart';
@@ -665,6 +669,46 @@ class _DashboardBoardState extends State<DashboardBoard>
       return (primary, secondary);
     }
 
+    (String, String) jetLagPreviewLabels({
+      required Place? homePlace,
+      required Place? destinationPlace,
+    }) {
+      if (homePlace == null || destinationPlace == null) {
+        return (tool.defaultPrimary, tool.defaultSecondary);
+      }
+
+      final nowUtc = DateTime.now().toUtc();
+      final homeNow = TimezoneUtils.nowInZone(
+        homePlace.timeZoneId,
+        nowUtc: nowUtc,
+      );
+      final destinationNow = TimezoneUtils.nowInZone(
+        destinationPlace.timeZoneId,
+        nowUtc: nowUtc,
+      );
+      final plan = JetLagPlanner.planFromZoneTimes(
+        fromNow: homeNow,
+        toNow: destinationNow,
+      );
+
+      final homeGeo = PlaceGeoLookup.forPlace(homePlace);
+      final destinationGeo = PlaceGeoLookup.forPlace(destinationPlace);
+      final flightEstimate = FlightTimeEstimator.estimate(
+        fromLat: homeGeo?.lat,
+        fromLon: homeGeo?.lon,
+        toLat: destinationGeo?.lat,
+        toLon: destinationGeo?.lon,
+      );
+
+      final secondary = plan.isNoShift
+          ? plan.tileSecondaryLabel
+          : (flightEstimate == null
+                ? plan.tileSecondaryLabel
+                : '${flightEstimate.compactLabel} • ~${plan.adjustmentDays}d adapt');
+
+      return (plan.tilePrimaryLabel, secondary);
+    }
+
     final isCurrency = tool.id == 'currency_convert';
     final bool currencyLabelsLookBroken =
         isCurrency &&
@@ -683,6 +727,8 @@ class _DashboardBoardState extends State<DashboardBoard>
 
     final labels = isWeatherSummary
         ? _weatherSummaryLabels(activePlace: activePlace)
+        : tool.id == 'jet_lag_delta'
+        ? jetLagPreviewLabels(homePlace: home, destinationPlace: destination)
         : (isCurrency &&
               (latest == null ||
                   currencyLabelsLookBroken ||
@@ -713,6 +759,7 @@ class _DashboardBoardState extends State<DashboardBoard>
       primary: primary,
       secondary: secondary,
       footer: footerLabel,
+      primaryDeemphasizedPrefix: null,
       compactValues: widget.isEditing,
       valuesTopInset: widget.isEditing ? 22 : 0,
       onLongPress: canEdit
@@ -783,6 +830,7 @@ class _DashboardBoardState extends State<DashboardBoard>
       primary: primary,
       secondary: secondary,
       footer: '',
+      primaryDeemphasizedPrefix: null,
       compactValues: true,
       valuesTopInset: 22,
     );
@@ -921,7 +969,10 @@ class _DashboardBoardState extends State<DashboardBoard>
           isScrollControlled: true,
           useSafeArea: true,
           showDragHandle: true,
-          builder: (_) => ToolPickerSheet(session: widget.session),
+          builder: (_) => FractionallySizedBox(
+            heightFactor: 0.85,
+            child: ToolPickerSheet(session: widget.session),
+          ),
         );
         if (picked == null) {
           return;
@@ -1042,10 +1093,14 @@ class _DashboardBoardState extends State<DashboardBoard>
   }) async {
     final picked = await showModalBottomSheet<ToolDefinition>(
       context: context,
+      isScrollControlled: true,
       useSafeArea: true,
       showDragHandle: true,
       backgroundColor: Theme.of(context).colorScheme.surface,
-      builder: (ctx) => ToolPickerSheet(session: widget.session),
+      builder: (ctx) => FractionallySizedBox(
+        heightFactor: 0.85,
+        child: ToolPickerSheet(session: widget.session),
+      ),
     );
     if (picked == null) {
       return;
@@ -1400,8 +1455,12 @@ class _ToolPickerSheetState extends State<ToolPickerSheet> {
 
     // Activation bundle (Pack F): these remain distinct discovery entries,
     // but route into Time-family surfaces.
-    if (tool.toolId == 'world_clock_delta' || tool.toolId == 'jet_lag_delta') {
+    if (tool.toolId == 'world_clock_delta') {
       return ToolDefinitions.time;
+    }
+
+    if (tool.toolId == 'jet_lag_delta') {
+      return ToolDefinitions.jetLagDelta;
     }
 
     if (tool.toolId == 'timezone_lookup') {
@@ -1711,7 +1770,7 @@ class _ToolPickerSheetState extends State<ToolPickerSheet> {
                 ),
                 IconButton(
                   key: const ValueKey('toolpicker_close'),
-                  tooltip: 'Close',
+                  tooltip: 'Close tools',
                   icon: const Icon(Icons.close_rounded),
                   onPressed: () => Navigator.of(context).maybePop(),
                 ),
