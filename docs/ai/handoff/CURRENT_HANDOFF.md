@@ -252,6 +252,21 @@
     - `jet_lag_delta_modal_interaction_test.dart`
     - `time_tool_modal_interaction_test.dart`
     - full `flutter analyze` + `flutter test`
+- Pack H bootstrap prep (phase 1.5, 2026-02-07):
+  - expanded centralized copy coverage in `DashboardCopy` for additional high-traffic dashboard/tool surfaces:
+    - weather sheet headings + tooltips
+    - time/converter labels (`From/To Time Zone`, `Convert Local Time`, `History`, `Clear`, `Swap`, `+ Add Widget`)
+    - tool close tooltip
+  - added ARB-ready seed scaffold:
+    - `app/unitana/lib/l10n/localization_seed.dart`
+    - stable dotted key namespace (`dashboard.*`) with placeholder-style templates (`{age}`, `{fromDisplayLabel}`)
+  - added migration contract test:
+    - `app/unitana/test/localization_seed_contract_test.dart`
+    - enforces key uniqueness, namespacing, and critical key presence.
+  - revalidated key regression suites (Pack N/M and reliability) + full repo gates:
+    - `dart format .`
+    - `flutter analyze`
+    - `flutter test`
 - Pack F activation bundle (phase 1):
   - activated `world_clock_delta` and `jet_lag_delta` entries in tool registry.
   - wired both entries to the existing mature Time modal flow as interim E2E activation.

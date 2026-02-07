@@ -3,6 +3,12 @@ import 'jet_lag_planner.dart';
 class DashboardCopy {
   const DashboardCopy._();
 
+  static const String weatherTitle = 'Weather';
+  static const String refreshWeatherTooltip = 'Refresh weather';
+  static const String closeWeatherTooltip = 'Close weather';
+  static const String destinationLabel = 'Destination';
+  static const String homeLabel = 'Home';
+
   static const String updating = 'Updating…';
   static const String notUpdated = 'Not updated';
 
@@ -21,6 +27,23 @@ class DashboardCopy {
   static const String currencyUsingCachedRates =
       'Using cached rates. They may be stale.';
   static const String retryRatesCta = 'Retry rates';
+
+  static const String closeToolTooltip = 'Close tool';
+  static const String historyTitle = 'History';
+  static const String clearCta = 'Clear';
+  static const String swapCta = 'Swap';
+  static const String addWidgetCta = '+ Add Widget';
+
+  static String timeFromZoneTitle({required bool isJetLagTool}) =>
+      isJetLagTool ? 'Home Time Zone' : 'From Time Zone';
+
+  static String timeToZoneTitle({required bool isJetLagTool}) =>
+      isJetLagTool ? 'Destination Time Zone' : 'To Time Zone';
+
+  static const String convertLocalTimeTitle = 'Convert Local Time';
+  static String convertLocalTimeHelper(String fromDisplayLabel) =>
+      'Enter as YYYY-MM-DD HH:MM in $fromDisplayLabel';
+  static const String convertTimeCta = 'Convert Time';
 
   static String factsTitle({required bool isJetLagTool}) =>
       isJetLagTool ? 'Travel Facts' : 'Current Clocks';

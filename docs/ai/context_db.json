@@ -206,7 +206,7 @@
     }
   ],
   "current_state": {
-    "current_slice": "Pack B/C reliability closure follow-up shipped (freshness/currency copy normalization + shared short-age helper) and Pack H bootstrap prep started via centralized dashboard/tool copy seam",
+    "current_slice": "Pack H bootstrap prep phase 1.5 shipped: expanded dashboard/tool copy seams plus ARB-ready localization seed key scaffold; full repo gates green",
     "notes": [
       "Codex-first workflow allows larger execution packs while keeping gates green.",
       "Pack A city data platform foundation is complete with canonical schema + validation guards.",
@@ -244,12 +244,16 @@
       "Reliability follow-up shipped: freshness relative-age wording is now consistent (`just now`, `Xm ago`, `Xh ago`, `Xd ago`) across weather sheet, refresh status label, currency stale banner, and devtools weather freshness line.",
       "Pack H bootstrap prep started: key dashboard/tool user-facing copy is now centralized in `dashboard_copy.dart` (freshness, currency stale/retry, and Time/Jet Lag headings/overlap labels) to reduce future ARB migration churn.",
       "Jet Lag tip text was refreshed for plain-language readability while preserving deterministic rotation and overlap reveal behavior contracts."
+      ,
+      "Pack H bootstrap prep phase 1.5 shipped: `DashboardCopy` now covers weather/tool/time-converter labels and tooltips for additional high-traffic surfaces.",
+      "Added ARB-ready seed scaffold `app/unitana/lib/l10n/localization_seed.dart` with stable `dashboard.*` keys and placeholder templates (`{age}`, `{fromDisplayLabel}`).",
+      "Added `localization_seed_contract_test.dart` to lock key uniqueness/namespacing and critical-key presence before full l10n rollout."
     ],
     "overall_health": "Stable with full gates passing; canonical city data coverage is now enforced for all in-scope records.",
     "status": "GREEN",
     "focus": {
-      "now": "Continue Pack H localization bootstrap by expanding centralized copy seams to additional high-traffic tool surfaces and introducing ARB-ready key mapping.",
-      "next": "Begin low-risk localization pilot wiring on dashboard/tool entry surfaces after seam extraction is complete.",
+      "now": "Begin Pack H localization pilot wiring by introducing generated/localization-provider plumbing and mapping a first dashboard/tool subset from seed keys to runtime lookups.",
+      "next": "Expand localization wiring beyond the pilot subset and add locale-aware formatting tests for copy+date/time placeholders.",
       "later": [
         "Pack E marquee scene V2 production",
         "Pack H localization"

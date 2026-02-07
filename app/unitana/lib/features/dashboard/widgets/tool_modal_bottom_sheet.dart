@@ -3330,7 +3330,9 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                 key: const ValueKey('tool_time_from_zone'),
                 dense: true,
                 title: Text(
-                  _isJetLagDeltaTool ? 'Home Time Zone' : 'From Time Zone',
+                  DashboardCopy.timeFromZoneTitle(
+                    isJetLagTool: _isJetLagDeltaTool,
+                  ),
                 ),
                 subtitle: Text(fromDisplayLabel),
                 trailing: const Icon(Icons.arrow_drop_down_rounded),
@@ -3341,7 +3343,9 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                 key: const ValueKey('tool_time_to_zone'),
                 dense: true,
                 title: Text(
-                  _isJetLagDeltaTool ? 'Destination Time Zone' : 'To Time Zone',
+                  DashboardCopy.timeToZoneTitle(
+                    isJetLagTool: _isJetLagDeltaTool,
+                  ),
                 ),
                 subtitle: Text(toDisplayLabel),
                 trailing: const Icon(Icons.arrow_drop_down_rounded),
@@ -3378,7 +3382,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                           color: accent,
                         ),
                         label: Text(
-                          '+ Add Widget',
+                          DashboardCopy.addWidgetCta,
                           style: Theme.of(context).textTheme.labelLarge
                               ?.copyWith(
                                 fontWeight: FontWeight.w700,
@@ -3396,7 +3400,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                   key: const ValueKey('tool_time_swap_zones'),
                   onPressed: _swapTimeZones,
                   icon: const Icon(Icons.swap_horiz_rounded, size: 18),
-                  label: const Text('Swap'),
+                  label: const Text(DashboardCopy.swapCta),
                 ),
               ),
             ),
@@ -3424,7 +3428,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Convert Local Time',
+                  DashboardCopy.convertLocalTimeTitle,
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.w800,
                     color: DraculaPalette.purple,
@@ -3432,7 +3436,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  'Enter as YYYY-MM-DD HH:MM in $fromDisplayLabel',
+                  DashboardCopy.convertLocalTimeHelper(fromDisplayLabel),
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: DraculaPalette.comment.withAlpha(220),
                     fontWeight: FontWeight.w700,
@@ -3454,7 +3458,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                   child: FilledButton(
                     key: const ValueKey('tool_time_convert_run'),
                     onPressed: _runTimeZoneConversion,
-                    child: const Text('Convert Time'),
+                    child: const Text(DashboardCopy.convertTimeCta),
                   ),
                 ),
                 const SizedBox(height: 10),
@@ -3475,7 +3479,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
               crossAxisAlignment: WrapCrossAlignment.center,
               children: [
                 Text(
-                  'History',
+                  DashboardCopy.historyTitle,
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.w800,
                     color: DraculaPalette.purple,
@@ -3494,7 +3498,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                             UnitanaNoticeKind.success,
                           );
                         },
-                  child: const Text('Clear'),
+                  child: const Text(DashboardCopy.clearCta),
                 ),
               ],
             ),
@@ -3636,7 +3640,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                           ),
                         ),
                         Tooltip(
-                          message: 'Close tool',
+                          message: DashboardCopy.closeToolTooltip,
                           child: OutlinedButton(
                             key: ValueKey('tool_close_${widget.tool.id}'),
                             style: OutlinedButton.styleFrom(
@@ -4243,7 +4247,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                                   crossAxisAlignment: WrapCrossAlignment.center,
                                   children: [
                                     Text(
-                                      'History',
+                                      DashboardCopy.historyTitle,
                                       style: Theme.of(context)
                                           .textTheme
                                           .titleMedium

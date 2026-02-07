@@ -89,7 +89,7 @@ class WeatherSummaryBottomSheet extends StatelessWidget {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Text(
-                            'Weather',
+                            DashboardCopy.weatherTitle,
                             textAlign: TextAlign.center,
                             style: GoogleFonts.robotoSlab(
                               fontWeight: FontWeight.w800,
@@ -111,7 +111,7 @@ class WeatherSummaryBottomSheet extends StatelessWidget {
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
                         Tooltip(
-                          message: 'Refresh weather',
+                          message: DashboardCopy.refreshWeatherTooltip,
                           child: OutlinedButton(
                             key: const ValueKey('weather_summary_refresh'),
                             style: OutlinedButton.styleFrom(
@@ -141,7 +141,7 @@ class WeatherSummaryBottomSheet extends StatelessWidget {
                         ),
                         const SizedBox(width: 8),
                         Tooltip(
-                          message: 'Close weather',
+                          message: DashboardCopy.closeWeatherTooltip,
                           child: OutlinedButton(
                             key: const ValueKey('weather_summary_close'),
                             style: OutlinedButton.styleFrom(
@@ -170,9 +170,17 @@ class WeatherSummaryBottomSheet extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 8),
-                _placeCard(context, place: destination, label: 'Destination'),
+                _placeCard(
+                  context,
+                  place: destination,
+                  label: DashboardCopy.destinationLabel,
+                ),
                 const SizedBox(height: 6),
-                _placeCard(context, place: home, label: 'Home'),
+                _placeCard(
+                  context,
+                  place: home,
+                  label: DashboardCopy.homeLabel,
+                ),
               ],
             ),
           ),

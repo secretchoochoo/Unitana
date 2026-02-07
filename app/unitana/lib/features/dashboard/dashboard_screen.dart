@@ -9,6 +9,7 @@ import 'models/dashboard_live_data.dart';
 import 'models/dashboard_layout_controller.dart';
 import 'models/dashboard_session_controller.dart';
 import 'models/dashboard_exceptions.dart';
+import 'models/dashboard_copy.dart';
 import 'models/freshness_copy.dart';
 import 'models/tool_definitions.dart';
 import 'widgets/dashboard_board.dart';
@@ -438,7 +439,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
                           final last = _liveData.lastRefreshedAt;
                           final line = _liveData.isRefreshing
-                              ? '$src: Updating…'
+                              ? '$src: ${DashboardCopy.updating}'
                               : last == null
                               ? '$src: Last update: never'
                               : '$src: Last update: ${FreshnessCopy.relativeAgeShort(now: DateTime.now(), then: last)}';

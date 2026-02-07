@@ -1,4 +1,4 @@
-NEXT CHAT PROMPT — Pack H Localization Bootstrap (Phase 1.5)
+NEXT CHAT PROMPT — Pack H Localization Pilot Wiring (Phase 2)
 
 You are taking over Unitana (Flutter) in a fresh, high-context window.
 
@@ -23,21 +23,22 @@ Then execute using this contract.
   - goldens opt-in only
 
 ## Mission
-Expand localization-ready copy seams with minimal churn, then prepare the first ARB-ready mapping pass for high-traffic dashboard/tool text.
+Start real localization runtime wiring on a low-risk pilot subset using the existing key seed and centralized copy seams.
 
 ## Required outcomes
-1) Pack H seam expansion
-- Continue extracting hardcoded user-facing strings from high-traffic dashboard/tool surfaces into centralized copy helpers.
-- Keep behavior and visual layout unchanged.
-- Prioritize strings that currently appear in tests and stale/error states.
+1) Pack H pilot runtime seam
+- Introduce minimal localization provider/plumbing suitable for gradual rollout.
+- Wire a small dashboard/tool subset to runtime key lookups (not full app migration yet).
+- Keep current English copy as default/fallback behavior.
 
-2) ARB-ready key mapping prep
-- Define a deterministic key naming scheme for extracted copy (without full translation rollout yet).
-- Add a lightweight mapping scaffold (or TODO contract) that makes the future ARB migration mostly mechanical.
+2) Seed-to-runtime mapping contract
+- Reuse `app/unitana/lib/l10n/localization_seed.dart` keys.
+- Ensure placeholder values are supported for seeded templates (for example `{age}`).
+- Add deterministic tests that lock fallback behavior and key resolution.
 
-3) Reliability/Time regression lock
-- Re-verify stale/retry/freshness copy contracts.
-- Keep Pack N/M regressions green:
+3) Regression lock
+- Keep reliability copy and stale/retry contracts stable.
+- Keep Pack N/M behavior green:
   - city-first picker + advanced fallback
   - overlap reveal contract
   - action-row alignment
@@ -49,7 +50,7 @@ Expand localization-ready copy seams with minimal churn, then prepare the first 
   - `docs/ai/prompts/NEXT_CHAT_PROMPT.md` (if scope shifts again)
 
 ## Definition of done
-- More user-facing copy is centralized and localization-ready.
-- ARB migration path is clearer with stable keys/scaffold.
-- Reliability and Pack N/M contracts remain green.
+- Localization runtime pilot exists and is test-guarded.
+- Existing UX remains unchanged with English fallback.
+- Pack N/M and reliability contracts remain green.
 - Repo is green (`format`, `analyze`, `test`).
