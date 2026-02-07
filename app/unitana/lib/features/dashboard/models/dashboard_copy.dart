@@ -112,24 +112,49 @@ class DashboardCopy {
         fallback: 'Quick check before scheduling calls:',
       );
 
-  static const String updating = 'Updating…';
-  static const String notUpdated = 'Not updated';
-
-  static String updated(String age) => 'Updated $age';
-  static String stale(String age) => 'Stale ($age)';
+  static String updating(BuildContext context) => DashboardLocalizations.of(
+    context,
+  ).text('dashboard.freshness.updating', fallback: 'Updating…');
+  static String notUpdated(BuildContext context) => DashboardLocalizations.of(
+    context,
+  ).text('dashboard.freshness.notUpdated', fallback: 'Not updated');
+  static String updated(BuildContext context, String age) =>
+      DashboardLocalizations.of(context).text(
+        'dashboard.freshness.updated',
+        params: <String, String>{'age': age},
+        fallback: 'Updated $age',
+      );
+  static String stale(BuildContext context, String age) =>
+      DashboardLocalizations.of(context).text(
+        'dashboard.freshness.stale',
+        params: <String, String>{'age': age},
+        fallback: 'Stale ($age)',
+      );
 
   static String weatherStaleSuffix({required bool isStale}) =>
       isStale ? ' (stale)' : '';
 
-  static String currencyStaleRetryNow(String age) =>
-      'Rates are stale (last error $age). You can retry now.';
-
-  static String currencyStaleRetrySoon(String age) =>
-      'Rates are stale (last error $age). Retrying in a moment.';
-
-  static const String currencyUsingCachedRates =
-      'Using cached rates. They may be stale.';
-  static const String retryRatesCta = 'Retry rates';
+  static String currencyStaleRetryNow(BuildContext context, String age) =>
+      DashboardLocalizations.of(context).text(
+        'dashboard.currency.stale.retryNow',
+        params: <String, String>{'age': age},
+        fallback: 'Rates are stale (last error $age). You can retry now.',
+      );
+  static String currencyStaleRetrySoon(BuildContext context, String age) =>
+      DashboardLocalizations.of(context).text(
+        'dashboard.currency.stale.retrySoon',
+        params: <String, String>{'age': age},
+        fallback: 'Rates are stale (last error $age). Retrying in a moment.',
+      );
+  static String currencyUsingCachedRates(BuildContext context) =>
+      DashboardLocalizations.of(context).text(
+        'dashboard.currency.stale.cached',
+        fallback: 'Using cached rates. They may be stale.',
+      );
+  static String retryRatesCta(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.currency.cta.retry', fallback: 'Retry rates');
 
   static String dateImpactTitleCase(String dateImpactRaw) {
     return switch (dateImpactRaw.toLowerCase()) {

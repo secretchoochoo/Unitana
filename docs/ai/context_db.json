@@ -206,7 +206,7 @@
     }
   ],
   "current_state": {
-    "current_slice": "Pack H localization pilot wiring phase 2 shipped: runtime seed-key lookup with English fallback plus first dashboard/tool subset wired to runtime localization",
+    "current_slice": "Pack H localization expansion phase 2.5 shipped: freshness/currency stale-retry paths now use runtime localization lookup with placeholder support",
     "notes": [
       "Codex-first workflow allows larger execution packs while keeping gates green.",
       "Pack A city data platform foundation is complete with canonical schema + validation guards.",
@@ -250,13 +250,16 @@
       "Added `localization_seed_contract_test.dart` to lock key uniqueness/namespacing and critical-key presence before full l10n rollout.",
       "Pack H phase 2 shipped: added `dashboard_localizations.dart` runtime lookup (locale language-code lookup + English fallback + placeholder substitution) and wired the first dashboard/tool subset via `DashboardCopy`.",
       "Pilot runtime-localized subset includes weather headings/tooltips, Time-family zone/converter labels, core action/history labels, and Jet Lag section headings/overlap labels.",
-      "Added runtime localization tests in `dashboard_localizations_runtime_test.dart` for seeded lookup, parameter substitution, locale fallback, and explicit fallback behavior."
+      "Added runtime localization tests in `dashboard_localizations_runtime_test.dart` for seeded lookup, parameter substitution, locale fallback, and explicit fallback behavior.",
+      "Pack H phase 2.5 shipped: freshness labels and currency stale/retry/cached messaging now resolve through runtime lookup-backed `DashboardCopy` methods (including `{age}` placeholder substitution).",
+      "Rewired reliability-critical surfaces (`DataRefreshStatusLabel`, weather sheet freshness line, currency status banner, devtools updating line) to the runtime localization seam while preserving existing UX text.",
+      "Expanded runtime localization tests with currency stale/retry placeholder assertions."
     ],
     "overall_health": "Stable with full gates passing; canonical city data coverage is now enforced for all in-scope records.",
     "status": "GREEN",
     "focus": {
-      "now": "Expand Pack H runtime localization wiring beyond the pilot subset and start replacing remaining high-traffic hardcoded copy on dashboard/tool surfaces.",
-      "next": "Introduce ARB-generation-compatible plumbing/delegates and add locale-aware formatting tests for dates/times/numbers tied to localized copy.",
+      "now": "Continue Pack H runtime seam expansion by migrating remaining high-traffic dashboard/tool hardcoded copy (helper lines, confirmations, status microcopy) into localization-backed copy helpers.",
+      "next": "Introduce ARB-generation-compatible plumbing/delegates and locale-selection scaffolding while preserving English fallback behavior.",
       "later": [
         "Pack E marquee scene V2 production",
         "Pack H localization"

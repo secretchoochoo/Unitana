@@ -73,10 +73,10 @@ class _DataRefreshStatusLabelState extends State<DataRefreshStatusLabel> {
         liveData.weatherBackend != WeatherBackend.mock;
     if (!isLive && widget.hideWhenUnavailable) return null;
 
-    if (liveData.isRefreshing) return DashboardCopy.updating;
+    if (liveData.isRefreshing) return DashboardCopy.updating(context);
 
     final last = liveData.lastRefreshedAt;
-    if (last == null) return DashboardCopy.notUpdated;
+    if (last == null) return DashboardCopy.notUpdated(context);
 
     final age = DateTime.now().difference(last);
     final ageText = FreshnessCopy.relativeAgeShort(
@@ -85,10 +85,10 @@ class _DataRefreshStatusLabelState extends State<DataRefreshStatusLabel> {
     );
 
     if (age > widget.staleAfter) {
-      return DashboardCopy.stale(ageText);
+      return DashboardCopy.stale(context, ageText);
     }
 
-    return DashboardCopy.updated(ageText);
+    return DashboardCopy.updated(context, ageText);
   }
 
   @override

@@ -439,7 +439,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
                           final last = _liveData.lastRefreshedAt;
                           final line = _liveData.isRefreshing
-                              ? '$src: ${DashboardCopy.updating}'
+                              ? '$src: ${DashboardCopy.updating(context)}'
                               : last == null
                               ? '$src: Last update: never'
                               : '$src: Last update: ${FreshnessCopy.relativeAgeShort(now: DateTime.now(), then: last)}';

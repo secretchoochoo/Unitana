@@ -3564,20 +3564,20 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
       );
       if (widget.currencyShouldRetryNow) {
         return (
-          DashboardCopy.currencyStaleRetryNow(ageLabel),
+          DashboardCopy.currencyStaleRetryNow(context, ageLabel),
           DraculaPalette.orange,
           true,
         );
       }
       return (
-        DashboardCopy.currencyStaleRetrySoon(ageLabel),
+        DashboardCopy.currencyStaleRetrySoon(context, ageLabel),
         DraculaPalette.comment,
         false,
       );
     }
 
     return (
-      DashboardCopy.currencyUsingCachedRates,
+      DashboardCopy.currencyUsingCachedRates(context),
       DraculaPalette.orange,
       false,
     );
@@ -3747,7 +3747,9 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                                       Icons.refresh_rounded,
                                       size: 16,
                                     ),
-                                    label: Text(DashboardCopy.retryRatesCta),
+                                    label: Text(
+                                      DashboardCopy.retryRatesCta(context),
+                                    ),
                                   ),
                                 ),
                               ],

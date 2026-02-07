@@ -20,6 +20,15 @@ void main() {
     expect(value, 'Updated 5m ago');
   });
 
+  test('DashboardLocalizations resolves currency stale retry with params', () {
+    final value = DashboardLocalizations.resolveForLocale(
+      locale: const Locale('en'),
+      key: 'dashboard.currency.stale.retryNow',
+      params: const <String, String>{'age': '2m ago'},
+    );
+    expect(value, 'Rates are stale (last error 2m ago). You can retry now.');
+  });
+
   test('DashboardLocalizations falls back to english when locale missing', () {
     final value = DashboardLocalizations.resolveForLocale(
       locale: const Locale('es'),

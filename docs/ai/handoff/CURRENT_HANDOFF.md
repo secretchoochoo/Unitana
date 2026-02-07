@@ -286,6 +286,19 @@
       - non-English locale fallback to English
       - explicit fallback for missing keys.
   - full gates re-run and green (`dart format .`, `flutter analyze`, `flutter test`).
+- Pack H localization expansion (phase 2.5, 2026-02-07):
+  - migrated reliability-critical freshness/currency copy to runtime lookup-backed `DashboardCopy` methods:
+    - freshness labels: `Updating…`, `Not updated`, `Updated {age}`, `Stale ({age})`
+    - currency stale/retry/cached messages with `{age}` placeholder support
+    - retry CTA (`Retry rates`)
+  - rewired call sites:
+    - `data_refresh_status_label.dart`
+    - `weather_summary_bottom_sheet.dart`
+    - `tool_modal_bottom_sheet.dart`
+    - `dashboard_screen.dart` (devtools `Updating…` line)
+  - expanded runtime localization tests:
+    - `dashboard_localizations_runtime_test.dart` now covers currency stale/retry placeholder resolution.
+  - full gates re-run and green (`dart format .`, `flutter analyze`, `flutter test`).
 - Pack F activation bundle (phase 1):
   - activated `world_clock_delta` and `jet_lag_delta` entries in tool registry.
   - wired both entries to the existing mature Time modal flow as interim E2E activation.

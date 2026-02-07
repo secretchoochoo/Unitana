@@ -1,4 +1,4 @@
-NEXT CHAT PROMPT — Pack H Localization Expansion (Phase 2.5)
+NEXT CHAT PROMPT — Pack H Localization Expansion (Phase 3)
 
 You are taking over Unitana (Flutter) in a fresh, high-context window.
 
@@ -23,18 +23,18 @@ Then execute using this contract.
   - goldens opt-in only
 
 ## Mission
-Expand runtime localization coverage from the pilot subset while preserving current UX and reliability contracts.
+Expand runtime localization wiring to remaining high-traffic dashboard/tool microcopy while preparing for ARB/delegate rollout.
 
 ## Required outcomes
 1) Pack H runtime seam expansion
-- Continue migrating high-traffic hardcoded strings to `DashboardCopy` + runtime lookup (`DashboardLocalizations`).
-- Prioritize dashboard/tool modal labels, tooltips, stale/error/fallback states, and instructional helper text.
-- Keep English behavior as fallback.
+- Migrate additional hardcoded dashboard/tool strings to localization-backed copy helpers.
+- Prioritize helper/instruction lines, stale/error states, and confirmation/status microcopy.
+- Preserve current English wording and UX behavior.
 
-2) Localization plumbing hardening
-- Keep seeded key usage deterministic (`localization_seed.dart`).
-- Add/adjust tests to guard key lookup fallback and migrated-surface behavior.
-- Avoid full translation rollout; keep scope to migration-safe wiring.
+2) ARB/delegate readiness prep
+- Keep using seeded stable keys.
+- Add minimal scaffolding notes/code seams needed for future Flutter localization delegate/ARB generation integration.
+- Do not attempt full translation rollout yet.
 
 3) Regression lock
 - Keep Pack B/C reliability messaging stable.
@@ -50,7 +50,7 @@ Expand runtime localization coverage from the pilot subset while preserving curr
   - `docs/ai/prompts/NEXT_CHAT_PROMPT.md` (if scope shifts again)
 
 ## Definition of done
-- More user-facing surfaces run through runtime localization lookup.
-- Localization fallback behavior remains deterministic and test-guarded.
+- More high-impact dashboard/tool microcopy is runtime-localization backed.
+- Fallback and placeholder behavior remains deterministic and test-guarded.
 - Reliability and Pack N/M contracts remain green.
 - Repo is green (`format`, `analyze`, `test`).

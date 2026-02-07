@@ -53,8 +53,9 @@ class WeatherSummaryBottomSheet extends StatelessWidget {
               liveData.isStale && !liveData.isRefreshing && refreshedAt != null,
         );
         final refreshedLabelBase = refreshedAt == null
-            ? DashboardCopy.notUpdated
+            ? DashboardCopy.notUpdated(context)
             : DashboardCopy.updated(
+                context,
                 FreshnessCopy.relativeAgeShort(
                   now: DateTime.now(),
                   then: refreshedAt,
