@@ -29,5 +29,14 @@ void main() {
       LocalizationSeed.enUs['dashboard.tool.history.clearTitle'],
       'Clear history?',
     );
+    expect(
+      LocalizationSeed.enUs['dashboard.tip.invalidAmount'],
+      'Enter a valid amount to calculate tip.',
+    );
+    expect(LocalizationSeed.enUs['dashboard.tax.mode.addOn'], 'Add-on tax');
+    expect(
+      LocalizationSeed.enUs['dashboard.unitPrice.compareToggle'],
+      'Compare with Product B',
+    );
   });
 }

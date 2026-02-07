@@ -954,7 +954,10 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
           controller: _controller,
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
           decoration: InputDecoration(
-            labelText: 'Bill Amount (${_tipCurrencyCode()})',
+            labelText: DashboardCopy.tipBillAmountLabel(
+              context,
+              _tipCurrencyCode(),
+            ),
             hintText: '100.00',
           ),
           onChanged: (_) => setState(() {}),
@@ -979,7 +982,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
         Row(
           children: [
             Text(
-              'Split',
+              DashboardCopy.tipSplitLabel(context),
               style: Theme.of(context).textTheme.titleSmall?.copyWith(
                 fontWeight: FontWeight.w800,
                 color: DraculaPalette.purple,
@@ -1017,10 +1020,10 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
           runSpacing: 8,
           children:
               [
-                ('none', 'No round'),
-                ('nearest', 'Nearest'),
-                ('up', 'Round up'),
-                ('down', 'Round down'),
+                ('none', DashboardCopy.tipRoundingLabel(context, 'none')),
+                ('nearest', DashboardCopy.tipRoundingLabel(context, 'nearest')),
+                ('up', DashboardCopy.tipRoundingLabel(context, 'up')),
+                ('down', DashboardCopy.tipRoundingLabel(context, 'down')),
               ].map((pair) {
                 return ChoiceChip(
                   key: ValueKey('tool_tip_round_${widget.tool.id}_${pair.$1}'),
@@ -1043,7 +1046,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
           ),
           child: amount == null
               ? Text(
-                  'Enter a valid amount to calculate tip.',
+                  DashboardCopy.tipInvalidAmount(context),
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: DraculaPalette.comment.withAlpha(230),
                     fontWeight: FontWeight.w700,
@@ -1054,7 +1057,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                   children: [
                     _TerminalLine(
                       prompt: '>',
-                      input: 'Tip ($_tipPercent%)',
+                      input: DashboardCopy.tipLineLabel(context, _tipPercent),
                       output: _moneyWithCode(tipRaw!),
                       emphasize: true,
                       arrowColor: accent,
@@ -1062,7 +1065,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                     const SizedBox(height: 6),
                     _TerminalLine(
                       prompt: '>',
-                      input: 'Total',
+                      input: DashboardCopy.tipTotalLabel(context),
                       output: _moneyWithCode(totalRounded!),
                       emphasize: true,
                       arrowColor: accent,
@@ -1070,7 +1073,10 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                     const SizedBox(height: 6),
                     _TerminalLine(
                       prompt: '>',
-                      input: 'Per person ($_tipSplitCount)',
+                      input: DashboardCopy.tipPerPersonLabel(
+                        context,
+                        _tipSplitCount,
+                      ),
                       output: _moneyWithCode(perPerson!),
                       emphasize: false,
                       arrowColor: accent,
@@ -1078,7 +1084,14 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                     if (roundDelta != null && roundDelta.abs() >= 0.005) ...[
                       const SizedBox(height: 8),
                       Text(
-                        'Rounding adjustment: ${roundDelta > 0 ? '+' : ''}${_moneyWithCode(roundDelta).replaceFirst(_currencySymbol(_tipCurrencyCode()), '')}',
+                        DashboardCopy.tipRoundingAdjustment(
+                          context,
+                          sign: roundDelta > 0 ? '+' : '',
+                          deltaAmount: _moneyWithCode(roundDelta).replaceFirst(
+                            _currencySymbol(_tipCurrencyCode()),
+                            '',
+                          ),
+                        ),
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: DraculaPalette.comment.withAlpha(220),
                           fontWeight: FontWeight.w700,
@@ -1113,9 +1126,11 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
           controller: _controller,
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
           decoration: InputDecoration(
-            labelText: isAddOn
-                ? 'Subtotal (${_tipCurrencyCode()})'
-                : 'Total (${_tipCurrencyCode()})',
+            labelText: DashboardCopy.taxAmountLabel(
+              context,
+              isAddOn: isAddOn,
+              currencyCode: _tipCurrencyCode(),
+            ),
             hintText: '100.00',
           ),
           onChanged: (_) => setState(() {}),
@@ -1127,7 +1142,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
           children: [
             ChoiceChip(
               key: ValueKey('tool_tax_mode_${widget.tool.id}_add_on'),
-              label: const Text('Add-on tax'),
+              label: Text(DashboardCopy.taxModeAddOn(context)),
               selected: isAddOn,
               onSelected: (_) => setState(() {
                 _taxMode = 'add_on';
@@ -1135,7 +1150,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
             ),
             ChoiceChip(
               key: ValueKey('tool_tax_mode_${widget.tool.id}_inclusive'),
-              label: const Text('VAT inclusive'),
+              label: Text(DashboardCopy.taxModeInclusive(context)),
               selected: !isAddOn,
               onSelected: (_) => setState(() {
                 _taxMode = 'inclusive';
@@ -1170,7 +1185,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
           ),
           child: amount == null
               ? Text(
-                  'Enter a valid amount to calculate tax.',
+                  DashboardCopy.taxInvalidAmount(context),
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: DraculaPalette.comment.withAlpha(230),
                     fontWeight: FontWeight.w700,
@@ -1181,7 +1196,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                   children: [
                     _TerminalLine(
                       prompt: '>',
-                      input: 'Subtotal',
+                      input: DashboardCopy.taxSubtotalLine(context),
                       output: _moneyWithCode(subtotal!),
                       emphasize: true,
                       arrowColor: accent,
@@ -1189,7 +1204,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                     const SizedBox(height: 6),
                     _TerminalLine(
                       prompt: '>',
-                      input: 'Tax ($_taxPercent%)',
+                      input: DashboardCopy.taxLineLabel(context, _taxPercent),
                       output: _moneyWithCode(tax!),
                       emphasize: false,
                       arrowColor: accent,
@@ -1197,16 +1212,14 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                     const SizedBox(height: 6),
                     _TerminalLine(
                       prompt: '>',
-                      input: 'Total',
+                      input: DashboardCopy.taxTotalLine(context),
                       output: _moneyWithCode(total!),
                       emphasize: true,
                       arrowColor: accent,
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      isAddOn
-                          ? 'Mode: add tax on top of subtotal'
-                          : 'Mode: tax already included in total',
+                      DashboardCopy.taxModeHelp(context, isAddOn: isAddOn),
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: DraculaPalette.comment.withAlpha(220),
                         fontWeight: FontWeight.w700,
@@ -1263,16 +1276,22 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
 
     String? compareText;
     if (_unitPriceCompareEnabled && !comparable) {
-      compareText = 'Comparison needs valid values in the same unit family.';
+      compareText = DashboardCopy.unitPriceCompareInvalid(context);
     } else if (comparable) {
       final delta = (perBaseA - perBaseB).abs();
       final pct = (delta / math.min(perBaseA, perBaseB)) * 100.0;
       if (perBaseA < perBaseB) {
-        compareText = 'Product A is cheaper by ${pct.toStringAsFixed(1)}%.';
+        compareText = DashboardCopy.unitPriceCompareA(
+          context,
+          pct.toStringAsFixed(1),
+        );
       } else if (perBaseB < perBaseA) {
-        compareText = 'Product B is cheaper by ${pct.toStringAsFixed(1)}%.';
+        compareText = DashboardCopy.unitPriceCompareB(
+          context,
+          pct.toStringAsFixed(1),
+        );
       } else {
-        compareText = 'Products are equal in normalized unit price.';
+        compareText = DashboardCopy.unitPriceCompareEqual(context);
       }
     }
 
@@ -1309,7 +1328,10 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                 decimal: true,
               ),
               decoration: InputDecoration(
-                labelText: 'Price (${_tipCurrencyCode()})',
+                labelText: DashboardCopy.unitPriceLabelPrice(
+                  context,
+                  _tipCurrencyCode(),
+                ),
                 hintText: '4.99',
               ),
               onChanged: (_) => setState(() {}),
@@ -1324,8 +1346,8 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                     keyboardType: const TextInputType.numberWithOptions(
                       decimal: true,
                     ),
-                    decoration: const InputDecoration(
-                      labelText: 'Quantity',
+                    decoration: InputDecoration(
+                      labelText: DashboardCopy.unitPriceLabelQuantity(context),
                       hintText: '500',
                     ),
                     onChanged: (_) => setState(() {}),
@@ -1371,7 +1393,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
       children: [
         productCard(
-          title: 'Product A',
+          title: DashboardCopy.unitPriceProductTitle(context, isA: true),
           priceController: _unitPriceAController,
           qtyController: _unitQtyAController,
           selectedUnit: _unitPriceUnitA,
@@ -1384,7 +1406,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
           value: _unitPriceCompareEnabled,
           contentPadding: EdgeInsets.zero,
           title: Text(
-            'Compare with Product B',
+            DashboardCopy.unitPriceCompareToggle(context),
             style: Theme.of(
               context,
             ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w700),
@@ -1393,7 +1415,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
         ),
         if (_unitPriceCompareEnabled) ...[
           productCard(
-            title: 'Product B',
+            title: DashboardCopy.unitPriceProductTitle(context, isA: false),
             priceController: _unitPriceBController,
             qtyController: _unitQtyBController,
             selectedUnit: _unitPriceUnitB,
@@ -1412,7 +1434,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
           ),
           child: perBaseA == null
               ? Text(
-                  'Enter valid price and quantity for Product A.',
+                  DashboardCopy.unitPriceInvalidProductA(context),
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: DraculaPalette.comment.withAlpha(230),
                     fontWeight: FontWeight.w700,

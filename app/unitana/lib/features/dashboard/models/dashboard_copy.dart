@@ -192,6 +192,167 @@ class DashboardCopy {
         fallback: 'Could not refresh rates',
       );
 
+  static String tipBillAmountLabel(BuildContext context, String currencyCode) =>
+      DashboardLocalizations.of(context).text(
+        'dashboard.tip.billAmountLabel',
+        params: <String, String>{'currencyCode': currencyCode},
+        fallback: 'Bill Amount ($currencyCode)',
+      );
+  static String tipSplitLabel(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.tip.splitLabel', fallback: 'Split');
+  static String tipRoundingLabel(BuildContext context, String mode) {
+    final (key, fallback) = switch (mode) {
+      'none' => ('dashboard.tip.round.none', 'No round'),
+      'nearest' => ('dashboard.tip.round.nearest', 'Nearest'),
+      'up' => ('dashboard.tip.round.up', 'Round up'),
+      'down' => ('dashboard.tip.round.down', 'Round down'),
+      _ => ('dashboard.tip.round.none', 'No round'),
+    };
+    return DashboardLocalizations.of(context).text(key, fallback: fallback);
+  }
+
+  static String tipInvalidAmount(BuildContext context) =>
+      DashboardLocalizations.of(context).text(
+        'dashboard.tip.invalidAmount',
+        fallback: 'Enter a valid amount to calculate tip.',
+      );
+  static String tipLineLabel(BuildContext context, int percent) =>
+      DashboardLocalizations.of(context).text(
+        'dashboard.tip.line.tip',
+        params: <String, String>{'percent': '$percent'},
+        fallback: 'Tip ($percent%)',
+      );
+  static String tipTotalLabel(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.tip.line.total', fallback: 'Total');
+  static String tipPerPersonLabel(BuildContext context, int count) =>
+      DashboardLocalizations.of(context).text(
+        'dashboard.tip.line.perPerson',
+        params: <String, String>{'count': '$count'},
+        fallback: 'Per person ($count)',
+      );
+  static String tipRoundingAdjustment(
+    BuildContext context, {
+    required String sign,
+    required String deltaAmount,
+  }) => DashboardLocalizations.of(context).text(
+    'dashboard.tip.roundingAdjustment',
+    params: <String, String>{'sign': sign, 'deltaAmount': deltaAmount},
+    fallback: 'Rounding adjustment: $sign$deltaAmount',
+  );
+
+  static String taxAmountLabel(
+    BuildContext context, {
+    required bool isAddOn,
+    required String currencyCode,
+  }) {
+    final key = isAddOn
+        ? 'dashboard.tax.subtotalLabel'
+        : 'dashboard.tax.totalLabel';
+    final fallback = isAddOn
+        ? 'Subtotal ($currencyCode)'
+        : 'Total ($currencyCode)';
+    return DashboardLocalizations.of(context).text(
+      key,
+      params: <String, String>{'currencyCode': currencyCode},
+      fallback: fallback,
+    );
+  }
+
+  static String taxModeAddOn(BuildContext context) => DashboardLocalizations.of(
+    context,
+  ).text('dashboard.tax.mode.addOn', fallback: 'Add-on tax');
+  static String taxModeInclusive(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.tax.mode.inclusive', fallback: 'VAT inclusive');
+  static String taxInvalidAmount(BuildContext context) =>
+      DashboardLocalizations.of(context).text(
+        'dashboard.tax.invalidAmount',
+        fallback: 'Enter a valid amount to calculate tax.',
+      );
+  static String taxSubtotalLine(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.tax.line.subtotal', fallback: 'Subtotal');
+  static String taxLineLabel(BuildContext context, int percent) =>
+      DashboardLocalizations.of(context).text(
+        'dashboard.tax.line.tax',
+        params: <String, String>{'percent': '$percent'},
+        fallback: 'Tax ($percent%)',
+      );
+  static String taxTotalLine(BuildContext context) => DashboardLocalizations.of(
+    context,
+  ).text('dashboard.tax.line.total', fallback: 'Total');
+  static String taxModeHelp(BuildContext context, {required bool isAddOn}) {
+    final key = isAddOn
+        ? 'dashboard.tax.mode.help.addOn'
+        : 'dashboard.tax.mode.help.inclusive';
+    final fallback = isAddOn
+        ? 'Mode: add tax on top of subtotal'
+        : 'Mode: tax already included in total';
+    return DashboardLocalizations.of(context).text(key, fallback: fallback);
+  }
+
+  static String unitPriceCompareInvalid(BuildContext context) =>
+      DashboardLocalizations.of(context).text(
+        'dashboard.unitPrice.compareInvalid',
+        fallback: 'Comparison needs valid values in the same unit family.',
+      );
+  static String unitPriceCompareA(BuildContext context, String percent) =>
+      DashboardLocalizations.of(context).text(
+        'dashboard.unitPrice.compareA',
+        params: <String, String>{'percent': percent},
+        fallback: 'Product A is cheaper by $percent%.',
+      );
+  static String unitPriceCompareB(BuildContext context, String percent) =>
+      DashboardLocalizations.of(context).text(
+        'dashboard.unitPrice.compareB',
+        params: <String, String>{'percent': percent},
+        fallback: 'Product B is cheaper by $percent%.',
+      );
+  static String unitPriceCompareEqual(BuildContext context) =>
+      DashboardLocalizations.of(context).text(
+        'dashboard.unitPrice.compareEqual',
+        fallback: 'Products are equal in normalized unit price.',
+      );
+  static String unitPriceLabelPrice(
+    BuildContext context,
+    String currencyCode,
+  ) => DashboardLocalizations.of(context).text(
+    'dashboard.unitPrice.label.price',
+    params: <String, String>{'currencyCode': currencyCode},
+    fallback: 'Price ($currencyCode)',
+  );
+  static String unitPriceLabelQuantity(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.unitPrice.label.quantity', fallback: 'Quantity');
+  static String unitPriceProductTitle(
+    BuildContext context, {
+    required bool isA,
+  }) {
+    final key = isA
+        ? 'dashboard.unitPrice.title.productA'
+        : 'dashboard.unitPrice.title.productB';
+    final fallback = isA ? 'Product A' : 'Product B';
+    return DashboardLocalizations.of(context).text(key, fallback: fallback);
+  }
+
+  static String unitPriceCompareToggle(BuildContext context) =>
+      DashboardLocalizations.of(context).text(
+        'dashboard.unitPrice.compareToggle',
+        fallback: 'Compare with Product B',
+      );
+  static String unitPriceInvalidProductA(BuildContext context) =>
+      DashboardLocalizations.of(context).text(
+        'dashboard.unitPrice.invalidProductA',
+        fallback: 'Enter valid price and quantity for Product A.',
+      );
+
   static String dateImpactTitleCase(String dateImpactRaw) {
     return switch (dateImpactRaw.toLowerCase()) {
       'next day' => 'Next Day',

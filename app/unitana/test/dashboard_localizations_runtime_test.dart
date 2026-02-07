@@ -59,8 +59,19 @@ void main() {
       locale: const Locale('en'),
       key: 'dashboard.currency.notice.refreshing',
     );
+    final tipInvalid = DashboardLocalizations.resolveForLocale(
+      locale: const Locale('en'),
+      key: 'dashboard.tip.invalidAmount',
+    );
+    final unitCompare = DashboardLocalizations.resolveForLocale(
+      locale: const Locale('en'),
+      key: 'dashboard.unitPrice.compareA',
+      params: const <String, String>{'percent': '12.3'},
+    );
     expect(clearTitle, 'Clear history?');
     expect(hint, 'tap copies result; long-press copies input');
     expect(refreshNotice, 'Refreshing rates…');
+    expect(tipInvalid, 'Enter a valid amount to calculate tip.');
+    expect(unitCompare, 'Product A is cheaper by 12.3%.');
   });
 }

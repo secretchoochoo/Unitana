@@ -1,4 +1,4 @@
-NEXT CHAT PROMPT — Pack H Localization Expansion (Phase 5)
+NEXT CHAT PROMPT — Pack H Localization Expansion (Phase 6)
 
 You are taking over Unitana (Flutter) in a fresh, high-context window.
 
@@ -23,17 +23,20 @@ Then execute using this contract.
   - goldens opt-in only
 
 ## Mission
-Continue runtime localization migration on remaining high-traffic dashboard/tool microcopy and prepare the next ARB-compatible transition seams.
+Continue localization runtime migration for remaining high-traffic dashboard/tool text and tighten ARB-transition artifacts.
 
 ## Required outcomes
 1) Runtime seam expansion
-- Migrate another focused batch of hardcoded dashboard/tool microcopy to localization-backed copy helpers.
-- Prioritize helper text in active calculator/tool bodies (tip/tax/unit-price/lookup/time guidance), notices, and confirmations.
-- Preserve current English UX wording and behavior.
+- Migrate another focused batch of hardcoded microcopy from:
+  - lookup shell text
+  - time/jet-lag helper lines
+  - tool-picker/dashboard notices and confirmations
+- Preserve current English UX behavior.
 
-2) ARB transition prep
-- Keep seeded key usage deterministic.
-- Add low-risk scaffolding artifacts for future ARB/key export workflow (without enabling full translation rollout).
+2) ARB-transition artifact hardening
+- Keep using seeded stable keys.
+- Extend seed export workflow/artifacts so key inventory remains deterministic and reviewable.
+- Do not do full translation rollout yet.
 
 3) Regression lock
 - Keep Pack B/C reliability messaging stable.
@@ -49,7 +52,7 @@ Continue runtime localization migration on remaining high-traffic dashboard/tool
   - `docs/ai/prompts/NEXT_CHAT_PROMPT.md` (if scope shifts again)
 
 ## Definition of done
-- Additional high-traffic microcopy is runtime-localization backed.
-- Delegate/fallback behavior remains deterministic and test-guarded.
+- Additional high-impact microcopy is runtime-localization backed.
+- Seed/export and fallback behavior remain deterministic and test-guarded.
 - Reliability and Pack N/M contracts remain green.
 - Repo is green (`format`, `analyze`, `test`).

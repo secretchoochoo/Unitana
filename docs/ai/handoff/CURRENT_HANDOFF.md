@@ -317,6 +317,18 @@
     - `dashboard_localizations_runtime_test.dart` expanded for migrated keys
     - new `app_localization_scaffold_test.dart` verifies app delegate/locale wiring.
   - full gates re-run and green (`dart format .`, `flutter analyze`, `flutter test`).
+- Pack H localization expansion (phase 5, 2026-02-07):
+  - migrated additional high-traffic tool-body microcopy in Tip Helper / Tax-VAT / Unit Price flows to runtime localization-backed `DashboardCopy`:
+    - Tip: bill label, split label, rounding chip labels, invalid-state copy, terminal line labels, rounding-adjustment line.
+    - Tax/VAT: amount label, mode labels, invalid-state copy, terminal line labels, mode explanation line.
+    - Unit Price: compare-state copy, product titles, compare toggle, price/quantity labels, invalid-state copy.
+  - added ARB-transition helper script:
+    - `app/unitana/tools/export_localization_seed.dart`
+    - emits sorted seed keys/values as JSON for deterministic key inventory/export workflows.
+  - expanded seed map + tests:
+    - `app/unitana/lib/l10n/localization_seed.dart` includes new Tip/Tax/Unit Price keys.
+    - `app/unitana/test/dashboard_localizations_runtime_test.dart` + `app/unitana/test/localization_seed_contract_test.dart` updated with new key/placeholder assertions.
+  - full gates re-run and green (`dart format .`, `flutter analyze`, `flutter test`).
 - Pack F activation bundle (phase 1):
   - activated `world_clock_delta` and `jet_lag_delta` entries in tool registry.
   - wired both entries to the existing mature Time modal flow as interim E2E activation.
