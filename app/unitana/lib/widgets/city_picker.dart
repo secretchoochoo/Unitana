@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../common/debug/picker_perf_trace.dart';
 import '../data/cities.dart';
 import '../data/city_label_utils.dart';
 import '../data/city_picker_ranking.dart';
@@ -188,8 +189,14 @@ class _CityPickerState extends State<CityPicker> {
   }
 
   List<City> _filter(List<City> all, String queryRaw) {
+    final sw = PickerPerfTrace.start('wizard_city_filter');
     final q = _normQuery(queryRaw);
     if (q.isEmpty) {
+      PickerPerfTrace.logElapsed(
+        'wizard_city_filter',
+        sw,
+        extra: 'query=empty results=${_defaultTopCities.length}',
+      );
       return _defaultTopCities;
     }
 
@@ -245,6 +252,12 @@ class _CityPickerState extends State<CityPicker> {
       deduped.add(row.city);
       if (deduped.length >= 100) break;
     }
+    PickerPerfTrace.logElapsed(
+      'wizard_city_filter',
+      sw,
+      extra: 'query="$q" results=${deduped.length}',
+      minMs: 6,
+    );
     return deduped;
   }
 
@@ -276,6 +289,7 @@ class _CityPickerState extends State<CityPicker> {
   }
 
   void _rebuildIndex() {
+    final sw = PickerPerfTrace.start('wizard_city_index');
     _indexedCities = widget.cities
         .map((city) {
           final cityNorm = _normQuery(city.cityName);
@@ -301,6 +315,12 @@ class _CityPickerState extends State<CityPicker> {
         })
         .toList(growable: false);
     _defaultTopCities = _buildDefaultTopCities();
+    PickerPerfTrace.logElapsed(
+      'wizard_city_index',
+      sw,
+      extra: 'cities=${widget.cities.length} top=${_defaultTopCities.length}',
+      minMs: 4,
+    );
   }
 
   List<City> _buildDefaultTopCities() {

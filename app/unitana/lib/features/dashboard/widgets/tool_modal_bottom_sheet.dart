@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../common/widgets/unitana_notice_card.dart';
+import '../../../common/debug/picker_perf_trace.dart';
 import '../../../data/cities.dart' show kCurrencySymbols;
 import '../../../data/city_label_utils.dart';
 import '../../../data/city_repository.dart';
@@ -2500,8 +2501,16 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
     required List<TimeZoneCityOption> all,
     Map<String, String>? indexedHaystackByKey,
   }) {
+    final sw = PickerPerfTrace.start('time_city_filter');
     final normalized = _normalizeTimeSearch(rawQuery);
-    if (normalized.isEmpty) return featured;
+    if (normalized.isEmpty) {
+      PickerPerfTrace.logElapsed(
+        'time_city_filter',
+        sw,
+        extra: 'query=empty results=${featured.length}',
+      );
+      return featured;
+    }
     final aliasZones = _aliasZonesForQuery(rawQuery).toSet();
     final shortQuery = normalized.length <= 3;
     final candidates = normalized.length < 3 ? featured : all;
@@ -2562,6 +2571,12 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
       out.add(item.option);
       if (out.length >= 40) break;
     }
+    PickerPerfTrace.logElapsed(
+      'time_city_filter',
+      sw,
+      extra: 'query="$normalized" results=${out.length}',
+      minMs: 6,
+    );
     return out;
   }
 
@@ -2570,8 +2585,12 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
     required List<TimeZoneOption> options,
     Map<String, String>? indexedHaystackById,
   }) {
+    final sw = PickerPerfTrace.start('time_zone_filter');
     final query = rawQuery.trim();
-    if (query.isEmpty) return const <TimeZoneOption>[];
+    if (query.isEmpty) {
+      PickerPerfTrace.logElapsed('time_zone_filter', sw, extra: 'query=empty');
+      return const <TimeZoneOption>[];
+    }
     final normalized = _normalizeTimeSearch(query);
     final aliasZones = _aliasZonesForQuery(query).toSet();
     final shortQuery = normalized.length <= 3;
@@ -2612,7 +2631,17 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
       scored.add((option: option, score: score));
     }
     scored.sort((a, b) => b.score.compareTo(a.score));
-    return scored.map((item) => item.option).take(12).toList(growable: false);
+    final out = scored
+        .map((item) => item.option)
+        .take(12)
+        .toList(growable: false);
+    PickerPerfTrace.logElapsed(
+      'time_zone_filter',
+      sw,
+      extra: 'query="$normalized" results=${out.length}',
+      minMs: 6,
+    );
+    return out;
   }
 
   void _seedTimeToolDefaults() {
@@ -2785,6 +2814,9 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
   }
 
   Future<void> _pickTimeZone({required bool isFrom}) async {
+    final openSw = PickerPerfTrace.start(
+      'time_picker_open_${isFrom ? 'from' : 'to'}',
+    );
     final zoneOptions = _timeZoneOptions();
     final allCityOptions = TimeZoneCatalog.cityOptions(
       home: widget.home,
@@ -2805,14 +2837,30 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
     final featuredCityOptions = _featuredCityOptions(
       cityOptions: allCityOptions,
     );
+    PickerPerfTrace.logElapsed(
+      'time_picker_catalog_ready_${isFrom ? 'from' : 'to'}',
+      openSw,
+      extra:
+          'zones=${zoneOptions.length} cities=${allCityOptions.length} featured=${featuredCityOptions.length}',
+      minMs: 2,
+    );
     if (zoneOptions.isEmpty) return;
     final currentLabel = isFrom ? _timeFromDisplayLabel : _timeToDisplayLabel;
     var query = '';
+    var firstBuildLogged = false;
     final selected = await showModalBottomSheet<_TimeZonePickerSelection>(
       context: context,
       showDragHandle: true,
       builder: (context) => StatefulBuilder(
         builder: (context, setModalState) {
+          if (!firstBuildLogged) {
+            firstBuildLogged = true;
+            PickerPerfTrace.logElapsed(
+              'time_picker_first_build_${isFrom ? 'from' : 'to'}',
+              openSw,
+              extra: 'initialQuery="${query.trim()}"',
+            );
+          }
           final filteredCity = _searchCityOptions(
             rawQuery: query,
             featured: featuredCityOptions,
@@ -3049,6 +3097,11 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
           );
         },
       ),
+    );
+    PickerPerfTrace.logElapsed(
+      'time_picker_closed_${isFrom ? 'from' : 'to'}',
+      openSw,
+      extra: selected == null ? 'dismissed' : 'selected=${selected.zoneId}',
     );
     if (selected == null || !mounted) return;
     final previousFrom = _timeFromZoneId;
