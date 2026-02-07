@@ -1,5 +1,9 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:unitana/data/cities.dart';
 import 'package:unitana/data/city_picker_engine.dart';
 
 class _Row {
@@ -97,5 +101,50 @@ void main() {
     expect(keys, isNot(contains('santiago-cl-alt-zone')));
     expect(keys, contains('santiago-cl-america-santiago'));
     expect(keys, contains('santiago-do-america-santo-domingo'));
+  });
+
+  test('real dataset ambiguity keeps alternatives and honors country hint', () {
+    final decoded =
+        jsonDecode(File('assets/data/cities_v1.json').readAsStringSync())
+            as List<dynamic>;
+    final cities = decoded
+        .whereType<Map<String, dynamic>>()
+        .map(City.fromJson)
+        .toList(growable: false);
+    expect(cities.length, greaterThan(30000));
+
+    final entries = CityPickerEngine.sortByBaseScore(
+      CityPickerEngine.buildEntries<City>(
+        items: cities,
+        keyOf: (c) => c.id,
+        cityNameOf: (c) => c.cityName,
+        countryCodeOf: (c) => c.countryCode,
+        countryNameOf: (c) => c.countryName ?? c.countryCode,
+        timeZoneIdOf: (c) => c.timeZoneId,
+        mainstreamCountryBonus: 60,
+      ),
+    );
+
+    final plain = CityPickerEngine.searchEntries(
+      entries: entries,
+      queryRaw: 'santiago',
+      dedupeByCityCountry: true,
+      maxResults: 40,
+    );
+    final plainCountryCodes = plain
+        .map((e) => e.countryCode)
+        .where((cc) => cc.isNotEmpty)
+        .toSet();
+    expect(plainCountryCodes, contains('CL'));
+    expect(plainCountryCodes.length, greaterThan(1));
+
+    final withCountryHint = CityPickerEngine.searchEntries(
+      entries: entries,
+      queryRaw: 'santiago cl',
+      dedupeByCityCountry: true,
+      maxResults: 20,
+    );
+    expect(withCountryHint, isNotEmpty);
+    expect(withCountryHint.first.countryCode, 'CL');
   });
 }

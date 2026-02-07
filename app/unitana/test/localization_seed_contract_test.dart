@@ -56,6 +56,7 @@ void main() {
       LocalizationSeed.enUs['dashboard.dashboard.profileNameFallback'],
       'My Places',
     );
+    expect(LocalizationSeed.enUs['dashboard.dashboard.setCityCta'], 'Set city');
     expect(LocalizationSeed.enUs['dashboard.profiles.title'], 'Profiles');
     expect(
       LocalizationSeed.enUs['dashboard.profiles.delete.message'],

@@ -86,6 +86,10 @@ void main() {
       locale: const Locale('en'),
       key: 'dashboard.dashboard.profileNameFallback',
     );
+    final setCityCta = DashboardLocalizations.resolveForLocale(
+      locale: const Locale('en'),
+      key: 'dashboard.dashboard.setCityCta',
+    );
     final profileDeleteMessage = DashboardLocalizations.resolveForLocale(
       locale: const Locale('en'),
       key: 'dashboard.profiles.delete.message',
@@ -160,6 +164,7 @@ void main() {
     expect(comingSoon, 'Settings: coming soon');
     expect(openMenu, 'Open menu');
     expect(profileNameFallback, 'My Places');
+    expect(setCityCta, 'Set city');
     expect(
       profileDeleteMessage,
       'Delete "Weekend Trip"? This cannot be undone.',

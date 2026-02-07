@@ -379,6 +379,10 @@ class DashboardCopy {
       DashboardLocalizations.of(
         context,
       ).text('dashboard.dashboard.profileNameFallback', fallback: 'My Places');
+  static String dashboardSetCityCta(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.dashboard.setCityCta', fallback: 'Set city');
   static String dashboardOpenToolsTooltip(BuildContext context) =>
       DashboardLocalizations.of(
         context,

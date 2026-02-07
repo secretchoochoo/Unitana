@@ -10,6 +10,7 @@ import '../../../data/country_currency_map.dart';
 import '../../../theme/theme_extensions.dart';
 import '../../../theme/dracula_palette.dart';
 import '../../../utils/timezone_utils.dart';
+import '../models/dashboard_copy.dart';
 import '../models/dashboard_live_data.dart';
 import '../models/dashboard_session_controller.dart';
 
@@ -230,10 +231,11 @@ class _SegmentedRealityToggle extends StatelessWidget {
     final layout = Theme.of(context).extension<UnitanaLayoutTokens>();
     final r = (layout?.radiusButton ?? 16.0) - 6;
 
+    final setCityLabel = DashboardCopy.dashboardSetCityCta(context);
     final leftLabel =
-        '${_flagEmojiFromIso2(destination?.countryCode)} ${destination?.cityName ?? 'Set city'}';
+        '${_flagEmojiFromIso2(destination?.countryCode)} ${destination?.cityName ?? setCityLabel}';
     final rightLabel =
-        '${_flagEmojiFromIso2(home?.countryCode)} ${home?.cityName ?? 'Set city'}';
+        '${_flagEmojiFromIso2(home?.countryCode)} ${home?.cityName ?? setCityLabel}';
 
     return Container(
       height: compact ? 40 : 44,
@@ -1523,7 +1525,7 @@ class _RightMarqueeSlot extends StatelessWidget {
     this.renderConditionLabel = true,
   });
 
-  String _fallbackLabel(SceneKey? key) {
+  String _fallbackLabel(BuildContext context, SceneKey? key) {
     switch (key) {
       case SceneKey.clear:
         return 'Clear';
@@ -1580,7 +1582,7 @@ class _RightMarqueeSlot extends StatelessWidget {
       case SceneKey.squall:
         return 'Squall';
       case null:
-        return 'Weather';
+        return DashboardCopy.weatherTitle(context);
     }
   }
 
@@ -1596,7 +1598,7 @@ class _RightMarqueeSlot extends StatelessWidget {
     final desiredH = compact ? 56.0 : 172.0;
     final label = (conditionLabel ?? '').trim().isNotEmpty
         ? conditionLabel!.trim()
-        : _fallbackLabel(sceneKey);
+        : _fallbackLabel(context, sceneKey);
 
     return LayoutBuilder(
       builder: (context, c) {

@@ -109,6 +109,7 @@ class LocalizationSeed {
     'dashboard.dashboard.profileUpdated': 'Profile updated',
     'dashboard.dashboard.profileCreated': 'Profile created',
     'dashboard.dashboard.profileNameFallback': 'My Places',
+    'dashboard.dashboard.setCityCta': 'Set city',
     'dashboard.dashboard.closePanelTooltip': 'Close this panel',
     'dashboard.dashboard.updated': 'Dashboard updated',
     'dashboard.dashboard.tooltip.openTools': 'Open tools',
