@@ -205,6 +205,17 @@ class LocalizationSeed {
     'dashboard.time.picker.header.directZones': 'Direct Time Zones',
     'dashboard.time.picker.emptyHint':
         'No matches yet. Try city, country, timezone, or EST.',
+    'dashboard.cityPicker.title': 'Choose a city',
+    'dashboard.cityPicker.tooltip.close': 'Close',
+    'dashboard.cityPicker.searchHint.cityOnly': 'Search city or country',
+    'dashboard.cityPicker.searchHint.cityAndTimezone':
+        'Search city, country, timezone, or EST',
+    'dashboard.cityPicker.header.topCities': 'Top Cities',
+    'dashboard.cityPicker.header.bestMatches': 'Best Matches',
+    'dashboard.cityPicker.empty.cityOnly':
+        'No matches yet. Try city or country.',
+    'dashboard.cityPicker.empty.cityAndTimezone':
+        'No matches yet. Try city, country, timezone, or EST.',
     'dashboard.toolPicker.noMatchingTools': 'No matching tools.',
     'dashboard.toolPicker.noToolsYet': 'No tools yet.',
     'dashboard.toolPicker.resultsHeader': 'Results',

@@ -110,6 +110,18 @@ void main() {
       'Very High',
     );
     expect(
+      LocalizationSeed.enUs['dashboard.cityPicker.searchHint.cityOnly'],
+      'Search city or country',
+    );
+    expect(
+      LocalizationSeed.enUs['dashboard.cityPicker.searchHint.cityAndTimezone'],
+      'Search city, country, timezone, or EST',
+    );
+    expect(
+      LocalizationSeed.enUs['dashboard.cityPicker.header.topCities'],
+      'Top Cities',
+    );
+    expect(
       LocalizationSeed.enUs['dashboard.toolPicker.resultsHeader'],
       'Results',
     );

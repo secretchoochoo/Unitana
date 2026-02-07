@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../data/cities.dart';
 import '../data/city_label_utils.dart';
 import '../data/city_picker_ranking.dart';
+import '../l10n/city_picker_copy.dart';
 
 class CityPicker extends StatefulWidget {
   final List<City> cities;
@@ -62,10 +63,13 @@ class _CityPickerState extends State<CityPicker> {
             children: [
               Row(
                 children: [
-                  const Expanded(
+                  Expanded(
                     child: Text(
-                      'Choose a city',
-                      style: TextStyle(
+                      CityPickerCopy.title(
+                        context,
+                        mode: CityPickerMode.cityOnly,
+                      ),
+                      style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w600,
                       ),
@@ -73,7 +77,7 @@ class _CityPickerState extends State<CityPicker> {
                     ),
                   ),
                   IconButton(
-                    tooltip: 'Close',
+                    tooltip: CityPickerCopy.closeTooltip(context),
                     icon: const Icon(Icons.close),
                     onPressed: () => Navigator.of(context).pop(),
                   ),
@@ -83,7 +87,10 @@ class _CityPickerState extends State<CityPicker> {
               TextField(
                 controller: _searchController,
                 decoration: InputDecoration(
-                  hintText: 'Search city or country',
+                  hintText: CityPickerCopy.searchHint(
+                    context,
+                    mode: CityPickerMode.cityOnly,
+                  ),
                   prefixIcon: const Icon(Icons.search),
                   suffixIcon: _query.trim().isEmpty
                       ? null
@@ -104,7 +111,9 @@ class _CityPickerState extends State<CityPicker> {
               Align(
                 alignment: Alignment.centerLeft,
                 child: Text(
-                  hasQuery ? 'Best Matches' : 'Top Cities',
+                  hasQuery
+                      ? CityPickerCopy.bestMatchesHeader(context)
+                      : CityPickerCopy.topHeader(context),
                   style: Theme.of(
                     context,
                   ).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w700),
@@ -118,7 +127,10 @@ class _CityPickerState extends State<CityPicker> {
                         child: Padding(
                           padding: const EdgeInsets.fromLTRB(4, 6, 4, 0),
                           child: Text(
-                            'No matches yet. Try city or country.',
+                            CityPickerCopy.emptyHint(
+                              context,
+                              mode: CityPickerMode.cityOnly,
+                            ),
                             style: Theme.of(context).textTheme.bodySmall,
                           ),
                         ),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../l10n/city_picker_copy.dart';
 import '../../../l10n/dashboard_localizations.dart';
 import 'jet_lag_planner.dart';
 
@@ -901,10 +902,7 @@ class DashboardCopy {
         : 'Search city or country',
   );
   static String timePickerExpandedSearchHint(BuildContext context) =>
-      DashboardLocalizations.of(context).text(
-        'dashboard.time.picker.searchHint.expanded',
-        fallback: 'Search city, country, timezone, or EST',
-      );
+      CityPickerCopy.searchHint(context, mode: CityPickerMode.cityAndTimezone);
   static String timePickerQuickChipDetail(BuildContext context, String code) =>
       DashboardLocalizations.of(context).text(
         'dashboard.time.picker.quick.$code',
@@ -919,17 +917,11 @@ class DashboardCopy {
   static String timePickerPrimaryHeader(
     BuildContext context, {
     required bool hasQuery,
-  }) => DashboardLocalizations.of(context).text(
-    hasQuery
-        ? 'dashboard.time.picker.header.bestMatches'
-        : 'dashboard.time.picker.header.topCities',
-    fallback: hasQuery ? 'Best Matches' : 'Top Cities',
-  );
+  }) => hasQuery
+      ? CityPickerCopy.bestMatchesHeader(context)
+      : CityPickerCopy.topHeader(context);
   static String timePickerNoMatchesHint(BuildContext context) =>
-      DashboardLocalizations.of(context).text(
-        'dashboard.time.picker.emptyHint',
-        fallback: 'No matches yet. Try city, country, timezone, or EST.',
-      );
+      CityPickerCopy.emptyHint(context, mode: CityPickerMode.cityAndTimezone);
   static String timePickerDirectZonesHeader(BuildContext context) =>
       DashboardLocalizations.of(context).text(
         'dashboard.time.picker.header.directZones',

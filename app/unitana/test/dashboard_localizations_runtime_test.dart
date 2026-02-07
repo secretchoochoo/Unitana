@@ -143,6 +143,14 @@ void main() {
       locale: const Locale('en'),
       key: 'dashboard.weather.pollen.veryHigh',
     );
+    final cityOnlyHint = DashboardLocalizations.resolveForLocale(
+      locale: const Locale('en'),
+      key: 'dashboard.cityPicker.searchHint.cityOnly',
+    );
+    final cityAndTimezoneHint = DashboardLocalizations.resolveForLocale(
+      locale: const Locale('en'),
+      key: 'dashboard.cityPicker.searchHint.cityAndTimezone',
+    );
     expect(clearTitle, 'Clear history?');
     expect(hint, 'tap copies result; long-press copies input');
     expect(refreshNotice, 'Refreshing rates…');
@@ -171,5 +179,7 @@ void main() {
     expect(cityFallback, 'City not set');
     expect(aqiBand, 'Very Unhealthy');
     expect(pollenBand, 'Very High');
+    expect(cityOnlyHint, 'Search city or country');
+    expect(cityAndTimezoneHint, 'Search city, country, timezone, or EST');
   });
 }
