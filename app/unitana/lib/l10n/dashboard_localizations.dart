@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'localization_seed.dart';
+import 'localization_seed_es.dart';
 
 /// Minimal runtime localization lookup for Pack H pilot wiring.
 ///
@@ -54,5 +55,8 @@ class DashboardLocalizations {
   }
 
   static const Map<String, Map<String, String>> _seedByLanguageCode =
-      <String, Map<String, String>>{'en': LocalizationSeed.enUs};
+      <String, Map<String, String>>{
+        'en': LocalizationSeed.enUs,
+        'es': LocalizationSeedEs.es419,
+      };
 }

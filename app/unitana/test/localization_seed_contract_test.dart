@@ -107,6 +107,7 @@ void main() {
       'Thunderstorm',
     );
     expect(LocalizationSeed.enUs['dashboard.hero.env.label.aqi'], 'AQI');
+    expect(LocalizationSeed.enUs['dashboard.hero.env.indexSuffix'], ' idx');
     expect(
       LocalizationSeed.enUs['dashboard.hero.env.bandShort.aqi.veryUnhealthy'],
       'VUnh',

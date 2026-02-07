@@ -31,11 +31,33 @@ void main() {
 
   test('DashboardLocalizations falls back to english when locale missing', () {
     final value = DashboardLocalizations.resolveForLocale(
-      locale: const Locale('es'),
+      locale: const Locale('fr'),
       key: 'dashboard.tool.cta.swap',
     );
     expect(value, 'Swap');
   });
+
+  test(
+    'DashboardLocalizations uses partial spanish seed and falls back to english',
+    () {
+      final weatherEs = DashboardLocalizations.resolveForLocale(
+        locale: const Locale('es'),
+        key: 'dashboard.weather.title',
+      );
+      final citiesEs = DashboardLocalizations.resolveForLocale(
+        locale: const Locale('es'),
+        key: 'dashboard.time.picker.mode.cities',
+      );
+      final englishFallback = DashboardLocalizations.resolveForLocale(
+        locale: const Locale('es'),
+        key: 'dashboard.time.converter.title',
+      );
+
+      expect(weatherEs, 'Clima');
+      expect(citiesEs, 'Ciudades');
+      expect(englishFallback, 'Convert Local Time');
+    },
+  );
 
   test('DashboardLocalizations uses explicit fallback when key missing', () {
     final value = DashboardLocalizations.resolveForLocale(
@@ -132,6 +154,10 @@ void main() {
     final heroEnvLabel = DashboardLocalizations.resolveForLocale(
       locale: const Locale('en'),
       key: 'dashboard.hero.env.label.aqi',
+    );
+    final heroEnvIdxSuffix = DashboardLocalizations.resolveForLocale(
+      locale: const Locale('en'),
+      key: 'dashboard.hero.env.indexSuffix',
     );
     final heroEnvBand = DashboardLocalizations.resolveForLocale(
       locale: const Locale('en'),
@@ -254,6 +280,7 @@ void main() {
     expect(devtoolsBackendShort, 'Demo');
     expect(devtoolsCondition, 'Clear');
     expect(heroEnvLabel, 'AQI');
+    expect(heroEnvIdxSuffix, ' idx');
     expect(heroEnvBand, 'Med');
     expect(heroDetailsTitle, 'Sunrise • Sunset');
     expect(heroCurrencyRate, 'Rate: \$1 = €0.92');

@@ -118,6 +118,8 @@ void main() {
     );
     expect(areaSearchRow, findsOneWidget);
 
+    await tester.ensureVisible(areaSearchRow);
+    await tester.pump(const Duration(milliseconds: 80));
     await tester.tap(areaSearchRow);
     await tester.pumpAndSettle(const Duration(milliseconds: 300));
 

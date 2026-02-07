@@ -1201,6 +1201,10 @@ class DashboardCopy {
       _ => bandKey,
     },
   );
+  static String heroEnvIndexSuffix(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.hero.env.indexSuffix', fallback: ' idx');
   static String heroEnvSemantics(
     BuildContext context, {
     required bool isAqi,

@@ -187,7 +187,7 @@ void main() {
   });
 
   test(
-    'ambiguity v3 families honor exact city/country and mainstream zone',
+    'ambiguity v4 families honor exact city/country and mainstream zone',
     () {
       final decoded =
           jsonDecode(File('assets/data/cities_v1.json').readAsStringSync())
@@ -270,6 +270,28 @@ void main() {
       expect(portland.first.cityNameNorm, 'portland');
       expect(portland.first.countryCode, 'US');
       expect(portland.first.timeZoneId, 'America/Los_Angeles');
+
+      final longBeach = CityPickerEngine.searchEntries(
+        entries: entries,
+        queryRaw: 'long beach',
+        dedupeByCityCountry: true,
+        maxResults: 12,
+      );
+      expect(longBeach, isNotEmpty);
+      expect(longBeach.first.cityNameNorm, 'long beach');
+      expect(longBeach.first.countryCode, 'US');
+      expect(longBeach.first.timeZoneId, 'America/Los_Angeles');
+
+      final springfield = CityPickerEngine.searchEntries(
+        entries: entries,
+        queryRaw: 'springfield',
+        dedupeByCityCountry: true,
+        maxResults: 12,
+      );
+      expect(springfield, isNotEmpty);
+      expect(springfield.first.cityNameNorm, 'springfield');
+      expect(springfield.first.countryCode, 'US');
+      expect(springfield.first.timeZoneId, 'America/Chicago');
     },
   );
 }

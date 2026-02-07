@@ -1,4 +1,4 @@
-NEXT CHAT PROMPT — Final Residual Copy Audit + Pack E Ambiguity V4
+NEXT CHAT PROMPT — Pack H Taxonomy Localization + Pack E Ambiguity V5
 
 You are taking over Unitana (Flutter) in a fresh, high-context window.
 
@@ -6,13 +6,14 @@ Read these files first:
 1) `docs/ai/handoff/CURRENT_HANDOFF.md`
 2) `docs/ai/context_db.json`
 3) `docs/ai/reference/CITY_PICKER_PERF_BUDGET.md`
-4) `app/unitana/lib/features/dashboard/models/dashboard_copy.dart`
-5) `app/unitana/lib/l10n/localization_seed.dart`
-6) `app/unitana/lib/features/dashboard/widgets/places_hero_v2.dart`
-7) `app/unitana/lib/features/dashboard/dashboard_screen.dart`
-8) `app/unitana/lib/features/dashboard/widgets/tool_modal_bottom_sheet.dart`
+4) `app/unitana/lib/features/dashboard/widgets/dashboard_board.dart`
+5) `app/unitana/lib/features/dashboard/models/dashboard_copy.dart`
+6) `app/unitana/lib/l10n/localization_seed.dart`
+7) `app/unitana/lib/l10n/localization_seed_es.dart`
+8) `app/unitana/lib/l10n/dashboard_localizations.dart`
 9) `app/unitana/lib/data/city_picker_engine.dart`
-10) `app/unitana/test/city_picker_engine_test.dart`
+10) `app/unitana/lib/data/city_picker_ranking.dart`
+11) `app/unitana/test/city_picker_engine_test.dart`
 
 ## Core operating rules
 - Keep repo green if any code/docs are touched:
@@ -27,31 +28,28 @@ Read these files first:
   - goldens opt-in only
 
 ## Mission
-Finish remaining hardcoded high-traffic copy audit and run ambiguity v4 tuning on additional same-country collisions while preserving timezone/alias behavior and perf contracts.
+Advance Pack H by localizing remaining picker/lens taxonomy copy, and advance Pack E with ambiguity v5 data-driven city prominence tuning beyond static overrides.
 
 ## Required outcomes
-1) Final residual copy audit
-- Run a strict scan for remaining visible hardcoded strings on dashboard/weather/devtools/profile/time surfaces.
-- Migrate any remaining high-traffic literals through `DashboardCopy` + runtime keys.
+1) Pack H taxonomy localization
+- Audit remaining hardcoded high-traffic lens/tool taxonomy strings (especially in `activity_lenses.dart` and picker section labels).
+- Migrate selected surfaces through runtime localization seam.
 - Keep fallback deterministic and readable.
 
-2) Localization contracts
-- Add stable `dashboard.*` keys for newly migrated literals.
-- Expand:
-  - `dashboard_localizations_runtime_test.dart`
-  - `localization_seed_contract_test.dart`
-- Add focused widget tests only when needed for critical migrated UI labels.
+2) Pack H ARB bridge follow-up
+- Ensure `app_en.arb` / `app_es.arb` bridge files stay in sync with new keys.
+- Expand runtime tests for Spanish partial-key behavior where new keys are added.
 
-3) Pack E ambiguity v4
-- Tune shared ranking on additional same-country collisions beyond current `portland|US` bonus.
+3) Pack E ambiguity v5
+- Add data-driven prominence signal(s) for exact-city collisions (not only static zone maps).
 - Preserve:
   - alias/direct-zone behavior (`EST/CST/PST`, timezone-ID search)
   - seeded home/destination precedence
   - selected-row single-marker contract
-  - existing perf budget thresholds
+  - perf budget thresholds
 
 4) Regression/perf guardrails
-- Extend `city_picker_engine_test.dart` with deterministic dataset-backed assertions for new v4 families.
+- Expand dataset-backed ordering contracts in `city_picker_engine_test.dart`.
 - Keep `city_picker_perf_budget_test.dart` green.
 
 5) Docs update
@@ -61,13 +59,13 @@ Finish remaining hardcoded high-traffic copy audit and run ambiguity v4 tuning o
   - `docs/ai/prompts/NEXT_CHAT_PROMPT.md`
 
 ## Suggested execution order
-1) residual literal audit + migrations
-2) localization seed/runtime test expansion
-3) ambiguity v4 tuning + regression additions
+1) taxonomy residual audit + migrations
+2) ARB bridge/key sync + runtime tests
+3) ambiguity v5 tuning + regression additions
 4) full gates
 5) docs/handoff refresh
 
 ## Definition of done
-- Residual high-traffic hardcoded copy is materially reduced again.
-- Ambiguity behavior improves on additional same-country families without timezone/perf regressions.
+- Remaining high-traffic taxonomy literals are reduced.
+- Ambiguity behavior improves with data-driven prominence signals, no alias/perf regressions.
 - Repo green (`format`, `analyze`, `test`).

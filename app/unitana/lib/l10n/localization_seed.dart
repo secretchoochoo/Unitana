@@ -322,6 +322,7 @@ class LocalizationSeed {
     'dashboard.weather.condition.weather': 'Weather',
     'dashboard.hero.env.label.aqi': 'AQI',
     'dashboard.hero.env.label.pollen': 'Pollen',
+    'dashboard.hero.env.indexSuffix': ' idx',
     'dashboard.hero.env.bandShort.aqi.good': 'Good',
     'dashboard.hero.env.bandShort.aqi.moderate': 'Mod',
     'dashboard.hero.env.bandShort.aqi.usg': 'USG',

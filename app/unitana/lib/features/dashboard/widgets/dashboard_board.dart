@@ -1408,6 +1408,8 @@ class _ToolPickerSheetState extends State<ToolPickerSheet> {
   String? _expandedLensId;
   String _query = '';
   late final TextEditingController _searchController;
+  late final ScrollController _scrollController;
+  final Map<String, GlobalKey> _lensFocusKeys = <String, GlobalKey>{};
 
   DashboardSessionController? get _session => widget.session;
 
@@ -1429,12 +1431,33 @@ class _ToolPickerSheetState extends State<ToolPickerSheet> {
   void initState() {
     super.initState();
     _searchController = TextEditingController();
+    _scrollController = ScrollController();
   }
 
   @override
   void dispose() {
     _searchController.dispose();
+    _scrollController.dispose();
     super.dispose();
+  }
+
+  GlobalKey _focusKeyForLens(String lensId) {
+    return _lensFocusKeys.putIfAbsent(lensId, GlobalKey.new);
+  }
+
+  void _focusExpandedLens(String lensId) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final focusKey = _lensFocusKeys[lensId];
+      final context = focusKey?.currentContext;
+      if (context == null) return;
+      Scrollable.ensureVisible(
+        context,
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOutCubic,
+        alignment: 0.5,
+      );
+    });
   }
 
   ToolDefinition? _mapToExistingToolDefinition({
@@ -1678,25 +1701,32 @@ class _ToolPickerSheetState extends State<ToolPickerSheet> {
     final scheme = theme.colorScheme;
     final expanded = _expandedLensId == lens.id;
 
-    return ListTile(
-      key: ValueKey('toolpicker_lens_${lens.id}'),
-      leading: Icon(lens.icon, color: LensAccents.iconTintFor(lens.id)),
-      title: Text(lens.name),
-      subtitle: Text(lens.descriptor),
-      trailing: Icon(
-        expanded ? Icons.expand_less_rounded : Icons.expand_more_rounded,
-        color: scheme.onSurfaceVariant,
-      ),
-      onTap: () {
-        setState(() {
-          _expandedLensId = expanded ? null : lens.id;
-        });
-      },
-      dense: false,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-      titleTextStyle: theme.textTheme.titleMedium,
-      subtitleTextStyle: theme.textTheme.bodySmall?.copyWith(
-        color: scheme.onSurfaceVariant,
+    return Container(
+      key: _focusKeyForLens(lens.id),
+      child: ListTile(
+        key: ValueKey('toolpicker_lens_${lens.id}'),
+        leading: Icon(lens.icon, color: LensAccents.iconTintFor(lens.id)),
+        title: Text(lens.name),
+        subtitle: Text(lens.descriptor),
+        trailing: Icon(
+          expanded ? Icons.expand_less_rounded : Icons.expand_more_rounded,
+          color: scheme.onSurfaceVariant,
+        ),
+        onTap: () {
+          final nextExpanded = expanded ? null : lens.id;
+          setState(() {
+            _expandedLensId = nextExpanded;
+          });
+          if (nextExpanded != null) {
+            _focusExpandedLens(nextExpanded);
+          }
+        },
+        dense: false,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+        titleTextStyle: theme.textTheme.titleMedium,
+        subtitleTextStyle: theme.textTheme.bodySmall?.copyWith(
+          color: scheme.onSurfaceVariant,
+        ),
       ),
     );
   }
@@ -1745,6 +1775,7 @@ class _ToolPickerSheetState extends State<ToolPickerSheet> {
                 final tools = ToolRegistry.toolsForLens(lens.id);
                 if (tools.any(_matchesQuery)) {
                   _expandedLensId = lens.id;
+                  _focusExpandedLens(lens.id);
                   break;
                 }
               }
@@ -1760,6 +1791,7 @@ class _ToolPickerSheetState extends State<ToolPickerSheet> {
     final theme = Theme.of(context);
 
     return SingleChildScrollView(
+      controller: _scrollController,
       padding: const EdgeInsets.symmetric(vertical: 12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,

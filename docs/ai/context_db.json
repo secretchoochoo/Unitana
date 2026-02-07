@@ -207,7 +207,7 @@
     }
   ],
   "current_state": {
-    "current_slice": "Pack H final hero residual localization sweep shipped + Pack E ambiguity v3 same-country collision tuning on shared city-picker engine",
+    "current_slice": "Pack E ambiguity v4 + tool-picker auto-focus scroll UX shipped; Pack H ARB bridge and partial Spanish runtime fallback path now wired",
     "notes": [
       "Codex-first workflow allows larger execution packs while keeping gates green.",
       "Pack A city data platform foundation is complete with canonical schema + validation guards.",
@@ -317,13 +317,19 @@
       "Pack H final residual sweep shipped: remaining high-traffic hero env/details/currency rate literals now resolve via runtime-localized `dashboard.hero.*` keys through `DashboardCopy`.",
       "Pack H final residual sweep shipped: hero semantics, short-band labels, and details pill titles are now deterministic runtime-localized copy with fallback safety.",
       "Pack E ambiguity v3 shipped: added exact-city same-country disambiguation bonus mapping (`portland|US` prefers `America/Los_Angeles`) in shared ranking heuristics.",
-      "Pack E ambiguity v3 shipped: dataset contract expanded to assert top-row `portland` mainstream-zone selection under city+country dedupe while keeping perf/test gates green."
+      "Pack E ambiguity v3 shipped: dataset contract expanded to assert top-row `portland` mainstream-zone selection under city+country dedupe while keeping perf/test gates green.",
+      "Tool-picker feature shipped: expanding a lens now auto-scrolls modal content to center that lens section; search-driven auto-expansion also auto-focuses.",
+      "Added widget regression test `toolpicker_expand_focus_scroll_test.dart` to lock accordion focus-centering behavior in the tools modal.",
+      "Pack E ambiguity v4 shipped: disambiguation map expanded with `long beach|US -> America/Los_Angeles` and `springfield|US -> America/Chicago` plus dataset-backed ordering assertions.",
+      "Pack H bridge shipped: partial Spanish runtime seed (`localization_seed_es.dart`) is now wired in `DashboardLocalizations` with deterministic English fallback for missing keys.",
+      "Pack H bridge shipped: added ARB generator script (`app/unitana/tools/export_localization_arb.dart`) and generated skeleton ARBs (`lib/l10n/arb/app_en.arb`, `lib/l10n/arb/app_es.arb`).",
+      "Residual hero copy audit follow-up shipped: env index suffix now runtime-localized (`dashboard.hero.env.indexSuffix`)."
     ],
     "overall_health": "Stable with full gates passing; canonical city data coverage is now enforced for all in-scope records.",
     "status": "GREEN",
     "focus": {
-      "now": "Run a strict final residual audit for any remaining high-traffic hardcoded dashboard copy outside migrated `dashboard.hero.*` / devtools/profile/time paths.",
-      "next": "Calibrate Pack E ambiguity v4 for additional same-country families and direct-state hints without regressing timezone alias/direct-zone behavior or perf budgets.",
+      "now": "Run a targeted follow-up audit for remaining hardcoded activity-lens/picker taxonomy copy and decide migration path (DashboardCopy vs ARB-first).",
+      "next": "Calibrate Pack E ambiguity v5 using data-driven city prominence heuristics (beyond static zone overrides) while preserving alias/direct-zone behavior and perf budgets.",
       "later": [
         "Pack H localization full rollout (multi-language ARB + language settings)",
         "Pack E optional search-budget UX tuning for lower-end devices (debounce window/indicator behavior) with perf-contract guardrails."

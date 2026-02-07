@@ -1125,7 +1125,12 @@ class _HeroEnvPill extends StatelessWidget {
                               children: [
                                 TextSpan(text: label, style: labelStyle),
                                 if (!isAqi)
-                                  TextSpan(text: ' idx', style: unitHintStyle),
+                                  TextSpan(
+                                    text: DashboardCopy.heroEnvIndexSuffix(
+                                      context,
+                                    ),
+                                    style: unitHintStyle,
+                                  ),
                                 TextSpan(text: ' $valueText'),
                                 if (!compact)
                                   TextSpan(
@@ -1242,7 +1247,10 @@ class _HeroEnvPill extends StatelessWidget {
                               const TextSpan(text: '🌼 '),
                             TextSpan(text: label, style: labelStyle),
                             if (!isAqi)
-                              TextSpan(text: ' idx', style: unitHintStyle),
+                              TextSpan(
+                                text: DashboardCopy.heroEnvIndexSuffix(context),
+                                style: unitHintStyle,
+                              ),
                             TextSpan(text: ' $valueText'),
                             if (!compact)
                               TextSpan(

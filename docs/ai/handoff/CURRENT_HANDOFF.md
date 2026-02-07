@@ -2,8 +2,35 @@
 
 ## Snapshot
 - **Date:** 2026-02-07
-- **Status:** Repo is green (`dart format`, `flutter analyze`, `flutter test`) after Pack H hero residual localization + Pack E ambiguity v3 (same-country collision) tuning.
+- **Status:** Repo is green (`dart format`, `flutter analyze`, `flutter test`) after Pack E ambiguity v4 + ToolPicker auto-focus scrolling + Pack H ARB/fallback bridge.
 - **Operating mode:** Codex is now the primary workflow; apply edits directly in-repo (do not require patch zip workflow unless explicitly requested).
+
+## Latest changes (2026-02-07)
+- ToolPicker UX feature shipped:
+  - when a lens accordion is expanded in the tools modal, the sheet now auto-scrolls to center that lens section for focus.
+  - search-triggered auto-expansion also triggers the same focus centering behavior.
+  - implementation in `app/unitana/lib/features/dashboard/widgets/dashboard_board.dart`.
+  - regression test added in `app/unitana/test/toolpicker_expand_focus_scroll_test.dart`.
+  - existing history lazy-scroll test was hardened for visibility before tapping search rows (`tool_modal_history_lazy_build_smoke_test.dart`) to avoid flaky misses under auto-focus movement.
+- Pack E ambiguity v4 shipped:
+  - extended same-city same-country disambiguation map in `CityPickerRanking`:
+    - `long beach|US -> America/Los_Angeles`
+    - `springfield|US -> America/Chicago`
+    - (existing) `portland|US -> America/Los_Angeles`
+  - dataset-backed regression expanded in `city_picker_engine_test.dart` to assert these top-row outcomes.
+  - `city_picker_perf_budget_test.dart` remained green under existing thresholds.
+- Pack H ARB bridge + fallback path shipped:
+  - added partial Spanish runtime seed map `localization_seed_es.dart` and wired locale table in `dashboard_localizations.dart` (`es` + English fallback).
+  - added ARB bridge generator `app/unitana/tools/export_localization_arb.dart`.
+  - generated ARB skeletons:
+    - `app/unitana/lib/l10n/arb/app_en.arb`
+    - `app/unitana/lib/l10n/arb/app_es.arb`
+  - runtime tests now assert partial Spanish coverage + English fallback behavior (`dashboard_localizations_runtime_test.dart`).
+  - additional residual hero string migrated: env index suffix (`dashboard.hero.env.indexSuffix`).
+- full gates re-run and green:
+  - `dart format .`
+  - `flutter analyze`
+  - `flutter test`
 
 ## Latest changes (2026-02-07)
 - Pack H final residual hero/localization sweep shipped:

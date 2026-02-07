@@ -56,6 +56,8 @@ class CityPickerRanking {
         // Ambiguity v3: prefer mainstream travel-default rows for same-city
         // same-country collisions where multiple zones exist in data.
         'portland|US': 'America/Los_Angeles',
+        'long beach|US': 'America/Los_Angeles',
+        'springfield|US': 'America/Chicago',
       };
 
   static int exactCityDisambiguationBonus({
