@@ -2843,6 +2843,59 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                       ),
                     ),
                   ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                    child: Wrap(
+                      spacing: 8,
+                      runSpacing: 6,
+                      children: [
+                        _TimeZoneQuickChip(
+                          label: 'EST',
+                          detail: 'New York',
+                          onTap: () => Navigator.of(context).pop((
+                            zoneId: 'America/New_York',
+                            displayLabel: _displayLabelForZone(
+                              'America/New_York',
+                              zoneOptions,
+                            ),
+                          )),
+                        ),
+                        _TimeZoneQuickChip(
+                          label: 'CST',
+                          detail: 'Chicago',
+                          onTap: () => Navigator.of(context).pop((
+                            zoneId: 'America/Chicago',
+                            displayLabel: _displayLabelForZone(
+                              'America/Chicago',
+                              zoneOptions,
+                            ),
+                          )),
+                        ),
+                        _TimeZoneQuickChip(
+                          label: 'PST',
+                          detail: 'Los Angeles',
+                          onTap: () => Navigator.of(context).pop((
+                            zoneId: 'America/Los_Angeles',
+                            displayLabel: _displayLabelForZone(
+                              'America/Los_Angeles',
+                              zoneOptions,
+                            ),
+                          )),
+                        ),
+                        _TimeZoneQuickChip(
+                          label: 'UTC',
+                          detail: 'Zero offset',
+                          onTap: () => Navigator.of(context).pop((
+                            zoneId: 'UTC',
+                            displayLabel: _displayLabelForZone(
+                              'UTC',
+                              zoneOptions,
+                            ),
+                          )),
+                        ),
+                      ],
+                    ),
+                  ),
                   Expanded(
                     child: ListView(
                       children: [
@@ -4960,6 +5013,36 @@ class _ResultCard extends StatelessWidget {
         output: output,
         emphasize: true,
         arrowColor: accent,
+      ),
+    );
+  }
+}
+
+class _TimeZoneQuickChip extends StatelessWidget {
+  final String label;
+  final String detail;
+  final VoidCallback onTap;
+
+  const _TimeZoneQuickChip({
+    required this.label,
+    required this.detail,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ActionChip(
+      onPressed: onTap,
+      visualDensity: VisualDensity.compact,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      side: BorderSide(color: DraculaPalette.comment.withAlpha(145)),
+      backgroundColor: DraculaPalette.currentLine.withAlpha(200),
+      label: Text(
+        '$label · $detail',
+        style: Theme.of(context).textTheme.labelMedium?.copyWith(
+          color: DraculaPalette.foreground.withAlpha(235),
+          fontWeight: FontWeight.w700,
+        ),
       ),
     );
   }
