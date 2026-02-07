@@ -1499,7 +1499,7 @@ class _ToolPickerSheetState extends State<ToolPickerSheet> {
       return Padding(
         padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
         child: Text(
-          'No matching tools.',
+          DashboardCopy.toolPickerNoMatchingTools(context),
           style: theme.textTheme.bodyMedium?.copyWith(
             color: scheme.onSurfaceVariant,
           ),
@@ -1514,7 +1514,7 @@ class _ToolPickerSheetState extends State<ToolPickerSheet> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _sectionHeader(context, 'Results'),
+        _sectionHeader(context, DashboardCopy.toolPickerResultsHeader(context)),
         for (final t in visible)
           ListTile(
             key: Key('toolpicker_search_tool_${t.toolId}'),
@@ -1580,7 +1580,7 @@ class _ToolPickerSheetState extends State<ToolPickerSheet> {
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
             child: Text(
-              '+$remaining more',
+              DashboardCopy.toolPickerMoreCount(context, remaining),
               style: theme.textTheme.bodySmall?.copyWith(
                 color: scheme.onSurfaceVariant,
               ),
@@ -1621,7 +1621,9 @@ class _ToolPickerSheetState extends State<ToolPickerSheet> {
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 6, 16, 12),
           child: Text(
-            _query.trim().isEmpty ? 'No tools yet.' : 'No matching tools.',
+            _query.trim().isEmpty
+                ? DashboardCopy.toolPickerNoToolsYet(context)
+                : DashboardCopy.toolPickerNoMatchingTools(context),
             style: theme.textTheme.bodyMedium?.copyWith(
               color: scheme.onSurfaceVariant,
             ),

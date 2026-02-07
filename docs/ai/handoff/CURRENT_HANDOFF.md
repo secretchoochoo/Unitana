@@ -369,6 +369,17 @@
     - generic convert CTA label (`Convert`)
   - expanded localization seed/runtime tests for the new picker/action keys and placeholder substitutions.
   - full gates re-run and green (`dart format .`, `flutter analyze`, `flutter test`).
+- Pack H localization expansion (phase 10 / runtime-track closeout, 2026-02-07):
+  - migrated remaining tool-picker result-state copy to runtime localization-backed `DashboardCopy` methods:
+    - `No matching tools.`
+    - `No tools yet.`
+    - `Results`
+    - `+N more`
+  - added deterministic seed snapshot artifact for ARB-transition review:
+    - `docs/ai/reference/LOCALIZATION_SEED_EN_SNAPSHOT.json`
+    - generated via `app/unitana/tools/export_localization_seed.dart`
+  - runtime seam + seed/export artifact track is now complete for the Pack H dashboard/tool migration baseline.
+  - full gates re-run and green (`dart format .`, `flutter analyze`, `flutter test`).
 - Pack F activation bundle (phase 1):
   - activated `world_clock_delta` and `jet_lag_delta` entries in tool registry.
   - wired both entries to the existing mature Time modal flow as interim E2E activation.
@@ -582,9 +593,9 @@ Backlog has been reprioritized away from small, fragmented slices into larger ex
 13) **Icebox:** Optional radio feature.
 
 Current execution focus:
-- **Now:** continue Pack H runtime seam expansion on remaining low-frequency hero/weather/status edge copy and cleanup any straggler hardcoded dashboard text.
-- **Next:** harden ARB transition artifacts (seed export/review workflow + l10n mapping prep) with deterministic fallback contracts.
-- **Later:** Pack E production facelift and Pack H full localization rollout.
+- **Now:** start Pack E marquee production kickoff with vertical-fill feasibility pass in the available hero space above the Sunrise/Sunset and Wind/Gust row.
+- **Next:** execute Pack E scene/layout iteration while preserving hero grid contracts and existing interaction behavior.
+- **Later:** resume broader Pack H full localization rollout (multi-language ARB translation + Settings language selection).
 
 ## What’s true right now (high signal)
 ### 1) Dashboard header is a continuous collapsing header (no pop-in)

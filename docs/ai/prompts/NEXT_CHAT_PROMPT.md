@@ -1,12 +1,12 @@
-NEXT CHAT PROMPT — Pack H Localization Expansion (Phase 10)
+NEXT CHAT PROMPT — Pack E Kickoff (Marquee Vertical-Fill + V2 Feasibility)
 
 You are taking over Unitana (Flutter) in a fresh, high-context window.
 
 Read these files first:
 1) `docs/ai/handoff/CURRENT_HANDOFF.md`
 2) `docs/ai/context_db.json`
-3) `docs/ai/reference/TIME_TOOL_REPURPOSE_PLAN.md`
-4) `docs/ai/reference/JET_LAG_REDESIGN_SLICE_SPEC.md`
+3) `docs/ai/reference/SCENEKEY_REDESIGN_AUDIT.md`
+4) `docs/ai/reference/SCENEKEY_CATALOG.md`
 
 Then execute using this contract.
 
@@ -23,36 +23,26 @@ Then execute using this contract.
   - goldens opt-in only
 
 ## Mission
-Continue localization runtime migration for remaining high-traffic dashboard/tool text and harden ARB transition artifacts for repeatable review.
+Kick off Pack E by validating and implementing a safe vertical-fill increase for the hero marquee region, then establish a V2-ready baseline without breaking layout/interaction contracts.
 
 ## Required outcomes
-1) Runtime seam expansion
-- Migrate the next focused batch of hardcoded microcopy from:
-  - remaining low-frequency hero/weather/status/dashboard edge surfaces
-  - any remaining profile/settings/devtools/tool-picker stragglers
-  - remaining time/jet-lag helper leftovers (if any)
-- Preserve current English UX behavior.
+1) Vertical-fill feasibility + implementation
+- Increase marquee region vertical usage into the currently empty band above Sunrise/Sunset + Wind/Gust where safe.
+- Preserve hero grid contracts and avoid overlap/clipping on small phones.
+- Keep existing interaction behavior unchanged.
 
-2) ARB-transition artifact hardening
-- Keep using seeded stable keys.
-- Extend seed export workflow/artifacts so key inventory remains deterministic and easy to diff/review.
-- Do not do full translation rollout yet.
+2) Regression lock
+- Keep pinned collapsing header behavior stable.
+- Keep tool/weather data readability stable (no text overlap/regression).
+- Keep goldens opt-in only.
 
-3) Regression lock
-- Keep Pack B/C reliability messaging stable.
-- Keep Pack N/M behavior green:
-  - city-first picker + advanced fallback
-  - overlap reveal contract
-  - action-row alignment
-
-4) Docs update
+3) Docs update
 - Update:
   - `docs/ai/context_db.json`
   - `docs/ai/handoff/CURRENT_HANDOFF.md`
-  - `docs/ai/prompts/NEXT_CHAT_PROMPT.md` (advance phase if scope shifts again)
+  - `docs/ai/prompts/NEXT_CHAT_PROMPT.md` (advance slice after Pack E kickoff work)
 
 ## Definition of done
-- Additional high-impact microcopy is runtime-localization backed.
-- Seed/export and fallback behavior remain deterministic, test-guarded, and reviewable.
-- Reliability and Pack N/M contracts remain green.
+- Marquee uses more vertical room without breaking hero layout contracts.
+- No regressions in collapse behavior, readability, or interaction.
 - Repo is green (`format`, `analyze`, `test`).

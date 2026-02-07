@@ -85,5 +85,13 @@ void main() {
       LocalizationSeed.enUs['dashboard.time.picker.mode.cities'],
       'Cities',
     );
+    expect(
+      LocalizationSeed.enUs['dashboard.toolPicker.resultsHeader'],
+      'Results',
+    );
+    expect(
+      LocalizationSeed.enUs['dashboard.toolPicker.moreCount'],
+      '+{count} more',
+    );
   });
 }

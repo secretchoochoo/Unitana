@@ -114,6 +114,11 @@ void main() {
       locale: const Locale('en'),
       key: 'dashboard.time.picker.mode.advancedZones',
     );
+    final moreCount = DashboardLocalizations.resolveForLocale(
+      locale: const Locale('en'),
+      key: 'dashboard.toolPicker.moreCount',
+      params: const <String, String>{'count': '5'},
+    );
     expect(clearTitle, 'Clear history?');
     expect(hint, 'tap copies result; long-press copies input');
     expect(refreshNotice, 'Refreshing rates…');
@@ -135,5 +140,6 @@ void main() {
     expect(toolPickerTitle, 'Choose a tool');
     expect(removeTitle, 'Remove Weather?');
     expect(timeMode, 'Advanced: Time Zones');
+    expect(moreCount, '+5 more');
   });
 }

@@ -899,6 +899,25 @@ class DashboardCopy {
         ? 'Search timezone ID or city'
         : 'Search city or country',
   );
+  static String toolPickerNoMatchingTools(BuildContext context) =>
+      DashboardLocalizations.of(context).text(
+        'dashboard.toolPicker.noMatchingTools',
+        fallback: 'No matching tools.',
+      );
+  static String toolPickerNoToolsYet(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.toolPicker.noToolsYet', fallback: 'No tools yet.');
+  static String toolPickerResultsHeader(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.toolPicker.resultsHeader', fallback: 'Results');
+  static String toolPickerMoreCount(BuildContext context, int remaining) =>
+      DashboardLocalizations.of(context).text(
+        'dashboard.toolPicker.moreCount',
+        params: <String, String>{'count': '$remaining'},
+        fallback: '+$remaining more',
+      );
 
   static String dateImpactTitleCase(String dateImpactRaw) {
     return switch (dateImpactRaw.toLowerCase()) {
