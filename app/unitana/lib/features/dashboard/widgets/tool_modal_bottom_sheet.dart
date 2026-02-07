@@ -2880,6 +2880,8 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
       final toFlag = _countryFlag(widget.destination?.countryCode ?? '');
       final fromPrefix = fromFlag.isEmpty ? '' : '$fromFlag ';
       final toPrefix = toFlag.isEmpty ? '' : '$toFlag ';
+      final fromOffsetLabel = '$fromPrefix$fromCity';
+      final toOffsetLabel = '$toPrefix$toCity';
       final directionCompact = DashboardCopy.timeDirection(
         context: context,
         direction: jetLagPlan.direction,
@@ -3020,15 +3022,14 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
               factsMetaLine(
                 label: DashboardCopy.timeFactsOffsetLabel(context),
                 value:
-                    '$toPrefix$toCity vs $fromPrefix$fromCity: $deltaMetricLabel · $directionCompact',
+                    '$toOffsetLabel vs $fromOffsetLabel: $deltaMetricLabel · $directionCompact',
                 valueColor: DraculaPalette.foreground.withAlpha(240),
                 breakValueLine: true,
               )
             else
               factsMetaLine(
                 label: DashboardCopy.timeFactsOffsetLabel(context),
-                value:
-                    '${labelFor(toId)} vs ${labelFor(fromId)}: $deltaMetricLabel',
+                value: '$toOffsetLabel vs $fromOffsetLabel: $deltaMetricLabel',
               ),
             if (_isJetLagDeltaTool) ...[
               const SizedBox(height: 4),
