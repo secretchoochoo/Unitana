@@ -2,8 +2,44 @@
 
 ## Snapshot
 - **Date:** 2026-02-07
-- **Status:** Repo is green (`dart format`, `flutter analyze`, `flutter test`) after shared city-picker engine rollout + perf budget contracts.
+- **Status:** Repo is green (`dart format`, `flutter analyze`, `flutter test`) after Pack E ambiguity/perf UX follow-ups + Pack H residual localization expansion.
 - **Operating mode:** Codex is now the primary workflow; apply edits directly in-repo (do not require patch zip workflow unless explicitly requested).
+
+## Latest changes (2026-02-07)
+- Pack E follow-up slices shipped after shared engine baseline:
+  - ambiguity/disambiguation scoring hardening in `CityPickerEngine`:
+    - exact city-name boost
+    - country-hint boost
+    - optional city+country duplicate suppression
+  - wizard + Time/Jet Lag city searches now enable city+country dedupe in addition to existing timezone dedupe semantics.
+  - added regression coverage:
+    - `app/unitana/test/city_picker_engine_test.dart` (exact-match ordering + dedupe + real `cities_v1.json` ambiguity/country-hint checks).
+    - `app/unitana/test/time_tool_modal_interaction_test.dart` mixed alias-result selected-marker stability.
+  - Time/Jet Lag picker perceived-performance UX pass shipped:
+    - debounced query apply in modal search path
+    - inline runtime-localized searching indicator (`dashboard.time.picker.searching`).
+- Pack H residual localization expansion shipped:
+  - hero + weather sheet condition labels now resolve through runtime localization-backed `DashboardCopy` weather-condition mapping.
+  - new stable condition keys added under `dashboard.weather.condition.*`.
+  - additional hardcoded tool input hints migrated to runtime localization:
+    - generic converter input
+    - tip/tax amount hints
+    - unit-price price/quantity hints
+    - time-converter input hint
+  - seed/runtime contract tests expanded:
+    - `app/unitana/test/localization_seed_contract_test.dart`
+    - `app/unitana/test/dashboard_localizations_runtime_test.dart`.
+- recent commits (main):
+  - `cc1bc9c` Pack H input hint localization sweep.
+  - `51aaf97` weather condition label localization across hero/sheet.
+  - `5fe506e` time picker debounce + searching state UX.
+  - `024614e` hero residual copy localization + dataset ambiguity test.
+  - `91332d8` ambiguity ranking + picker dedupe follow-up.
+  - `e4db9a7` shared engine + perf budgets baseline.
+- full gates re-run and green:
+  - `dart format .`
+  - `flutter analyze`
+  - `flutter test`
 
 ## Latest changes (2026-02-07)
 - Pack E 6h/6i infrastructure pass shipped as a shared engine migration + perf hardening:

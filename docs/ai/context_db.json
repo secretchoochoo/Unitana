@@ -207,7 +207,7 @@
     }
   ],
   "current_state": {
-    "current_slice": "Pack E 6h/6i infra pass shipped: shared city-picker engine across wizard + Time/Jet Lag, with canonical perf budget tests and baseline documentation",
+    "current_slice": "Pack E follow-up shipped: ambiguity/disambiguation + picker responsiveness improvements on shared engine baseline; Pack H residual localization expanded across weather/hero/tool hints",
     "notes": [
       "Codex-first workflow allows larger execution packs while keeping gates green.",
       "Pack A city data platform foundation is complete with canonical schema + validation guards.",
@@ -302,16 +302,21 @@
       "Pack E 6h/6i infra pass shipped: added shared `CityPickerEngine` and migrated wizard + Time/Jet Lag city/timezone filtering to one scoring/search implementation.",
       "TimeZoneCatalog base city ordering now uses `CityPickerEngine` scoring so wizard and Time-family pickers align on mainstream-first ranking semantics.",
       "Added `city_picker_perf_budget_test.dart` to enforce build/search budget contracts on full `cities_v1.json` corpus (33,257 rows).",
-      "Added baseline/spec doc `docs/ai/reference/CITY_PICKER_PERF_BUDGET.md` with current measured timings and maintenance policy."
+      "Added baseline/spec doc `docs/ai/reference/CITY_PICKER_PERF_BUDGET.md` with current measured timings and maintenance policy.",
+      "Pack E follow-up shipped: ambiguity/disambiguation scoring now includes exact city-match and country-hint boosts, with optional city+country dedupe in picker searches.",
+      "Pack E follow-up shipped: added dataset-backed ambiguity tests (`cities_v1.json`) and mixed-alias selected-marker stability coverage.",
+      "Pack E responsiveness pass shipped: Time/Jet Lag picker search now applies with debounce and shows runtime-localized searching state (`dashboard.time.picker.searching`).",
+      "Pack H residual sweep shipped: weather condition labels across hero/weather sheet now route through runtime-localized `dashboard.weather.condition.*` keys.",
+      "Pack H residual sweep shipped: remaining high-traffic hardcoded tool input hints (generic converter, tip/tax/unit-price/time-converter) now resolve through `DashboardCopy` runtime localization."
     ],
     "overall_health": "Stable with full gates passing; canonical city data coverage is now enforced for all in-scope records.",
     "status": "GREEN",
     "focus": {
-      "now": "Execute Pack E 6h completion: calibrate ambiguity ranking and duplicate disambiguation on same-name multi-country city cases using the new shared engine.",
-      "next": "Execute Pack E 6g follow-up regression expansion (ambiguous-name ordering + selected-row mixed-result stability) and preserve Time/Jet Lag seeding/swap/history contracts.",
+      "now": "Run a strict zero-residual localization audit for dashboard/weather/devtools/profile strings and migrate any final hardcoded high-traffic literals to runtime keys.",
+      "next": "Tune Pack E ambiguity ranking v2 on additional real-world same-name families (san jose, london, vancouver, portland) and add dataset-backed ordering contracts.",
       "later": [
         "Pack H localization full rollout (multi-language ARB + language settings)",
-        "Pack H follow-up migration for remaining high-traffic dashboard/weather/devtools/profile literals through DashboardCopy runtime seam."
+        "Pack E optional search-budget UX tuning for lower-end devices (debounce window/indicator behavior) with perf-contract guardrails."
       ]
     }
   },

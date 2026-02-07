@@ -1,4 +1,4 @@
-NEXT CHAT PROMPT — Pack E 6h/6i Completion + Pack H Residual Sweep
+NEXT CHAT PROMPT — Pack H Zero-Residual Audit + Pack E Ambiguity V2
 
 You are taking over Unitana (Flutter) in a fresh, high-context window.
 
@@ -6,13 +6,13 @@ Read these files first:
 1) `docs/ai/handoff/CURRENT_HANDOFF.md`
 2) `docs/ai/context_db.json`
 3) `docs/ai/reference/CITY_PICKER_PERF_BUDGET.md`
-4) `app/unitana/lib/data/city_picker_engine.dart`
-5) `app/unitana/lib/widgets/city_picker.dart`
+4) `app/unitana/lib/features/dashboard/models/dashboard_copy.dart`
+5) `app/unitana/lib/l10n/localization_seed.dart`
 6) `app/unitana/lib/features/dashboard/widgets/tool_modal_bottom_sheet.dart`
-7) `app/unitana/lib/features/dashboard/models/time_zone_catalog.dart`
-8) `app/unitana/lib/features/dashboard/models/dashboard_copy.dart`
-9) `app/unitana/lib/l10n/localization_seed.dart`
-10) `app/unitana/test/city_picker_perf_budget_test.dart`
+7) `app/unitana/lib/features/dashboard/widgets/places_hero_v2.dart`
+8) `app/unitana/lib/features/dashboard/widgets/weather_summary_bottom_sheet.dart`
+9) `app/unitana/lib/data/city_picker_engine.dart`
+10) `app/unitana/test/city_picker_engine_test.dart`
 
 ## Core operating rules
 - Keep repo green if any code/docs are touched:
@@ -27,49 +27,48 @@ Read these files first:
   - goldens opt-in only
 
 ## Mission
-Finish Pack E city-picker quality edge cases now that shared engine + perf contracts are in place, and continue Pack H residual runtime-localization migration.
+Close remaining Pack H runtime-localization residuals and run Pack E ambiguity calibration v2 on top of the shared picker engine.
 
 ## Required outcomes
-1) Pack E 6h ambiguity ranking calibration
-- Tune `CityPickerEngine` scoring for same-name multi-country city ambiguity.
-- Keep seeded home/destination precedence stable.
-- Preserve alias and short-query expectations.
+1) Pack H zero-residual audit (dashboard/weather/devtools/profile)
+- Run a strict literal audit for high-traffic user-visible copy.
+- Migrate any remaining hardcoded strings through `DashboardCopy` + runtime lookup.
+- Keep fallback behavior deterministic and readable.
 
-2) Pack E 6i duplicate/disambiguation clarity
-- Reduce duplicate-feeling rows in both wizard and Time-family pickers.
-- Improve disambiguation clarity (country/region hints) without row clutter.
-- Keep advanced timezone mode and timezone-id path intact.
+2) Pack H contracts
+- Add stable `dashboard.*` keys for newly migrated strings.
+- Expand:
+  - `dashboard_localizations_runtime_test.dart`
+  - `localization_seed_contract_test.dart`
+- Add or adjust focused widget tests when migrated copy appears in critical surfaces.
 
-3) Pack E regression expansion
-- Add tests for:
-  - same-name city ranking/disambiguation order
-  - selected-row marker stability under mixed city + timezone result sets
-  - no regression in Time/Jet Lag swap/seeding/history behavior
-  - keep `city_picker_perf_budget_test.dart` passing under current budget thresholds
+3) Pack E ambiguity calibration v2
+- Tune shared engine ranking for additional ambiguous city families (e.g., `san jose`, `london`, `vancouver`, `portland`).
+- Preserve:
+  - seeded home/destination precedence
+  - alias behavior (`EST/CST/PST`)
+  - selected-row single-marker contract
+  - time swap/seeding/history behavior
 
-4) Pack H residual migration
-- Migrate more high-traffic hardcoded strings in dashboard/weather/devtools/profile surfaces through `DashboardCopy` + runtime lookup.
-- Add stable `dashboard.*` keys and keep deterministic fallback behavior.
+4) Pack E regression additions
+- Add dataset-backed ordering assertions in `city_picker_engine_test.dart` for added ambiguous families.
+- Keep `city_picker_perf_budget_test.dart` green under existing budget thresholds.
 
-5) Pack H test hardening
-- Expand runtime localization tests for newly migrated keys/placeholders.
-- Keep localization contract readability and fallback stability locked.
-
-6) Docs update
+5) Docs update
 - Update:
   - `docs/ai/context_db.json`
   - `docs/ai/handoff/CURRENT_HANDOFF.md`
   - `docs/ai/prompts/NEXT_CHAT_PROMPT.md`
 
 ## Suggested execution order
-1) Pack E ambiguity/disambiguation tweaks in shared engine
-2) Regression tests (including mixed-state selection and ambiguity cases)
-3) Pack H residual string migration + tests
-4) Full gates
-5) Docs/handoff refresh
+1) literal audit + Pack H residual migrations
+2) localization seed/runtime test expansion
+3) ambiguity v2 tuning + regression tests
+4) full gates
+5) docs/handoff refresh
 
 ## Definition of done
-- Shared picker engine remains performant and deterministic while improving ambiguity handling.
-- Wizard and Time/Jet Lag picker quality stays aligned.
-- Pack H runtime-localized coverage expands on high-traffic surfaces with deterministic fallback.
+- High-traffic runtime-localization residuals are effectively cleared.
+- Shared picker ranking improves on additional ambiguous city families without regressions.
+- Perf contracts remain green.
 - Repo green (`format`, `analyze`, `test`).
