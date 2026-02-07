@@ -5,7 +5,7 @@ import 'package:unitana/data/cities.dart';
 import 'package:unitana/widgets/city_picker.dart';
 
 void main() {
-  testWidgets('CityPicker shows popular heading and supports EST shorthand', (
+  testWidgets('CityPicker shows top-cities heading and city search quality', (
     tester,
   ) async {
     await tester.pumpWidget(
@@ -15,14 +15,14 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Popular Cities'), findsOneWidget);
-    expect(find.textContaining('🇺🇸 New York'), findsWidgets);
+    expect(find.text('Top Cities'), findsOneWidget);
+    expect(find.byType(ListTile), findsWidgets);
 
-    await tester.enterText(find.byType(TextField), 'est');
+    await tester.enterText(find.byType(TextField), 'tokyo');
     await tester.pumpAndSettle();
 
     expect(find.text('Best Matches'), findsOneWidget);
-    expect(find.textContaining('🇺🇸 New York'), findsWidgets);
+    expect(find.textContaining('🇯🇵 Tokyo'), findsWidgets);
   });
 
   testWidgets('CityPicker shows clear empty-state guidance', (tester) async {
@@ -36,9 +36,6 @@ void main() {
     await tester.enterText(find.byType(TextField), 'zzzzzz-no-city');
     await tester.pumpAndSettle();
 
-    expect(
-      find.text('No matches yet. Try city, country, timezone, or EST.'),
-      findsOneWidget,
-    );
+    expect(find.text('No matches yet. Try city or country.'), findsOneWidget);
   });
 }

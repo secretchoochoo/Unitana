@@ -42,7 +42,7 @@ void main() {
       final searchField = find.byWidgetPredicate(
         (w) =>
             w is TextField &&
-            w.decoration?.hintText == 'Search city, country, code, timezone',
+            w.decoration?.hintText == 'Search city or country',
       );
       expect(searchField, findsOneWidget);
 

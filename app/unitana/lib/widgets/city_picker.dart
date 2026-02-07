@@ -14,8 +14,49 @@ class CityPicker extends StatefulWidget {
 }
 
 class _CityPickerState extends State<CityPicker> {
+  static const List<String> _mainstreamHubZonePriority = <String>[
+    'America/New_York',
+    'America/Los_Angeles',
+    'America/Chicago',
+    'Europe/London',
+    'Europe/Paris',
+    'Europe/Berlin',
+    'Europe/Madrid',
+    'Asia/Tokyo',
+    'Asia/Singapore',
+    'Asia/Hong_Kong',
+    'Asia/Seoul',
+    'Asia/Kolkata',
+    'Australia/Sydney',
+    'America/Toronto',
+    'America/Vancouver',
+    'America/Mexico_City',
+    'America/Sao_Paulo',
+    'Pacific/Auckland',
+    'UTC',
+  ];
+  static final Set<String> _mainstreamCountryCodes = <String>{
+    'US',
+    'GB',
+    'FR',
+    'DE',
+    'ES',
+    'IT',
+    'JP',
+    'SG',
+    'HK',
+    'KR',
+    'IN',
+    'CA',
+    'AU',
+    'NZ',
+    'MX',
+    'BR',
+  };
   final TextEditingController _searchController = TextEditingController();
   late final Set<String> _curatedIds;
+  late List<_IndexedCity> _indexedCities;
+  late List<City> _defaultTopCities;
 
   String _query = '';
 
@@ -23,9 +64,18 @@ class _CityPickerState extends State<CityPicker> {
   void initState() {
     super.initState();
     _curatedIds = {for (final c in kCuratedCities) c.id};
+    _rebuildIndex();
     _searchController.addListener(() {
       setState(() => _query = _searchController.text);
     });
+  }
+
+  @override
+  void didUpdateWidget(covariant CityPicker oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!identical(oldWidget.cities, widget.cities)) {
+      _rebuildIndex();
+    }
   }
 
   @override
@@ -71,7 +121,7 @@ class _CityPickerState extends State<CityPicker> {
               TextField(
                 controller: _searchController,
                 decoration: InputDecoration(
-                  hintText: 'Search city, country, code, timezone',
+                  hintText: 'Search city or country',
                   prefixIcon: const Icon(Icons.search),
                   suffixIcon: _query.trim().isEmpty
                       ? null
@@ -92,7 +142,7 @@ class _CityPickerState extends State<CityPicker> {
               Align(
                 alignment: Alignment.centerLeft,
                 child: Text(
-                  hasQuery ? 'Best Matches' : 'Popular Cities',
+                  hasQuery ? 'Best Matches' : 'Top Cities',
                   style: Theme.of(
                     context,
                   ).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w700),
@@ -106,7 +156,7 @@ class _CityPickerState extends State<CityPicker> {
                         child: Padding(
                           padding: const EdgeInsets.fromLTRB(4, 6, 4, 0),
                           child: Text(
-                            'No matches yet. Try city, country, timezone, or EST.',
+                            'No matches yet. Try city or country.',
                             style: Theme.of(context).textTheme.bodySmall,
                           ),
                         ),
@@ -118,14 +168,7 @@ class _CityPickerState extends State<CityPicker> {
                           final selected = widget.selected?.id == city.id;
 
                           return ListTile(
-                            leading: selected
-                                ? Icon(
-                                    Icons.check_circle,
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.primary,
-                                  )
-                                : const Icon(Icons.location_city_outlined),
+                            leading: const Icon(Icons.location_city_outlined),
                             title: Text(
                               [
                                 CityLabelUtils.countryFlag(city.countryCode),
@@ -133,6 +176,14 @@ class _CityPickerState extends State<CityPicker> {
                               ].where((part) => part.isNotEmpty).join(' '),
                             ),
                             subtitle: Text(_subtitle(city)),
+                            trailing: selected
+                                ? Icon(
+                                    Icons.check_rounded,
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.primary,
+                                  )
+                                : null,
                             onTap: () => Navigator.of(context).pop(city),
                           );
                         },
@@ -165,16 +216,7 @@ class _CityPickerState extends State<CityPicker> {
   List<City> _filter(List<City> all, String queryRaw) {
     final q = _normQuery(queryRaw);
     if (q.isEmpty) {
-      // Prefer curated cities when query is empty (no need for kPopularCityIds).
-      final popular = <City>[];
-      final byId = {for (final c in all) c.id: c};
-
-      for (final curated in kCuratedCities) {
-        // Use dataset copy when present; fall back to curated entry.
-        popular.add(byId[curated.id] ?? curated);
-      }
-
-      return popular.isEmpty ? all.take(150).toList(growable: false) : popular;
+      return _defaultTopCities;
     }
 
     final tokens = _tokenize(q);
@@ -187,48 +229,49 @@ class _CityPickerState extends State<CityPicker> {
 
     // Safety valve: keep the list snappy on broad searches.
     const maxResults = 220;
-    final ranked = <({City city, int score})>[];
-
-    for (final c in all) {
-      final haystack = _buildHaystack(c);
+    final ranked = <({City city, int score, String sortKey})>[];
+    for (final idx in _indexedCities) {
       var ok = true;
       for (final t in tokens) {
-        if (!haystack.contains(t)) {
+        if (!idx.haystack.contains(t)) {
           ok = false;
           break;
         }
       }
       if (!ok) continue;
       if (shortQuery &&
-          !hasTokenBoundary(haystack, q) &&
-          !(c.timeZoneId.toLowerCase().contains(q))) {
+          !hasTokenBoundary(idx.cityNameNorm, q) &&
+          !idx.cityNameNorm.startsWith(q) &&
+          !hasTokenBoundary(idx.countryNorm, q) &&
+          !idx.countryNorm.startsWith(q)) {
         continue;
       }
-
-      var score = 0;
-      final cityName = _normQuery(c.cityName);
-      final country = _normQuery(c.countryName ?? c.countryCode);
-      if (_curatedIds.contains(c.id)) score += 260;
-      if (cityName.startsWith(q)) score += 180;
-      if (cityName.contains(' $q')) score += 100;
-      if (country.startsWith(q) || country.contains(' $q')) score += 70;
-      if (c.timeZoneId.toLowerCase().contains(q)) score += 50;
-      if (RegExp(r'^[^A-Za-z0-9]').hasMatch(c.cityName.trim())) score -= 120;
-      if (RegExp(r'\d').hasMatch(c.cityName)) score -= 35;
-      score -= cityName.length ~/ 4;
-      ranked.add((city: c, score: score));
+      var score = idx.baseScore;
+      if (idx.cityNameNorm.startsWith(q)) score += 180;
+      if (idx.cityNameNorm.contains(' $q')) score += 100;
+      if (idx.countryNorm.startsWith(q) || idx.countryNorm.contains(' $q')) {
+        score += 70;
+      }
+      ranked.add((city: idx.city, score: score, sortKey: idx.cityNameNorm));
       if (ranked.length >= maxResults) break;
     }
 
     ranked.sort((a, b) {
       final byScore = b.score.compareTo(a.score);
       if (byScore != 0) return byScore;
-      final an = _normQuery(a.city.cityName);
-      final bn = _normQuery(b.city.cityName);
-      return an.compareTo(bn);
+      return a.sortKey.compareTo(b.sortKey);
     });
 
-    return ranked.map((r) => r.city).toList(growable: false);
+    final deduped = <City>[];
+    final seen = <String>{};
+    for (final row in ranked) {
+      final key =
+          '${_normQuery(row.city.cityName)}|${row.city.countryCode.toUpperCase()}|${row.city.timeZoneId}';
+      if (!seen.add(key)) continue;
+      deduped.add(row.city);
+      if (deduped.length >= 100) break;
+    }
+    return deduped;
   }
 
   String _buildHaystack(City c) {
@@ -241,8 +284,6 @@ class _CityPickerState extends State<CityPicker> {
       c.admin1Code ?? '',
       c.continent ?? '',
       _continentName(c.continent),
-      c.timeZoneId,
-      ..._tzAbbrsFor(c.timeZoneId),
       c.currencyCode,
       c.currencySymbol ?? '',
       c.currencySymbolNarrow ?? '',
@@ -258,6 +299,57 @@ class _CityPickerState extends State<CityPicker> {
     }
 
     return _normQuery(parts.join(' '));
+  }
+
+  void _rebuildIndex() {
+    _indexedCities = widget.cities
+        .map((city) {
+          final cityNorm = _normQuery(city.cityName);
+          final countryNorm = _normQuery(city.countryName ?? city.countryCode);
+          var baseScore = 0;
+          if (_curatedIds.contains(city.id)) baseScore += 260;
+          final hubIndex = _mainstreamHubZonePriority.indexOf(city.timeZoneId);
+          if (hubIndex != -1) baseScore += 220 - (hubIndex * 6);
+          if (_mainstreamCountryCodes.contains(
+            city.countryCode.toUpperCase(),
+          )) {
+            baseScore += 60;
+          }
+          if (RegExp(r'^[^A-Za-z0-9]').hasMatch(city.cityName.trim())) {
+            baseScore -= 120;
+          }
+          if (RegExp(r'\d').hasMatch(city.cityName)) baseScore -= 35;
+          baseScore -= cityNorm.length ~/ 4;
+          return _IndexedCity(
+            city: city,
+            haystack: _buildHaystack(city),
+            cityNameNorm: cityNorm,
+            countryNorm: countryNorm,
+            baseScore: baseScore,
+          );
+        })
+        .toList(growable: false);
+    _defaultTopCities = _buildDefaultTopCities();
+  }
+
+  List<City> _buildDefaultTopCities() {
+    final ranked = _indexedCities.toList(growable: false)
+      ..sort((a, b) {
+        final byScore = b.baseScore.compareTo(a.baseScore);
+        if (byScore != 0) return byScore;
+        return a.cityNameNorm.compareTo(b.cityNameNorm);
+      });
+    final out = <City>[];
+    final seenZones = <String>{};
+    final seenCityTokens = <String>{};
+    for (final row in ranked) {
+      if (!seenZones.add(row.city.timeZoneId)) continue;
+      final cityToken = row.cityNameNorm.split(' ').join();
+      if (cityToken.isNotEmpty && !seenCityTokens.add(cityToken)) continue;
+      out.add(row.city);
+      if (out.length >= 24) break;
+    }
+    return out;
   }
 
   List<String> _tokenize(String q) {
@@ -306,27 +398,22 @@ class _CityPickerState extends State<CityPicker> {
         return '';
     }
   }
+}
 
-  List<String> _tzAbbrsFor(String iana) {
-    switch (iana) {
-      case 'America/New_York':
-        return const ['est', 'edt'];
-      case 'America/Chicago':
-        return const ['cst', 'cdt'];
-      case 'America/Denver':
-        return const ['mst', 'mdt'];
-      case 'America/Los_Angeles':
-        return const ['pst', 'pdt'];
-      case 'Europe/London':
-        return const ['gmt', 'bst'];
-      case 'Europe/Lisbon':
-        return const ['wet', 'west'];
-      case 'Europe/Paris':
-        return const ['cet', 'cest'];
-      default:
-        return const [];
-    }
-  }
+class _IndexedCity {
+  final City city;
+  final String haystack;
+  final String cityNameNorm;
+  final String countryNorm;
+  final int baseScore;
+
+  const _IndexedCity({
+    required this.city,
+    required this.haystack,
+    required this.cityNameNorm,
+    required this.countryNorm,
+    required this.baseScore,
+  });
 }
 
 /// Shared helpers, kept separate so CityRepository can reuse without importing UI.

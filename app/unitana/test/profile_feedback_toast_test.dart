@@ -43,9 +43,7 @@ Future<void> _pickCity(
   await tester.tap(find.byKey(buttonKey));
   await _pumpFor(tester);
   final searchField = find.byWidgetPredicate(
-    (w) =>
-        w is TextField &&
-        w.decoration?.hintText == 'Search city, country, code, timezone',
+    (w) => w is TextField && w.decoration?.hintText == 'Search city or country',
   );
   expect(searchField, findsOneWidget);
   await tester.enterText(searchField, query);
