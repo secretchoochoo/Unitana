@@ -705,11 +705,11 @@ class _AliveScenePainter extends CustomPainter {
             kind == SceneKey.thunderRain || kind == SceneKey.thunderSnow;
         final bool isHeavy = isStorm || isSquall;
 
-        final int dropSpacing = isDrizzle ? 9 : (isHeavy ? 4 : 6);
-        final int dropLen = isDrizzle ? 2 : (isHeavy ? 6 : 4);
+        final int dropSpacing = isDrizzle ? 10 : (isHeavy ? 5 : 7);
+        final int dropLen = isDrizzle ? 2 : (isHeavy ? 5 : 4);
         final int dxPerStep = isDrizzle ? 0 : (isHeavy ? 2 : 1);
         final int thickness = isHeavy ? 2 : 1;
-        final int alpha = isDrizzle ? 170 : (isHeavy ? 235 : 210);
+        final int alpha = isDrizzle ? 165 : (isHeavy ? 225 : 200);
         final rainPaint = Paint()..color = _rain.color.withAlpha(alpha);
 
         for (int y = 2; y < skyBottom; y++) {
@@ -750,7 +750,7 @@ class _AliveScenePainter extends CustomPainter {
       } else if (isSnow || isSleet || isHail) {
         // Snow family. Sleet mixes flakes with a few rain streaks.
         // Hail uses chunkier pellets.
-        final int flakeSpacing = isHail ? 7 : 5;
+        final int flakeSpacing = isHail ? 8 : 6;
         final int flakeSize = isHail ? 2 : 1;
 
         for (int y = 2; y < skyBottom; y++) {
@@ -864,11 +864,11 @@ class _AliveScenePainter extends CustomPainter {
           plume((w * 0.58).round(), plumeBaseY, flip: !alt);
 
           // Ambient veil (very light) so the sky still feels “smoky.”
-          final veilAlpha = compact ? 36 : 32;
+          final veilAlpha = compact ? 30 : 26;
           final veilPaint = Paint()..color = _fog.color.withAlpha(veilAlpha);
           for (int y = 2; y < skyBottom; y += 3) {
             for (int x = 0; x < w; x++) {
-              final v = (x * 23 + y * 11 + shift * 5) % 41;
+              final v = (x * 23 + y * 11 + shift * 5) % 47;
               if (v == 0) _pixel(canvas, x, y, px, veilPaint);
             }
           }
@@ -916,10 +916,10 @@ class _AliveScenePainter extends CustomPainter {
             // Speckle.
             for (int y = 2; y < skyBottom; y += 2) {
               for (int x = 0; x < w; x++) {
-                final v = (x * 17 + y * 13 + (shift * 7)) % 31;
+                final v = (x * 17 + y * 13 + (shift * 7)) % 35;
                 if (v == 0) {
                   _pixel(canvas, x, y, px, _dustSpeck);
-                  if (((x + y + shift) % 29) == 0) {
+                  if (((x + y + shift) % 37) == 0) {
                     _pixel(canvas, x + 1, y, px, _dustSpeck);
                   }
                 }
@@ -935,10 +935,10 @@ class _AliveScenePainter extends CustomPainter {
             // Denser grains.
             for (int y = 2; y < skyBottom; y += 2) {
               for (int x = 0; x < w; x++) {
-                final v = (x * 19 + y * 9 + (shift * 9)) % 23;
+                final v = (x * 19 + y * 9 + (shift * 9)) % 27;
                 if (v == 0) {
                   _pixel(canvas, x, y, px, _sandSpeck);
-                  if (((x + y + shift) % 11) == 0) {
+                  if (((x + y + shift) % 15) == 0) {
                     _pixel(canvas, x, y + 1, px, _sandSpeck);
                   }
                 }
@@ -978,7 +978,7 @@ class _AliveScenePainter extends CustomPainter {
           final drift = ((shift % 3) - 1);
           for (int y = 2; y < skyBottom; y++) {
             for (int x = 0; x < w; x++) {
-              final v = (x * 23 + y * 31 + (shift * 5)) % 37;
+              final v = (x * 23 + y * 31 + (shift * 5)) % 41;
               if (v == 0) {
                 _pixel(canvas, x + drift, y, px, _ashFlake);
                 if (((x + y + shift) % 17) == 0) {
@@ -1058,7 +1058,7 @@ class _AliveScenePainter extends CustomPainter {
             final int pocketTop = (h * 0.28).round();
             for (int y = pocketTop; y < skyBottom; y++) {
               for (int x = 0; x < w; x++) {
-                final v = (x * 23 + y * 31 + (shift * 11)) % 37;
+                final v = (x * 23 + y * 31 + (shift * 11)) % 41;
                 if (v == 0) {
                   _pixel(canvas, x, y, px, pocketPaint);
                 }

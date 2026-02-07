@@ -6,6 +6,21 @@
 - **Operating mode:** Codex is now the primary workflow; apply edits directly in-repo (do not require patch zip workflow unless explicitly requested).
 
 ## Latest changes (2026-02-07)
+- Pack E phase 3 readability micro-pass shipped (scene renderer only):
+  - reduced high-noise particle density in rain/snow/visibility-heavy scene families to improve scanability:
+    - rain family: slightly lower streak density/opacity
+    - snow/hail family: slightly lower flake density
+    - smoke/dust/sand/ash/fog pockets: lighter ambient/speckle density
+  - dashboard marquee semantics and layout behavior remain unchanged.
+  - regression confidence maintained via:
+    - `test/hero_alive_marquee_paint_extremes_test.dart`
+    - `test/dashboard_places_hero_v2_test.dart`
+  - full gates re-run and green:
+    - `dart format .`
+    - `flutter analyze`
+    - `flutter test`
+
+## Latest changes (2026-02-07)
 - Dashboard split-marquee experiment was reverted (scope correction):
   - dashboard hero marquee remains unchanged from the Pack E kickoff baseline.
   - split-marquee concept is deferred for future **weather-sheet-only** exploration (middle bridge area between destination/home weather sections).

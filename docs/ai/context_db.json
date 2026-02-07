@@ -207,7 +207,7 @@
     }
   ],
   "current_state": {
-    "current_slice": "Pack E scope correction: dashboard split-marquee reverted; weather-sheet-only split concept deferred with reuse notes captured",
+    "current_slice": "Pack E phase 3 shipped: scene readability micro-pass (noise/contrast tuning) with dashboard marquee semantics unchanged",
     "notes": [
       "Codex-first workflow allows larger execution packs while keeping gates green.",
       "Pack A city data platform foundation is complete with canonical schema + validation guards.",
@@ -276,13 +276,15 @@
       "Pack E kickoff shipped: Places Hero vertical budget was rebalanced (reduced non-content chrome footprint + tighter stack spacing) so marquee gets more usable phone-height without changing text sizes or touch-target contracts.",
       "Pack E kickoff shipped: added marquee presence/min-height guard in `dashboard_places_hero_v2_test.dart`; full gates remain green.",
       "Pack E scope correction: reverted dashboard split-marquee prototype and restored prior hero marquee behavior.",
-      "Split-marquee concept is deferred for weather-sheet middle-bridge scope only; reusable notes saved in `docs/ai/reference/PACK_E_SPLIT_MARQUEE_DEFERRED_NOTES.md`."
+      "Split-marquee concept is deferred for weather-sheet middle-bridge scope only; reusable notes saved in `docs/ai/reference/PACK_E_SPLIT_MARQUEE_DEFERRED_NOTES.md`.",
+      "Pack E phase 3 shipped: hero scene renderer now uses lower-noise rain/snow/visibility-family particle tuning for better readability across key scene families.",
+      "Pack E phase 3 shipped without changing dashboard marquee semantics or hero grid/collapse contracts."
     ],
     "overall_health": "Stable with full gates passing; canonical city data coverage is now enforced for all in-scope records.",
     "status": "GREEN",
     "focus": {
-      "now": "Continue Pack E on scene readability and vertical-fill refinements without changing dashboard marquee semantics.",
-      "next": "When animation redesign is ready, prototype weather-sheet-only split marquee in the middle bridge area.",
+      "now": "Start Pack E phase 4 planning/implementation prep for weather-sheet middle-bridge visuals while keeping dashboard marquee unchanged.",
+      "next": "Prototype weather-sheet-only split marquee once animation redesign constraints are ready.",
       "later": [
         "Pack H localization full rollout (multi-language ARB + language settings)"
       ]
