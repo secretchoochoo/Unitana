@@ -206,6 +206,7 @@ class _CityPickerState extends State<CityPicker> {
       maxCandidates: 220,
       maxResults: 100,
       dedupeByTimeZone: false,
+      dedupeByCityCountry: true,
     );
     final deduped = results.map((r) => r.value).toList(growable: false);
     PickerPerfTrace.logElapsed(

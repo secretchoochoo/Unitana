@@ -148,6 +148,7 @@ class CityPickerEngine {
     int maxResults = 100,
     bool shortQueryAllowsTimeZonePrefix = false,
     bool dedupeByTimeZone = false,
+    bool dedupeByCityCountry = false,
   }) {
     final query = normalizeQuery(queryRaw);
     if (query.isEmpty) return <CityPickerEngineEntry<T>>[];
@@ -184,6 +185,8 @@ class CityPickerEngine {
       if (aliasTimeZoneIds.contains(row.timeZoneId)) score += 220;
       if (row.cityNameNorm.startsWith(query)) score += 180;
       if (row.cityNameNorm.contains(' $query')) score += 100;
+      if (query == row.cityNameNorm) score += 120;
+      if (_queryIncludesCountryHint(query: query, row: row)) score += 90;
       if (row.countryNorm.startsWith(query) ||
           row.countryNorm.contains(' $query')) {
         score += 70;
@@ -204,6 +207,7 @@ class CityPickerEngine {
     final out = <CityPickerEngineEntry<T>>[];
     final seenKeys = <String>{};
     final seenZones = <String>{};
+    final seenCityCountry = <String>{};
     for (final row in scored) {
       if (out.length >= maxResults) break;
       if (!seenKeys.add(row.row.key)) continue;
@@ -212,9 +216,31 @@ class CityPickerEngine {
           !seenZones.add(row.row.timeZoneId)) {
         continue;
       }
+      if (dedupeByCityCountry) {
+        final cityCountryKey =
+            '${row.row.cityNameNorm}|${row.row.countryCode.toLowerCase()}';
+        if (!seenCityCountry.add(cityCountryKey)) continue;
+      }
       out.add(row.row);
     }
     return out;
+  }
+
+  static bool _queryIncludesCountryHint<T>({
+    required String query,
+    required CityPickerEngineEntry<T> row,
+  }) {
+    if (query.isEmpty) return false;
+    final countryCode = row.countryCode.toLowerCase();
+    if (countryCode.isNotEmpty &&
+        (query == countryCode ||
+            query.endsWith(' $countryCode') ||
+            query.startsWith('$countryCode '))) {
+      return true;
+    }
+    return query == row.countryNorm ||
+        query.endsWith(' ${row.countryNorm}') ||
+        query.startsWith('${row.countryNorm} ');
   }
 
   static bool hasTokenBoundary(String haystack, String token) {

@@ -2496,6 +2496,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
       maxResults: 40,
       shortQueryAllowsTimeZonePrefix: true,
       dedupeByTimeZone: true,
+      dedupeByCityCountry: true,
     ).map((entry) => entry.value).toList(growable: false);
     PickerPerfTrace.logElapsed(
       'time_city_filter',
