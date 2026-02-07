@@ -176,6 +176,10 @@ class WeatherSummaryBottomSheet extends StatelessWidget {
                   place: destination,
                   label: DashboardCopy.destinationLabel(context),
                 ),
+                if (destination != null && home != null) ...[
+                  const SizedBox(height: 6),
+                  _bridgeSplitCard(context, left: destination!, right: home!),
+                ],
                 const SizedBox(height: 6),
                 _placeCard(
                   context,
@@ -187,6 +191,82 @@ class WeatherSummaryBottomSheet extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+
+  Widget _bridgeSplitCard(
+    BuildContext context, {
+    required Place left,
+    required Place right,
+  }) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    return DecoratedBox(
+      key: const ValueKey('weather_summary_bridge_split'),
+      decoration: BoxDecoration(
+        color: cs.surfaceContainerHighest.withAlpha(22),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: cs.outlineVariant.withAlpha(165)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
+        child: Row(
+          children: [
+            Expanded(child: _bridgeCityCell(context, place: left)),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 6),
+              child: Text(
+                '↔',
+                style: theme.textTheme.bodyLarge?.copyWith(
+                  color: DraculaPalette.comment.withAlpha(210),
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ),
+            Expanded(child: _bridgeCityCell(context, place: right)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _bridgeCityCell(BuildContext context, {required Place place}) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final weather = liveData.weatherFor(place);
+    final preferMetric = (place.unitSystem == 'metric');
+    final tempC = weather?.temperatureC;
+    final tempF = tempC == null ? null : (tempC * 9 / 5) + 32;
+    final tempText = tempC == null
+        ? '—'
+        : preferMetric
+        ? '${tempC.round()}°C'
+        : '${tempF!.round()}°F';
+    final condition = (weather?.conditionText ?? '—').trim();
+    return Column(
+      key: ValueKey('weather_summary_bridge_city_${place.id}'),
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          '${_flagEmoji(place.countryCode)} ${place.cityName}',
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: cs.onSurface,
+            fontWeight: FontWeight.w800,
+          ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        const SizedBox(height: 2),
+        Text(
+          '$tempText · $condition',
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: cs.onSurfaceVariant.withAlpha(230),
+            fontWeight: FontWeight.w700,
+          ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+      ],
     );
   }
 

@@ -135,6 +135,33 @@ void main() {
           sheetFinder,
         );
         expect(homeHeader.evaluate().isNotEmpty, isTrue);
+        expect(
+          find.descendant(
+            of: sheetFinder,
+            matching: find.byKey(
+              const ValueKey('weather_summary_bridge_split'),
+            ),
+          ),
+          findsOneWidget,
+        );
+        expect(
+          find.descendant(
+            of: sheetFinder,
+            matching: find.byKey(
+              const ValueKey('weather_summary_bridge_city_dest'),
+            ),
+          ),
+          findsOneWidget,
+        );
+        expect(
+          find.descendant(
+            of: sheetFinder,
+            matching: find.byKey(
+              const ValueKey('weather_summary_bridge_city_home'),
+            ),
+          ),
+          findsOneWidget,
+        );
 
         expect(
           find.byKey(const ValueKey('weather_summary_refresh')),

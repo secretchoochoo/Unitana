@@ -207,7 +207,7 @@
     }
   ],
   "current_state": {
-    "current_slice": "Pack E phase 3 shipped: scene readability micro-pass (noise/contrast tuning) with dashboard marquee semantics unchanged",
+    "current_slice": "Pack E phase 4 scaffold shipped: weather-sheet middle-bridge split card added (dashboard marquee unchanged)",
     "notes": [
       "Codex-first workflow allows larger execution packs while keeping gates green.",
       "Pack A city data platform foundation is complete with canonical schema + validation guards.",
@@ -278,13 +278,15 @@
       "Pack E scope correction: reverted dashboard split-marquee prototype and restored prior hero marquee behavior.",
       "Split-marquee concept is deferred for weather-sheet middle-bridge scope only; reusable notes saved in `docs/ai/reference/PACK_E_SPLIT_MARQUEE_DEFERRED_NOTES.md`.",
       "Pack E phase 3 shipped: hero scene renderer now uses lower-noise rain/snow/visibility-family particle tuning for better readability across key scene families.",
-      "Pack E phase 3 shipped without changing dashboard marquee semantics or hero grid/collapse contracts."
+      "Pack E phase 3 shipped without changing dashboard marquee semantics or hero grid/collapse contracts.",
+      "Pack E phase 4 scaffold shipped: weather summary sheet now includes a middle bridge split card between destination/home sections with per-city temp + condition context.",
+      "Pack E phase 4 preserved scope guard: no dashboard marquee semantics changes; bridge coverage added to weather sheet smoke test."
     ],
     "overall_health": "Stable with full gates passing; canonical city data coverage is now enforced for all in-scope records.",
     "status": "GREEN",
     "focus": {
-      "now": "Start Pack E phase 4 planning/implementation prep for weather-sheet middle-bridge visuals while keeping dashboard marquee unchanged.",
-      "next": "Prototype weather-sheet-only split marquee once animation redesign constraints are ready.",
+      "now": "Execute Pack E phase 5: evolve weather-sheet bridge from text split card into richer dual-city visual representation.",
+      "next": "Evaluate optional animation treatment for bridge once static visual contract is locked and readable on phones.",
       "later": [
         "Pack H localization full rollout (multi-language ARB + language settings)"
       ]

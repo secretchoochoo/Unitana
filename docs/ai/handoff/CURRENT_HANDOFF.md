@@ -6,6 +6,20 @@
 - **Operating mode:** Codex is now the primary workflow; apply edits directly in-repo (do not require patch zip workflow unless explicitly requested).
 
 ## Latest changes (2026-02-07)
+- Pack E phase 4 scaffold shipped (weather-sheet bridge only):
+  - added a middle bridge split card between Destination and Home weather sections in `WeatherSummaryBottomSheet`.
+  - bridge currently shows side-by-side city context (`flag + city`) plus each side's primary weather summary (`temp · condition`).
+  - dashboard hero marquee behavior remains unchanged (scope guard preserved).
+  - added weather-sheet smoke coverage for bridge presence via stable keys:
+    - `weather_summary_bridge_split`
+    - `weather_summary_bridge_city_dest`
+    - `weather_summary_bridge_city_home`
+  - full gates re-run and green:
+    - `dart format .`
+    - `flutter analyze`
+    - `flutter test`
+
+## Latest changes (2026-02-07)
 - Pack E phase 3 readability micro-pass shipped (scene renderer only):
   - reduced high-noise particle density in rain/snow/visibility-heavy scene families to improve scanability:
     - rain family: slightly lower streak density/opacity
