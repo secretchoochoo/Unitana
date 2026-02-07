@@ -2610,20 +2610,33 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
     if (query.isEmpty) return const <TimeZoneOption>[];
     final normalized = _normalizeTimeSearch(query);
     final aliasZones = _aliasZonesForQuery(query).toSet();
+    final shortQuery = normalized.length <= 3;
     final scored = <({TimeZoneOption option, int score})>[];
+    bool hasTokenBoundary(String haystack, String token) {
+      final escaped = RegExp.escape(token);
+      return RegExp('(^| )$escaped').hasMatch(haystack);
+    }
 
     for (final option in options) {
       final haystack = _normalizeTimeSearch(
         '${option.label} ${option.subtitle ?? ''} ${option.id}',
       );
+      final idLower = option.id.toLowerCase();
+      final queryLower = query.toLowerCase();
       if (!haystack.contains(normalized) && !aliasZones.contains(option.id)) {
+        continue;
+      }
+      if (shortQuery &&
+          !aliasZones.contains(option.id) &&
+          !idLower.startsWith(queryLower) &&
+          !hasTokenBoundary(haystack, normalized)) {
         continue;
       }
       var score = 0;
       if (aliasZones.contains(option.id)) score += 260;
-      if (option.id.toLowerCase() == query.toLowerCase()) score += 220;
-      if (option.id.toLowerCase().startsWith(query.toLowerCase())) score += 130;
-      if ((option.subtitle ?? '').toLowerCase().contains(query.toLowerCase())) {
+      if (idLower == queryLower) score += 220;
+      if (idLower.startsWith(queryLower)) score += 130;
+      if ((option.subtitle ?? '').toLowerCase().contains(queryLower)) {
         score += 70;
       }
       if (option.id == widget.home?.timeZoneId ||
@@ -2831,6 +2844,18 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
             rawQuery: query,
             options: zoneOptions,
           );
+          final currentZoneId = isFrom ? _timeFromZoneId : _timeToZoneId;
+          final selectedCityKey =
+              filteredCity
+                  .where((o) => o.label == currentLabel)
+                  .map((o) => o.key)
+                  .cast<String?>()
+                  .firstWhere((k) => k != null, orElse: () => null) ??
+              filteredCity
+                  .where((o) => o.timeZoneId == currentZoneId)
+                  .map((o) => o.key)
+                  .cast<String?>()
+                  .firstWhere((k) => k != null, orElse: () => null);
           return SafeArea(
             child: SizedBox(
               height: MediaQuery.of(context).size.height * 0.72,
@@ -2910,7 +2935,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                           padding: const EdgeInsets.fromLTRB(16, 2, 16, 6),
                           child: Text(
                             query.trim().isEmpty
-                                ? 'Popular Cities'
+                                ? 'Top Cities'
                                 : 'Best Matches',
                             style: Theme.of(context).textTheme.labelLarge
                                 ?.copyWith(
@@ -2920,28 +2945,43 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                           ),
                         ),
                         for (final option in filteredCity)
-                          ListTile(
-                            key: ValueKey(
-                              'tool_time_city_item_${isFrom ? 'from' : 'to'}_${_sanitizeUnitKey(option.key)}',
-                            ),
-                            title: Text(
-                              [
-                                CityLabelUtils.countryFlag(option.countryCode),
-                                CityLabelUtils.cleanCityName(option.label),
-                              ].where((part) => part.isNotEmpty).join(' '),
-                            ),
-                            subtitle: Text(
-                              option.subtitle == option.timeZoneId
-                                  ? option.timeZoneId
-                                  : '${option.subtitle} · ${option.timeZoneId}',
-                            ),
-                            selected: option.label == currentLabel,
-                            onTap: () => Navigator.of(context).pop((
-                              zoneId: option.timeZoneId,
-                              displayLabel: CityLabelUtils.cleanCityName(
-                                option.label,
-                              ),
-                            )),
+                          Builder(
+                            builder: (context) {
+                              final isSelected = option.key == selectedCityKey;
+                              return ListTile(
+                                key: ValueKey(
+                                  'tool_time_city_item_${isFrom ? 'from' : 'to'}_${_sanitizeUnitKey(option.key)}',
+                                ),
+                                title: Text(
+                                  [
+                                    CityLabelUtils.countryFlag(
+                                      option.countryCode,
+                                    ),
+                                    CityLabelUtils.cleanCityName(option.label),
+                                  ].where((part) => part.isNotEmpty).join(' '),
+                                ),
+                                subtitle: Text(
+                                  option.subtitle == option.timeZoneId
+                                      ? option.timeZoneId
+                                      : '${option.subtitle} · ${option.timeZoneId}',
+                                ),
+                                selected: isSelected,
+                                trailing: isSelected
+                                    ? Icon(
+                                        Icons.check_rounded,
+                                        color: DraculaPalette.purple.withAlpha(
+                                          238,
+                                        ),
+                                      )
+                                    : null,
+                                onTap: () => Navigator.of(context).pop((
+                                  zoneId: option.timeZoneId,
+                                  displayLabel: CityLabelUtils.cleanCityName(
+                                    option.label,
+                                  ),
+                                )),
+                              );
+                            },
                           ),
                         if (filteredCity.isEmpty && filteredZone.isEmpty)
                           Padding(
@@ -2973,17 +3013,29 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                             ),
                           ),
                           for (final option in filteredZone)
-                            ListTile(
-                              key: ValueKey(
-                                'tool_time_zone_item_${isFrom ? 'from' : 'to'}_${_sanitizeUnitKey(option.id)}',
-                              ),
-                              title: Text(option.label),
-                              subtitle: Text(option.subtitle ?? option.id),
-                              selected: option.label == currentLabel,
-                              onTap: () => Navigator.of(context).pop((
-                                zoneId: option.id,
-                                displayLabel: option.label,
-                              )),
+                            Builder(
+                              builder: (context) {
+                                final isSelected = option.id == currentZoneId;
+                                return ListTile(
+                                  key: ValueKey(
+                                    'tool_time_zone_item_${isFrom ? 'from' : 'to'}_${_sanitizeUnitKey(option.id)}',
+                                  ),
+                                  title: Text(option.label),
+                                  subtitle: Text(option.subtitle ?? option.id),
+                                  selected: isSelected,
+                                  trailing: isSelected
+                                      ? Icon(
+                                          Icons.check_rounded,
+                                          color: DraculaPalette.purple
+                                              .withAlpha(238),
+                                        )
+                                      : null,
+                                  onTap: () => Navigator.of(context).pop((
+                                    zoneId: option.id,
+                                    displayLabel: option.label,
+                                  )),
+                                );
+                              },
                             ),
                         ],
                       ],

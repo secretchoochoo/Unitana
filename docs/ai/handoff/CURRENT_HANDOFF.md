@@ -6,6 +6,17 @@
 - **Operating mode:** Codex is now the primary workflow; apply edits directly in-repo (do not require patch zip workflow unless explicitly requested).
 
 ## Latest changes (2026-02-07)
+- Pack E phase 6d city-picker quality pass shipped:
+  - timezone picker now renders a single explicit selected-row check marker (no ambiguous multi-check state).
+  - short advanced timezone queries (e.g., `EST`) now use stricter token/prefix matching to reduce noisy false-positive rows.
+  - city section label updated to `Top Cities` for clearer default-list framing.
+  - regression lock added in `time_tool_modal_interaction_test.dart` to assert a single selected check icon in default city-picker state.
+  - full gates re-run and green:
+    - `dart format .`
+    - `flutter analyze`
+    - `flutter test`
+
+## Latest changes (2026-02-07)
 - Pack E phase 6c redundant label audit shipped:
   - removed remaining redundant `Home` / `Destination` role labels where city+flag context already implies meaning.
   - Jet Lag zone card titles now use neutral `From Time Zone` / `To Time Zone`.

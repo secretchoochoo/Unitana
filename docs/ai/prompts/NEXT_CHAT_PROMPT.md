@@ -1,4 +1,4 @@
-NEXT CHAT PROMPT — Pack E Phase 6d (City Picker Quality + Clarity)
+NEXT CHAT PROMPT — Pack E Phase 6e (City Picker Mainstream Ranking)
 
 You are taking over Unitana (Flutter) in a fresh, high-context window.
 
@@ -24,17 +24,17 @@ Then execute using this contract.
   - goldens opt-in only
 
 ## Mission
-Improve Time/Jet Lag city-picker quality so results feel mainstream, clean, and predictable while preserving seeded defaults and advanced timezone fallback behavior.
+Improve city-picker default ranking so common travel hubs appear first for mainstream users while preserving global search reach and advanced timezone fallback.
 
 ## Required outcomes
 1) Scope guard
 - Do not change dashboard hero marquee semantics.
 - Keep weather-sheet work constrained to per-city cards (middle bridge card remains removed).
 
-2) Picker quality slice
-- Reduce odd/low-signal city rows in default list ordering and improve first-screen relevance for mainstream city selection.
-- Ensure selected-state indicators are clear and non-confusing (no misleading multiple-check appearance).
-- Keep advanced timezone mode available for power users and preserve EST/abbreviation search behavior.
+2) Mainstream ranking slice
+- Re-rank default city list toward high-signal mainstream travel hubs and profile-seeded cities.
+- Keep long-tail/global cities discoverable via search without overwhelming the default list.
+- Preserve advanced timezone mode and abbreviation behaviors (`EST`, `CST`, etc.).
 
 3) Readability and layout safety
 - Ensure picker row copy remains legible on small phones and does not crowd the sheet.
@@ -54,6 +54,6 @@ Improve Time/Jet Lag city-picker quality so results feel mainstream, clean, and 
   - `docs/ai/prompts/NEXT_CHAT_PROMPT.md` (advance to next slice)
 
 ## Definition of done
-- City-first picker feels cleaner and less confusing for mainstream users while retaining power-user timezone fallback.
+- Default city list feels mainstream and useful out of the box, while search still supports global/discrete locations.
 - No regressions in collapse behavior, readability, or interaction.
 - Repo is green (`format`, `analyze`, `test`).

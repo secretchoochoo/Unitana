@@ -218,6 +218,7 @@ void main() {
 
     await tester.tap(find.byKey(const ValueKey('tool_time_from_zone')));
     await tester.pumpAndSettle(const Duration(milliseconds: 250));
+    expect(find.byIcon(Icons.check_rounded), findsOneWidget);
     expect(find.textContaining('EST · New York'), findsOneWidget);
     expect(find.textContaining('CST · Chicago'), findsOneWidget);
     await tester.enterText(
