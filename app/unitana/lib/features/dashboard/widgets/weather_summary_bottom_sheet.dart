@@ -329,75 +329,86 @@ class WeatherSummaryBottomSheet extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '$flag ${place.cityName}',
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        condition,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: cs.onSurfaceVariant,
-                          fontWeight: FontWeight.w600,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 10),
-                SizedBox(
-                  width: 132,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(10),
-                        child: SizedBox(
-                          key: ValueKey(
-                            'weather_summary_card_scene_${place.id}',
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final isTight = constraints.maxWidth < 360;
+                final sceneWidth = isTight ? 118.0 : 132.0;
+                final sceneHeight = isTight ? 38.0 : 42.0;
+                return Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '$flag ${place.cityName}',
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w900,
+                            ),
                           ),
-                          height: 42,
-                          width: double.infinity,
-                          child: HeroAliveMarquee(
-                            includeTestKeys: false,
-                            compact: true,
-                            isNight: _isNightForPlace(place, sun: sun),
-                            sceneKey: weather?.sceneKey,
-                            conditionLabel: condition,
-                            renderConditionLabel: false,
+                          const SizedBox(height: 2),
+                          Text(
+                            condition,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: cs.onSurfaceVariant,
+                              fontWeight: FontWeight.w600,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
-                        ),
+                        ],
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        tempPrimary,
-                        style: theme.textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.w900,
-                          color: DraculaPalette.green,
-                        ),
+                    ),
+                    const SizedBox(width: 10),
+                    SizedBox(
+                      width: sceneWidth,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(10),
+                            child: SizedBox(
+                              key: ValueKey(
+                                'weather_summary_card_scene_${place.id}',
+                              ),
+                              height: sceneHeight,
+                              width: double.infinity,
+                              child: HeroAliveMarquee(
+                                includeTestKeys: false,
+                                compact: true,
+                                isNight: _isNightForPlace(place, sun: sun),
+                                sceneKey: weather?.sceneKey,
+                                conditionLabel: condition,
+                                renderConditionLabel: false,
+                              ),
+                            ),
+                          ),
+                          SizedBox(height: isTight ? 3 : 4),
+                          Text(
+                            tempPrimary,
+                            style:
+                                (isTight
+                                        ? theme.textTheme.titleMedium
+                                        : theme.textTheme.titleLarge)
+                                    ?.copyWith(
+                                      fontWeight: FontWeight.w900,
+                                      color: DraculaPalette.green,
+                                    ),
+                          ),
+                          Text(
+                            tempSecondary,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: cs.onSurfaceVariant,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ],
                       ),
-                      Text(
-                        tempSecondary,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: cs.onSurfaceVariant,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+                    ),
+                  ],
+                );
+              },
             ),
             const SizedBox(height: 5),
             _iconTable(

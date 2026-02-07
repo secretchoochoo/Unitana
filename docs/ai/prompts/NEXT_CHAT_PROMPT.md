@@ -1,4 +1,4 @@
-NEXT CHAT PROMPT — Pack E Phase 6b (Weather-Sheet In-Card Marquee Polish)
+NEXT CHAT PROMPT — Pack E Phase 6c (Redundant Home/Destination Label Audit)
 
 You are taking over Unitana (Flutter) in a fresh, high-context window.
 
@@ -24,21 +24,20 @@ Then execute using this contract.
   - goldens opt-in only
 
 ## Mission
-Polish the weather-sheet in-card mini-marquee treatment so each city card mirrors dashboard weather context cleanly on phone surfaces.
+Remove redundant `Home` / `Destination` UI labels where city+flag context already communicates intent, while preserving places/reality behavior and clarity.
 
 ## Required outcomes
 1) Scope guard
 - Do not change dashboard hero marquee semantics.
 - Keep weather-sheet work constrained to per-city cards (middle bridge card remains removed).
 
-2) In-card marquee polish slice
-- Build on the current per-card top-right mini-marquee treatment and tune visual hierarchy between city name, condition, marquee, and temperatures.
-- Keep the implementation low-risk and bounded to weather-sheet contracts (no dashboard hero marquee changes).
-- If motion or ornamentation harms scanability on phone surfaces, keep static visuals and document that decision.
+2) Label audit slice
+- Audit Time/Weather/Jet Lag/profile surfaces for `Home` / `Destination` labels that are redundant next to city+flag context.
+- Keep labels where they are semantically required (for role disambiguation, accessibility clarity, or empty-state fallback).
+- Keep implementation low-risk and avoid behavior changes to zone seeding, swap actions, and reality toggles.
 
 3) Readability and layout safety
-- Ensure bridge content remains legible on small phones and does not crowd neighboring weather sections.
-- Ensure in-card marquee + text layout remains legible on small phones and does not crowd neighboring weather sections.
+- Ensure resulting copy remains legible on small phones and does not crowd neighboring weather sections.
 - Preserve hero grid contracts and avoid overlap/clipping on small phones.
 - Keep existing interaction behavior unchanged.
 - Prevent jank from dynamic weather updates and avoid extra key collisions.
@@ -55,8 +54,6 @@ Polish the weather-sheet in-card mini-marquee treatment so each city card mirror
   - `docs/ai/prompts/NEXT_CHAT_PROMPT.md` (advance to next slice)
 
 ## Definition of done
-- Weather-sheet per-city cards retain strong readability and either:
-  - gains subtle motion polish that remains stable on phone surfaces, or
-  - intentionally remains static with documented rationale.
+- Redundant `Home` / `Destination` text is removed where city/flag context already implies meaning, without harming usability.
 - No regressions in collapse behavior, readability, or interaction.
 - Repo is green (`format`, `analyze`, `test`).

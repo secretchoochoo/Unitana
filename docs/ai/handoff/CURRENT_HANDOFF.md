@@ -6,6 +6,16 @@
 - **Operating mode:** Codex is now the primary workflow; apply edits directly in-repo (do not require patch zip workflow unless explicitly requested).
 
 ## Latest changes (2026-02-07)
+- Pack E phase 6b in-card marquee polish shipped:
+  - weather-sheet city cards now use responsive mini-marquee sizing in the header so phone-width layouts stay readable.
+  - top-row hierarchy was tuned for small phones (scene width/height + primary temperature typography adapt at tighter widths).
+  - regression lock now asserts the removed middle bridge key remains absent (`weather_summary_bridge_split`).
+  - full gates re-run and green:
+    - `dart format .`
+    - `flutter analyze`
+    - `flutter test`
+
+## Latest changes (2026-02-07)
 - Weather-sheet city-card compact pass shipped:
   - removed `Destination`/`Home` prefixes from weather-sheet card headers; cards now render city-first (`flag + city`).
   - removed the weather-sheet middle bridge split card and moved compact mini-marquees into each city card header (top-right).

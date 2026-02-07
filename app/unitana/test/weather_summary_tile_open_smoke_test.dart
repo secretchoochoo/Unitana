@@ -139,6 +139,15 @@ void main() {
         expect(
           find.descendant(
             of: sheetFinder,
+            matching: find.byKey(
+              const ValueKey('weather_summary_bridge_split'),
+            ),
+          ),
+          findsNothing,
+        );
+        expect(
+          find.descendant(
+            of: sheetFinder,
             matching: find.textContaining('Destination'),
           ),
           findsNothing,

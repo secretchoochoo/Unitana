@@ -207,7 +207,7 @@
     }
   ],
   "current_state": {
-    "current_slice": "Pack E follow-up shipped: weather sheet now uses city-first card headers with in-card mini marquees (bridge removed; dashboard marquee unchanged)",
+    "current_slice": "Pack E phase 6b shipped: weather-sheet in-card mini-marquee layout now adapts cleanly to tighter phone widths",
     "notes": [
       "Codex-first workflow allows larger execution packs while keeping gates green.",
       "Pack A city data platform foundation is complete with canonical schema + validation guards.",
@@ -287,12 +287,15 @@
       "Weather sheet follow-up shipped: removed middle bridge card and embedded compact scene marquees directly in each city card header (top-right).",
       "Weather sheet follow-up shipped: city headers are now city-first (`flag + city`) with no `Home`/`Destination` prefix text, and table pills were slightly compacted for better breathing room.",
       "Time-family picker follow-up shipped: seeded zone labels no longer include `Home ·` / `Destination ·` prefixes, while seeded-zone prioritization remains intact."
+      ,
+      "Pack E phase 6b shipped: weather-sheet per-card mini-marquee treatment now uses responsive header sizing so narrow phone widths preserve city/condition/temp readability.",
+      "Pack E phase 6b shipped: weather summary smoke test now asserts removed middle bridge key stays absent (`weather_summary_bridge_split`)."
     ],
     "overall_health": "Stable with full gates passing; canonical city data coverage is now enforced for all in-scope records.",
     "status": "GREEN",
     "focus": {
-      "now": "Execute Pack E phase 6 follow-up: tune in-card weather mini-marquee/header balance for phone readability and parity with dashboard weather language.",
-      "next": "Evaluate whether additional animation polish is still needed now that bridge split was removed and in-card marquees are the primary treatment.",
+      "now": "Execute Pack E phase 6c: audit remaining Home/Destination UI labels and remove redundant cases where city/flag context already implies meaning.",
+      "next": "Re-evaluate whether any bridge-era docs/tests can be retired now that in-card marquees are the locked weather-sheet direction.",
       "later": [
         "Pack H localization full rollout (multi-language ARB + language settings)"
       ]
