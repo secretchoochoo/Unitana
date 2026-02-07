@@ -207,7 +207,7 @@
     }
   ],
   "current_state": {
-    "current_slice": "Pack E kickoff shipped: Places Hero marquee vertical-fill feasibility pass with chrome-budget rebalance and regression lock",
+    "current_slice": "Pack E phase 2 shipped: dual-city split marquee prototype kept as default with reality-swap mapping coverage",
     "notes": [
       "Codex-first workflow allows larger execution packs while keeping gates green.",
       "Pack A city data platform foundation is complete with canonical schema + validation guards.",
@@ -274,13 +274,16 @@
       "Pack H phase 10 runtime-track closeout shipped: remaining tool-picker result-state labels (`No matching tools`, `No tools yet`, `Results`, `+N more`) now resolve through runtime localization-backed `DashboardCopy` methods.",
       "Pack H phase 10 shipped: added deterministic seed snapshot artifact `docs/ai/reference/LOCALIZATION_SEED_EN_SNAPSHOT.json` generated from `tools/export_localization_seed.dart` for ARB transition review.",
       "Pack E kickoff shipped: Places Hero vertical budget was rebalanced (reduced non-content chrome footprint + tighter stack spacing) so marquee gets more usable phone-height without changing text sizes or touch-target contracts.",
-      "Pack E kickoff shipped: added marquee presence/min-height guard in `dashboard_places_hero_v2_test.dart`; full gates remain green."
+      "Pack E kickoff shipped: added marquee presence/min-height guard in `dashboard_places_hero_v2_test.dart`; full gates remain green.",
+      "Pack E phase 2 shipped: marquee now includes split city chips (flag + city) to represent both locations directly inside the scene slot.",
+      "Pack E phase 2 shipped: split city chips track reality swap ordering and remain compatible with existing marquee animation/condition label readability.",
+      "Pack E phase 2 keep decision: retain split marquee treatment as default after QA; no rollback flag required."
     ],
     "overall_health": "Stable with full gates passing; canonical city data coverage is now enforced for all in-scope records.",
     "status": "GREEN",
     "focus": {
-      "now": "Execute Pack E phase 2: prototype and evaluate a dual-city split marquee variant while preserving hero grid and collapse contracts.",
-      "next": "Advance Pack E with scene/layout iteration and decide whether split marquee graduates from prototype to default.",
+      "now": "Execute Pack E phase 3: polish split marquee balance (spacing/contrast) and verify no readability regressions across phone breakpoints.",
+      "next": "Advance Pack E with scene-key V2 art/readability refinements while preserving collapse and hero grid contracts.",
       "later": [
         "Pack H localization full rollout (multi-language ARB + language settings)"
       ]

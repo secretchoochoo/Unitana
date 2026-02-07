@@ -109,6 +109,29 @@ void main() {
       // Marquee slot exists and is test-safe (still frame).
       expect(find.byKey(const ValueKey('hero_marquee_slot')), findsOneWidget);
       expect(find.byKey(const ValueKey('hero_alive_paint')), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('hero_marquee_city_left')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey('hero_marquee_city_right')),
+        findsOneWidget,
+      );
+
+      final leftChipTextBefore = tester.widget<Text>(
+        find.descendant(
+          of: find.byKey(const ValueKey('hero_marquee_city_left')),
+          matching: find.byType(Text),
+        ),
+      );
+      final rightChipTextBefore = tester.widget<Text>(
+        find.descendant(
+          of: find.byKey(const ValueKey('hero_marquee_city_right')),
+          matching: find.byType(Text),
+        ),
+      );
+      expect(leftChipTextBefore.data, contains('Lisbon'));
+      expect(rightChipTextBefore.data, contains('Denver'));
 
       final sunrise = tester.widget<RichText>(
         find.byKey(const ValueKey('hero_sunrise_row')),
@@ -175,6 +198,21 @@ void main() {
         find.byKey(const ValueKey('hero_primary_temp')),
       );
       expect(primaryTempAfter.data, contains('F'));
+
+      final leftChipTextAfter = tester.widget<Text>(
+        find.descendant(
+          of: find.byKey(const ValueKey('hero_marquee_city_left')),
+          matching: find.byType(Text),
+        ),
+      );
+      final rightChipTextAfter = tester.widget<Text>(
+        find.descendant(
+          of: find.byKey(const ValueKey('hero_marquee_city_right')),
+          matching: find.byType(Text),
+        ),
+      );
+      expect(leftChipTextAfter.data, contains('Denver'));
+      expect(rightChipTextAfter.data, contains('Lisbon'));
 
       // Baking should now default to imperial input.
       await tester.tap(find.text('Baking'));
