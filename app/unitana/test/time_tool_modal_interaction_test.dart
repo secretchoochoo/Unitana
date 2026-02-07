@@ -310,4 +310,27 @@ void main() {
 
     expect(find.textContaining('New York'), findsWidgets);
   });
+
+  testWidgets(
+    'Time zone picker keeps a single selected-row marker in results',
+    (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      await tester.binding.setSurfaceSize(const Size(390, 900));
+      addTearDown(() async => tester.binding.setSurfaceSize(null));
+
+      final state = buildSeededState();
+      await pumpDashboard(tester, state);
+      await openTimeZoneConverterTool(tester);
+
+      await tester.tap(find.byKey(const ValueKey('tool_time_from_zone')));
+      await tester.pumpAndSettle(const Duration(milliseconds: 250));
+      await tester.enterText(
+        find.byKey(const ValueKey('tool_time_zone_search_from')),
+        'america',
+      );
+      await tester.pumpAndSettle(const Duration(milliseconds: 200));
+
+      expect(find.byIcon(Icons.check_rounded).evaluate().length <= 1, isTrue);
+    },
+  );
 }

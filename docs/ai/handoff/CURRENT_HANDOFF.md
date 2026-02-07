@@ -2,8 +2,31 @@
 
 ## Snapshot
 - **Date:** 2026-02-07
-- **Status:** Repo is green (`dart format`, `flutter analyze`, `flutter test`) after Pack N J2 (city-first Time UX + Jet Lag overlap utility) implementation.
+- **Status:** Repo is green (`dart format`, `flutter analyze`, `flutter test`) after Pack E 6e/6f/6g + Pack H expansion bundle.
 - **Operating mode:** Codex is now the primary workflow; apply edits directly in-repo (do not require patch zip workflow unless explicitly requested).
+
+## Latest changes (2026-02-07)
+- Pack E 6e/6f/6g + Pack H overnight bundle shipped:
+  - Time/Jet Lag city picker default list now uses mainstream-first ranking via `TimeZoneCatalog.mainstreamCityOptions`, while keeping seeded profile zones first.
+  - default picker rows now suppress low-signal entries (leading-symbol/noisy labels) and reduce duplicate-feeling city rows through city-name de-dupe in featured results.
+  - search keeps global long-tail discoverability through full-catalog matching; alias and short-query behavior (`EST`, `CST`, `PST`, etc.) remains intact.
+  - selected-state clarity hardening: when both city and direct-zone sections render, check state now appears on at most one row to avoid ambiguous multi-check UI.
+  - added regression coverage:
+    - `time_zone_catalog_test.dart` mainstream ranking sanity + top-hub expectations.
+    - `time_tool_modal_interaction_test.dart` selected-row marker contract guard.
+  - Pack H localization expansion shipped for high-traffic residual hardcoded copy:
+    - time picker search hint/section headers/empty-state text.
+    - time converter invalid-input error message.
+    - weather sheet city fallback, table headers, AQI/pollen band labels.
+  - localization seed/runtime contract expansion:
+    - new stable `dashboard.*` keys added in `localization_seed.dart`.
+    - runtime coverage expanded in:
+      - `localization_seed_contract_test.dart`
+      - `dashboard_localizations_runtime_test.dart`
+  - full gates re-run and green:
+    - `dart format .`
+    - `flutter analyze`
+    - `flutter test`
 
 ## Latest changes (2026-02-07)
 - Pack E phase 6d city-picker quality pass shipped:

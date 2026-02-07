@@ -119,6 +119,30 @@ void main() {
       key: 'dashboard.toolPicker.moreCount',
       params: const <String, String>{'count': '5'},
     );
+    final pickerHint = DashboardLocalizations.resolveForLocale(
+      locale: const Locale('en'),
+      key: 'dashboard.time.picker.searchHint.expanded',
+    );
+    final zoneHeader = DashboardLocalizations.resolveForLocale(
+      locale: const Locale('en'),
+      key: 'dashboard.time.picker.header.directZones',
+    );
+    final invalidInput = DashboardLocalizations.resolveForLocale(
+      locale: const Locale('en'),
+      key: 'dashboard.time.converter.invalidInput',
+    );
+    final cityFallback = DashboardLocalizations.resolveForLocale(
+      locale: const Locale('en'),
+      key: 'dashboard.weather.cityNotSet',
+    );
+    final aqiBand = DashboardLocalizations.resolveForLocale(
+      locale: const Locale('en'),
+      key: 'dashboard.weather.aqi.veryUnhealthy',
+    );
+    final pollenBand = DashboardLocalizations.resolveForLocale(
+      locale: const Locale('en'),
+      key: 'dashboard.weather.pollen.veryHigh',
+    );
     expect(clearTitle, 'Clear history?');
     expect(hint, 'tap copies result; long-press copies input');
     expect(refreshNotice, 'Refreshing rates…');
@@ -141,5 +165,11 @@ void main() {
     expect(removeTitle, 'Remove Weather?');
     expect(timeMode, 'Advanced: Time Zones');
     expect(moreCount, '+5 more');
+    expect(pickerHint, 'Search city, country, timezone, or EST');
+    expect(zoneHeader, 'Direct Time Zones');
+    expect(invalidInput, 'Enter date/time as YYYY-MM-DD HH:MM');
+    expect(cityFallback, 'City not set');
+    expect(aqiBand, 'Very Unhealthy');
+    expect(pollenBand, 'Very High');
   });
 }

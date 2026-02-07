@@ -13,6 +13,45 @@ typedef TimeZoneCityOption = ({
 });
 
 class TimeZoneCatalog {
+  static const List<String> _mainstreamHubZonePriority = <String>[
+    'America/New_York',
+    'America/Los_Angeles',
+    'America/Chicago',
+    'Europe/London',
+    'Europe/Paris',
+    'Europe/Berlin',
+    'Europe/Madrid',
+    'Asia/Tokyo',
+    'Asia/Singapore',
+    'Asia/Hong_Kong',
+    'Asia/Seoul',
+    'Asia/Kolkata',
+    'Australia/Sydney',
+    'America/Toronto',
+    'America/Vancouver',
+    'America/Mexico_City',
+    'America/Sao_Paulo',
+    'Pacific/Auckland',
+    'UTC',
+  ];
+  static final Set<String> _mainstreamCountryCodes = <String>{
+    'US',
+    'GB',
+    'FR',
+    'DE',
+    'ES',
+    'IT',
+    'JP',
+    'SG',
+    'HK',
+    'KR',
+    'IN',
+    'CA',
+    'AU',
+    'NZ',
+    'MX',
+    'BR',
+  };
   static const List<String> _fallbackZones = <String>[
     'UTC',
     'America/New_York',
@@ -128,8 +167,24 @@ class TimeZoneCatalog {
     final sourceCities = CityRepository.instance.cities.isNotEmpty
         ? CityRepository.instance.cities
         : kCuratedCities;
+    final preferredZones = <String>{
+      if (home != null) home.timeZoneId,
+      if (destination != null) destination.timeZoneId,
+    };
+    final curatedZoneIds = kCuratedCities.map((c) => c.timeZoneId).toSet();
     final sorted = sourceCities.toList(growable: false)
       ..sort((a, b) {
+        final scoreA = _catalogScore(
+          city: a,
+          preferredZones: preferredZones,
+          curatedZoneIds: curatedZoneIds,
+        );
+        final scoreB = _catalogScore(
+          city: b,
+          preferredZones: preferredZones,
+          curatedZoneIds: curatedZoneIds,
+        );
+        if (scoreA != scoreB) return scoreB.compareTo(scoreA);
         final city = a.cityName.toLowerCase().compareTo(
           b.cityName.toLowerCase(),
         );
@@ -153,6 +208,94 @@ class TimeZoneCatalog {
     return out;
   }
 
+  static List<TimeZoneCityOption> mainstreamCityOptions({
+    required Place? home,
+    required Place? destination,
+    int limit = 24,
+  }) {
+    final all = cityOptions(home: home, destination: destination);
+    if (all.isEmpty) return const <TimeZoneCityOption>[];
+
+    final preferredZones = <String>{
+      if (home != null) home.timeZoneId,
+      if (destination != null) destination.timeZoneId,
+    };
+    final curatedZoneIds = kCuratedCities.map((c) => c.timeZoneId).toSet();
+    final seenZones = <String>{};
+    final seenCityNames = <String>{};
+    final out = <TimeZoneCityOption>[];
+
+    bool isLowSignal(String label) {
+      final clean = CityLabelUtils.cleanCityName(label).trim();
+      if (clean.isEmpty) return true;
+      if (RegExp(r'^[^A-Za-z0-9]').hasMatch(clean)) return true;
+      if (RegExp(r'\d{2,}').hasMatch(clean)) return true;
+      return false;
+    }
+
+    String cityNameToken(String label) {
+      final clean = CityLabelUtils.cleanCityName(label).toLowerCase();
+      return clean.split(',').first.trim();
+    }
+
+    void add(TimeZoneCityOption option, {bool allowDuplicateCity = false}) {
+      if (!seenZones.add(option.timeZoneId)) return;
+      final token = cityNameToken(option.label);
+      if (!allowDuplicateCity &&
+          token.isNotEmpty &&
+          !seenCityNames.add(token)) {
+        return;
+      }
+      if (allowDuplicateCity && token.isNotEmpty) {
+        seenCityNames.add(token);
+      }
+      out.add(option);
+    }
+
+    // Keep seeded profile zones first so defaults remain context-aware.
+    for (final option in all) {
+      if (preferredZones.contains(option.timeZoneId)) {
+        add(option, allowDuplicateCity: true);
+      }
+    }
+
+    final ranked =
+        all
+            .where((option) => !preferredZones.contains(option.timeZoneId))
+            .map(
+              (option) => (
+                option: option,
+                score: _optionScore(
+                  option: option,
+                  curatedZoneIds: curatedZoneIds,
+                  preferredZones: preferredZones,
+                ),
+              ),
+            )
+            .toList(growable: false)
+          ..sort((a, b) {
+            if (a.score != b.score) return b.score.compareTo(a.score);
+            return a.option.label.toLowerCase().compareTo(
+              b.option.label.toLowerCase(),
+            );
+          });
+
+    for (final item in ranked) {
+      if (out.length >= limit) break;
+      if (isLowSignal(item.option.label)) continue;
+      add(item.option);
+    }
+
+    if (out.length < limit) {
+      for (final option in all) {
+        if (out.length >= limit) break;
+        add(option);
+      }
+    }
+
+    return out;
+  }
+
   static String _cityCountryLabel(City city) {
     return CityLabelUtils.cleanCountryLabel(city);
   }
@@ -162,5 +305,45 @@ class TimeZoneCatalog {
     final pieces = zone.split('/');
     final tail = pieces.isEmpty ? zone : pieces.last.replaceAll('_', ' ');
     return '$tail ($zone)';
+  }
+
+  static int _catalogScore({
+    required City city,
+    required Set<String> preferredZones,
+    required Set<String> curatedZoneIds,
+  }) {
+    var score = 0;
+    if (preferredZones.contains(city.timeZoneId)) score += 800;
+    if (curatedZoneIds.contains(city.timeZoneId)) score += 240;
+    final hubIndex = _mainstreamHubZonePriority.indexOf(city.timeZoneId);
+    if (hubIndex != -1) score += 220 - (hubIndex * 6);
+    if (_mainstreamCountryCodes.contains(city.countryCode.toUpperCase())) {
+      score += 70;
+    }
+    final clean = CityLabelUtils.cleanCityName(city.cityName);
+    if (RegExp(r'^[^A-Za-z0-9]').hasMatch(clean)) score -= 220;
+    if (RegExp(r'\d').hasMatch(clean)) score -= 50;
+    score -= clean.length ~/ 4;
+    return score;
+  }
+
+  static int _optionScore({
+    required TimeZoneCityOption option,
+    required Set<String> curatedZoneIds,
+    required Set<String> preferredZones,
+  }) {
+    var score = 0;
+    if (preferredZones.contains(option.timeZoneId)) score += 800;
+    if (curatedZoneIds.contains(option.timeZoneId)) score += 260;
+    final hubIndex = _mainstreamHubZonePriority.indexOf(option.timeZoneId);
+    if (hubIndex != -1) score += 240 - (hubIndex * 6);
+    if (_mainstreamCountryCodes.contains(option.countryCode.toUpperCase())) {
+      score += 70;
+    }
+    final clean = CityLabelUtils.cleanCityName(option.label);
+    if (RegExp(r'^[^A-Za-z0-9]').hasMatch(clean)) score -= 220;
+    if (RegExp(r'\d').hasMatch(clean)) score -= 45;
+    score -= clean.length ~/ 4;
+    return score;
   }
 }

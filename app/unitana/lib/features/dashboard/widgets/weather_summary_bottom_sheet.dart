@@ -221,7 +221,7 @@ class WeatherSummaryBottomSheet extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.all(14),
           child: Text(
-            'City not set',
+            DashboardCopy.weatherCityNotSet(context),
             style: theme.textTheme.bodyMedium?.copyWith(
               color: cs.onSurfaceVariant,
               fontWeight: FontWeight.w700,
@@ -280,25 +280,33 @@ class WeatherSummaryBottomSheet extends StatelessWidget {
     final aqi = env?.usAqi;
     final pollen = env?.pollenIndex;
     String aqiBand(int value) {
-      if (value <= 50) return 'Good';
-      if (value <= 100) return 'Moderate';
-      if (value <= 150) return 'Unhealthy (Sensitive)';
-      if (value <= 200) return 'Unhealthy';
-      if (value <= 300) return 'Very Unhealthy';
-      return 'Hazardous';
+      if (value <= 50) return DashboardCopy.weatherAqiBand(context, 'good');
+      if (value <= 100) {
+        return DashboardCopy.weatherAqiBand(context, 'moderate');
+      }
+      if (value <= 150) {
+        return DashboardCopy.weatherAqiBand(context, 'unhealthySensitive');
+      }
+      if (value <= 200) {
+        return DashboardCopy.weatherAqiBand(context, 'unhealthy');
+      }
+      if (value <= 300) {
+        return DashboardCopy.weatherAqiBand(context, 'veryUnhealthy');
+      }
+      return DashboardCopy.weatherAqiBand(context, 'hazardous');
     }
 
     final aqiText = aqi == null ? '—' : '$aqi (${aqiBand(aqi)})';
     String pollenLabel(double value) {
       String band;
       if (value < 1.0) {
-        band = 'Low';
+        band = DashboardCopy.weatherPollenBand(context, 'low');
       } else if (value < 2.5) {
-        band = 'Moderate';
+        band = DashboardCopy.weatherPollenBand(context, 'moderate');
       } else if (value < 3.5) {
-        band = 'High';
+        band = DashboardCopy.weatherPollenBand(context, 'high');
       } else {
-        band = 'Very High';
+        band = DashboardCopy.weatherPollenBand(context, 'veryHigh');
       }
       return '${value.toStringAsFixed(1)} ($band)';
     }
@@ -413,21 +421,30 @@ class WeatherSummaryBottomSheet extends StatelessWidget {
             const SizedBox(height: 5),
             _iconTable(
               context,
-              headers: const ['☀️ Sunrise', '🌙 Sunset'],
+              headers: <String>[
+                DashboardCopy.weatherHeaderSunrise(context),
+                DashboardCopy.weatherHeaderSunset(context),
+              ],
               values: [sunrise, sunset],
               secondaryValues: [sunriseAlt, sunsetAlt],
             ),
             const SizedBox(height: 3),
             _iconTable(
               context,
-              headers: const ['🌬️ Wind', '💨 Gust'],
+              headers: <String>[
+                DashboardCopy.weatherHeaderWind(context),
+                DashboardCopy.weatherHeaderGust(context),
+              ],
               values: [windPrimary, gustPrimary],
               secondaryValues: [windSecondary, gustSecondary],
             ),
             const SizedBox(height: 3),
             _iconTable(
               context,
-              headers: const ['🌫️ AQI (US)', '🌼 Pollen (0-5)'],
+              headers: <String>[
+                DashboardCopy.weatherHeaderAqi(context),
+                DashboardCopy.weatherHeaderPollen(context),
+              ],
               values: [aqiText, pollenText],
             ),
           ],

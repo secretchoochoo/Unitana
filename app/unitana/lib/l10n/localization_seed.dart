@@ -194,6 +194,17 @@ class LocalizationSeed {
     'dashboard.time.picker.mode.advancedZones': 'Advanced: Time Zones',
     'dashboard.time.picker.searchHint.advanced': 'Search timezone ID or city',
     'dashboard.time.picker.searchHint.city': 'Search city or country',
+    'dashboard.time.picker.searchHint.expanded':
+        'Search city, country, timezone, or EST',
+    'dashboard.time.picker.quick.EST': 'New York',
+    'dashboard.time.picker.quick.CST': 'Chicago',
+    'dashboard.time.picker.quick.PST': 'Los Angeles',
+    'dashboard.time.picker.quick.UTC': 'Zero offset',
+    'dashboard.time.picker.header.topCities': 'Top Cities',
+    'dashboard.time.picker.header.bestMatches': 'Best Matches',
+    'dashboard.time.picker.header.directZones': 'Direct Time Zones',
+    'dashboard.time.picker.emptyHint':
+        'No matches yet. Try city, country, timezone, or EST.',
     'dashboard.toolPicker.noMatchingTools': 'No matching tools.',
     'dashboard.toolPicker.noToolsYet': 'No tools yet.',
     'dashboard.toolPicker.resultsHeader': 'Results',
@@ -214,5 +225,24 @@ class LocalizationSeed {
     'dashboard.jetLag.callWindows.cta.show': 'Show call windows',
     'dashboard.jetLag.callWindows.intro':
         'Quick check before scheduling calls:',
+    'dashboard.time.converter.invalidInput':
+        'Enter date/time as YYYY-MM-DD HH:MM',
+    'dashboard.weather.cityNotSet': 'City not set',
+    'dashboard.weather.header.sunrise': '☀️ Sunrise',
+    'dashboard.weather.header.sunset': '🌙 Sunset',
+    'dashboard.weather.header.wind': '🌬️ Wind',
+    'dashboard.weather.header.gust': '💨 Gust',
+    'dashboard.weather.header.aqi': '🌫️ AQI (US)',
+    'dashboard.weather.header.pollen': '🌼 Pollen (0-5)',
+    'dashboard.weather.aqi.good': 'Good',
+    'dashboard.weather.aqi.moderate': 'Moderate',
+    'dashboard.weather.aqi.unhealthySensitive': 'Unhealthy (Sensitive)',
+    'dashboard.weather.aqi.unhealthy': 'Unhealthy',
+    'dashboard.weather.aqi.veryUnhealthy': 'Very Unhealthy',
+    'dashboard.weather.aqi.hazardous': 'Hazardous',
+    'dashboard.weather.pollen.low': 'Low',
+    'dashboard.weather.pollen.moderate': 'Moderate',
+    'dashboard.weather.pollen.high': 'High',
+    'dashboard.weather.pollen.veryHigh': 'Very High',
   };
 }

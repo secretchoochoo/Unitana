@@ -207,7 +207,7 @@
     }
   ],
   "current_state": {
-    "current_slice": "Pack E phase 6d shipped: time/jet-lag city picker now has cleaner selected-state clarity and better short-query relevance",
+    "current_slice": "Pack E phases 6e/6f/6g + Pack H expansion shipped: mainstream-first city ranking, selected-row clarity hardening, and additional high-traffic runtime localization coverage",
     "notes": [
       "Codex-first workflow allows larger execution packs while keeping gates green.",
       "Pack A city data platform foundation is complete with canonical schema + validation guards.",
@@ -293,13 +293,18 @@
       "Pack E phase 6c shipped: Jet Lag zone headers now use neutral `From Time Zone` / `To Time Zone` wording instead of Home/Destination role labels.",
       "Pack E phase 6c shipped: profile + hero fallback labels now use neutral city-missing wording (`City not set`, `Set city`) where role labels were redundant.",
       "Pack E phase 6d shipped: timezone picker now shows a single explicit selected-row check marker for clearer selection state.",
-      "Pack E phase 6d shipped: short advanced timezone search (e.g., `EST`) now uses stricter token/prefix filtering to reduce noisy false matches."
+      "Pack E phase 6d shipped: short advanced timezone search (e.g., `EST`) now uses stricter token/prefix filtering to reduce noisy false matches.",
+      "Pack E phase 6e shipped: time picker default city list now prioritizes mainstream travel hubs via `TimeZoneCatalog.mainstreamCityOptions` while keeping profile-seeded zones first.",
+      "Pack E phase 6f shipped: default city rows now filter low-signal/noisy labels and reduce duplicate-feeling entries; selected-row checks are constrained to a single visible row across city/zone sections.",
+      "Pack E phase 6g shipped: regression coverage expanded for mainstream ranking sanity and selected-row marker contract (`time_zone_catalog_test.dart`, `time_tool_modal_interaction_test.dart`).",
+      "Pack H expansion shipped: migrated additional high-traffic residual copy for time picker headers/hints/empty-state, time-converter invalid-input notice, and weather sheet fallback/headers/AQI+pollen bands into runtime-localized `DashboardCopy` methods.",
+      "Pack H expansion shipped: localization seed/runtime contract tests were expanded for new `dashboard.*` keys and weather/time picker runtime lookup coverage."
     ],
     "overall_health": "Stable with full gates passing; canonical city data coverage is now enforced for all in-scope records.",
     "status": "GREEN",
     "focus": {
-      "now": "Execute Pack E phase 6e: tune city-picker default ranking toward mainstream travel hubs while preserving global fallback coverage.",
-      "next": "Re-evaluate whether any bridge-era docs/tests can be retired now that in-card marquees are the locked weather-sheet direction.",
+      "now": "Execute next Pack E quality follow-up: tune city-picker scoring weights with broader real-world city samples and add deterministic ranking edge-case tests (ambiguous names, same-city multi-country cases).",
+      "next": "Execute Pack H follow-up migration for remaining weather/devtools/dashboard literals and begin ARB export validation path for multi-language rollout.",
       "later": [
         "Pack H localization full rollout (multi-language ARB + language settings)"
       ]

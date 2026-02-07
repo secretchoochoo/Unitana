@@ -1,15 +1,18 @@
-NEXT CHAT PROMPT — Pack E Phase 6e (City Picker Mainstream Ranking)
+NEXT CHAT PROMPT — Pack E 6h/6i + Pack H Follow-up (Post-Overnight)
 
 You are taking over Unitana (Flutter) in a fresh, high-context window.
 
 Read these files first:
 1) `docs/ai/handoff/CURRENT_HANDOFF.md`
 2) `docs/ai/context_db.json`
-3) `docs/ai/reference/SCENEKEY_REDESIGN_AUDIT.md`
-4) `docs/ai/reference/SCENEKEY_CATALOG.md`
-5) `docs/ai/reference/PACK_E_SPLIT_MARQUEE_DEFERRED_NOTES.md`
-
-Then execute using this contract.
+3) `app/unitana/lib/features/dashboard/models/time_zone_catalog.dart`
+4) `app/unitana/lib/features/dashboard/widgets/tool_modal_bottom_sheet.dart`
+5) `app/unitana/lib/features/dashboard/models/dashboard_copy.dart`
+6) `app/unitana/lib/l10n/localization_seed.dart`
+7) `app/unitana/lib/l10n/dashboard_localizations.dart`
+8) `app/unitana/test/time_zone_catalog_test.dart`
+9) `app/unitana/test/time_tool_modal_interaction_test.dart`
+10) `app/unitana/test/dashboard_localizations_runtime_test.dart`
 
 ## Core operating rules
 - Keep repo green if any code/docs are touched:
@@ -24,36 +27,50 @@ Then execute using this contract.
   - goldens opt-in only
 
 ## Mission
-Improve city-picker default ranking so common travel hubs appear first for mainstream users while preserving global search reach and advanced timezone fallback.
+Continue the city-picker quality push after 6e/6f/6g and extend Pack H localization migration with deterministic fallback coverage.
 
 ## Required outcomes
-1) Scope guard
-- Do not change dashboard hero marquee semantics.
-- Keep weather-sheet work constrained to per-city cards (middle bridge card remains removed).
+1) Pack E 6h ranking calibration
+- Tune mainstream ranking weights using broader city-name ambiguity cases (same-name cities across countries/regions).
+- Keep profile-seeded home/destination precedence stable.
+- Preserve long-tail discoverability via search.
 
-2) Mainstream ranking slice
-- Re-rank default city list toward high-signal mainstream travel hubs and profile-seeded cities.
-- Keep long-tail/global cities discoverable via search without overwhelming the default list.
-- Preserve advanced timezone mode and abbreviation behaviors (`EST`, `CST`, etc.).
+2) Pack E 6i picker clarity edge-case pass
+- Further reduce duplicate-feeling rows for same-name cities while keeping valid alternatives reachable.
+- Add subtle disambiguation improvements (country/region context) without increasing row clutter.
+- Preserve alias/advanced timezone behavior (`EST`, `CST`, `PST`, timezone-id search).
 
-3) Readability and layout safety
-- Ensure picker row copy remains legible on small phones and does not crowd the sheet.
-- Preserve hero grid contracts and avoid overlap/clipping on small phones.
-- Keep existing interaction behavior unchanged.
-- Prevent jank from dynamic weather updates and avoid extra key collisions.
+3) Pack E regression expansion
+- Add tests for:
+  - same-name city disambiguation ordering
+  - selected-row marker contract under mixed city+zone results
+  - no regression in Time/Jet Lag swap + seeding + conversion history behavior
 
-4) Regression lock
-- Keep pinned collapsing header behavior stable.
-- Keep tool/weather data readability stable (no text overlap/regression).
-- Keep goldens opt-in only.
+4) Pack H follow-up migration
+- Migrate additional residual high-traffic hardcoded copy in dashboard/weather/devtools/profile surfaces still bypassing `DashboardCopy`.
+- Add stable `dashboard.*` seed keys for new strings.
+- Keep runtime fallback deterministic and readable for missing keys.
 
-5) Docs update
+5) Pack H tests/fallback hardening
+- Expand localization runtime tests for newly migrated keys/placeholders.
+- Add contract assertions for any new weather/devtools/profile strings moved to runtime localization.
+
+6) Docs update
 - Update:
   - `docs/ai/context_db.json`
   - `docs/ai/handoff/CURRENT_HANDOFF.md`
-  - `docs/ai/prompts/NEXT_CHAT_PROMPT.md` (advance to next slice)
+  - `docs/ai/prompts/NEXT_CHAT_PROMPT.md` (advance again)
+
+## Suggested execution order
+1) Ranking calibration (6h)
+2) Picker clarity edge cases (6i)
+3) Regression tests
+4) Pack H migration + localization tests
+5) Full gates
+6) Docs/handoff
 
 ## Definition of done
-- Default city list feels mainstream and useful out of the box, while search still supports global/discrete locations.
-- No regressions in collapse behavior, readability, or interaction.
+- City picker remains mainstream-first but cleaner on edge cases.
+- Power-user timezone path and alias behavior stay intact.
+- Additional high-traffic UI strings are runtime-localized with stable fallback behavior.
 - Repo is green (`format`, `analyze`, `test`).

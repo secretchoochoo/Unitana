@@ -900,6 +900,99 @@ class DashboardCopy {
         ? 'Search timezone ID or city'
         : 'Search city or country',
   );
+  static String timePickerExpandedSearchHint(BuildContext context) =>
+      DashboardLocalizations.of(context).text(
+        'dashboard.time.picker.searchHint.expanded',
+        fallback: 'Search city, country, timezone, or EST',
+      );
+  static String timePickerQuickChipDetail(BuildContext context, String code) =>
+      DashboardLocalizations.of(context).text(
+        'dashboard.time.picker.quick.$code',
+        fallback: switch (code) {
+          'EST' => 'New York',
+          'CST' => 'Chicago',
+          'PST' => 'Los Angeles',
+          'UTC' => 'Zero offset',
+          _ => code,
+        },
+      );
+  static String timePickerPrimaryHeader(
+    BuildContext context, {
+    required bool hasQuery,
+  }) => DashboardLocalizations.of(context).text(
+    hasQuery
+        ? 'dashboard.time.picker.header.bestMatches'
+        : 'dashboard.time.picker.header.topCities',
+    fallback: hasQuery ? 'Best Matches' : 'Top Cities',
+  );
+  static String timePickerNoMatchesHint(BuildContext context) =>
+      DashboardLocalizations.of(context).text(
+        'dashboard.time.picker.emptyHint',
+        fallback: 'No matches yet. Try city, country, timezone, or EST.',
+      );
+  static String timePickerDirectZonesHeader(BuildContext context) =>
+      DashboardLocalizations.of(context).text(
+        'dashboard.time.picker.header.directZones',
+        fallback: 'Direct Time Zones',
+      );
+  static String timeConverterInputError(BuildContext context) =>
+      DashboardLocalizations.of(context).text(
+        'dashboard.time.converter.invalidInput',
+        fallback: 'Enter date/time as YYYY-MM-DD HH:MM',
+      );
+
+  static String weatherCityNotSet(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.weather.cityNotSet', fallback: 'City not set');
+  static String weatherHeaderSunrise(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.weather.header.sunrise', fallback: '☀️ Sunrise');
+  static String weatherHeaderSunset(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.weather.header.sunset', fallback: '🌙 Sunset');
+  static String weatherHeaderWind(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.weather.header.wind', fallback: '🌬️ Wind');
+  static String weatherHeaderGust(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.weather.header.gust', fallback: '💨 Gust');
+  static String weatherHeaderAqi(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.weather.header.aqi', fallback: '🌫️ AQI (US)');
+  static String weatherHeaderPollen(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.weather.header.pollen', fallback: '🌼 Pollen (0-5)');
+  static String weatherAqiBand(BuildContext context, String bandKey) =>
+      DashboardLocalizations.of(context).text(
+        'dashboard.weather.aqi.$bandKey',
+        fallback: switch (bandKey) {
+          'good' => 'Good',
+          'moderate' => 'Moderate',
+          'unhealthySensitive' => 'Unhealthy (Sensitive)',
+          'unhealthy' => 'Unhealthy',
+          'veryUnhealthy' => 'Very Unhealthy',
+          'hazardous' => 'Hazardous',
+          _ => bandKey,
+        },
+      );
+  static String weatherPollenBand(BuildContext context, String bandKey) =>
+      DashboardLocalizations.of(context).text(
+        'dashboard.weather.pollen.$bandKey',
+        fallback: switch (bandKey) {
+          'low' => 'Low',
+          'moderate' => 'Moderate',
+          'high' => 'High',
+          'veryHigh' => 'Very High',
+          _ => bandKey,
+        },
+      );
   static String toolPickerNoMatchingTools(BuildContext context) =>
       DashboardLocalizations.of(context).text(
         'dashboard.toolPicker.noMatchingTools',

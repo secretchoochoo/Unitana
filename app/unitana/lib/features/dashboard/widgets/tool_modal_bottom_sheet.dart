@@ -7,7 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../common/widgets/unitana_notice_card.dart';
-import '../../../data/cities.dart' show kCuratedCities, kCurrencySymbols;
+import '../../../data/cities.dart' show kCurrencySymbols;
 import '../../../data/city_label_utils.dart';
 import '../../../data/city_repository.dart';
 import '../../../data/country_currency_map.dart';
@@ -2473,53 +2473,12 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
   List<TimeZoneCityOption> _featuredCityOptions({
     required List<TimeZoneCityOption> cityOptions,
   }) {
-    final out = <TimeZoneCityOption>[];
-    final seenZones = <String>{};
-    final existingKeys = <String>{};
-    final priorityZones = <String>{
-      if (widget.home?.timeZoneId != null) widget.home!.timeZoneId,
-      if (widget.destination?.timeZoneId != null)
-        widget.destination!.timeZoneId,
-    };
-
-    void addOption(TimeZoneCityOption option) {
-      if (!seenZones.add(option.timeZoneId)) return;
-      if (!existingKeys.add(option.key)) return;
-      out.add(option);
-    }
-
-    for (final option in cityOptions) {
-      if (priorityZones.contains(option.timeZoneId)) addOption(option);
-    }
-
-    for (final city in kCuratedCities) {
-      if (!seenZones.add(city.timeZoneId)) continue;
-      final country = (city.countryName ?? city.countryCode).trim();
-      final countryLabel = country.isEmpty
-          ? city.countryCode.toUpperCase()
-          : country;
-      final key = 'featured|${city.id}';
-      if (!existingKeys.add(key)) continue;
-      out.add((
-        key: key,
-        timeZoneId: city.timeZoneId,
-        label: '${city.cityName}, $countryLabel',
-        subtitle: city.timeZoneId,
-        countryCode: city.countryCode,
-      ));
-    }
-
-    for (final option in cityOptions) {
-      if (!_featuredZoneIds.contains(option.timeZoneId)) continue;
-      addOption(option);
-    }
-
-    if (out.isEmpty) {
-      for (final option in cityOptions.take(20)) {
-        addOption(option);
-      }
-    }
-    return out;
+    if (cityOptions.isEmpty) return const <TimeZoneCityOption>[];
+    return TimeZoneCatalog.mainstreamCityOptions(
+      home: widget.home,
+      destination: widget.destination,
+      limit: 24,
+    );
   }
 
   String _normalizeTimeSearch(String input) {
@@ -2772,7 +2731,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
     final localInput = _parseLocalDateTime(_timeConvertController.text);
     if (localInput == null) {
       _showNotice(
-        'Enter date/time as YYYY-MM-DD HH:MM',
+        DashboardCopy.timeConverterInputError(context),
         UnitanaNoticeKind.error,
       );
       return;
@@ -2856,6 +2815,9 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                   .map((o) => o.key)
                   .cast<String?>()
                   .firstWhere((k) => k != null, orElse: () => null);
+          final hasSelectedCityRow = filteredCity.any(
+            (o) => o.key == selectedCityKey,
+          );
           return SafeArea(
             child: SizedBox(
               height: MediaQuery.of(context).size.height * 0.72,
@@ -2869,7 +2831,9 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                       ),
                       onChanged: (value) => setModalState(() => query = value),
                       decoration: InputDecoration(
-                        hintText: 'Search city, country, timezone, or EST',
+                        hintText: DashboardCopy.timePickerExpandedSearchHint(
+                          context,
+                        ),
                         prefixIcon: Icon(Icons.search_rounded),
                         isDense: true,
                       ),
@@ -2883,7 +2847,10 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                       children: [
                         _TimeZoneQuickChip(
                           label: 'EST',
-                          detail: 'New York',
+                          detail: DashboardCopy.timePickerQuickChipDetail(
+                            context,
+                            'EST',
+                          ),
                           onTap: () => Navigator.of(context).pop((
                             zoneId: 'America/New_York',
                             displayLabel: _displayLabelForZone(
@@ -2894,7 +2861,10 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                         ),
                         _TimeZoneQuickChip(
                           label: 'CST',
-                          detail: 'Chicago',
+                          detail: DashboardCopy.timePickerQuickChipDetail(
+                            context,
+                            'CST',
+                          ),
                           onTap: () => Navigator.of(context).pop((
                             zoneId: 'America/Chicago',
                             displayLabel: _displayLabelForZone(
@@ -2905,7 +2875,10 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                         ),
                         _TimeZoneQuickChip(
                           label: 'PST',
-                          detail: 'Los Angeles',
+                          detail: DashboardCopy.timePickerQuickChipDetail(
+                            context,
+                            'PST',
+                          ),
                           onTap: () => Navigator.of(context).pop((
                             zoneId: 'America/Los_Angeles',
                             displayLabel: _displayLabelForZone(
@@ -2916,7 +2889,10 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                         ),
                         _TimeZoneQuickChip(
                           label: 'UTC',
-                          detail: 'Zero offset',
+                          detail: DashboardCopy.timePickerQuickChipDetail(
+                            context,
+                            'UTC',
+                          ),
                           onTap: () => Navigator.of(context).pop((
                             zoneId: 'UTC',
                             displayLabel: _displayLabelForZone(
@@ -2934,9 +2910,10 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                         Padding(
                           padding: const EdgeInsets.fromLTRB(16, 2, 16, 6),
                           child: Text(
-                            query.trim().isEmpty
-                                ? 'Top Cities'
-                                : 'Best Matches',
+                            DashboardCopy.timePickerPrimaryHeader(
+                              context,
+                              hasQuery: query.trim().isNotEmpty,
+                            ),
                             style: Theme.of(context).textTheme.labelLarge
                                 ?.copyWith(
                                   color: DraculaPalette.comment.withAlpha(232),
@@ -2987,7 +2964,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                           Padding(
                             padding: const EdgeInsets.fromLTRB(16, 10, 16, 6),
                             child: Text(
-                              'No matches yet. Try city, country, timezone, or EST.',
+                              DashboardCopy.timePickerNoMatchesHint(context),
                               style: Theme.of(context).textTheme.bodySmall
                                   ?.copyWith(
                                     color: DraculaPalette.comment.withAlpha(
@@ -3002,7 +2979,9 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                           Padding(
                             padding: const EdgeInsets.fromLTRB(16, 2, 16, 6),
                             child: Text(
-                              'Direct Time Zones',
+                              DashboardCopy.timePickerDirectZonesHeader(
+                                context,
+                              ),
                               style: Theme.of(context).textTheme.labelLarge
                                   ?.copyWith(
                                     color: DraculaPalette.comment.withAlpha(
@@ -3015,7 +2994,9 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                           for (final option in filteredZone)
                             Builder(
                               builder: (context) {
-                                final isSelected = option.id == currentZoneId;
+                                final isSelected =
+                                    !hasSelectedCityRow &&
+                                    option.id == currentZoneId;
                                 return ListTile(
                                   key: ValueKey(
                                     'tool_time_zone_item_${isFrom ? 'from' : 'to'}_${_sanitizeUnitKey(option.id)}',

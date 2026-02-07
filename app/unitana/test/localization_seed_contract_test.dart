@@ -86,6 +86,30 @@ void main() {
       'Cities',
     );
     expect(
+      LocalizationSeed.enUs['dashboard.time.picker.searchHint.expanded'],
+      'Search city, country, timezone, or EST',
+    );
+    expect(
+      LocalizationSeed.enUs['dashboard.time.picker.header.directZones'],
+      'Direct Time Zones',
+    );
+    expect(
+      LocalizationSeed.enUs['dashboard.time.converter.invalidInput'],
+      'Enter date/time as YYYY-MM-DD HH:MM',
+    );
+    expect(
+      LocalizationSeed.enUs['dashboard.weather.cityNotSet'],
+      'City not set',
+    );
+    expect(
+      LocalizationSeed.enUs['dashboard.weather.aqi.unhealthySensitive'],
+      'Unhealthy (Sensitive)',
+    );
+    expect(
+      LocalizationSeed.enUs['dashboard.weather.pollen.veryHigh'],
+      'Very High',
+    );
+    expect(
       LocalizationSeed.enUs['dashboard.toolPicker.resultsHeader'],
       'Results',
     );
