@@ -14,12 +14,14 @@ class CityPicker extends StatefulWidget {
 
 class _CityPickerState extends State<CityPicker> {
   final TextEditingController _searchController = TextEditingController();
+  late final Set<String> _curatedIds;
 
   String _query = '';
 
   @override
   void initState() {
     super.initState();
+    _curatedIds = {for (final c in kCuratedCities) c.id};
     _searchController.addListener(() {
       setState(() => _query = _searchController.text);
     });
@@ -183,9 +185,9 @@ class _CityPickerState extends State<CityPicker> {
       return RegExp('(^| )$escaped').hasMatch(haystack);
     }
 
-    // Safety valve: keep the list snappy on very broad searches.
-    const maxResults = 250;
-    final results = <City>[];
+    // Safety valve: keep the list snappy on broad searches.
+    const maxResults = 220;
+    final ranked = <({City city, int score})>[];
 
     for (final c in all) {
       final haystack = _buildHaystack(c);
@@ -203,21 +205,28 @@ class _CityPickerState extends State<CityPicker> {
         continue;
       }
 
-      results.add(c);
-      if (results.length >= maxResults) break;
+      var score = 0;
+      final cityName = _normQuery(c.cityName);
+      final country = _normQuery(c.countryName ?? c.countryCode);
+      if (_curatedIds.contains(c.id)) score += 260;
+      if (cityName.startsWith(q)) score += 180;
+      if (cityName.contains(' $q')) score += 100;
+      if (country.startsWith(q) || country.contains(' $q')) score += 70;
+      if (c.timeZoneId.toLowerCase().contains(q)) score += 50;
+      score -= cityName.length ~/ 4;
+      ranked.add((city: c, score: score));
+      if (ranked.length >= maxResults) break;
     }
 
-    // Basic relevance: cityName prefix wins.
-    results.sort((a, b) {
-      final an = _normQuery(a.cityName);
-      final bn = _normQuery(b.cityName);
-      final ap = an.startsWith(q);
-      final bp = bn.startsWith(q);
-      if (ap != bp) return ap ? -1 : 1;
+    ranked.sort((a, b) {
+      final byScore = b.score.compareTo(a.score);
+      if (byScore != 0) return byScore;
+      final an = _normQuery(a.city.cityName);
+      final bn = _normQuery(b.city.cityName);
       return an.compareTo(bn);
     });
 
-    return results;
+    return ranked.map((r) => r.city).toList(growable: false);
   }
 
   String _buildHaystack(City c) {

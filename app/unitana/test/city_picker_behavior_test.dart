@@ -24,4 +24,21 @@ void main() {
     expect(find.text('Best Matches'), findsOneWidget);
     expect(find.textContaining('New York'), findsWidgets);
   });
+
+  testWidgets('CityPicker shows clear empty-state guidance', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(body: CityPicker(cities: kCuratedCities)),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextField), 'zzzzzz-no-city');
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text('No matches yet. Try city, country, timezone, or EST.'),
+      findsOneWidget,
+    );
+  });
 }
