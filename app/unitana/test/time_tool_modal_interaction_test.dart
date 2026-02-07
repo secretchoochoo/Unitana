@@ -225,14 +225,6 @@ void main() {
     await tester.pumpAndSettle(const Duration(milliseconds: 200));
 
     expect(
-      find.byKey(const ValueKey('tool_time_picker_mode_from_city')),
-      findsOneWidget,
-    );
-    expect(
-      find.byKey(const ValueKey('tool_time_picker_mode_from_zone')),
-      findsOneWidget,
-    );
-    expect(
       find.byKey(
         const ValueKey('tool_time_city_item_from_tokyo_jp_asia_tokyo'),
       ),
@@ -258,7 +250,7 @@ void main() {
     );
   });
 
-  testWidgets('Time zone picker supports advanced timezone fallback', (
+  testWidgets('Time zone picker supports timezone-id fallback search', (
     tester,
   ) async {
     SharedPreferences.setMockInitialValues({});
@@ -271,10 +263,6 @@ void main() {
 
     await tester.tap(find.byKey(const ValueKey('tool_time_from_zone')));
     await tester.pumpAndSettle(const Duration(milliseconds: 250));
-    await tester.tap(
-      find.byKey(const ValueKey('tool_time_picker_mode_from_zone')),
-    );
-    await tester.pumpAndSettle(const Duration(milliseconds: 150));
     await tester.enterText(
       find.byKey(const ValueKey('tool_time_zone_search_from')),
       'asia/tokyo',
@@ -296,5 +284,27 @@ void main() {
       ),
       findsOneWidget,
     );
+  });
+
+  testWidgets('Time zone picker resolves EST alias to US Eastern', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    await tester.binding.setSurfaceSize(const Size(390, 900));
+    addTearDown(() async => tester.binding.setSurfaceSize(null));
+
+    final state = buildSeededState();
+    await pumpDashboard(tester, state);
+    await openTimeZoneConverterTool(tester);
+
+    await tester.tap(find.byKey(const ValueKey('tool_time_from_zone')));
+    await tester.pumpAndSettle(const Duration(milliseconds: 250));
+    await tester.enterText(
+      find.byKey(const ValueKey('tool_time_zone_search_from')),
+      'EST',
+    );
+    await tester.pumpAndSettle(const Duration(milliseconds: 200));
+
+    expect(find.textContaining('New York'), findsWidgets);
   });
 }

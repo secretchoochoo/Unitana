@@ -7,7 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../common/widgets/unitana_notice_card.dart';
-import '../../../data/cities.dart' show kCurrencySymbols;
+import '../../../data/cities.dart' show kCuratedCities, kCurrencySymbols;
 import '../../../data/city_repository.dart';
 import '../../../data/country_currency_map.dart';
 import '../../../theme/dracula_palette.dart';
@@ -2427,6 +2427,190 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
     );
   }
 
+  static const Set<String> _featuredZoneIds = <String>{
+    'UTC',
+    'America/New_York',
+    'America/Chicago',
+    'America/Denver',
+    'America/Los_Angeles',
+    'Europe/London',
+    'Europe/Lisbon',
+    'Europe/Madrid',
+    'Europe/Paris',
+    'Europe/Berlin',
+    'Europe/Rome',
+    'Asia/Tokyo',
+    'Asia/Seoul',
+    'Asia/Shanghai',
+    'Asia/Singapore',
+    'Asia/Hong_Kong',
+    'Asia/Kolkata',
+    'Australia/Sydney',
+    'Pacific/Auckland',
+    'America/Sao_Paulo',
+    'America/Mexico_City',
+  };
+
+  static const Map<String, List<String>> _tzAbbrevAliases =
+      <String, List<String>>{
+        'UTC': <String>['UTC'],
+        'GMT': <String>['UTC', 'Europe/London'],
+        'EST': <String>['America/New_York'],
+        'EDT': <String>['America/New_York'],
+        'CST': <String>['America/Chicago'],
+        'CDT': <String>['America/Chicago'],
+        'MST': <String>['America/Denver'],
+        'MDT': <String>['America/Denver'],
+        'PST': <String>['America/Los_Angeles'],
+        'PDT': <String>['America/Los_Angeles'],
+        'CET': <String>['Europe/Paris', 'Europe/Berlin', 'Europe/Madrid'],
+        'CEST': <String>['Europe/Paris', 'Europe/Berlin', 'Europe/Madrid'],
+        'IST': <String>['Asia/Kolkata'],
+        'JST': <String>['Asia/Tokyo'],
+      };
+
+  List<TimeZoneCityOption> _featuredCityOptions({
+    required List<TimeZoneCityOption> cityOptions,
+  }) {
+    final out = <TimeZoneCityOption>[];
+    final seenZones = <String>{};
+    final existingKeys = <String>{};
+
+    void addOption(TimeZoneCityOption option) {
+      if (!seenZones.add(option.timeZoneId)) return;
+      if (!existingKeys.add(option.key)) return;
+      out.add(option);
+    }
+
+    for (final option in cityOptions) {
+      if (option.subtitle == 'Home' || option.subtitle == 'Destination') {
+        addOption(option);
+      }
+    }
+
+    for (final city in kCuratedCities) {
+      if (!seenZones.add(city.timeZoneId)) continue;
+      final country = (city.countryName ?? city.countryCode).trim();
+      final countryLabel = country.isEmpty
+          ? city.countryCode.toUpperCase()
+          : country;
+      final key = 'featured|${city.id}';
+      if (!existingKeys.add(key)) continue;
+      out.add((
+        key: key,
+        timeZoneId: city.timeZoneId,
+        label: '${city.cityName}, $countryLabel',
+        subtitle: city.timeZoneId,
+      ));
+    }
+
+    for (final option in cityOptions) {
+      if (!_featuredZoneIds.contains(option.timeZoneId)) continue;
+      addOption(option);
+    }
+
+    if (out.isEmpty) {
+      for (final option in cityOptions.take(20)) {
+        addOption(option);
+      }
+    }
+    return out;
+  }
+
+  String _normalizeTimeSearch(String input) {
+    var s = input.toLowerCase().trim();
+    s = s.replaceAll('_', ' ').replaceAll('/', ' ');
+    s = s.replaceAll(RegExp(r'[^a-z0-9\s]'), ' ');
+    return s.replaceAll(RegExp(r'\s+'), ' ').trim();
+  }
+
+  List<String> _aliasZonesForQuery(String rawQuery) {
+    final token = rawQuery.trim().toUpperCase();
+    return _tzAbbrevAliases[token] ?? const <String>[];
+  }
+
+  List<TimeZoneCityOption> _searchCityOptions({
+    required String rawQuery,
+    required List<TimeZoneCityOption> featured,
+    required List<TimeZoneCityOption> all,
+  }) {
+    final normalized = _normalizeTimeSearch(rawQuery);
+    if (normalized.isEmpty) return featured;
+    final aliasZones = _aliasZonesForQuery(rawQuery).toSet();
+    final seenZones = <String>{};
+    final scored = <({TimeZoneCityOption option, int score})>[];
+    final tokens = normalized.split(' ').where((t) => t.isNotEmpty).toList();
+
+    for (final option in all) {
+      final haystack = _normalizeTimeSearch(
+        '${option.label} ${option.subtitle} ${option.timeZoneId}',
+      );
+      if (!haystack.contains(normalized) &&
+          !tokens.every((token) => haystack.contains(token)) &&
+          !aliasZones.contains(option.timeZoneId)) {
+        continue;
+      }
+      var score = 0;
+      if (option.subtitle == 'Home' || option.subtitle == 'Destination') {
+        score += 260;
+      }
+      if (aliasZones.contains(option.timeZoneId)) score += 220;
+      if (haystack.startsWith(normalized)) score += 140;
+      if (haystack.contains(' $normalized')) score += 90;
+      if (option.timeZoneId.toLowerCase().contains(
+        rawQuery.trim().toLowerCase(),
+      )) {
+        score += 70;
+      }
+      if (_featuredZoneIds.contains(option.timeZoneId)) score += 40;
+      score -= option.label.length ~/ 3;
+      scored.add((option: option, score: score));
+    }
+
+    scored.sort((a, b) => b.score.compareTo(a.score));
+    final out = <TimeZoneCityOption>[];
+    for (final item in scored) {
+      if (!seenZones.add(item.option.timeZoneId)) continue;
+      out.add(item.option);
+      if (out.length >= 40) break;
+    }
+    return out;
+  }
+
+  List<TimeZoneOption> _searchZoneOptions({
+    required String rawQuery,
+    required List<TimeZoneOption> options,
+  }) {
+    final query = rawQuery.trim();
+    if (query.isEmpty) return const <TimeZoneOption>[];
+    final normalized = _normalizeTimeSearch(query);
+    final aliasZones = _aliasZonesForQuery(query).toSet();
+    final scored = <({TimeZoneOption option, int score})>[];
+
+    for (final option in options) {
+      final haystack = _normalizeTimeSearch(
+        '${option.label} ${option.subtitle ?? ''} ${option.id}',
+      );
+      if (!haystack.contains(normalized) && !aliasZones.contains(option.id)) {
+        continue;
+      }
+      var score = 0;
+      if (aliasZones.contains(option.id)) score += 260;
+      if (option.id.toLowerCase() == query.toLowerCase()) score += 220;
+      if (option.id.toLowerCase().startsWith(query.toLowerCase())) score += 130;
+      if ((option.subtitle ?? '').toLowerCase().contains(query.toLowerCase())) {
+        score += 70;
+      }
+      if (option.label.startsWith('Home') ||
+          option.label.startsWith('Destination')) {
+        score += 40;
+      }
+      scored.add((option: option, score: score));
+    }
+    scored.sort((a, b) => b.score.compareTo(a.score));
+    return scored.map((item) => item.option).take(12).toList(growable: false);
+  }
+
   void _seedTimeToolDefaults() {
     final home = widget.home;
     final destination = widget.destination;
@@ -2598,81 +2782,35 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
 
   Future<void> _pickTimeZone({required bool isFrom}) async {
     final zoneOptions = _timeZoneOptions();
-    final cityOptions = TimeZoneCatalog.cityOptions(
+    final allCityOptions = TimeZoneCatalog.cityOptions(
       home: widget.home,
       destination: widget.destination,
     );
+    final featuredCityOptions = _featuredCityOptions(
+      cityOptions: allCityOptions,
+    );
     if (zoneOptions.isEmpty) return;
-    final current = isFrom ? _timeFromZoneId : _timeToZoneId;
+    final currentLabel = isFrom ? _timeFromDisplayLabel : _timeToDisplayLabel;
     var query = '';
-    var advancedMode = false;
     final selected = await showModalBottomSheet<_TimeZonePickerSelection>(
       context: context,
       showDragHandle: true,
       builder: (context) => StatefulBuilder(
         builder: (context, setModalState) {
-          final normalized = query.trim().toLowerCase();
-          final filteredCity = normalized.isEmpty
-              ? cityOptions
-              : cityOptions
-                    .where((option) {
-                      final haystack =
-                          '${option.label} ${option.subtitle} ${option.timeZoneId}'
-                              .toLowerCase();
-                      return haystack.contains(normalized);
-                    })
-                    .toList(growable: false);
-          final filteredZone = normalized.isEmpty
-              ? zoneOptions
-              : zoneOptions
-                    .where((option) {
-                      final haystack =
-                          '${option.label} ${option.subtitle ?? ''} ${option.id}'
-                              .toLowerCase();
-                      return haystack.contains(normalized);
-                    })
-                    .toList(growable: false);
+          final filteredCity = _searchCityOptions(
+            rawQuery: query,
+            featured: featuredCityOptions,
+            all: allCityOptions,
+          );
+          final filteredZone = _searchZoneOptions(
+            rawQuery: query,
+            options: zoneOptions,
+          );
           return SafeArea(
             child: SizedBox(
               height: MediaQuery.of(context).size.height * 0.72,
               child: Column(
                 children: [
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 2),
-                    child: Wrap(
-                      spacing: 8,
-                      runSpacing: 6,
-                      children: [
-                        ChoiceChip(
-                          key: ValueKey(
-                            'tool_time_picker_mode_${isFrom ? 'from' : 'to'}_city',
-                          ),
-                          label: Text(
-                            DashboardCopy.timePickerModeCities(context),
-                          ),
-                          selected: !advancedMode,
-                          onSelected: (selected) {
-                            if (!selected) return;
-                            setModalState(() => advancedMode = false);
-                          },
-                        ),
-                        const SizedBox(width: 8),
-                        ChoiceChip(
-                          key: ValueKey(
-                            'tool_time_picker_mode_${isFrom ? 'from' : 'to'}_zone',
-                          ),
-                          label: Text(
-                            DashboardCopy.timePickerModeAdvancedZones(context),
-                          ),
-                          selected: advancedMode,
-                          onSelected: (selected) {
-                            if (!selected) return;
-                            setModalState(() => advancedMode = true);
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
                   Padding(
                     padding: const EdgeInsets.fromLTRB(16, 8, 16, 10),
                     child: TextField(
@@ -2681,10 +2819,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                       ),
                       onChanged: (value) => setModalState(() => query = value),
                       decoration: InputDecoration(
-                        hintText: DashboardCopy.timePickerSearchHint(
-                          context,
-                          advancedMode: advancedMode,
-                        ),
+                        hintText: 'Search city, country, timezone, or EST',
                         prefixIcon: Icon(Icons.search_rounded),
                         isDense: true,
                       ),
@@ -2693,28 +2828,36 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                   Expanded(
                     child: ListView(
                       children: [
-                        if (!advancedMode)
-                          for (final option in filteredCity)
-                            ListTile(
-                              key: ValueKey(
-                                'tool_time_city_item_${isFrom ? 'from' : 'to'}_${_sanitizeUnitKey(option.key)}',
-                              ),
-                              title: Text(option.label),
-                              subtitle: Text(
-                                '${option.subtitle} · ${option.timeZoneId}',
-                              ),
-                              trailing: option.timeZoneId == current
-                                  ? Icon(
-                                      Icons.check_rounded,
-                                      color: DraculaPalette.purple,
-                                    )
-                                  : null,
-                              onTap: () => Navigator.of(context).pop((
-                                zoneId: option.timeZoneId,
-                                displayLabel: option.label,
-                              )),
+                        for (final option in filteredCity)
+                          ListTile(
+                            key: ValueKey(
+                              'tool_time_city_item_${isFrom ? 'from' : 'to'}_${_sanitizeUnitKey(option.key)}',
                             ),
-                        if (advancedMode)
+                            title: Text(option.label),
+                            subtitle: Text(
+                              '${option.subtitle} · ${option.timeZoneId}',
+                            ),
+                            selected: option.label == currentLabel,
+                            onTap: () => Navigator.of(context).pop((
+                              zoneId: option.timeZoneId,
+                              displayLabel: option.label,
+                            )),
+                          ),
+                        if (filteredZone.isNotEmpty) ...[
+                          const SizedBox(height: 4),
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(16, 2, 16, 6),
+                            child: Text(
+                              'Direct Time Zones',
+                              style: Theme.of(context).textTheme.labelLarge
+                                  ?.copyWith(
+                                    color: DraculaPalette.comment.withAlpha(
+                                      232,
+                                    ),
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                            ),
+                          ),
                           for (final option in filteredZone)
                             ListTile(
                               key: ValueKey(
@@ -2722,17 +2865,13 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                               ),
                               title: Text(option.label),
                               subtitle: Text(option.subtitle ?? option.id),
-                              trailing: option.id == current
-                                  ? Icon(
-                                      Icons.check_rounded,
-                                      color: DraculaPalette.purple,
-                                    )
-                                  : null,
+                              selected: option.label == currentLabel,
                               onTap: () => Navigator.of(context).pop((
                                 zoneId: option.id,
                                 displayLabel: option.label,
                               )),
                             ),
+                        ],
                       ],
                     ),
                   ),
@@ -2874,10 +3013,41 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
         fromLocal: fromNow.local,
         toLocal: toNow.local,
       );
-      final fromCity = widget.home?.cityName ?? labelFor(fromId);
-      final toCity = widget.destination?.cityName ?? labelFor(toId);
-      final fromFlag = _countryFlag(widget.home?.countryCode ?? '');
-      final toFlag = _countryFlag(widget.destination?.countryCode ?? '');
+      String cleanDisplayLabel(String raw, String fallback) {
+        final cleaned = raw
+            .replaceFirst(RegExp(r'^\s*(Home|Destination)\s*·\s*'), '')
+            .trim();
+        return cleaned.isEmpty ? fallback : cleaned;
+      }
+
+      String countryCodeFromLabel(String label) {
+        final parts = label.split(',');
+        if (parts.length < 2) return '';
+        final tail = parts.last.trim();
+        if (RegExp(r'^[A-Za-z]{2}$').hasMatch(tail)) return tail.toUpperCase();
+        return '';
+      }
+
+      String cityNameFromLabel(String label, String fallback) {
+        final pieces = label.split(',');
+        final city = pieces.first.trim();
+        return city.isEmpty ? fallback : city;
+      }
+
+      final fromLabelRaw = cleanDisplayLabel(
+        _timeFromDisplayLabel ?? '',
+        labelFor(fromId),
+      );
+      final toLabelRaw = cleanDisplayLabel(
+        _timeToDisplayLabel ?? '',
+        labelFor(toId),
+      );
+      final fromCity = cityNameFromLabel(fromLabelRaw, labelFor(fromId));
+      final toCity = cityNameFromLabel(toLabelRaw, labelFor(toId));
+      final fromCountryCode = countryCodeFromLabel(fromLabelRaw);
+      final toCountryCode = countryCodeFromLabel(toLabelRaw);
+      final fromFlag = _countryFlag(fromCountryCode);
+      final toFlag = _countryFlag(toCountryCode);
       final fromPrefix = fromFlag.isEmpty ? '' : '$fromFlag ';
       final toPrefix = toFlag.isEmpty ? '' : '$toFlag ';
       final fromOffsetLabel = '$fromPrefix$fromCity';
@@ -3059,7 +3229,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
     }
 
     Widget buildJetLagPlannerCard() {
-      final showOverlapHints = jetLagPlan.showOverlapHints;
+      final showOverlapHints = true;
       final gateOverlap = jetLagPlan.absDeltaHours <= 3;
       final showOverlapDetails =
           showOverlapHints && (!gateOverlap || _jetLagOverlapExpanded);
