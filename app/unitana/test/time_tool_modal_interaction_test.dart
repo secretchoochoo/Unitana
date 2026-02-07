@@ -92,6 +92,18 @@ void main() {
     await openTimeTool(tester);
 
     expect(find.byKey(const ValueKey('tool_time_now_card')), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('tool_time_dual_analog_row')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('tool_time_analog_clock_home')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('tool_time_analog_clock_destination')),
+      findsOneWidget,
+    );
     expect(find.byKey(const ValueKey('tool_time_planner_card')), findsNothing);
     expect(find.byKey(const ValueKey('tool_time_from_zone')), findsOneWidget);
     expect(find.byKey(const ValueKey('tool_time_to_zone')), findsOneWidget);

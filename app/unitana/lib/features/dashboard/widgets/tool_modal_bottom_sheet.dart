@@ -2890,6 +2890,12 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
       final dateImpactCompact = DashboardCopy.dateImpactTitleCase(
         dateImpactCompactRaw,
       );
+      final showDualAnalogClocks =
+          !_isJetLagDeltaTool && !_isTimeZoneConverterTool;
+      final fromDigitalHud =
+          '${clock(fromNow, use24h: widget.prefer24h)} ${fromNow.abbreviation}';
+      final toDigitalHud =
+          '${clock(toNow, use24h: widget.prefer24h)} ${toNow.abbreviation}';
 
       Widget factsMetaLine({
         required String label,
@@ -2940,6 +2946,35 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                 color: DraculaPalette.cyan,
               ),
             ),
+            if (showDualAnalogClocks) ...[
+              const SizedBox(height: 10),
+              Row(
+                key: const ValueKey('tool_time_dual_analog_row'),
+                children: [
+                  Expanded(
+                    child: _TimeAnalogClockFace(
+                      key: const ValueKey('tool_time_analog_clock_home'),
+                      cityLabel: fromCity,
+                      flagPrefix: fromPrefix,
+                      localTime: fromNow.local,
+                      digitalHud: fromDigitalHud,
+                      accentColor: DraculaPalette.cyan.withAlpha(232),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: _TimeAnalogClockFace(
+                      key: const ValueKey('tool_time_analog_clock_destination'),
+                      cityLabel: toCity,
+                      flagPrefix: toPrefix,
+                      localTime: toNow.local,
+                      digitalHud: toDigitalHud,
+                      accentColor: DraculaPalette.orange.withAlpha(232),
+                    ),
+                  ),
+                ],
+              ),
+            ],
             const SizedBox(height: 8),
             Text.rich(
               TextSpan(
@@ -4685,6 +4720,161 @@ class _ResultCard extends StatelessWidget {
         arrowColor: accent,
       ),
     );
+  }
+}
+
+class _TimeAnalogClockFace extends StatelessWidget {
+  final String cityLabel;
+  final String flagPrefix;
+  final DateTime localTime;
+  final String digitalHud;
+  final Color accentColor;
+
+  const _TimeAnalogClockFace({
+    super.key,
+    required this.cityLabel,
+    required this.flagPrefix,
+    required this.localTime,
+    required this.digitalHud,
+    required this.accentColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          '$flagPrefix$cityLabel',
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: Theme.of(context).textTheme.labelLarge?.copyWith(
+            color: DraculaPalette.foreground.withAlpha(238),
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        const SizedBox(height: 6),
+        AspectRatio(
+          aspectRatio: 1,
+          child: Stack(
+            children: [
+              Positioned.fill(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: DraculaPalette.background.withAlpha(120),
+                    border: Border.all(
+                      color: DraculaPalette.comment.withAlpha(120),
+                      width: 1.2,
+                    ),
+                  ),
+                ),
+              ),
+              Positioned.fill(
+                child: CustomPaint(
+                  painter: _TimeAnalogClockPainter(
+                    localTime: localTime,
+                    accentColor: accentColor,
+                  ),
+                ),
+              ),
+              Align(
+                alignment: Alignment.bottomCenter,
+                child: Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Container(
+                    key: ValueKey('tool_time_analog_hud_$cityLabel'),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 3,
+                    ),
+                    decoration: BoxDecoration(
+                      color: DraculaPalette.currentLine.withAlpha(235),
+                      borderRadius: BorderRadius.circular(9),
+                      border: Border.all(
+                        color: accentColor.withAlpha(165),
+                        width: 1,
+                      ),
+                    ),
+                    child: Text(
+                      digitalHud,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        color: DraculaPalette.foreground.withAlpha(245),
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.2,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _TimeAnalogClockPainter extends CustomPainter {
+  final DateTime localTime;
+  final Color accentColor;
+
+  const _TimeAnalogClockPainter({
+    required this.localTime,
+    required this.accentColor,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = math.min(size.width, size.height) / 2;
+
+    final tickPaint = Paint()
+      ..color = DraculaPalette.comment.withAlpha(135)
+      ..strokeCap = StrokeCap.round
+      ..strokeWidth = 1.2;
+
+    for (var i = 0; i < 12; i++) {
+      final angle = (math.pi * 2 * (i / 12)) - (math.pi / 2);
+      final outer =
+          center + Offset(math.cos(angle), math.sin(angle)) * (radius - 8);
+      final inner =
+          center + Offset(math.cos(angle), math.sin(angle)) * (radius - 16);
+      canvas.drawLine(inner, outer, tickPaint);
+    }
+
+    final minutes = localTime.minute + (localTime.second / 60);
+    final hours = (localTime.hour % 12) + (minutes / 60);
+    final minuteAngle = (math.pi * 2 * (minutes / 60)) - (math.pi / 2);
+    final hourAngle = (math.pi * 2 * (hours / 12)) - (math.pi / 2);
+
+    final hourHandPaint = Paint()
+      ..color = DraculaPalette.foreground.withAlpha(242)
+      ..strokeCap = StrokeCap.round
+      ..strokeWidth = 3;
+    final minuteHandPaint = Paint()
+      ..color = accentColor
+      ..strokeCap = StrokeCap.round
+      ..strokeWidth = 2.1;
+
+    final hourEnd =
+        center +
+        Offset(math.cos(hourAngle), math.sin(hourAngle)) * (radius * 0.45);
+    final minuteEnd =
+        center +
+        Offset(math.cos(minuteAngle), math.sin(minuteAngle)) * (radius * 0.64);
+    canvas.drawLine(center, hourEnd, hourHandPaint);
+    canvas.drawLine(center, minuteEnd, minuteHandPaint);
+    canvas.drawCircle(center, 3.2, Paint()..color = accentColor.withAlpha(232));
+  }
+
+  @override
+  bool shouldRepaint(covariant _TimeAnalogClockPainter oldDelegate) {
+    return oldDelegate.localTime.minute != localTime.minute ||
+        oldDelegate.localTime.hour != localTime.hour ||
+        oldDelegate.accentColor != accentColor;
   }
 }
 
