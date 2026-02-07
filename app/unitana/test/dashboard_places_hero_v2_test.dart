@@ -290,12 +290,15 @@ void main() {
       final currencySize = tester.getSize(currencyFinder);
 
       final sunPill = find.byKey(const ValueKey('hero_sun_pill'));
+      final marqueeFinder = find.byKey(const ValueKey('hero_marquee_slot'));
 
       // Default details mode should be sunrise/sunset on the dashboard.
 
       expect(sunPill, findsOneWidget);
+      expect(marqueeFinder, findsOneWidget);
 
       final sunSize = tester.getSize(sunPill);
+      final marqueeSize = tester.getSize(marqueeFinder);
 
       // Width parity is the contract; they should read as a single left column.
       expect((envSize.width - currencySize.width).abs(), lessThan(0.5));
@@ -306,6 +309,9 @@ void main() {
       // Sizing priority: Sunrise should receive at least as much width as the left rail.
 
       expect(sunSize.width, greaterThanOrEqualTo(envSize.width));
+      // Pack E kickoff guard: marquee should use a meaningful vertical share
+      // on common phone surfaces (avoid tiny-stamp regressions).
+      expect(marqueeSize.height, greaterThanOrEqualTo(44));
 
       expect(envSize.height, greaterThanOrEqualTo(44));
     },

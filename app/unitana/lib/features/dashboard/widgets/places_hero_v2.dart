@@ -115,8 +115,10 @@ class PlacesHeroV2 extends StatelessWidget {
             // Keep these values whole-numbered to avoid sub-pixel rounding
             // overflows in widget tests.
             final padH = isCompact ? 9.0 : 10.0;
-            final padV = isCompact ? 0.0 : 10.0;
-            final gap = isCompact ? 4.0 : 6.0;
+            // Pack E kickoff: reclaim a little vertical budget from chrome so
+            // the marquee can use more of the hero body space on phones.
+            final padV = isCompact ? 0.0 : 8.0;
+            final gap = isCompact ? 4.0 : 5.0;
 
             final hero = Container(
               padding: EdgeInsets.symmetric(horizontal: padH, vertical: padV),
@@ -234,7 +236,7 @@ class _SegmentedRealityToggle extends StatelessWidget {
         '${_flagEmojiFromIso2(home?.countryCode)} ${home?.cityName ?? 'Home'}';
 
     return Container(
-      height: compact ? 40 : 46,
+      height: compact ? 40 : 44,
       decoration: BoxDecoration(
         color: cs.surface.withAlpha(40),
         borderRadius: BorderRadius.circular(r),
@@ -419,7 +421,7 @@ class _ClocksHeaderBlock extends StatelessWidget {
         ? null
         : TimezoneUtils.formatDeltaLabel(deltaHours);
 
-    final pad = EdgeInsets.only(top: compact ? 6 : 10, bottom: compact ? 6 : 8);
+    final pad = EdgeInsets.only(top: compact ? 6 : 6, bottom: compact ? 6 : 6);
 
     final primaryClock =
         '${TimezoneUtils.formatClock(primaryNow, use24h: p?.use24h ?? true)} ${primaryNow.abbreviation}';
@@ -480,7 +482,7 @@ class _ClocksHeaderBlock extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(height: 2),
+          const SizedBox(height: 1),
           Text(
             dateLine,
             key: includeTestKeys
@@ -550,7 +552,7 @@ class _HeroBandsBody extends StatelessWidget {
       builder: (context, c) {
         final innerW = c.maxWidth;
         final colGap = gap;
-        final stackGap = 4.0;
+        final stackGap = compact ? 4.0 : 2.0;
 
         // Option 3: remove the middle animation bay.
         // Sizing priority: Sunrise/Wind (right) gets the most space;

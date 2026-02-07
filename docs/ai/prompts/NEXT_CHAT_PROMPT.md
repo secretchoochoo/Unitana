@@ -1,4 +1,4 @@
-NEXT CHAT PROMPT — Pack E Kickoff (Marquee Vertical-Fill + V2 Feasibility)
+NEXT CHAT PROMPT — Pack E Phase 2 (Dual-City Split Marquee Prototype + Decision)
 
 You are taking over Unitana (Flutter) in a fresh, high-context window.
 
@@ -23,26 +23,30 @@ Then execute using this contract.
   - goldens opt-in only
 
 ## Mission
-Kick off Pack E by validating and implementing a safe vertical-fill increase for the hero marquee region, then establish a V2-ready baseline without breaking layout/interaction contracts.
+Prototype a dual-city split marquee concept for the Places Hero and decide whether it is ready to become default, while preserving current layout/interaction contracts.
 
 ## Required outcomes
-1) Vertical-fill feasibility + implementation
-- Increase marquee region vertical usage into the currently empty band above Sunrise/Sunset + Wind/Gust where safe.
+1) Dual-city split marquee prototype
+- Implement a prototype variant that visually represents both cities in the marquee region (or immediately adjacent bridge region) without reducing readability of temperature, env/currency, or details pill.
 - Preserve hero grid contracts and avoid overlap/clipping on small phones.
 - Keep existing interaction behavior unchanged.
 
-2) Regression lock
+2) Readability decision pass
+- Evaluate the prototype against current marquee for scanability and visual hierarchy on phone surfaces.
+- If it does not materially improve readability, keep it behind a local feature flag or revert to the current default and document why.
+
+3) Regression lock
 - Keep pinned collapsing header behavior stable.
 - Keep tool/weather data readability stable (no text overlap/regression).
 - Keep goldens opt-in only.
 
-3) Docs update
+4) Docs update
 - Update:
   - `docs/ai/context_db.json`
   - `docs/ai/handoff/CURRENT_HANDOFF.md`
-  - `docs/ai/prompts/NEXT_CHAT_PROMPT.md` (advance slice after Pack E kickoff work)
+  - `docs/ai/prompts/NEXT_CHAT_PROMPT.md` (advance to next Pack E or Pack H slice based on outcome)
 
 ## Definition of done
-- Marquee uses more vertical room without breaking hero layout contracts.
+- A dual-city split marquee prototype is implemented and evaluated with a clear keep/revert decision.
 - No regressions in collapse behavior, readability, or interaction.
 - Repo is green (`format`, `analyze`, `test`).

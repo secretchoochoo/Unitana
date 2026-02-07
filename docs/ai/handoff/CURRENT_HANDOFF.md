@@ -5,6 +5,19 @@
 - **Status:** Repo is green (`dart format`, `flutter analyze`, `flutter test`) after Pack N J2 (city-first Time UX + Jet Lag overlap utility) implementation.
 - **Operating mode:** Codex is now the primary workflow; apply edits directly in-repo (do not require patch zip workflow unless explicitly requested).
 
+## Latest changes (2026-02-07)
+- Pack E kickoff (vertical-fill feasibility pass) shipped:
+  - rebalanced Places Hero vertical budget so the marquee region gets more usable height on phone layouts without changing text sizes:
+    - reduced non-content chrome vertical footprint (outer vertical padding, segmented toggle height, clock header spacing)
+    - tightened internal stack spacing while preserving 44dp touch-target contracts for Env/Currency tiles.
+  - marquee/readability regression guard expanded:
+    - `app/unitana/test/dashboard_places_hero_v2_test.dart` now asserts marquee slot presence and minimum non-stamp height on common phone surfaces.
+  - collapse/pinned behavior and interaction contracts remain unchanged.
+  - full gates re-run and green:
+    - `dart format .`
+    - `flutter analyze`
+    - `flutter test`
+
 ## Latest changes (2026-02-05)
 - **Pack A shipped:** canonical city data schema is now enforced for all in-scope cities.
 - `assets/data/cities_v1.json` regenerated from GeoNames with required `lat/lon` coverage for all rows.

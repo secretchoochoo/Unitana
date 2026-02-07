@@ -207,7 +207,7 @@
     }
   ],
   "current_state": {
-    "current_slice": "Pack H phase 10 runtime-track closeout shipped: remaining tool-picker result-state copy migrated and deterministic seed snapshot artifact added",
+    "current_slice": "Pack E kickoff shipped: Places Hero marquee vertical-fill feasibility pass with chrome-budget rebalance and regression lock",
     "notes": [
       "Codex-first workflow allows larger execution packs while keeping gates green.",
       "Pack A city data platform foundation is complete with canonical schema + validation guards.",
@@ -272,13 +272,15 @@
       "Pack H phase 9 shipped: tool-picker/time-picker/unit-picker labels and remove/replace action copy now resolve through runtime localization-backed `DashboardCopy` methods.",
       "Pack H phase 9 shipped: localization seed + runtime tests expanded for picker/action keys and placeholders; full gates remain green.",
       "Pack H phase 10 runtime-track closeout shipped: remaining tool-picker result-state labels (`No matching tools`, `No tools yet`, `Results`, `+N more`) now resolve through runtime localization-backed `DashboardCopy` methods.",
-      "Pack H phase 10 shipped: added deterministic seed snapshot artifact `docs/ai/reference/LOCALIZATION_SEED_EN_SNAPSHOT.json` generated from `tools/export_localization_seed.dart` for ARB transition review."
+      "Pack H phase 10 shipped: added deterministic seed snapshot artifact `docs/ai/reference/LOCALIZATION_SEED_EN_SNAPSHOT.json` generated from `tools/export_localization_seed.dart` for ARB transition review.",
+      "Pack E kickoff shipped: Places Hero vertical budget was rebalanced (reduced non-content chrome footprint + tighter stack spacing) so marquee gets more usable phone-height without changing text sizes or touch-target contracts.",
+      "Pack E kickoff shipped: added marquee presence/min-height guard in `dashboard_places_hero_v2_test.dart`; full gates remain green."
     ],
     "overall_health": "Stable with full gates passing; canonical city data coverage is now enforced for all in-scope records.",
     "status": "GREEN",
     "focus": {
-      "now": "Start Pack E marquee production kickoff with vertical-fill feasibility pass in the available hero space above Sunrise/Sunset and Wind/Gust row.",
-      "next": "Execute Pack E scene/layout iteration while preserving hero grid contracts and existing interaction behavior.",
+      "now": "Execute Pack E phase 2: prototype and evaluate a dual-city split marquee variant while preserving hero grid and collapse contracts.",
+      "next": "Advance Pack E with scene/layout iteration and decide whether split marquee graduates from prototype to default.",
       "later": [
         "Pack H localization full rollout (multi-language ARB + language settings)"
       ]
