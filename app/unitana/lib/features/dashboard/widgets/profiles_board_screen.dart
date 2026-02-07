@@ -8,6 +8,7 @@ import '../../../app/app_state.dart';
 import '../../../common/feedback/unitana_toast.dart';
 import '../../../models/place.dart';
 import '../../../theme/dracula_palette.dart';
+import '../models/dashboard_copy.dart';
 import 'destructive_confirmation_sheet.dart';
 
 class ProfilesBoardScreen extends StatefulWidget {
@@ -198,14 +199,17 @@ class _ProfilesBoardScreenState extends State<ProfilesBoardScreen>
     if (widget.state.profiles.length <= 1) return;
     final approved = await showDestructiveConfirmationSheet(
       context,
-      title: 'Delete profile?',
-      message: 'Delete "${profile.name}"? This cannot be undone.',
-      confirmLabel: 'Delete',
+      title: DashboardCopy.profilesBoardDeleteTitle(context),
+      message: DashboardCopy.profilesBoardDeleteMessage(context, profile.name),
+      confirmLabel: DashboardCopy.profilesBoardDeleteConfirm(context),
     );
     if (approved != true) return;
     await widget.onDeleteProfile(profile.id);
     if (!mounted) return;
-    UnitanaToast.showSuccess(context, 'Profile deleted');
+    UnitanaToast.showSuccess(
+      context,
+      DashboardCopy.profilesBoardDeleted(context),
+    );
   }
 
   @override
@@ -291,7 +295,7 @@ class _ProfilesBoardScreenState extends State<ProfilesBoardScreen>
           appBar: AppBar(
             centerTitle: true,
             title: Text(
-              'Profiles',
+              DashboardCopy.profilesBoardTitle(context),
               style: GoogleFonts.robotoSlab(fontWeight: FontWeight.w800),
             ),
             actions: [
@@ -305,8 +309,8 @@ class _ProfilesBoardScreenState extends State<ProfilesBoardScreen>
                     padding: const EdgeInsets.symmetric(horizontal: 6),
                     minimumSize: const Size(0, 36),
                   ),
-                  child: const Text(
-                    'Cancel',
+                  child: Text(
+                    DashboardCopy.dashboardEditCancel(context),
                     style: TextStyle(fontSize: _kEditAppBarActionFontSize),
                   ),
                 ),
@@ -317,7 +321,10 @@ class _ProfilesBoardScreenState extends State<ProfilesBoardScreen>
                     onPressed: () {
                       _commitEditSlots();
                       _setEditMode(false);
-                      UnitanaToast.showSuccess(context, 'Profiles updated');
+                      UnitanaToast.showSuccess(
+                        context,
+                        DashboardCopy.profilesBoardUpdated(context),
+                      );
                     },
                     style: TextButton.styleFrom(
                       visualDensity: VisualDensity.compact,
@@ -325,8 +332,8 @@ class _ProfilesBoardScreenState extends State<ProfilesBoardScreen>
                       padding: const EdgeInsets.symmetric(horizontal: 6),
                       minimumSize: const Size(0, 36),
                     ),
-                    child: const Text(
-                      'Done',
+                    child: Text(
+                      DashboardCopy.dashboardEditDone(context),
                       style: TextStyle(fontSize: _kEditAppBarActionFontSize),
                     ),
                   ),
@@ -343,7 +350,7 @@ class _ProfilesBoardScreenState extends State<ProfilesBoardScreen>
                           .toList(growable: false),
                       addTileCount: addTileCount,
                     ),
-                    child: const Text('✏ Edit'),
+                    child: Text(DashboardCopy.profilesBoardEditCta(context)),
                   ),
                 ),
             ],
@@ -672,8 +679,11 @@ class _ProfileTile extends StatelessWidget {
     final (home, destination) = homeAndDestination(profile);
     final homeFlag = flagEmojiForCountry(home?.countryCode);
     final destFlag = flagEmojiForCountry(destination?.countryCode);
-    final homeCity = home?.cityName ?? 'Home';
-    final destCity = destination?.cityName ?? 'Destination';
+    final homeCity =
+        home?.cityName ?? DashboardCopy.profilesBoardHomeFallback(context);
+    final destCity =
+        destination?.cityName ??
+        DashboardCopy.profilesBoardDestinationFallback(context);
 
     return InkWell(
       key: ValueKey('profiles_board_tile_${profile.id}'),
@@ -727,9 +737,9 @@ class _ProfileTile extends StatelessWidget {
                             color: DraculaPalette.purple.withAlpha(70),
                             borderRadius: BorderRadius.circular(999),
                           ),
-                          child: const Text(
-                            'Active',
-                            style: TextStyle(fontSize: 11),
+                          child: Text(
+                            DashboardCopy.profilesBoardActiveBadge(context),
+                            style: const TextStyle(fontSize: 11),
                           ),
                         ),
                     ],
@@ -755,7 +765,9 @@ class _ProfileTile extends StatelessWidget {
                         const SizedBox(width: 2),
                         IconButton(
                           key: ValueKey('profiles_board_edit_${profile.id}'),
-                          tooltip: 'Edit this profile',
+                          tooltip: DashboardCopy.profilesBoardTooltipEdit(
+                            context,
+                          ),
                           visualDensity: VisualDensity.compact,
                           padding: const EdgeInsets.all(4),
                           constraints: BoxConstraints.tightFor(
@@ -768,7 +780,9 @@ class _ProfileTile extends StatelessWidget {
                         const SizedBox(width: 2),
                         IconButton(
                           key: ValueKey('profiles_board_delete_${profile.id}'),
-                          tooltip: 'Delete this profile',
+                          tooltip: DashboardCopy.profilesBoardTooltipDelete(
+                            context,
+                          ),
                           visualDensity: VisualDensity.compact,
                           padding: const EdgeInsets.all(4),
                           constraints: BoxConstraints.tightFor(

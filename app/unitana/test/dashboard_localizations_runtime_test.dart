@@ -78,6 +78,19 @@ void main() {
       key: 'dashboard.dashboard.comingSoon',
       params: const <String, String>{'label': 'Settings'},
     );
+    final openMenu = DashboardLocalizations.resolveForLocale(
+      locale: const Locale('en'),
+      key: 'dashboard.dashboard.tooltip.openMenu',
+    );
+    final profileNameFallback = DashboardLocalizations.resolveForLocale(
+      locale: const Locale('en'),
+      key: 'dashboard.dashboard.profileNameFallback',
+    );
+    final profileDeleteMessage = DashboardLocalizations.resolveForLocale(
+      locale: const Locale('en'),
+      key: 'dashboard.profiles.delete.message',
+      params: const <String, String>{'profileName': 'Weekend Trip'},
+    );
     expect(clearTitle, 'Clear history?');
     expect(hint, 'tap copies result; long-press copies input');
     expect(refreshNotice, 'Refreshing rates…');
@@ -85,5 +98,11 @@ void main() {
     expect(unitCompare, 'Product A is cheaper by 12.3%.');
     expect(lookupFrom, 'From: US');
     expect(comingSoon, 'Settings: coming soon');
+    expect(openMenu, 'Open menu');
+    expect(profileNameFallback, 'My Places');
+    expect(
+      profileDeleteMessage,
+      'Delete "Weekend Trip"? This cannot be undone.',
+    );
   });
 }

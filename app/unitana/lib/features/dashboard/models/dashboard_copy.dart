@@ -374,6 +374,122 @@ class DashboardCopy {
       DashboardLocalizations.of(
         context,
       ).text('dashboard.dashboard.updated', fallback: 'Dashboard updated');
+  static String dashboardProfileNameFallback(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.dashboard.profileNameFallback', fallback: 'My Places');
+  static String dashboardOpenToolsTooltip(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.dashboard.tooltip.openTools', fallback: 'Open tools');
+  static String dashboardOpenMenuTooltip(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.dashboard.tooltip.openMenu', fallback: 'Open menu');
+  static String dashboardRefreshDataTooltip(BuildContext context) =>
+      DashboardLocalizations.of(context).text(
+        'dashboard.dashboard.tooltip.refreshData',
+        fallback: 'Refresh data',
+      );
+  static String dashboardMenuProfiles(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.dashboard.menu.profiles', fallback: 'Profiles');
+  static String dashboardMenuSettings(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.dashboard.menu.settings', fallback: 'Settings');
+  static String dashboardMenuEditWidgets(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.dashboard.menu.editWidgets', fallback: 'Edit Widgets');
+  static String dashboardMenuResetDefaults(BuildContext context) =>
+      DashboardLocalizations.of(context).text(
+        'dashboard.dashboard.menu.resetDefaults',
+        fallback: 'Reset Dashboard Defaults',
+      );
+  static String dashboardMenuDeveloperTools(BuildContext context) =>
+      DashboardLocalizations.of(context).text(
+        'dashboard.dashboard.menu.developerTools',
+        fallback: 'Developer Tools',
+      );
+  static String dashboardEditCancel(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.dashboard.edit.cancel', fallback: 'Cancel');
+  static String dashboardEditDone(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.dashboard.edit.done', fallback: 'Done');
+  static String dashboardResetDefaultsMessage(
+    BuildContext context,
+  ) => DashboardLocalizations.of(context).text(
+    'dashboard.dashboard.resetDefaults.message',
+    fallback:
+        'This removes any widgets you\'ve added and restores the default dashboard layout.',
+  );
+  static String dashboardResetDefaultsConfirm(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.dashboard.resetDefaults.confirm', fallback: 'Reset');
+  static String dashboardResetDefaultsSuccess(BuildContext context) =>
+      DashboardLocalizations.of(context).text(
+        'dashboard.dashboard.resetDefaults.success',
+        fallback: 'Dashboard reset to defaults.',
+      );
+  static String profilesBoardTitle(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.profiles.title', fallback: 'Profiles');
+  static String profilesBoardEditCta(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.profiles.cta.edit', fallback: '✏ Edit');
+  static String profilesBoardUpdated(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.profiles.updated', fallback: 'Profiles updated');
+  static String profilesBoardDeleteTitle(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.profiles.delete.title', fallback: 'Delete profile?');
+  static String profilesBoardDeleteMessage(
+    BuildContext context,
+    String profileName,
+  ) => DashboardLocalizations.of(context).text(
+    'dashboard.profiles.delete.message',
+    params: <String, String>{'profileName': profileName},
+    fallback: 'Delete "$profileName"? This cannot be undone.',
+  );
+  static String profilesBoardDeleteConfirm(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.profiles.delete.confirm', fallback: 'Delete');
+  static String profilesBoardDeleted(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.profiles.deleted', fallback: 'Profile deleted');
+  static String profilesBoardActiveBadge(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.profiles.badge.active', fallback: 'Active');
+  static String profilesBoardTooltipEdit(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.profiles.tooltip.edit', fallback: 'Edit this profile');
+  static String profilesBoardTooltipDelete(BuildContext context) =>
+      DashboardLocalizations.of(context).text(
+        'dashboard.profiles.tooltip.delete',
+        fallback: 'Delete this profile',
+      );
+  static String profilesBoardHomeFallback(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.profiles.homeFallback', fallback: 'Home');
+  static String profilesBoardDestinationFallback(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.profiles.destinationFallback', fallback: 'Destination');
 
   static String tipBillAmountLabel(BuildContext context, String currencyCode) =>
       DashboardLocalizations.of(context).text(

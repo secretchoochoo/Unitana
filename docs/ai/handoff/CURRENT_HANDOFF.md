@@ -339,6 +339,16 @@
     - `app/unitana/test/dashboard_localizations_runtime_test.dart`
     - `app/unitana/test/localization_seed_contract_test.dart`
   - retained Pack N/M behavior contracts and reran full gates green (`dart format .`, `flutter analyze`, `flutter test`).
+- Pack H localization expansion (phase 7, 2026-02-07):
+  - migrated remaining high-traffic dashboard menu/editor and profiles-board microcopy to runtime localization-backed `DashboardCopy` methods:
+    - dashboard tool/menu/refresh tooltips + menu labels
+    - edit-mode `Cancel` / `Done` labels (including width measurement logic)
+    - reset-defaults confirmation message/CTA/success toast
+    - profiles board title/edit CTA/update toast/delete confirmation/deleted toast
+    - profile tile active badge, edit/delete tooltips, and Home/Destination fallback labels
+  - expanded localization seed + runtime contract tests for the new dashboard/profile keys and placeholder coverage.
+  - captured Pack E UX follow-up in backlog docs: evaluate vertical marquee expansion into unused space above the Sunrise/Sunset + Wind/Gust row while preserving hero grid contracts.
+  - full gates re-run and green (`dart format .`, `flutter analyze`, `flutter test`).
 - Pack F activation bundle (phase 1):
   - activated `world_clock_delta` and `jet_lag_delta` entries in tool registry.
   - wired both entries to the existing mature Time modal flow as interim E2E activation.
@@ -527,6 +537,7 @@ Backlog has been reprioritized away from small, fragmented slices into larger ex
 - README/doc accuracy, Mermaid validity, and doc architecture cleanup.
 5) **Pack E (P1): Marquee scene V2 facelift**
 - Move current scenes to a readable 16-bit style with a consistent visual language.
+- Evaluate a small vertical expansion of the marquee scene region so animation can occupy more of the empty space above the Sunrise/Sunset and Wind/Gust row while keeping hero grid/layout contracts intact.
 6) **Pack F (P1): Tools surface completion**
 - Resolve remaining “coming soon” surfaces and unit-matrix parity.
 7) **Pack G (P2): Polish/compliance release readiness**
@@ -551,9 +562,9 @@ Backlog has been reprioritized away from small, fragmented slices into larger ex
 13) **Icebox:** Optional radio feature.
 
 Current execution focus:
-- **Now:** run Pack N J2 city-first timezone UX pass (city picker default + advanced timezone fallback), then tighten Jet Lag overlap utility contract.
-- **Next:** complete remaining tools activation/defer decisions under the architecture matrix and close high-value interaction/test gaps.
-- **Later:** Pack E production facelift and Pack H localization.
+- **Now:** continue Pack H runtime seam expansion on remaining weather/devtools/settings/profile-edge microcopy and notices.
+- **Next:** harden ARB transition artifacts (seed export/review workflow + l10n mapping prep) with deterministic fallback contracts.
+- **Later:** Pack E production facelift and Pack H full localization rollout.
 
 ## What’s true right now (high signal)
 ### 1) Dashboard header is a continuous collapsing header (no pop-in)

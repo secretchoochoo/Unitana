@@ -48,5 +48,18 @@ void main() {
       'Eastbound',
     );
     expect(LocalizationSeed.enUs['dashboard.lookup.from'], 'From: {value}');
+    expect(
+      LocalizationSeed.enUs['dashboard.dashboard.tooltip.openMenu'],
+      'Open menu',
+    );
+    expect(
+      LocalizationSeed.enUs['dashboard.dashboard.profileNameFallback'],
+      'My Places',
+    );
+    expect(LocalizationSeed.enUs['dashboard.profiles.title'], 'Profiles');
+    expect(
+      LocalizationSeed.enUs['dashboard.profiles.delete.message'],
+      'Delete "{profileName}"? This cannot be undone.',
+    );
   });
 }

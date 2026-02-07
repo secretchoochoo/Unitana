@@ -78,8 +78,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
         (Theme.of(context).textTheme.labelLarge ??
                 const TextStyle(fontSize: _kEditAppBarActionFontSize))
             .copyWith(fontSize: _kEditAppBarActionFontSize);
-    final cancelWidth = _measureTextWidth('Cancel', actionStyle);
-    final doneWidth = _measureTextWidth('Done', actionStyle);
+    final cancelWidth = _measureTextWidth(
+      DashboardCopy.dashboardEditCancel(context),
+      actionStyle,
+    );
+    final doneWidth = _measureTextWidth(
+      DashboardCopy.dashboardEditDone(context),
+      actionStyle,
+    );
 
     // button internal horizontal padding (6 + 6) for both buttons
     const buttonPadding = 24.0;
@@ -742,10 +748,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Future<void> _resetDashboardDefaults() async {
     final confirmed = await showDestructiveConfirmationSheet(
       context,
-      title: 'Reset Dashboard Defaults',
-      message:
-          'This removes any widgets you\'ve added and restores the default dashboard layout.',
-      confirmLabel: 'Reset',
+      title: DashboardCopy.dashboardMenuResetDefaults(context),
+      message: DashboardCopy.dashboardResetDefaultsMessage(context),
+      confirmLabel: DashboardCopy.dashboardResetDefaultsConfirm(context),
     );
 
     if (confirmed != true) return;
@@ -760,7 +765,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     UnitanaToast.showSuccess(
       context,
-      'Dashboard reset to defaults.',
+      DashboardCopy.dashboardResetDefaultsSuccess(context),
       key: const ValueKey('toast_dashboard_reset_defaults'),
     );
   }
@@ -1100,7 +1105,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   Widget build(BuildContext context) {
     final profileName = state.profileName.trim().isEmpty
-        ? 'My Places'
+        ? DashboardCopy.dashboardProfileNameFallback(context)
         : state.profileName.trim();
     final titleFontSize = _resolveAppBarTitleFontSize(context, profileName);
 
@@ -1118,7 +1123,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               padding: const EdgeInsets.only(left: 16),
               child: _HeaderIconButton(
                 key: const Key('dashboard_tools_button'),
-                tooltip: 'Open tools',
+                tooltip: DashboardCopy.dashboardOpenToolsTooltip(context),
                 icon: Icons.handyman_rounded,
                 onTap: _openToolPickerFromMenu,
               ),
@@ -1144,8 +1149,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     padding: const EdgeInsets.symmetric(horizontal: 6),
                     minimumSize: const Size(0, 36),
                   ),
-                  child: const Text(
-                    'Cancel',
+                  child: Text(
+                    DashboardCopy.dashboardEditCancel(context),
                     style: TextStyle(fontSize: _kEditAppBarActionFontSize),
                   ),
                 ),
@@ -1160,8 +1165,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       padding: const EdgeInsets.symmetric(horizontal: 6),
                       minimumSize: const Size(0, 36),
                     ),
-                    child: const Text(
-                      'Done',
+                    child: Text(
+                      DashboardCopy.dashboardEditDone(context),
                       style: TextStyle(fontSize: _kEditAppBarActionFontSize),
                     ),
                   ),
@@ -1171,7 +1176,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   padding: const EdgeInsets.only(right: 16),
                   child: _HeaderIconButton(
                     key: const Key('dashboard_menu_button'),
-                    tooltip: 'Open menu',
+                    tooltip: DashboardCopy.dashboardOpenMenuTooltip(context),
                     icon: Icons.menu_rounded,
                     onTap: () {
                       showModalBottomSheet<void>(
@@ -1209,7 +1214,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                   ),
                                   ListTile(
                                     leading: const Icon(Icons.switch_account),
-                                    title: const Text('Profiles'),
+                                    title: Text(
+                                      DashboardCopy.dashboardMenuProfiles(
+                                        context,
+                                      ),
+                                    ),
                                     onTap: () {
                                       Navigator.of(sheetContext).pop();
                                       Future.microtask(_openProfilesBoard);
@@ -1217,17 +1226,30 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                   ),
                                   ListTile(
                                     leading: const Icon(Icons.settings),
-                                    title: const Text('Settings'),
+                                    title: Text(
+                                      DashboardCopy.dashboardMenuSettings(
+                                        context,
+                                      ),
+                                    ),
                                     onTap: () {
                                       Navigator.of(sheetContext).pop();
-                                      _comingSoon(context, 'Settings');
+                                      _comingSoon(
+                                        context,
+                                        DashboardCopy.dashboardMenuSettings(
+                                          context,
+                                        ),
+                                      );
                                     },
                                   ),
                                   if (!_isEditingWidgets)
                                     ListTile(
                                       key: const Key('dashboard_edit_mode'),
                                       leading: const Icon(Icons.edit),
-                                      title: const Text('Edit Widgets'),
+                                      title: Text(
+                                        DashboardCopy.dashboardMenuEditWidgets(
+                                          context,
+                                        ),
+                                      ),
                                       onTap: () {
                                         Navigator.of(sheetContext).pop();
                                         Future.microtask(_enterEditWidgets);
@@ -1238,8 +1260,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                       'dashboard_menu_reset_defaults',
                                     ),
                                     leading: const Icon(Icons.restore),
-                                    title: const Text(
-                                      'Reset Dashboard Defaults',
+                                    title: Text(
+                                      DashboardCopy.dashboardMenuResetDefaults(
+                                        context,
+                                      ),
                                     ),
                                     onTap: () {
                                       Navigator.of(sheetContext).pop();
@@ -1251,7 +1275,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                       'dashboard_menu_developer_tools',
                                     ),
                                     leading: const Icon(Icons.developer_mode),
-                                    title: const Text('Developer Tools'),
+                                    title: Text(
+                                      DashboardCopy.dashboardMenuDeveloperTools(
+                                        context,
+                                      ),
+                                    ),
                                     onTap: () {
                                       Navigator.of(sheetContext).pop();
                                       Future.microtask(
@@ -1343,7 +1371,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                       ),
                                       const SizedBox(width: 0),
                                       IconButton(
-                                        tooltip: 'Refresh data',
+                                        tooltip:
+                                            DashboardCopy.dashboardRefreshDataTooltip(
+                                              context,
+                                            ),
                                         onPressed: _refreshAllNow,
                                         icon: const Icon(
                                           Icons.refresh_rounded,
