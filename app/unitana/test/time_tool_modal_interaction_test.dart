@@ -122,20 +122,20 @@ void main() {
     final state = buildSeededState();
     await pumpDashboard(tester, state);
 
-    // Home reality => From should be Home.
+    // Home reality => From should seed to the home city.
     await tester.tap(find.byKey(const ValueKey('places_hero_segment_home')));
     await tester.pumpAndSettle(const Duration(milliseconds: 200));
     await openTimeTool(tester);
     final fromHome = find.descendant(
       of: find.byKey(const ValueKey('tool_time_from_zone')),
-      matching: find.textContaining('Home'),
+      matching: find.textContaining('Denver'),
     );
     expect(fromHome, findsOneWidget);
 
     Navigator.of(tester.element(find.byType(BottomSheet))).pop();
     await tester.pumpAndSettle(const Duration(milliseconds: 250));
 
-    // Destination reality => From should be Destination.
+    // Destination reality => From should seed to the destination city.
     await tester.tap(
       find.byKey(const ValueKey('places_hero_segment_destination')),
     );
@@ -143,7 +143,7 @@ void main() {
     await openTimeTool(tester);
     final fromDestination = find.descendant(
       of: find.byKey(const ValueKey('tool_time_from_zone')),
-      matching: find.textContaining('Destination'),
+      matching: find.textContaining('Lisbon'),
     );
     expect(fromDestination, findsOneWidget);
   });

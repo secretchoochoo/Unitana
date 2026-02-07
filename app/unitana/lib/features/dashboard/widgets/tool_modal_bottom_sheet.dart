@@ -2476,6 +2476,11 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
     final out = <TimeZoneCityOption>[];
     final seenZones = <String>{};
     final existingKeys = <String>{};
+    final priorityZones = <String>{
+      if (widget.home?.timeZoneId != null) widget.home!.timeZoneId,
+      if (widget.destination?.timeZoneId != null)
+        widget.destination!.timeZoneId,
+    };
 
     void addOption(TimeZoneCityOption option) {
       if (!seenZones.add(option.timeZoneId)) return;
@@ -2484,9 +2489,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
     }
 
     for (final option in cityOptions) {
-      if (option.subtitle == 'Home' || option.subtitle == 'Destination') {
-        addOption(option);
-      }
+      if (priorityZones.contains(option.timeZoneId)) addOption(option);
     }
 
     for (final city in kCuratedCities) {
@@ -2567,7 +2570,8 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
         continue;
       }
       var score = 0;
-      if (option.subtitle == 'Home' || option.subtitle == 'Destination') {
+      if (option.timeZoneId == widget.home?.timeZoneId ||
+          option.timeZoneId == widget.destination?.timeZoneId) {
         score += 260;
       }
       if (aliasZones.contains(option.timeZoneId)) score += 220;
@@ -2622,8 +2626,8 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
       if ((option.subtitle ?? '').toLowerCase().contains(query.toLowerCase())) {
         score += 70;
       }
-      if (option.label.startsWith('Home') ||
-          option.label.startsWith('Destination')) {
+      if (option.id == widget.home?.timeZoneId ||
+          option.id == widget.destination?.timeZoneId) {
         score += 40;
       }
       scored.add((option: option, score: score));

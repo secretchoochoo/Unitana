@@ -3,7 +3,7 @@ import 'package:unitana/features/dashboard/models/time_zone_catalog.dart';
 import 'package:unitana/models/place.dart';
 
 void main() {
-  test('TimeZoneCatalog includes home/destination and broader options', () {
+  test('TimeZoneCatalog includes seeded cities and broader options', () {
     const home = Place(
       id: 'home',
       type: PlaceType.living,
@@ -32,9 +32,9 @@ void main() {
 
     expect(options, isNotEmpty);
     expect(options.first.id, 'America/Denver');
-    expect(options.first.label, contains('Home'));
+    expect(options.first.label, 'Denver, US');
     expect(options[1].id, 'Europe/Lisbon');
-    expect(options[1].label, contains('Destination'));
+    expect(options[1].label, 'Lisbon, PT');
     expect(options.any((o) => o.id == 'Asia/Tokyo'), isTrue);
     expect(options.any((o) => o.id == 'UTC'), isTrue);
   });
@@ -68,9 +68,9 @@ void main() {
 
     expect(options, isNotEmpty);
     expect(options.first.timeZoneId, 'America/Denver');
-    expect(options.first.subtitle, 'Home');
+    expect(options.first.subtitle, 'America/Denver');
     expect(options[1].timeZoneId, 'Europe/Lisbon');
-    expect(options[1].subtitle, 'Destination');
+    expect(options[1].subtitle, 'Europe/Lisbon');
     expect(options.any((o) => o.timeZoneId == 'Asia/Tokyo'), isTrue);
   });
 }

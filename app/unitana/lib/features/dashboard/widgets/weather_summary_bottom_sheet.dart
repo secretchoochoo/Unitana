@@ -172,122 +172,14 @@ class WeatherSummaryBottomSheet extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 8),
-                _placeCard(
-                  context,
-                  place: destination,
-                  label: DashboardCopy.destinationLabel(context),
-                ),
-                if (destination != null && home != null) ...[
-                  const SizedBox(height: 6),
-                  _bridgeSplitCard(context, left: destination!, right: home!),
-                ],
+                _placeCard(context, place: destination),
                 const SizedBox(height: 6),
-                _placeCard(
-                  context,
-                  place: home,
-                  label: DashboardCopy.homeLabel(context),
-                ),
+                _placeCard(context, place: home),
               ],
             ),
           ),
         );
       },
-    );
-  }
-
-  Widget _bridgeSplitCard(
-    BuildContext context, {
-    required Place left,
-    required Place right,
-  }) {
-    final theme = Theme.of(context);
-    final cs = theme.colorScheme;
-    return DecoratedBox(
-      key: const ValueKey('weather_summary_bridge_split'),
-      decoration: BoxDecoration(
-        color: cs.surfaceContainerHighest.withAlpha(22),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: cs.outlineVariant.withAlpha(165)),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
-        child: Row(
-          children: [
-            Expanded(child: _bridgeCityCell(context, place: left)),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 6),
-              child: Text(
-                '↔',
-                style: theme.textTheme.bodyLarge?.copyWith(
-                  color: DraculaPalette.comment.withAlpha(210),
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-            ),
-            Expanded(child: _bridgeCityCell(context, place: right)),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _bridgeCityCell(BuildContext context, {required Place place}) {
-    final theme = Theme.of(context);
-    final cs = theme.colorScheme;
-    final weather = liveData.weatherFor(place);
-    final sun = liveData.sunFor(place);
-    final preferMetric = (place.unitSystem == 'metric');
-    final tempC = weather?.temperatureC;
-    final tempF = tempC == null ? null : (tempC * 9 / 5) + 32;
-    final tempText = tempC == null
-        ? '—'
-        : preferMetric
-        ? '${tempC.round()}°C'
-        : '${tempF!.round()}°F';
-    final condition = (weather?.conditionText ?? '—').trim();
-    final sceneKey = weather?.sceneKey;
-    final isNight = _isNightForPlace(place, sun: sun);
-    return Column(
-      key: ValueKey('weather_summary_bridge_city_${place.id}'),
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        ClipRRect(
-          borderRadius: BorderRadius.circular(10),
-          child: SizedBox(
-            key: ValueKey('weather_summary_bridge_scene_${place.id}'),
-            height: 44,
-            width: double.infinity,
-            child: HeroAliveMarquee(
-              includeTestKeys: false,
-              compact: true,
-              isNight: isNight,
-              sceneKey: sceneKey,
-              conditionLabel: condition,
-              renderConditionLabel: false,
-            ),
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          '${_flagEmoji(place.countryCode)} ${place.cityName}',
-          style: theme.textTheme.bodyMedium?.copyWith(
-            color: cs.onSurface,
-            fontWeight: FontWeight.w800,
-          ),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-        const SizedBox(height: 2),
-        Text(
-          '$tempText · $condition',
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: cs.onSurfaceVariant.withAlpha(230),
-            fontWeight: FontWeight.w700,
-          ),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-      ],
     );
   }
 
@@ -315,11 +207,7 @@ class WeatherSummaryBottomSheet extends StatelessWidget {
     return hour < 6 || hour >= 20;
   }
 
-  Widget _placeCard(
-    BuildContext context, {
-    required Place? place,
-    required String label,
-  }) {
+  Widget _placeCard(BuildContext context, {required Place? place}) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
 
@@ -333,7 +221,7 @@ class WeatherSummaryBottomSheet extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.all(14),
           child: Text(
-            '$label: Not set',
+            'City not set',
             style: theme.textTheme.bodyMedium?.copyWith(
               color: cs.onSurfaceVariant,
               fontWeight: FontWeight.w700,
@@ -442,15 +330,14 @@ class WeatherSummaryBottomSheet extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(flag, style: theme.textTheme.titleLarge),
-                const SizedBox(width: 10),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        '$label  ·  ${place.cityName}',
+                        '$flag ${place.cityName}',
                         style: theme.textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.w900,
                         ),
@@ -468,43 +355,65 @@ class WeatherSummaryBottomSheet extends StatelessWidget {
                     ],
                   ),
                 ),
-                const SizedBox(width: 8),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text(
-                      tempPrimary,
-                      style: theme.textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.w900,
-                        color: DraculaPalette.green,
+                const SizedBox(width: 10),
+                SizedBox(
+                  width: 132,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(10),
+                        child: SizedBox(
+                          key: ValueKey(
+                            'weather_summary_card_scene_${place.id}',
+                          ),
+                          height: 42,
+                          width: double.infinity,
+                          child: HeroAliveMarquee(
+                            includeTestKeys: false,
+                            compact: true,
+                            isNight: _isNightForPlace(place, sun: sun),
+                            sceneKey: weather?.sceneKey,
+                            conditionLabel: condition,
+                            renderConditionLabel: false,
+                          ),
+                        ),
                       ),
-                    ),
-                    Text(
-                      tempSecondary,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: cs.onSurfaceVariant,
-                        fontWeight: FontWeight.w700,
+                      const SizedBox(height: 4),
+                      Text(
+                        tempPrimary,
+                        style: theme.textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.w900,
+                          color: DraculaPalette.green,
+                        ),
                       ),
-                    ),
-                  ],
+                      Text(
+                        tempSecondary,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: cs.onSurfaceVariant,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: 5),
             _iconTable(
               context,
               headers: const ['☀️ Sunrise', '🌙 Sunset'],
               values: [sunrise, sunset],
               secondaryValues: [sunriseAlt, sunsetAlt],
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 3),
             _iconTable(
               context,
               headers: const ['🌬️ Wind', '💨 Gust'],
               values: [windPrimary, gustPrimary],
               secondaryValues: [windSecondary, gustSecondary],
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 3),
             _iconTable(
               context,
               headers: const ['🌫️ AQI (US)', '🌼 Pollen (0-5)'],
@@ -526,26 +435,26 @@ class WeatherSummaryBottomSheet extends StatelessWidget {
     final cs = theme.colorScheme;
 
     final headerStyle = theme.textTheme.bodyMedium?.copyWith(
-      fontWeight: FontWeight.w900,
+      fontWeight: FontWeight.w800,
       color: cs.onSurface,
     );
-    final valueStyle = theme.textTheme.bodyMedium?.copyWith(
+    final valueStyle = theme.textTheme.bodySmall?.copyWith(
       fontWeight: FontWeight.w800,
       color: cs.onSurface.withAlpha(230),
     );
     final secondaryStyle = theme.textTheme.bodySmall?.copyWith(
-      fontWeight: FontWeight.w700,
+      fontWeight: FontWeight.w600,
       color: cs.onSurfaceVariant.withAlpha(220),
     );
 
     return DecoratedBox(
       decoration: BoxDecoration(
         color: cs.surfaceContainerHighest.withAlpha(30),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(10),
         border: Border.all(color: cs.outlineVariant.withAlpha(160)),
       ),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
         child: Row(
           children: [
             for (var i = 0; i < headers.length; i++)
@@ -558,14 +467,14 @@ class WeatherSummaryBottomSheet extends StatelessWidget {
                       style: headerStyle,
                       textAlign: TextAlign.center,
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 3),
                     Text(
                       values[i],
                       style: valueStyle,
                       textAlign: TextAlign.center,
                     ),
                     if (secondaryValues != null) ...[
-                      const SizedBox(height: 2),
+                      const SizedBox(height: 1),
                       Text(
                         secondaryValues[i],
                         style: secondaryStyle,

@@ -1,4 +1,4 @@
-NEXT CHAT PROMPT — Pack E Phase 6 (Weather-Sheet Bridge Motion Polish)
+NEXT CHAT PROMPT — Pack E Phase 6b (Weather-Sheet In-Card Marquee Polish)
 
 You are taking over Unitana (Flutter) in a fresh, high-context window.
 
@@ -24,20 +24,21 @@ Then execute using this contract.
   - goldens opt-in only
 
 ## Mission
-Apply a low-risk motion polish pass to the weather-sheet middle bridge so dual-city context feels alive without harming readability or layout stability.
+Polish the weather-sheet in-card mini-marquee treatment so each city card mirrors dashboard weather context cleanly on phone surfaces.
 
 ## Required outcomes
 1) Scope guard
 - Do not change dashboard hero marquee semantics.
-- Keep split concept work constrained to the weather-sheet middle bridge area.
+- Keep weather-sheet work constrained to per-city cards (middle bridge card remains removed).
 
-2) Bridge motion polish slice
-- Build on the existing bridge visual card and evaluate subtle, low-noise motion polish within each bridge half.
+2) In-card marquee polish slice
+- Build on the current per-card top-right mini-marquee treatment and tune visual hierarchy between city name, condition, marquee, and temperatures.
 - Keep the implementation low-risk and bounded to weather-sheet contracts (no dashboard hero marquee changes).
-- If motion harms scanability on phone surfaces, keep static visuals and document that decision.
+- If motion or ornamentation harms scanability on phone surfaces, keep static visuals and document that decision.
 
 3) Readability and layout safety
 - Ensure bridge content remains legible on small phones and does not crowd neighboring weather sections.
+- Ensure in-card marquee + text layout remains legible on small phones and does not crowd neighboring weather sections.
 - Preserve hero grid contracts and avoid overlap/clipping on small phones.
 - Keep existing interaction behavior unchanged.
 - Prevent jank from dynamic weather updates and avoid extra key collisions.
@@ -54,7 +55,7 @@ Apply a low-risk motion polish pass to the weather-sheet middle bridge so dual-c
   - `docs/ai/prompts/NEXT_CHAT_PROMPT.md` (advance to next slice)
 
 ## Definition of done
-- Weather-sheet bridge retains strong dual-city readability and either:
+- Weather-sheet per-city cards retain strong readability and either:
   - gains subtle motion polish that remains stable on phone surfaces, or
   - intentionally remains static with documented rationale.
 - No regressions in collapse behavior, readability, or interaction.

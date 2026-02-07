@@ -45,13 +45,13 @@ class TimeZoneCatalog {
     if (home != null) {
       add(
         home.timeZoneId,
-        'Home · ${home.cityName}, ${home.countryCode.toUpperCase()}',
+        '${home.cityName}, ${home.countryCode.toUpperCase()}',
       );
     }
     if (destination != null) {
       add(
         destination.timeZoneId,
-        'Destination · ${destination.cityName}, ${destination.countryCode.toUpperCase()}',
+        '${destination.cityName}, ${destination.countryCode.toUpperCase()}',
       );
     }
 
@@ -109,7 +109,7 @@ class TimeZoneCatalog {
         zoneId: home.timeZoneId,
         label:
             '${CityLabelUtils.cleanCityName(home.cityName)}, ${home.countryCode.toUpperCase()}',
-        subtitle: 'Home',
+        subtitle: home.timeZoneId,
         countryCode: home.countryCode,
       );
     }
@@ -120,7 +120,7 @@ class TimeZoneCatalog {
         zoneId: destination.timeZoneId,
         label:
             '${CityLabelUtils.cleanCityName(destination.cityName)}, ${destination.countryCode.toUpperCase()}',
-        subtitle: 'Destination',
+        subtitle: destination.timeZoneId,
         countryCode: destination.countryCode,
       );
     }

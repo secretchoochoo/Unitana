@@ -123,23 +123,38 @@ void main() {
           sheetFinder,
         );
         expect(refreshText.evaluate().isNotEmpty, isTrue);
-        // Place header rows: avoid brittle spacing around the middle dot.
+        // Place header rows now render city-first without Home/Destination
+        // prefixes.
         final destinationHeader = textInSheetWhere(
-          (t) => t.contains('Destination') && t.contains('Lisbon'),
+          (t) => t.contains('Lisbon'),
           sheetFinder,
         );
         expect(destinationHeader.evaluate().isNotEmpty, isTrue);
 
         final homeHeader = textInSheetWhere(
-          (t) => t.contains('Home') && t.contains('Denver'),
+          (t) => t.contains('Denver'),
           sheetFinder,
         );
         expect(homeHeader.evaluate().isNotEmpty, isTrue);
         expect(
           find.descendant(
             of: sheetFinder,
+            matching: find.textContaining('Destination'),
+          ),
+          findsNothing,
+        );
+        expect(
+          find.descendant(
+            of: sheetFinder,
+            matching: find.textContaining('Home'),
+          ),
+          findsNothing,
+        );
+        expect(
+          find.descendant(
+            of: sheetFinder,
             matching: find.byKey(
-              const ValueKey('weather_summary_bridge_split'),
+              const ValueKey('weather_summary_card_scene_dest'),
             ),
           ),
           findsOneWidget,
@@ -148,34 +163,7 @@ void main() {
           find.descendant(
             of: sheetFinder,
             matching: find.byKey(
-              const ValueKey('weather_summary_bridge_city_dest'),
-            ),
-          ),
-          findsOneWidget,
-        );
-        expect(
-          find.descendant(
-            of: sheetFinder,
-            matching: find.byKey(
-              const ValueKey('weather_summary_bridge_city_home'),
-            ),
-          ),
-          findsOneWidget,
-        );
-        expect(
-          find.descendant(
-            of: sheetFinder,
-            matching: find.byKey(
-              const ValueKey('weather_summary_bridge_scene_dest'),
-            ),
-          ),
-          findsOneWidget,
-        );
-        expect(
-          find.descendant(
-            of: sheetFinder,
-            matching: find.byKey(
-              const ValueKey('weather_summary_bridge_scene_home'),
+              const ValueKey('weather_summary_card_scene_home'),
             ),
           ),
           findsOneWidget,

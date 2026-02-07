@@ -207,7 +207,7 @@
     }
   ],
   "current_state": {
-    "current_slice": "Pack E phase 5 shipped: weather-sheet middle bridge now includes compact per-city scene previews (dashboard marquee unchanged)",
+    "current_slice": "Pack E follow-up shipped: weather sheet now uses city-first card headers with in-card mini marquees (bridge removed; dashboard marquee unchanged)",
     "notes": [
       "Codex-first workflow allows larger execution packs while keeping gates green.",
       "Pack A city data platform foundation is complete with canonical schema + validation guards.",
@@ -283,13 +283,16 @@
       "Pack E phase 4 preserved scope guard: no dashboard marquee semantics changes; bridge coverage added to weather sheet smoke test.",
       "Pack E phase 5 shipped: weather-sheet bridge halves now render compact per-city scene previews via `HeroAliveMarquee` to improve dual-city visual readability.",
       "Pack E phase 5 preserved canonical hero-key safety by rendering bridge previews with `includeTestKeys: false` and kept dashboard marquee semantics unchanged.",
-      "Pack E phase 5 smoke coverage added bridge scene keys (`weather_summary_bridge_scene_dest`, `weather_summary_bridge_scene_home`) to lock visual contract presence."
+      "Pack E phase 5 smoke coverage added bridge scene keys (`weather_summary_bridge_scene_dest`, `weather_summary_bridge_scene_home`) to lock visual contract presence.",
+      "Weather sheet follow-up shipped: removed middle bridge card and embedded compact scene marquees directly in each city card header (top-right).",
+      "Weather sheet follow-up shipped: city headers are now city-first (`flag + city`) with no `Home`/`Destination` prefix text, and table pills were slightly compacted for better breathing room.",
+      "Time-family picker follow-up shipped: seeded zone labels no longer include `Home ·` / `Destination ·` prefixes, while seeded-zone prioritization remains intact."
     ],
     "overall_health": "Stable with full gates passing; canonical city data coverage is now enforced for all in-scope records.",
     "status": "GREEN",
     "focus": {
-      "now": "Execute Pack E phase 6: evaluate subtle bridge motion polish for weather-sheet-only split treatment while preserving phone readability and layout stability.",
-      "next": "Assess whether bridge animation remains low-noise under real weather condition churn; keep static fallback if motion harms scanability.",
+      "now": "Execute Pack E phase 6 follow-up: tune in-card weather mini-marquee/header balance for phone readability and parity with dashboard weather language.",
+      "next": "Evaluate whether additional animation polish is still needed now that bridge split was removed and in-card marquees are the primary treatment.",
       "later": [
         "Pack H localization full rollout (multi-language ARB + language settings)"
       ]

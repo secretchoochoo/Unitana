@@ -6,6 +6,21 @@
 - **Operating mode:** Codex is now the primary workflow; apply edits directly in-repo (do not require patch zip workflow unless explicitly requested).
 
 ## Latest changes (2026-02-07)
+- Weather-sheet city-card compact pass shipped:
+  - removed `Destination`/`Home` prefixes from weather-sheet card headers; cards now render city-first (`flag + city`).
+  - removed the weather-sheet middle bridge split card and moved compact mini-marquees into each city card header (top-right).
+  - tightened weather card metric pills (slightly smaller radius/padding/type density) to free breathing room while preserving readability.
+  - preserved dashboard marquee semantics and retained hero key safety via `includeTestKeys: false` on in-card marquees.
+  - Time-family picker labels now avoid `Home ·` / `Destination ·` prefixes while preserving seeded-zone prioritization logic.
+  - regression updates:
+    - weather sheet smoke now checks per-card scene keys (`weather_summary_card_scene_dest`, `weather_summary_card_scene_home`) and absence of Home/Destination header prefixes.
+    - time modal and time-zone catalog tests now assert city-first seeded labels instead of Home/Destination prefixes.
+  - full gates re-run and green:
+    - `dart format .`
+    - `flutter analyze`
+    - `flutter test`
+
+## Latest changes (2026-02-07)
 - Pack E phase 5 bridge visual upgrade shipped (weather-sheet only):
   - upgraded bridge halves in `WeatherSummaryBottomSheet` from text-only to include compact per-city scene previews (using `HeroAliveMarquee` in compact mode).
   - preserved canonical hero key uniqueness by forcing `includeTestKeys: false` for bridge preview marquees.
