@@ -186,49 +186,33 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  String _weatherLabel(WeatherCondition condition) {
-    switch (condition) {
-      case WeatherCondition.clear:
-        return 'Clear';
-      case WeatherCondition.partlyCloudy:
-        return 'Partly Cloudy';
-      case WeatherCondition.cloudy:
-        return 'Cloudy';
-      case WeatherCondition.overcast:
-        return 'Overcast';
-      case WeatherCondition.drizzle:
-        return 'Drizzle';
-      case WeatherCondition.rain:
-        return 'Rain';
-      case WeatherCondition.thunderstorm:
-        return 'Thunderstorm';
-      case WeatherCondition.snow:
-        return 'Snow';
-      case WeatherCondition.sleet:
-        return 'Sleet';
-      case WeatherCondition.hail:
-        return 'Hail';
-      case WeatherCondition.fog:
-        return 'Fog';
-      case WeatherCondition.mist:
-        return 'Mist';
-      case WeatherCondition.haze:
-        return 'Haze';
-      case WeatherCondition.smoke:
-        return 'Smoke';
-      case WeatherCondition.dust:
-        return 'Dust';
-      case WeatherCondition.sand:
-        return 'Sand';
-      case WeatherCondition.ash:
-        return 'Ash';
-      case WeatherCondition.squall:
-        return 'Squall';
-      case WeatherCondition.tornado:
-        return 'Tornado';
-      case WeatherCondition.windy:
-        return 'Windy';
-    }
+  String _weatherLabel(BuildContext context, WeatherCondition condition) {
+    final conditionKey = switch (condition) {
+      WeatherCondition.clear => 'clear',
+      WeatherCondition.partlyCloudy => 'partlyCloudy',
+      WeatherCondition.cloudy => 'cloudy',
+      WeatherCondition.overcast => 'overcast',
+      WeatherCondition.drizzle => 'drizzle',
+      WeatherCondition.rain => 'rain',
+      WeatherCondition.thunderstorm => 'thunderstorm',
+      WeatherCondition.snow => 'snow',
+      WeatherCondition.sleet => 'sleet',
+      WeatherCondition.hail => 'hail',
+      WeatherCondition.fog => 'fog',
+      WeatherCondition.mist => 'mist',
+      WeatherCondition.haze => 'haze',
+      WeatherCondition.smoke => 'smoke',
+      WeatherCondition.dust => 'dust',
+      WeatherCondition.sand => 'sand',
+      WeatherCondition.ash => 'ash',
+      WeatherCondition.squall => 'squall',
+      WeatherCondition.tornado => 'tornado',
+      WeatherCondition.windy => 'windy',
+    };
+    return DashboardCopy.devtoolsWeatherConditionLabel(
+      context,
+      conditionKey: conditionKey,
+    );
   }
 
   void _openWeatherOverrideSheet() {
@@ -255,7 +239,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
         }
 
         final options = WeatherCondition.values.toList()
-          ..sort((a, b) => _weatherLabel(a).compareTo(_weatherLabel(b)));
+          ..sort(
+            (a, b) =>
+                _weatherLabel(context, a).compareTo(_weatherLabel(context, b)),
+          );
 
         WeatherCondition? selectedCondition = initialCondition;
         _DevWeatherTimeOfDay selectedTimeOfDay = initialTimeOfDay();
@@ -289,14 +276,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
             }
 
             String backendLabel(WeatherBackend b) {
-              switch (b) {
-                case WeatherBackend.mock:
-                  return 'Demo (no network)';
-                case WeatherBackend.openMeteo:
-                  return 'Live: Open-Meteo';
-                case WeatherBackend.weatherApi:
-                  return 'Live: WeatherAPI';
-              }
+              final key = switch (b) {
+                WeatherBackend.mock => 'mock',
+                WeatherBackend.openMeteo => 'openMeteo',
+                WeatherBackend.weatherApi => 'weatherApi',
+              };
+              return DashboardCopy.devtoolsWeatherBackendLabel(
+                context,
+                backendKey: key,
+              );
             }
 
             Future<void> applyBackend(WeatherBackend b) async {
@@ -448,9 +436,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       ),
                       child: Builder(
                         builder: (context) {
-                          final src = backendLabel(selectedBackend)
-                              .replaceAll('Live: ', '')
-                              .replaceAll('Demo (no network)', 'Demo');
+                          final src =
+                              DashboardCopy.devtoolsWeatherBackendShortLabel(
+                                context,
+                                backendKey: switch (selectedBackend) {
+                                  WeatherBackend.mock => 'mock',
+                                  WeatherBackend.openMeteo => 'openMeteo',
+                                  WeatherBackend.weatherApi => 'weatherApi',
+                                },
+                              );
 
                           final last = _liveData.lastRefreshedAt;
                           final line = _liveData.isRefreshing
@@ -528,7 +522,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     for (final option in options)
                       choiceTile(
                         key: ValueKey('devtools_weather_${option.name}'),
-                        title: _weatherLabel(option),
+                        title: _weatherLabel(context, option),
                         value: option,
                       ),
                   ],
@@ -697,11 +691,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
       useSafeArea: true,
       builder: (sheetContext) {
         final weatherOverride = _liveData.debugWeatherOverride;
-        final sourceLabel = switch (_liveData.weatherBackend) {
-          WeatherBackend.mock => 'Demo (no network)',
-          WeatherBackend.openMeteo => 'Live: Open-Meteo',
-          WeatherBackend.weatherApi => 'Live: WeatherAPI',
-        };
+        final sourceLabel = DashboardCopy.devtoolsWeatherBackendLabel(
+          sheetContext,
+          backendKey: switch (_liveData.weatherBackend) {
+            WeatherBackend.mock => 'mock',
+            WeatherBackend.openMeteo => 'openMeteo',
+            WeatherBackend.weatherApi => 'weatherApi',
+          },
+        );
         final String weatherSubtitle;
         if (weatherOverride == null) {
           weatherSubtitle = DashboardCopy.devtoolsSourceNoOverride(
@@ -718,7 +715,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           weatherSubtitle = DashboardCopy.devtoolsSourceForced(
             sheetContext,
             sourceLabel: sourceLabel,
-            forcedLabel: _weatherLabel(weatherOverride.condition),
+            forcedLabel: _weatherLabel(sheetContext, weatherOverride.condition),
             suffix: suffix,
           );
         } else {
@@ -1065,7 +1062,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final previousProfileId = state.activeProfileId;
     final profile = UnitanaProfile(
       id: _nextProfileId(),
-      name: 'New Profile',
+      name: DashboardCopy.profilesDefaultName(context),
       places: const <Place>[],
       defaultPlaceId: null,
     );

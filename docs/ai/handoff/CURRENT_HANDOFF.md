@@ -2,8 +2,30 @@
 
 ## Snapshot
 - **Date:** 2026-02-07
-- **Status:** Repo is green (`dart format`, `flutter analyze`, `flutter test`) after Pack E ambiguity/perf UX follow-ups + Pack H residual localization expansion.
+- **Status:** Repo is green (`dart format`, `flutter analyze`, `flutter test`) after Pack H devtools/profile residual localization + Pack E ambiguity v2 tuning.
 - **Operating mode:** Codex is now the primary workflow; apply edits directly in-repo (do not require patch zip workflow unless explicitly requested).
+
+## Latest changes (2026-02-07)
+- Pack H residual localization expansion shipped on dashboard/time/profile/devtools surfaces:
+  - devtools weather backend labels and short labels now resolve through runtime localization keys (`dashboard.devtools.weather.backend.*`, `dashboard.devtools.weather.backendShort.*`) instead of hardcoded strings.
+  - devtools coarse weather-condition labels now resolve through runtime localization keys (`dashboard.devtools.weather.condition.*`) instead of hardcoded condition literals.
+  - Jet Lag schedule time-picker helper copy (`Typical bedtime` / `Typical wake time`) now routes through runtime localization (`dashboard.jetLag.schedule.help.*`).
+  - profile default-name seed now routes through runtime localization (`dashboard.profiles.defaultName`).
+  - seed/runtime test coverage expanded in:
+    - `app/unitana/test/localization_seed_contract_test.dart`
+    - `app/unitana/test/dashboard_localizations_runtime_test.dart`
+- Pack E ambiguity v2 shipped in shared city-picker engine:
+  - city vs timezone matching is now explicitly separated in scoring, with city/country matches prioritized for city-oriented queries.
+  - added exact city-name strengthening and multi-token phrase penalties to reduce long noisy variants outranking canonical city rows.
+  - added timezone-only de-prioritization for non-timezone queries while preserving direct timezone search path.
+  - wizard city picker now disables timezone-only matches (city/country-only behavior), while Time/Jet Lag direct-zone search keeps timezone-priority behavior.
+  - regression expansion in `app/unitana/test/city_picker_engine_test.dart` now covers:
+    - timezone-only de-prioritization under city queries
+    - dataset-backed ambiguity family expectations (`san jose`, `london`, `vancouver`, `portland`) + country-hint behavior.
+- full gates re-run and green:
+  - `dart format .`
+  - `flutter analyze`
+  - `flutter test`
 
 ## Latest changes (2026-02-07)
 - Pack E follow-up slices shipped after shared engine baseline:

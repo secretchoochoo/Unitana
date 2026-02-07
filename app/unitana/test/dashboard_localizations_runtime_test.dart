@@ -103,6 +103,10 @@ void main() {
       key: 'dashboard.profiles.delete.message',
       params: const <String, String>{'profileName': 'Weekend Trip'},
     );
+    final profileDefaultName = DashboardLocalizations.resolveForLocale(
+      locale: const Locale('en'),
+      key: 'dashboard.profiles.defaultName',
+    );
     final devtoolsSourceSummary = DashboardLocalizations.resolveForLocale(
       locale: const Locale('en'),
       key: 'dashboard.devtools.weather.sourceSummary',
@@ -112,6 +116,18 @@ void main() {
       locale: const Locale('en'),
       key: 'dashboard.devtools.weather.freshness.updated',
       params: const <String, String>{'source': 'Demo', 'age': '2m ago'},
+    );
+    final devtoolsBackend = DashboardLocalizations.resolveForLocale(
+      locale: const Locale('en'),
+      key: 'dashboard.devtools.weather.backend.openMeteo',
+    );
+    final devtoolsBackendShort = DashboardLocalizations.resolveForLocale(
+      locale: const Locale('en'),
+      key: 'dashboard.devtools.weather.backendShort.mock',
+    );
+    final devtoolsCondition = DashboardLocalizations.resolveForLocale(
+      locale: const Locale('en'),
+      key: 'dashboard.devtools.weather.condition.clear',
     );
     final toolPickerTitle = DashboardLocalizations.resolveForLocale(
       locale: const Locale('en'),
@@ -129,6 +145,10 @@ void main() {
     final timeInputHint = DashboardLocalizations.resolveForLocale(
       locale: const Locale('en'),
       key: 'dashboard.time.converter.inputHint',
+    );
+    final jetLagBedtimeHelp = DashboardLocalizations.resolveForLocale(
+      locale: const Locale('en'),
+      key: 'dashboard.jetLag.schedule.help.bedtime',
     );
     final moreCount = DashboardLocalizations.resolveForLocale(
       locale: const Locale('en'),
@@ -207,15 +227,20 @@ void main() {
       profileDeleteMessage,
       'Delete "Weekend Trip"? This cannot be undone.',
     );
+    expect(profileDefaultName, 'New Profile');
     expect(
       devtoolsSourceSummary,
       'Source: Live: Open-Meteo\nForce hero weather scenes during development',
     );
     expect(devtoolsFreshness, 'Demo: Last update: 2m ago');
+    expect(devtoolsBackend, 'Live: Open-Meteo');
+    expect(devtoolsBackendShort, 'Demo');
+    expect(devtoolsCondition, 'Clear');
     expect(toolPickerTitle, 'Choose a tool');
     expect(removeTitle, 'Remove Weather?');
     expect(timeMode, 'Advanced: Time Zones');
     expect(timeInputHint, '2026-02-06 18:30');
+    expect(jetLagBedtimeHelp, 'Typical bedtime');
     expect(moreCount, '+5 more');
     expect(pickerHint, 'Search city, country, timezone, or EST');
     expect(searching, 'Searching…');

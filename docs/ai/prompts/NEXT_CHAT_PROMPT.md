@@ -1,4 +1,4 @@
-NEXT CHAT PROMPT — Pack H Zero-Residual Audit + Pack E Ambiguity V2
+NEXT CHAT PROMPT — Pack H Final Residual Sweep + Pack E Ambiguity V3
 
 You are taking over Unitana (Flutter) in a fresh, high-context window.
 
@@ -8,9 +8,9 @@ Read these files first:
 3) `docs/ai/reference/CITY_PICKER_PERF_BUDGET.md`
 4) `app/unitana/lib/features/dashboard/models/dashboard_copy.dart`
 5) `app/unitana/lib/l10n/localization_seed.dart`
-6) `app/unitana/lib/features/dashboard/widgets/tool_modal_bottom_sheet.dart`
-7) `app/unitana/lib/features/dashboard/widgets/places_hero_v2.dart`
-8) `app/unitana/lib/features/dashboard/widgets/weather_summary_bottom_sheet.dart`
+6) `app/unitana/lib/features/dashboard/widgets/places_hero_v2.dart`
+7) `app/unitana/lib/features/dashboard/widgets/tool_modal_bottom_sheet.dart`
+8) `app/unitana/lib/features/dashboard/dashboard_screen.dart`
 9) `app/unitana/lib/data/city_picker_engine.dart`
 10) `app/unitana/test/city_picker_engine_test.dart`
 
@@ -27,32 +27,32 @@ Read these files first:
   - goldens opt-in only
 
 ## Mission
-Close remaining Pack H runtime-localization residuals and run Pack E ambiguity calibration v2 on top of the shared picker engine.
+Close remaining high-traffic runtime-localization residuals (especially hero env/details microcopy) and run an ambiguity v3 pass for same-country/same-name city disambiguation without perf regressions.
 
 ## Required outcomes
-1) Pack H zero-residual audit (dashboard/weather/devtools/profile)
-- Run a strict literal audit for high-traffic user-visible copy.
-- Migrate any remaining hardcoded strings through `DashboardCopy` + runtime lookup.
+1) Pack H final residual sweep
+- Audit `places_hero_v2.dart`, time/jet-lag helper surfaces, and related dashboard/profile/devtools views for remaining visible hardcoded literals.
+- Migrate residual user-facing literals through `DashboardCopy` runtime localization.
 - Keep fallback behavior deterministic and readable.
 
-2) Pack H contracts
-- Add stable `dashboard.*` keys for newly migrated strings.
+2) Pack H contracts/tests
+- Add stable `dashboard.*` seed keys for every newly migrated literal.
 - Expand:
   - `dashboard_localizations_runtime_test.dart`
   - `localization_seed_contract_test.dart`
-- Add or adjust focused widget tests when migrated copy appears in critical surfaces.
+- Add focused widget tests for any migrated critical hero/devtools strings if needed.
 
-3) Pack E ambiguity calibration v2
-- Tune shared engine ranking for additional ambiguous city families (e.g., `san jose`, `london`, `vancouver`, `portland`).
+3) Pack E ambiguity v3 (same-country/same-name)
+- Improve ranking behavior for same-country duplicates where one row is clearly mainstream (e.g., `Portland` family behavior).
 - Preserve:
-  - seeded home/destination precedence
   - alias behavior (`EST/CST/PST`)
+  - direct timezone search behavior
+  - seeded home/destination precedence
   - selected-row single-marker contract
-  - time swap/seeding/history behavior
 
-4) Pack E regression additions
-- Add dataset-backed ordering assertions in `city_picker_engine_test.dart` for added ambiguous families.
-- Keep `city_picker_perf_budget_test.dart` green under existing budget thresholds.
+4) Pack E regression/perf guardrails
+- Extend `city_picker_engine_test.dart` with deterministic contracts for new v3 behavior.
+- Keep `city_picker_perf_budget_test.dart` green under existing thresholds.
 
 5) Docs update
 - Update:
@@ -61,14 +61,14 @@ Close remaining Pack H runtime-localization residuals and run Pack E ambiguity c
   - `docs/ai/prompts/NEXT_CHAT_PROMPT.md`
 
 ## Suggested execution order
-1) literal audit + Pack H residual migrations
+1) residual literal audit + migrations
 2) localization seed/runtime test expansion
-3) ambiguity v2 tuning + regression tests
+3) ambiguity v3 tuning + regression additions
 4) full gates
 5) docs/handoff refresh
 
 ## Definition of done
-- High-traffic runtime-localization residuals are effectively cleared.
-- Shared picker ranking improves on additional ambiguous city families without regressions.
-- Perf contracts remain green.
+- Remaining high-traffic residual literals are materially reduced.
+- Same-country ambiguity behavior improves without regression to timezone/alias flows.
+- Perf budgets remain green.
 - Repo green (`format`, `analyze`, `test`).

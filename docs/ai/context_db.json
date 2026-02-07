@@ -207,7 +207,7 @@
     }
   ],
   "current_state": {
-    "current_slice": "Pack E follow-up shipped: ambiguity/disambiguation + picker responsiveness improvements on shared engine baseline; Pack H residual localization expanded across weather/hero/tool hints",
+    "current_slice": "Pack H residual devtools/profile/time copy migration shipped + Pack E ambiguity v2 scoring/contract pass on shared city-picker engine",
     "notes": [
       "Codex-first workflow allows larger execution packs while keeping gates green.",
       "Pack A city data platform foundation is complete with canonical schema + validation guards.",
@@ -307,13 +307,19 @@
       "Pack E follow-up shipped: added dataset-backed ambiguity tests (`cities_v1.json`) and mixed-alias selected-marker stability coverage.",
       "Pack E responsiveness pass shipped: Time/Jet Lag picker search now applies with debounce and shows runtime-localized searching state (`dashboard.time.picker.searching`).",
       "Pack H residual sweep shipped: weather condition labels across hero/weather sheet now route through runtime-localized `dashboard.weather.condition.*` keys.",
-      "Pack H residual sweep shipped: remaining high-traffic hardcoded tool input hints (generic converter, tip/tax/unit-price/time-converter) now resolve through `DashboardCopy` runtime localization."
+      "Pack H residual sweep shipped: remaining high-traffic hardcoded tool input hints (generic converter, tip/tax/unit-price/time-converter) now resolve through `DashboardCopy` runtime localization.",
+      "Pack H residual expansion shipped: dashboard devtools weather backend labels/short labels and coarse weather-condition names now route through runtime-localized `dashboard.devtools.weather.*` keys.",
+      "Pack H residual expansion shipped: Jet Lag schedule time-picker helper copy and profile default-name seed now route through runtime localization (`dashboard.jetLag.schedule.help.*`, `dashboard.profiles.defaultName`).",
+      "Pack H residual expansion shipped: localization seed/runtime tests were extended for new devtools/backend/condition and jet-lag/profile keys.",
+      "Pack E ambiguity v2 shipped: `CityPickerEngine.searchEntries` now separates city-country matching from timezone matching, adds city-exact and multi-token phrase calibration, and de-prioritizes timezone-only rows for non-timezone queries.",
+      "Pack E ambiguity v2 shipped: wizard city picker now enforces city-only matching (no timezone-only rows), while Time/Jet Lag direct zone search keeps timezone-priority behavior.",
+      "Pack E ambiguity v2 shipped: dataset-backed ambiguity tests expanded for `san jose`, `london`, `vancouver`, `portland` plus timezone-only de-prioritization coverage."
     ],
     "overall_health": "Stable with full gates passing; canonical city data coverage is now enforced for all in-scope records.",
     "status": "GREEN",
     "focus": {
-      "now": "Run a strict zero-residual localization audit for dashboard/weather/devtools/profile strings and migrate any final hardcoded high-traffic literals to runtime keys.",
-      "next": "Tune Pack E ambiguity ranking v2 on additional real-world same-name families (san jose, london, vancouver, portland) and add dataset-backed ordering contracts.",
+      "now": "Run a final residual sweep for hero weather/env microcopy hardcoded strings and migrate remaining high-traffic literals through DashboardCopy/runtime keys.",
+      "next": "Tune Pack E ambiguity v3 for same-country same-name collisions (e.g., Portland OR/ME) without regressing perf or alias/direct-zone behavior.",
       "later": [
         "Pack H localization full rollout (multi-language ARB + language settings)",
         "Pack E optional search-budget UX tuning for lower-end devices (debounce window/indicator behavior) with perf-contract guardrails."

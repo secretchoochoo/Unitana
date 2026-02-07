@@ -207,6 +207,7 @@ class _CityPickerState extends State<CityPicker> {
       maxResults: 100,
       dedupeByTimeZone: false,
       dedupeByCityCountry: true,
+      allowTimeZoneOnlyMatches: false,
     );
     final deduped = results.map((r) => r.value).toList(growable: false);
     PickerPerfTrace.logElapsed(

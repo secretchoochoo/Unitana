@@ -22,6 +22,10 @@ void main() {
       'Jet Lag Plan',
     );
     expect(
+      LocalizationSeed.enUs['dashboard.jetLag.schedule.help.bedtime'],
+      'Typical bedtime',
+    );
+    expect(
       LocalizationSeed.enUs['dashboard.time.converter.title'],
       'Convert Local Time',
     );
@@ -78,12 +82,29 @@ void main() {
       'Delete "{profileName}"? This cannot be undone.',
     );
     expect(
+      LocalizationSeed.enUs['dashboard.profiles.defaultName'],
+      'New Profile',
+    );
+    expect(
       LocalizationSeed.enUs['dashboard.devtools.weather.sourceHeading'],
       'Weather Source',
     );
     expect(
       LocalizationSeed.enUs['dashboard.devtools.clock.title'],
       'Clock Override',
+    );
+    expect(
+      LocalizationSeed.enUs['dashboard.devtools.weather.backend.openMeteo'],
+      'Live: Open-Meteo',
+    );
+    expect(
+      LocalizationSeed.enUs['dashboard.devtools.weather.backendShort.mock'],
+      'Demo',
+    );
+    expect(
+      LocalizationSeed
+          .enUs['dashboard.devtools.weather.condition.thunderstorm'],
+      'Thunderstorm',
     );
     expect(
       LocalizationSeed.enUs['dashboard.devtools.resetRestart.title'],

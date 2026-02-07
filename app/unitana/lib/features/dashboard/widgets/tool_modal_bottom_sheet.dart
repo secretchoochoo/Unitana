@@ -462,7 +462,10 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
     final picked = await showTimePicker(
       context: context,
       initialTime: TimeOfDay(hour: initial ~/ 60, minute: initial % 60),
-      helpText: bedtime ? 'Typical bedtime' : 'Typical wake time',
+      helpText: DashboardCopy.jetLagSchedulePickerHelp(
+        context,
+        bedtime: bedtime,
+      ),
     );
     if (picked == null || !mounted) return;
     setState(() {
@@ -2497,6 +2500,8 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
       shortQueryAllowsTimeZonePrefix: true,
       dedupeByTimeZone: true,
       dedupeByCityCountry: true,
+      allowTimeZoneOnlyMatches: true,
+      deprioritizeTimeZoneOnlyMatches: true,
     ).map((entry) => entry.value).toList(growable: false);
     PickerPerfTrace.logElapsed(
       'time_city_filter',
@@ -2532,6 +2537,8 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
       maxResults: 12,
       shortQueryAllowsTimeZonePrefix: true,
       dedupeByTimeZone: false,
+      allowTimeZoneOnlyMatches: true,
+      deprioritizeTimeZoneOnlyMatches: false,
     ).map((entry) => entry.value).toList(growable: false);
     PickerPerfTrace.logElapsed(
       'time_zone_filter',

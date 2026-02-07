@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'city_picker_ranking.dart';
 
 class CityPickerEngineEntry<T> {
@@ -7,6 +9,7 @@ class CityPickerEngineEntry<T> {
   final String countryNorm;
   final String countryCode;
   final String timeZoneId;
+  final String timeZoneNorm;
   final String searchText;
   final bool lowSignal;
   final int baseScore;
@@ -18,6 +21,7 @@ class CityPickerEngineEntry<T> {
     required this.countryNorm,
     required this.countryCode,
     required this.timeZoneId,
+    required this.timeZoneNorm,
     required this.searchText,
     required this.lowSignal,
     required this.baseScore,
@@ -49,6 +53,7 @@ class CityPickerEngine {
       final countryCode = countryCodeOf(item).trim().toUpperCase();
       final countryNorm = normalizeQuery(countryNameOf(item));
       final timeZoneId = timeZoneIdOf(item).trim();
+      final timeZoneNorm = normalizeQuery(timeZoneId);
       final lowSignal = _isLowSignal(cityRaw);
       var baseScore = 0;
       if (isCurated?.call(item) ?? false) baseScore += 260;
@@ -78,6 +83,7 @@ class CityPickerEngine {
           countryNorm: countryNorm,
           countryCode: countryCode,
           timeZoneId: timeZoneId,
+          timeZoneNorm: timeZoneNorm,
           searchText: searchText,
           lowSignal: lowSignal,
           baseScore: baseScore,
@@ -149,6 +155,8 @@ class CityPickerEngine {
     bool shortQueryAllowsTimeZonePrefix = false,
     bool dedupeByTimeZone = false,
     bool dedupeByCityCountry = false,
+    bool allowTimeZoneOnlyMatches = true,
+    bool deprioritizeTimeZoneOnlyMatches = true,
   }) {
     final query = normalizeQuery(queryRaw);
     if (query.isEmpty) return <CityPickerEngineEntry<T>>[];
@@ -157,18 +165,21 @@ class CityPickerEngine {
     final scored = <({CityPickerEngineEntry<T> row, int score})>[];
 
     for (final row in entries) {
-      final haystack = row.searchText;
-      var matches = true;
-      for (final token in tokens) {
-        if (!haystack.contains(token)) {
-          matches = false;
-          break;
-        }
+      final cityCountrySearch =
+          '${row.cityNameNorm} ${row.countryNorm} ${row.countryCode.toLowerCase()}';
+      final matchesCityCountry = tokens.every(
+        (token) => cityCountrySearch.contains(token),
+      );
+      final matchesTimeZone =
+          row.timeZoneNorm.isNotEmpty &&
+          tokens.every((token) => row.timeZoneNorm.contains(token));
+      final matchesAlias = aliasTimeZoneIds.contains(row.timeZoneId);
+      if (!matchesCityCountry && !matchesAlias) {
+        if (!allowTimeZoneOnlyMatches || !matchesTimeZone) continue;
       }
-      if (!matches && !aliasTimeZoneIds.contains(row.timeZoneId)) continue;
 
       if (shortQuery &&
-          !aliasTimeZoneIds.contains(row.timeZoneId) &&
+          !matchesAlias &&
           !hasTokenBoundary(row.cityNameNorm, query) &&
           !row.cityNameNorm.startsWith(query) &&
           !hasTokenBoundary(row.countryNorm, query) &&
@@ -182,10 +193,13 @@ class CityPickerEngine {
 
       var score = row.baseScore;
       if (preferredTimeZoneIds.contains(row.timeZoneId)) score += 260;
-      if (aliasTimeZoneIds.contains(row.timeZoneId)) score += 220;
+      if (matchesAlias) score += 220;
       if (row.cityNameNorm.startsWith(query)) score += 180;
       if (row.cityNameNorm.contains(' $query')) score += 100;
-      if (query == row.cityNameNorm) score += 120;
+      if (query == row.cityNameNorm) {
+        score += 280;
+        if (row.timeZoneNorm.contains(query)) score += 60;
+      }
       if (_queryIncludesCountryHint(query: query, row: row)) score += 90;
       if (row.countryNorm.startsWith(query) ||
           row.countryNorm.contains(' $query')) {
@@ -193,6 +207,20 @@ class CityPickerEngine {
       }
       if (row.timeZoneId.toLowerCase().contains(queryRaw.toLowerCase())) {
         score += 50;
+      }
+      if (deprioritizeTimeZoneOnlyMatches &&
+          matchesTimeZone &&
+          !matchesCityCountry &&
+          !_looksLikeTimeZoneQuery(queryRaw)) {
+        score -= 140;
+      }
+      if (tokens.length >= 2 &&
+          row.cityNameNorm != query &&
+          row.cityNameNorm.contains(query)) {
+        final extraLength = row.cityNameNorm.length - query.length;
+        if (extraLength > 0) {
+          score -= math.min(140, extraLength * 8);
+        }
       }
       scored.add((row: row, score: score));
       if (scored.length >= maxCandidates) break;
@@ -224,6 +252,15 @@ class CityPickerEngine {
       out.add(row.row);
     }
     return out;
+  }
+
+  static bool _looksLikeTimeZoneQuery(String rawQuery) {
+    final q = rawQuery.trim().toLowerCase();
+    if (q.isEmpty) return false;
+    return q.contains('/') ||
+        q.contains('_') ||
+        q.contains('utc') ||
+        q.contains('gmt');
   }
 
   static bool _queryIncludesCountryHint<T>({

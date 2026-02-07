@@ -304,6 +304,15 @@ class DashboardCopy {
     },
     fallback: '20:00 in $toCity = $overlapEvening in $fromCity',
   );
+  static String jetLagSchedulePickerHelp(
+    BuildContext context, {
+    required bool bedtime,
+  }) => DashboardLocalizations.of(context).text(
+    bedtime
+        ? 'dashboard.jetLag.schedule.help.bedtime'
+        : 'dashboard.jetLag.schedule.help.wake',
+    fallback: bedtime ? 'Typical bedtime' : 'Typical wake time',
+  );
 
   static String updating(BuildContext context) => DashboardLocalizations.of(
     context,
@@ -515,6 +524,59 @@ class DashboardCopy {
         'dashboard.devtools.weather.defaultChoice',
         fallback: 'Default (no visual override)',
       );
+  static String devtoolsWeatherBackendLabel(
+    BuildContext context, {
+    required String backendKey,
+  }) => DashboardLocalizations.of(context).text(
+    'dashboard.devtools.weather.backend.$backendKey',
+    fallback: switch (backendKey) {
+      'mock' => 'Demo (no network)',
+      'openMeteo' => 'Live: Open-Meteo',
+      'weatherApi' => 'Live: WeatherAPI',
+      _ => backendKey,
+    },
+  );
+  static String devtoolsWeatherBackendShortLabel(
+    BuildContext context, {
+    required String backendKey,
+  }) => DashboardLocalizations.of(context).text(
+    'dashboard.devtools.weather.backendShort.$backendKey',
+    fallback: switch (backendKey) {
+      'mock' => 'Demo',
+      'openMeteo' => 'Open-Meteo',
+      'weatherApi' => 'WeatherAPI',
+      _ => backendKey,
+    },
+  );
+  static String devtoolsWeatherConditionLabel(
+    BuildContext context, {
+    required String conditionKey,
+  }) => DashboardLocalizations.of(context).text(
+    'dashboard.devtools.weather.condition.$conditionKey',
+    fallback: switch (conditionKey) {
+      'clear' => 'Clear',
+      'partlyCloudy' => 'Partly Cloudy',
+      'cloudy' => 'Cloudy',
+      'overcast' => 'Overcast',
+      'drizzle' => 'Drizzle',
+      'rain' => 'Rain',
+      'thunderstorm' => 'Thunderstorm',
+      'snow' => 'Snow',
+      'sleet' => 'Sleet',
+      'hail' => 'Hail',
+      'fog' => 'Fog',
+      'mist' => 'Mist',
+      'haze' => 'Haze',
+      'smoke' => 'Smoke',
+      'dust' => 'Dust',
+      'sand' => 'Sand',
+      'ash' => 'Ash',
+      'squall' => 'Squall',
+      'tornado' => 'Tornado',
+      'windy' => 'Windy',
+      _ => conditionKey,
+    },
+  );
   static String devtoolsClockTitle(BuildContext context) =>
       DashboardLocalizations.of(
         context,
@@ -654,6 +716,10 @@ class DashboardCopy {
         'dashboard.profiles.destinationFallback',
         fallback: 'City not set',
       );
+  static String profilesDefaultName(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.profiles.defaultName', fallback: 'New Profile');
 
   static String tipBillAmountLabel(BuildContext context, String currencyCode) =>
       DashboardLocalizations.of(context).text(

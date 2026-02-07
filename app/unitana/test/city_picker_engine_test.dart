@@ -103,6 +103,44 @@ void main() {
     expect(keys, contains('santiago-do-america-santo-domingo'));
   });
 
+  test('city-name matches outrank timezone-only matches for city queries', () {
+    final entries = buildRows(const [
+      _Row(
+        id: 'london-gb',
+        city: 'London',
+        countryCode: 'GB',
+        countryName: 'United Kingdom',
+        timeZoneId: 'Europe/London',
+      ),
+      _Row(
+        id: 'new-london-us',
+        city: 'New London',
+        countryCode: 'US',
+        countryName: 'United States',
+        timeZoneId: 'America/New_York',
+      ),
+      _Row(
+        id: 'ayr-gb',
+        city: 'Ayr',
+        countryCode: 'GB',
+        countryName: 'United Kingdom',
+        timeZoneId: 'Europe/London',
+      ),
+    ]);
+
+    final results = CityPickerEngine.searchEntries(
+      entries: entries,
+      queryRaw: 'london',
+      dedupeByTimeZone: false,
+      dedupeByCityCountry: false,
+    );
+
+    final keys = results.map((r) => r.key).toList(growable: false);
+    expect(keys, containsAll(<String>['london-gb', 'new-london-us', 'ayr-gb']));
+    expect(keys.indexOf('london-gb'), lessThan(keys.indexOf('ayr-gb')));
+    expect(keys.indexOf('new-london-us'), lessThan(keys.indexOf('ayr-gb')));
+  });
+
   test('real dataset ambiguity keeps alternatives and honors country hint', () {
     final decoded =
         jsonDecode(File('assets/data/cities_v1.json').readAsStringSync())
@@ -146,5 +184,87 @@ void main() {
     );
     expect(withCountryHint, isNotEmpty);
     expect(withCountryHint.first.countryCode, 'CL');
+  });
+
+  test('ambiguity v2 families honor exact city and country hints', () {
+    final decoded =
+        jsonDecode(File('assets/data/cities_v1.json').readAsStringSync())
+            as List<dynamic>;
+    final cities = decoded
+        .whereType<Map<String, dynamic>>()
+        .map(City.fromJson)
+        .toList(growable: false);
+
+    final entries = CityPickerEngine.sortByBaseScore(
+      CityPickerEngine.buildEntries<City>(
+        items: cities,
+        keyOf: (c) => c.id,
+        cityNameOf: (c) => c.cityName,
+        countryCodeOf: (c) => c.countryCode,
+        countryNameOf: (c) => c.countryName ?? c.countryCode,
+        timeZoneIdOf: (c) => c.timeZoneId,
+        mainstreamCountryBonus: 60,
+      ),
+    );
+
+    final sanJose = CityPickerEngine.searchEntries(
+      entries: entries,
+      queryRaw: 'san jose',
+      dedupeByCityCountry: true,
+      maxResults: 12,
+    );
+    expect(sanJose, isNotEmpty);
+    expect(sanJose.first.cityNameNorm, 'san jose');
+    expect(
+      sanJose.take(3).every((r) => r.cityNameNorm.contains('san jose')),
+      isTrue,
+    );
+
+    final sanJoseCr = CityPickerEngine.searchEntries(
+      entries: entries,
+      queryRaw: 'san jose cr',
+      dedupeByCityCountry: true,
+      maxResults: 12,
+    );
+    expect(sanJoseCr, isNotEmpty);
+    expect(sanJoseCr.first.countryCode, 'CR');
+
+    final london = CityPickerEngine.searchEntries(
+      entries: entries,
+      queryRaw: 'london',
+      dedupeByCityCountry: true,
+      maxResults: 16,
+    );
+    expect(london, isNotEmpty);
+    expect(london.first.cityNameNorm, 'london');
+    expect(london.first.countryCode, 'GB');
+
+    final londonCa = CityPickerEngine.searchEntries(
+      entries: entries,
+      queryRaw: 'london ca',
+      dedupeByCityCountry: true,
+      maxResults: 12,
+    );
+    expect(londonCa, isNotEmpty);
+    expect(londonCa.first.countryCode, 'CA');
+
+    final vancouver = CityPickerEngine.searchEntries(
+      entries: entries,
+      queryRaw: 'vancouver',
+      dedupeByCityCountry: true,
+      maxResults: 12,
+    );
+    expect(vancouver, isNotEmpty);
+    expect(vancouver.first.cityNameNorm, 'vancouver');
+    expect(vancouver.first.countryCode, 'CA');
+
+    final portland = CityPickerEngine.searchEntries(
+      entries: entries,
+      queryRaw: 'portland',
+      dedupeByCityCountry: true,
+      maxResults: 12,
+    );
+    expect(portland, isNotEmpty);
+    expect(portland.first.cityNameNorm, 'portland');
   });
 }
