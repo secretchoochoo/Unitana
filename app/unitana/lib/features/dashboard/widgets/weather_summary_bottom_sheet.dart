@@ -497,7 +497,7 @@ class WeatherSummaryBottomSheet extends StatelessWidget {
                                   Text(
                                     DashboardCopy.weatherBannerHighLow(context),
                                     style: theme.textTheme.bodySmall?.copyWith(
-                                      fontSize: isTight ? 9 : 10,
+                                      fontSize: isTight ? 8 : 9,
                                       color: cs.onSurfaceVariant,
                                       fontWeight: FontWeight.w800,
                                     ),
@@ -512,9 +512,9 @@ class WeatherSummaryBottomSheet extends StatelessWidget {
                                         '↑ $bannerHigh',
                                         style: theme.textTheme.bodySmall
                                             ?.copyWith(
-                                              fontSize: isTight ? 9 : 10,
+                                              fontSize: isTight ? 8 : 9,
                                               color: DraculaPalette.orange,
-                                              fontWeight: FontWeight.w900,
+                                              fontWeight: FontWeight.w800,
                                             ),
                                         maxLines: 1,
                                       ),
@@ -529,9 +529,9 @@ class WeatherSummaryBottomSheet extends StatelessWidget {
                                         '↓ $bannerLow',
                                         style: theme.textTheme.bodySmall
                                             ?.copyWith(
-                                              fontSize: isTight ? 9 : 10,
+                                              fontSize: isTight ? 8 : 9,
                                               color: DraculaPalette.cyan,
-                                              fontWeight: FontWeight.w900,
+                                              fontWeight: FontWeight.w800,
                                             ),
                                         maxLines: 1,
                                       ),
@@ -901,16 +901,26 @@ class _ForecastToggleBarPanelState extends State<_ForecastToggleBarPanel> {
                   ),
                 )
               else
-                SizedBox(
+                Semantics(
                   key: ValueKey(
-                    'weather_summary_forecast_chart_${widget.place.id}',
+                    'weather_summary_forecast_chart_semantics_${widget.place.id}',
                   ),
-                  height: 120,
-                  child: _TempBarGraph(
-                    bars: bars,
-                    graphKey: showDaily
-                        ? ValueKey('weather_summary_daily_${widget.place.id}')
-                        : ValueKey('weather_summary_hourly_${widget.place.id}'),
+                  container: true,
+                  label:
+                      '${DashboardCopy.weatherForecastModeLabel(context, daily: showDaily)} forecast chart, ${DashboardCopy.weatherForecastUnitsLegend(context)}',
+                  child: SizedBox(
+                    key: ValueKey(
+                      'weather_summary_forecast_chart_${widget.place.id}',
+                    ),
+                    height: 120,
+                    child: _TempBarGraph(
+                      bars: bars,
+                      graphKey: showDaily
+                          ? ValueKey('weather_summary_daily_${widget.place.id}')
+                          : ValueKey(
+                              'weather_summary_hourly_${widget.place.id}',
+                            ),
+                    ),
                   ),
                 ),
             ],

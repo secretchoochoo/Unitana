@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:unitana/app/app_state.dart';
 import 'package:unitana/app/storage.dart';
 import 'package:unitana/features/dashboard/dashboard_screen.dart';
+import 'package:unitana/features/dashboard/models/dashboard_copy.dart';
 import 'package:unitana/models/place.dart';
 import 'package:unitana/theme/app_theme.dart';
 import 'package:unitana/theme/dracula_palette.dart';
@@ -120,6 +121,42 @@ void main() {
           legendText.style?.color,
           DraculaPalette.foreground.withAlpha(230),
         );
+        final hourlyTap = find.byKey(
+          const ValueKey('weather_summary_forecast_mode_hourly_tap_dest'),
+        );
+        final dailyTap = find.byKey(
+          const ValueKey('weather_summary_forecast_mode_daily_tap_dest'),
+        );
+        final hourlySemantics = tester.widget<Semantics>(
+          find.ancestor(of: hourlyTap, matching: find.byType(Semantics)).first,
+        );
+        final dailySemantics = tester.widget<Semantics>(
+          find.ancestor(of: dailyTap, matching: find.byType(Semantics)).first,
+        );
+        expect(hourlySemantics.properties.button, isTrue);
+        expect(hourlySemantics.properties.selected, isTrue);
+        expect(dailySemantics.properties.button, isTrue);
+        expect(dailySemantics.properties.selected, isFalse);
+        final swapLabel = DashboardCopy.weatherForecastSwapTooltip(
+          tester.element(sheetFinder),
+        );
+        final swapTooltip = tester.widget<Tooltip>(
+          find
+              .ancestor(
+                of: find.byKey(
+                  const ValueKey('weather_summary_forecast_swap_dest'),
+                ),
+                matching: find.byType(Tooltip),
+              )
+              .first,
+        );
+        expect(swapTooltip.message, swapLabel);
+        expect(
+          find.byKey(
+            const ValueKey('weather_summary_forecast_chart_semantics_dest'),
+          ),
+          findsOneWidget,
+        );
 
         await tester.tap(
           find.byKey(
@@ -128,6 +165,10 @@ void main() {
         );
         await tester.pump(const Duration(milliseconds: 220));
         expect(dailyMode, findsOneWidget);
+        final dailySemanticsSelected = tester.widget<Semantics>(
+          find.ancestor(of: dailyTap, matching: find.byType(Semantics)).first,
+        );
+        expect(dailySemanticsSelected.properties.selected, isTrue);
 
         await tester.tap(
           find.byKey(const ValueKey('weather_summary_forecast_swap_dest')),

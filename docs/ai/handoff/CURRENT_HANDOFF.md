@@ -2,8 +2,18 @@
 
 ## Snapshot
 - **Date:** 2026-02-08
-- **Status:** Repo is green (`dart format`, `flutter analyze`, `flutter test`) after Pack J phase 4 control IA lock and Pack G kickoff accessibility pass on weather forecast controls.
+- **Status:** Repo is green (`dart format`, `flutter analyze`, `flutter test`) after Pack G follow-up accessibility hardening (forecast chart semantics + high/low fit tightening).
 - **Operating mode:** Codex is now the primary workflow; apply edits directly in-repo (do not require patch zip workflow unless explicitly requested).
+
+## Latest changes (2026-02-08)
+- Pack G follow-up shipped:
+  - high/low badge temperatures were reduced slightly for reliable fit in the weather card banner on tight widths.
+  - forecast chart region now exposes a deterministic semantics container label (`weather_summary_forecast_chart_semantics_<placeId>`) so mode + units legend are screen-reader discoverable.
+  - narrow-layout weather smoke test now asserts forecast mode semantics selection and swap tooltip copy contract in addition to overflow-safe behavior.
+- full gates re-run and green:
+  - `dart format .`
+  - `flutter analyze`
+  - `flutter test`
 
 ## Latest changes (2026-02-08)
 - Pack J phase 4 + Pack G kickoff follow-up shipped:

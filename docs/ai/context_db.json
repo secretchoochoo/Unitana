@@ -207,8 +207,11 @@
     }
   ],
   "current_state": {
-    "current_slice": "Pack J phase 4 control IA lock shipped with Pack G kickoff accessibility pass on weather forecast panel; next is Pack G broader readiness sweep.",
+    "current_slice": "Pack G follow-up shipped (weather accessibility semantics + high/low fit tightening); next is Pack G expanded compliance pass (About/Licenses + release artifacts).",
     "notes": [
+      "Pack G follow-up shipped on 2026-02-08: weather high/low badge temperatures were reduced for deterministic fit in tight-width card banners.",
+      "Pack G follow-up shipped on 2026-02-08: forecast graph region now exposes a deterministic semantics container label key (`weather_summary_forecast_chart_semantics_<placeId>`) for screen-reader mode+units discoverability.",
+      "Pack G follow-up shipped on 2026-02-08: narrow weather regression now locks forecast mode semantics selection state and swap tooltip copy contracts.",
       "Pack J phase 4 follow-up shipped on 2026-02-08: forecast panel now supports explicit mode-pill selection (`Hourly`/`7-day`) in addition to swap toggle, preserving deterministic mode keys while improving control discoverability.",
       "Pack G kickoff shipped on 2026-02-08: forecast controls now include stronger accessibility semantics (button + selected state labels), larger swap tap target, and improved legend contrast.",
       "Pack G kickoff shipped on 2026-02-08: added narrow-phone overflow regression lock in `weather_summary_narrow_layout_smoke_test.dart` to enforce no-render-overflow behavior at small widths.",
@@ -4610,9 +4613,27 @@
     "tagline": "travel-first decoder ring; dual reality side-by-side"
   },
   "schema_version": "1.0",
-  "last_patch_id": "patch_2026-02-08_packj_phase2_travel_readiness_and_units_row_fix",
+  "last_patch_id": "patch_2026-02-08_packg_followup_weather_semantics_fit_contracts",
   "last_patch_date": "2026-02-08",
   "patch_history": [
+    {
+      "id": "patch_2026-02-08_packg_followup_weather_semantics_fit_contracts",
+      "date": "2026-02-08",
+      "title": "Pack G follow-up: weather high/low fit tightening and forecast semantics contract lock",
+      "files_changed": [
+        "app/unitana/lib/features/dashboard/widgets/weather_summary_bottom_sheet.dart",
+        "app/unitana/test/weather_summary_narrow_layout_smoke_test.dart",
+        "docs/ai/context_db.json",
+        "docs/ai/handoff/CURRENT_HANDOFF.md",
+        "docs/ai/prompts/NEXT_CHAT_PROMPT.md"
+      ],
+      "notes": [
+        "Reduced high/low badge temperature typography slightly to avoid clipping/truncation in narrow weather card banners.",
+        "Added deterministic forecast chart semantics container key and localized label wiring using forecast mode + units legend copy contracts.",
+        "Extended narrow weather regression to validate mode-pill semantics selection state, swap tooltip contract, and chart semantics key presence while preserving overflow-safe behavior.",
+        "Validated full gates (`dart format .`, `flutter analyze`, `flutter test`) with no regressions."
+      ]
+    },
     {
       "id": "patch_2026-02-08_packf_lock_and_packj_weather_compare_kickoff",
       "date": "2026-02-08",
