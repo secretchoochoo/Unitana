@@ -163,4 +163,61 @@ void main() {
       expect(live.shouldRetryCurrencyNow, isTrue);
     },
   );
+
+  test(
+    'currency outage preserves last stable multi-currency conversions for representative global pairs',
+    () async {
+      final fake = _FakeFrankfurterClient()
+        ..latestRatesResult = <String, double>{
+          'EUR': 1.0,
+          'USD': 1.20,
+          'JPY': 160.0,
+          'BRL': 6.20,
+          'AUD': 1.62,
+        };
+
+      final live = DashboardLiveDataController(
+        frankfurterClient: fake,
+        allowLiveRefreshInTestHarness: true,
+        refreshDebounceDuration: Duration.zero,
+        simulatedNetworkLatency: Duration.zero,
+        currencyRetryBackoffDuration: Duration.zero,
+      );
+      addTearDown(live.dispose);
+
+      await live.setCurrencyBackend(CurrencyBackend.frankfurter);
+      await live.refreshAll(places: const []);
+
+      final jpyToUsdBefore = live.currencyRate(fromCode: 'JPY', toCode: 'USD');
+      final brlToEurBefore = live.currencyRate(fromCode: 'BRL', toCode: 'EUR');
+      final audToJpyBefore = live.currencyRate(fromCode: 'AUD', toCode: 'JPY');
+      expect(jpyToUsdBefore, isNotNull);
+      expect(brlToEurBefore, isNotNull);
+      expect(audToJpyBefore, isNotNull);
+
+      fake
+        ..latestRatesResult = null
+        ..eurToUsdResult = null
+        ..failLatestRatesCount = 1;
+      live.debugSetLastCurrencyRefreshedAt(
+        DateTime.now().subtract(const Duration(hours: 13)),
+      );
+      await live.refreshAll(places: const []);
+
+      expect(live.lastCurrencyError, isNotNull);
+      expect(live.shouldRetryCurrencyNow, isTrue);
+      expect(
+        live.currencyRate(fromCode: 'JPY', toCode: 'USD'),
+        closeTo(jpyToUsdBefore!, 0.000001),
+      );
+      expect(
+        live.currencyRate(fromCode: 'BRL', toCode: 'EUR'),
+        closeTo(brlToEurBefore!, 0.000001),
+      );
+      expect(
+        live.currencyRate(fromCode: 'AUD', toCode: 'JPY'),
+        closeTo(audToJpyBefore!, 0.000001),
+      );
+    },
+  );
 }

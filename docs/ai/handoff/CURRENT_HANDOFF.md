@@ -2,8 +2,27 @@
 
 ## Snapshot
 - **Date:** 2026-02-08
-- **Status:** Repo is green (`dart format`, `flutter analyze`, `flutter test`) after XL Unit 2 (Pack G compliance surfaces + Pack D docs consistency follow-through).
+- **Status:** Repo is green (`dart format`, `flutter analyze`, `flutter test`) after XL Unit 3 (Pack G final checklist + Pack B/C closure-proof contracts).
 - **Operating mode:** Codex is now the primary workflow; apply edits directly in-repo (do not require patch zip workflow unless explicitly requested).
+
+## Latest changes (2026-02-08)
+- XL Unit 3 shipped:
+  - added Pack G checklist/signoff artifact:
+    - `docs/ai/reference/PACK_G_RELEASE_CHECKLIST_XL3.md`
+  - Pack B closure-proof coverage expanded:
+    - `app/unitana/test/dashboard_live_data_refresh_fallback_test.dart`
+    - mixed success/fallback refresh behavior now explicitly locks non-blank per-place snapshots plus truthful batch freshness.
+  - Pack C closure-proof coverage expanded:
+    - `app/unitana/test/dashboard_currency_retry_cache_semantics_test.dart`
+    - outage path now locks preservation of last stable rates across representative global pairs (`JPY/USD`, `BRL/EUR`, `AUD/JPY`).
+  - backlog status alignment updated:
+    - Pack B -> `done`
+    - Pack C -> `done`
+    - Pack G -> `done`
+- full gates re-run and green:
+  - `dart format .`
+  - `flutter analyze`
+  - `flutter test`
 
 ## Latest changes (2026-02-08)
 - XL Unit 2 shipped:

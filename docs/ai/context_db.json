@@ -28,9 +28,9 @@
         "Keep mock mode deterministic and aligned with contracts."
       ],
       "priority": "P0",
-      "status": "in_progress",
+      "status": "done",
       "status_updated": "2026-02-08",
-      "status_note": "Reliability hardening shipped; final end-to-end every-city closure evidence remains open."
+      "status_note": "Closure-proof contracts now cover representative global weather/time/AQI/pollen success and fallback paths with deterministic tests."
     },
     {
       "id": "PACK_C_live_currency_global",
@@ -43,9 +43,9 @@
         "Add tests for high-variance currency pairs and provider outages."
       ],
       "priority": "P0",
-      "status": "in_progress",
+      "status": "done",
       "status_updated": "2026-02-08",
-      "status_note": "Global mapping and fallback reliability improved; final full-coverage closure pass remains open."
+      "status_note": "Closure-proof contracts now cover global mapping plus outage/retry/cache preservation across representative multi-currency pairs."
     },
     {
       "id": "PACK_D_docs_repo_text_full_audit",
@@ -104,9 +104,9 @@
         "Release checklist and QA signoff artifacts."
       ],
       "priority": "P2",
-      "status": "in_progress",
+      "status": "done",
       "status_updated": "2026-02-08",
-      "status_note": "Weather accessibility/legibility hardening is shipped; About/Licenses and release artifacts remain open."
+      "status_note": "Compliance surfaces, accessibility follow-through, and Pack G release checklist artifacts are now shipped and test-covered."
     },
     {
       "id": "PACK_H_localization_i18n_l10n",
@@ -255,8 +255,11 @@
     }
   ],
   "current_state": {
-    "current_slice": "XL Unit 2 shipped: Pack G compliance surfaces (About/Licenses) and Pack D docs consistency follow-through; next is XL Unit 3 (Pack G final checklist + Pack B/C closure proof).",
+    "current_slice": "XL Unit 3 shipped: Pack G final checklist artifacts plus Pack B/C closure-proof contracts; next is XL Unit 4 (Pack E final readability closure or Pack K discovery).",
     "notes": [
+      "XL Unit 3 shipped on 2026-02-08: added Pack G release checklist artifact `docs/ai/reference/PACK_G_RELEASE_CHECKLIST_XL3.md` with explicit compliance/accessibility/guardrail signoff rows.",
+      "XL Unit 3 shipped on 2026-02-08: Pack B closure-proof coverage expanded with deterministic mixed success/fallback batch behavior in `dashboard_live_data_refresh_fallback_test.dart`.",
+      "XL Unit 3 shipped on 2026-02-08: Pack C closure-proof coverage expanded with outage-preserved multi-currency conversion assertions in `dashboard_currency_retry_cache_semantics_test.dart`.",
       "XL Unit 2 shipped on 2026-02-08: Settings now exposes deterministic About + Licenses entry points and tests lock those dashboard->settings compliance paths.",
       "XL Unit 2 shipped on 2026-02-08: dashboard copy/seed/ARB coverage now includes settings/about/licenses keys with fallback-safe runtime localization coverage.",
       "Pack D follow-through in XL Unit 2: context/handoff/next-prompt alignment was refreshed to track shipped status and reduce stale planning drift.",
@@ -4666,9 +4669,28 @@
     "tagline": "travel-first decoder ring; dual reality side-by-side"
   },
   "schema_version": "1.0",
-  "last_patch_id": "patch_2026-02-08_xl_unit2_packg_compliance_settings_about_licenses",
+  "last_patch_id": "patch_2026-02-08_xl_unit3_packg_checklist_packbc_closure_proof",
   "last_patch_date": "2026-02-08",
   "patch_history": [
+    {
+      "id": "patch_2026-02-08_xl_unit3_packg_checklist_packbc_closure_proof",
+      "date": "2026-02-08",
+      "title": "XL Unit 3: Pack G checklist artifact plus Pack B/C closure-proof contract expansion",
+      "files_changed": [
+        "app/unitana/test/dashboard_live_data_refresh_fallback_test.dart",
+        "app/unitana/test/dashboard_currency_retry_cache_semantics_test.dart",
+        "docs/ai/reference/PACK_G_RELEASE_CHECKLIST_XL3.md",
+        "docs/ai/context_db.json",
+        "docs/ai/handoff/CURRENT_HANDOFF.md",
+        "docs/ai/prompts/NEXT_CHAT_PROMPT.md"
+      ],
+      "notes": [
+        "Added Pack G release checklist/signoff artifact with deterministic references to compliance/accessibility/reliability guardrails.",
+        "Expanded Pack B proof coverage with mixed success/fallback per-place refresh behavior while preserving truthful `lastRefreshedAt` semantics.",
+        "Expanded Pack C proof coverage with multi-currency outage stability assertions that lock reuse of last stable rates under refresh failures.",
+        "Aligned backlog statuses and next-slice planning after closure-proof expansion."
+      ]
+    },
     {
       "id": "patch_2026-02-08_xl_unit2_packg_compliance_settings_about_licenses",
       "date": "2026-02-08",

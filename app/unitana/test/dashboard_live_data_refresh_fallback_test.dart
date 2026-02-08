@@ -97,6 +97,48 @@ class _NullPollenAirQualityClient extends OpenMeteoAirQualityClient {
   }
 }
 
+class _SelectiveFailOpenMeteoClient extends OpenMeteoClient {
+  _SelectiveFailOpenMeteoClient() : super(host: 'example.test');
+
+  @override
+  Future<OpenMeteoTodayForecast> fetchTodayForecast({
+    required double latitude,
+    required double longitude,
+  }) async {
+    // Deterministically fail one path to emulate per-place provider failure
+    // while allowing the rest of the refresh batch to succeed.
+    if ((latitude - 39.7392).abs() < 0.01 &&
+        (longitude + 104.9903).abs() < 0.01) {
+      throw StateError('targeted open-meteo failure');
+    }
+    final now = DateTime.utc(2026, 2, 6, 12);
+    return OpenMeteoTodayForecast(
+      temperatureC: 16,
+      windKmh: 9,
+      gustKmh: 13,
+      weatherCode: 1,
+      isDay: true,
+      sunriseUtc: now.subtract(const Duration(hours: 4)),
+      sunsetUtc: now.add(const Duration(hours: 4)),
+      hourly: [
+        for (var i = 1; i <= 12; i += 1)
+          OpenMeteoHourlyForecastPoint(
+            timeUtc: now.add(Duration(hours: i)),
+            temperatureC: 16 + (i * 0.1),
+          ),
+      ],
+      daily: [
+        for (var i = 0; i < 7; i += 1)
+          OpenMeteoDailyForecastPoint(
+            dayUtc: DateTime.utc(2026, 2, 6 + i),
+            maxTemperatureC: 18 + i.toDouble(),
+            minTemperatureC: 9 + i.toDouble(),
+          ),
+      ],
+    );
+  }
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   SharedPreferences.setMockInitialValues(<String, Object>{});
@@ -202,6 +244,50 @@ void main() {
       expect(env, isNotNull);
       expect(env!.usAqi, isNotNull);
       expect(env.pollenIndex, isNotNull);
+      expect(live.lastRefreshedAt, isNotNull);
+    },
+  );
+
+  test(
+    'refreshAll keeps fallback for failing place while successful place marks batch fresh',
+    () async {
+      final live = DashboardLiveDataController(
+        openMeteoClient: _SelectiveFailOpenMeteoClient(),
+        openMeteoAirQualityClient: _NullPollenAirQualityClient(),
+        allowLiveRefreshInTestHarness: true,
+        refreshDebounceDuration: Duration.zero,
+        simulatedNetworkLatency: Duration.zero,
+      );
+      addTearDown(live.dispose);
+
+      final denver = place(
+        id: 'denver',
+        city: 'Denver',
+        country: 'US',
+        tz: 'America/Denver',
+      );
+      final tokyo = place(
+        id: 'tokyo',
+        city: 'Tokyo',
+        country: 'JP',
+        tz: 'Asia/Tokyo',
+      );
+
+      await live.setWeatherBackend(WeatherBackend.openMeteo);
+      await live.refreshAll(places: [denver, tokyo]);
+
+      // Denver path fails in live provider and should still be non-null via fallback.
+      expect(live.weatherFor(denver), isNotNull);
+      expect(live.sunFor(denver), isNotNull);
+      expect(live.envFor(denver), isNotNull);
+
+      // Tokyo path succeeds from live provider in same batch.
+      final tokyoWeather = live.weatherFor(tokyo);
+      expect(tokyoWeather, isNotNull);
+      expect(tokyoWeather!.conditionCode, equals(1));
+      expect(tokyoWeather.conditionText.trim(), isNotEmpty);
+
+      // Batch should still be considered fresh because at least one place updated live.
       expect(live.lastRefreshedAt, isNotNull);
     },
   );
