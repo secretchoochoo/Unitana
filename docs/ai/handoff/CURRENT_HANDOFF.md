@@ -2,8 +2,23 @@
 
 ## Snapshot
 - **Date:** 2026-02-08
-- **Status:** Repo is green (`dart format`, `flutter analyze`, `flutter test`) after Pack G follow-up accessibility hardening (forecast chart semantics + high/low fit tightening).
+- **Status:** Repo is green (`dart format`, `flutter analyze`, `flutter test`) after XL Unit 1 backlog status normalization plus Pack G follow-up accessibility hardening.
 - **Operating mode:** Codex is now the primary workflow; apply edits directly in-repo (do not require patch zip workflow unless explicitly requested).
+
+## Latest changes (2026-02-08)
+- XL Unit 1 (backlog hygiene) shipped:
+  - performed local code/doc/test scan and normalized backlog statuses in `docs/ai/context_db.json` to reduce planning drift.
+  - status normalization summary:
+    - `done`: Pack A, Pack H, Pack M, Pack N
+    - `closed_with_defer`: Pack F (`clothing_sizes` remains intentionally deferred with explicit acceptance criteria)
+    - `in_progress`: Pack B, Pack C, Pack E, Pack G, Pack J
+    - `planned`: Pack D, Pack I, Pack K, Pack L, Pack O
+    - `icebox`: Radio feature
+  - next execution target reset to XL Unit 2: Pack G + Pack D combined closure.
+- full gates re-run and green:
+  - `dart format .`
+  - `flutter analyze`
+  - `flutter test`
 
 ## Latest changes (2026-02-08)
 - Pack G follow-up shipped:

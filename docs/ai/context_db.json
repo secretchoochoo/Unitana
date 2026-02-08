@@ -11,7 +11,10 @@
         "Produce migration/normalization path for existing city data.",
         "Document schema contract in docs/ai/design_lock and docs/ai/reference."
       ],
-      "priority": "P0"
+      "priority": "P0",
+      "status": "done",
+      "status_updated": "2026-02-08",
+      "status_note": "Canonical city schema, strict validation, parse safety, and dataset tooling are shipped and covered by regression tests."
     },
     {
       "id": "PACK_B_live_data_e2e_weather_time_air",
@@ -24,7 +27,10 @@
         "Add resilient tests for representative global cities and provider failure modes.",
         "Keep mock mode deterministic and aligned with contracts."
       ],
-      "priority": "P0"
+      "priority": "P0",
+      "status": "in_progress",
+      "status_updated": "2026-02-08",
+      "status_note": "Reliability hardening shipped; final end-to-end every-city closure evidence remains open."
     },
     {
       "id": "PACK_C_live_currency_global",
@@ -36,7 +42,10 @@
         "Add cache/refresh behavior and stale-data indicators.",
         "Add tests for high-variance currency pairs and provider outages."
       ],
-      "priority": "P0"
+      "priority": "P0",
+      "status": "in_progress",
+      "status_updated": "2026-02-08",
+      "status_note": "Global mapping and fallback reliability improved; final full-coverage closure pass remains open."
     },
     {
       "id": "PACK_D_docs_repo_text_full_audit",
@@ -49,7 +58,10 @@
         "Define docs information architecture and archival strategy.",
         "Update contributor workflow docs for Codex-first operation."
       ],
-      "priority": "P1"
+      "priority": "P1",
+      "status": "planned",
+      "status_updated": "2026-02-08",
+      "status_note": "Broad docs consolidation/audit still pending as a dedicated closure slice."
     },
     {
       "id": "PACK_E_marquee_scene_v2_16bit",
@@ -62,7 +74,10 @@
         "During Pack E layout pass, evaluate vertical marquee expansion so the scene can extend further down into currently unused space above the Sunrise/Sunset and Wind/Gust pill row without breaking hero grid contracts.",
         "After V2 facelift, run discovery for location-based variants (city/rural/beach/region)."
       ],
-      "priority": "P1"
+      "priority": "P1",
+      "status": "in_progress",
+      "status_updated": "2026-02-08",
+      "status_note": "Multiple readability/layout phases shipped; full V2 facelift and follow-up variants are not fully closed."
     },
     {
       "id": "PACK_F_tools_surface_completion",
@@ -74,7 +89,10 @@
         "Standardize From/To unit interaction model across tools/widgets.",
         "For table-like standards tools (paper/shoe/mattress), use dedicated lookup-table UX instead of forcing generic Convert flows."
       ],
-      "priority": "P1"
+      "priority": "P1",
+      "status": "closed_with_defer",
+      "status_updated": "2026-02-08",
+      "status_note": "Activated tools shipped; `clothing_sizes` remains intentionally deferred behind explicit acceptance criteria."
     },
     {
       "id": "PACK_G_polish_compliance_release_readiness",
@@ -85,7 +103,10 @@
         "Accessibility, haptics, and interaction consistency pass.",
         "Release checklist and QA signoff artifacts."
       ],
-      "priority": "P2"
+      "priority": "P2",
+      "status": "in_progress",
+      "status_updated": "2026-02-08",
+      "status_note": "Weather accessibility/legibility hardening is shipped; About/Licenses and release artifacts remain open."
     },
     {
       "id": "PACK_H_localization_i18n_l10n",
@@ -98,7 +119,10 @@
         "Define translation quality gate and fallback behavior for missing keys.",
         "Add regression tests for locale switching and key critical paths (hero, currency, tool modal, first-run)."
       ],
-      "priority": "P1"
+      "priority": "P1",
+      "status": "done",
+      "status_updated": "2026-02-08",
+      "status_note": "Language settings, locale persistence, runtime fallback, and ARB/seed coverage are shipped."
     },
     {
       "id": "PACK_I_playful_tutorial_overlay_near_finalization",
@@ -111,7 +135,10 @@
         "Cover dashboard hero pills (Sunrise/Sunset, Wind/Gust, Pollen/AQI), tools menu access, add-widget flow, and settings entry.",
         "Visual direction: playful highlighted callouts/circles using Dracula palette; Cabin Sketch-style heading treatment is an optional design exploration."
       ],
-      "priority": "P2"
+      "priority": "P2",
+      "status": "planned",
+      "status_updated": "2026-02-08",
+      "status_note": "Tutorial overlays are intentionally deferred until finalization/readiness."
     },
     {
       "id": "PACK_J_weather_tool_full_redesign",
@@ -124,7 +151,10 @@
         "Recommended direction should align with Unitana's core use-case (home/destination context, time delta, readiness at-a-glance) and Dracula aesthetic.",
         "Include implementation sequencing, acceptance criteria, and regression test strategy before coding starts."
       ],
-      "priority": "P1"
+      "priority": "P1",
+      "status": "in_progress",
+      "status_updated": "2026-02-08",
+      "status_note": "Weather cockpit redesign is substantially shipped; final product-positioning closure and checklist remain open."
     },
     {
       "id": "PACK_K_context_aware_profile_auto_select",
@@ -138,7 +168,10 @@
         "Add privacy guardrails: coarse geofence matching first, no raw location history retention by default, and explicit retention policy if telemetry is added.",
         "Add test matrix for permission denied, stale location, near-border ambiguity, and travel-day churn."
       ],
-      "priority": "P1"
+      "priority": "P1",
+      "status": "planned",
+      "status_updated": "2026-02-08",
+      "status_note": "No implementation yet; remains a future opt-in discovery/prototype track."
     },
     {
       "id": "PACK_L_dual_theme_system_dark_light",
@@ -151,7 +184,10 @@
         "Add regression coverage for both themes on key surfaces (dashboard hero, tool tile, tool modal, weather sheet).",
         "Document token map and accessibility constraints in a dedicated reference spec before implementation."
       ],
-      "priority": "P1"
+      "priority": "P1",
+      "status": "planned",
+      "status_updated": "2026-02-08",
+      "status_note": "No dual-theme implementation yet; Dracula-only runtime remains current behavior."
     },
     {
       "id": "PACK_M_jet_lag_tool_rethink_actionable_planning",
@@ -166,7 +202,10 @@
         "Later phase can add route-aware data sources, but must keep deterministic fallback.",
         "Requires global timezone handling expansion beyond the current limited helper to avoid false `0h` outcomes."
       ],
-      "priority": "P1"
+      "priority": "P1",
+      "status": "done",
+      "status_updated": "2026-02-08",
+      "status_note": "Jet Lag redesign phases (shared planner, facts/plan, schedule support, flight estimate) are shipped with tests."
     },
     {
       "id": "PACK_N_global_timezone_dataset_and_converter_support",
@@ -180,7 +219,10 @@
         "Add tests for same-zone, opposite-direction, DST-boundary, and date-line edge cases.",
         "Document fallback behavior when timezone metadata is missing or ambiguous."
       ],
-      "priority": "P1"
+      "priority": "P1",
+      "status": "done",
+      "status_updated": "2026-02-08",
+      "status_note": "Global timezone support and deterministic DST/date-line behavior are shipped with regression coverage."
     },
     {
       "id": "PACK_O_contextual_tutorial_overlays_by_tool_family",
@@ -194,7 +236,10 @@
         "Add completion-state persistence per tutorial category so users are not repeatedly interrupted.",
         "Scope should remain lightweight: hints and interaction framing, not long-form onboarding."
       ],
-      "priority": "P2"
+      "priority": "P2",
+      "status": "planned",
+      "status_updated": "2026-02-08",
+      "status_note": "Contextual tutorial overlays remain unscheduled until post-core readiness."
     },
     {
       "id": "ICEBOX_radio_feature",
@@ -203,12 +248,17 @@
       "notes": [
         "Do not schedule before Packs A-G unless explicitly reprioritized."
       ],
-      "priority": "ICEBOX"
+      "priority": "ICEBOX",
+      "status": "icebox",
+      "status_updated": "2026-02-08",
+      "status_note": "Kept parked until explicitly reprioritized."
     }
   ],
   "current_state": {
-    "current_slice": "Pack G follow-up shipped (weather accessibility semantics + high/low fit tightening); next is Pack G expanded compliance pass (About/Licenses + release artifacts).",
+    "current_slice": "XL Unit 1 shipped: backlog status normalization completed from local code scan; next is XL Unit 2 (Pack G + Pack D combined closure).",
     "notes": [
+      "XL Unit 1 shipped on 2026-02-08: backlog entries now include explicit status metadata (`done`, `in_progress`, `planned`, `closed_with_defer`, `icebox`) to prevent drift between planning and shipped work.",
+      "Backlog audit result: Packs A/H/M/N are marked done; Pack F is closed-with-defer (`clothing_sizes`); Packs B/C/E/G/J remain in progress; D/I/K/L/O remain planned.",
       "Pack G follow-up shipped on 2026-02-08: weather high/low badge temperatures were reduced for deterministic fit in tight-width card banners.",
       "Pack G follow-up shipped on 2026-02-08: forecast graph region now exposes a deterministic semantics container label key (`weather_summary_forecast_chart_semantics_<placeId>`) for screen-reader mode+units discoverability.",
       "Pack G follow-up shipped on 2026-02-08: narrow weather regression now locks forecast mode semantics selection state and swap tooltip copy contracts.",
@@ -4613,9 +4663,24 @@
     "tagline": "travel-first decoder ring; dual reality side-by-side"
   },
   "schema_version": "1.0",
-  "last_patch_id": "patch_2026-02-08_packg_followup_weather_semantics_fit_contracts",
+  "last_patch_id": "patch_2026-02-08_xl_unit1_backlog_status_normalization",
   "last_patch_date": "2026-02-08",
   "patch_history": [
+    {
+      "id": "patch_2026-02-08_xl_unit1_backlog_status_normalization",
+      "date": "2026-02-08",
+      "title": "XL Unit 1: backlog status normalization from local code scan evidence",
+      "files_changed": [
+        "docs/ai/context_db.json",
+        "docs/ai/handoff/CURRENT_HANDOFF.md",
+        "docs/ai/prompts/NEXT_CHAT_PROMPT.md"
+      ],
+      "notes": [
+        "Added explicit per-pack status metadata (`done`, `in_progress`, `planned`, `closed_with_defer`, `icebox`) to backlog entries.",
+        "Normalized current-slice narrative to mark XL Unit 1 complete and target XL Unit 2 (Pack G + Pack D combined closure).",
+        "Marked A/H/M/N as done and F as closed-with-defer based on local code/test/doc evidence."
+      ]
+    },
     {
       "id": "patch_2026-02-08_packg_followup_weather_semantics_fit_contracts",
       "date": "2026-02-08",
