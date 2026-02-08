@@ -1,4 +1,4 @@
-NEXT CHAT PROMPT — Core Track: Pack J Phase 4 IA Lock + Pack G Readiness Kickoff
+NEXT CHAT PROMPT — Core Track: Pack G Readiness Sweep (Weather Cockpit Accessibility + Compliance)
 
 You are taking over Unitana (Flutter) in a fresh, high-context window.
 
@@ -27,22 +27,19 @@ Read these files first:
   - goldens opt-in only
 
 ## Mission
-Execute a combined large slice:
-1) Pack J phase 4 final information architecture/positioning lock for Weather Summary cockpit interactions.
-2) Pack G kickoff for release-readiness hardening on weather cockpit accessibility/consistency/compliance edges.
+Execute Pack G readiness sweep focused on weather cockpit release-hardening after Pack J phase 4 controls lock.
 
 ## Required outcomes
-1) Weather cockpit IA lock
-- Validate and lock final weather-card content hierarchy:
-  - header summary + high/low badge
-  - sunrise/sunset, wind/gust, AQI/pollen rows
-  - interactive forecast panel toggle behavior (Hourly <-> 7-day)
-- Ensure non-scrolling forecast panel remains readable across narrow phone widths.
+1) Accessibility and semantics hardening
+- Audit weather cockpit for screen-reader clarity and interaction semantics:
+  - forecast mode controls
+  - swap affordance
+  - chart legends/labels
+- Add/adjust tests where they lock accessibility-critical behavior.
 
-2) Accessibility/legibility readiness (Pack G kickoff)
-- Improve chart/label readability and contrast where needed while preserving Dracula direction.
-- Ensure swap affordance and forecast mode state are discoverable and testable.
-- Keep touch targets and no-overflow behavior stable on small screens.
+2) Legibility and contrast readiness
+- Improve typography hierarchy and contrast for weather card headers and forecast panel labels while preserving Dracula direction.
+- Keep narrow-width behavior overflow-safe and deterministic.
 
 3) Preserve current behavior contracts
 - No regressions to:
@@ -69,14 +66,14 @@ Execute a combined large slice:
   - `docs/ai/prompts/NEXT_CHAT_PROMPT.md`
 
 ## Suggested execution order
-1) IA/accessibility audit
+1) accessibility + legibility audit
 2) targeted implementation updates
 3) regression/perf guardrail tests
 4) full gates
 5) docs/handoff refresh
 
 ## Definition of done
-- Weather Summary cockpit is interaction-locked with readable, test-backed forecast behavior and stable small-screen layout.
+- Weather cockpit satisfies accessibility/legibility readiness checks with deterministic tests.
 - No regressions to timezone/live-data/localization/city-picker or deferred-tool contracts.
 - Repo green (`format`, `analyze`, `test`).
 

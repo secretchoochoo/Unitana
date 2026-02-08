@@ -767,41 +767,47 @@ class _ForecastToggleBarPanelState extends State<_ForecastToggleBarPanel> {
                           required Key key,
                         }) {
                           return Expanded(
-                            child: GestureDetector(
-                              key: key,
-                              behavior: HitTestBehavior.opaque,
-                              onTap: onTap,
-                              child: DecoratedBox(
-                                decoration: BoxDecoration(
-                                  color: selected
-                                      ? DraculaPalette.purple.withAlpha(72)
-                                      : cs.surface.withAlpha(10),
-                                  borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(
+                            child: Semantics(
+                              button: true,
+                              selected: selected,
+                              label: text,
+                              child: GestureDetector(
+                                key: key,
+                                behavior: HitTestBehavior.opaque,
+                                onTap: onTap,
+                                child: DecoratedBox(
+                                  decoration: BoxDecoration(
                                     color: selected
-                                        ? DraculaPalette.purple.withAlpha(190)
-                                        : cs.outlineVariant.withAlpha(120),
-                                  ),
-                                ),
-                                child: Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 6,
-                                    vertical: 4,
-                                  ),
-                                  child: Text(
-                                    text,
-                                    style: theme.textTheme.bodySmall?.copyWith(
+                                        ? DraculaPalette.purple.withAlpha(72)
+                                        : cs.surface.withAlpha(10),
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(
                                       color: selected
-                                          ? DraculaPalette.yellow
-                                          : cs.onSurfaceVariant,
-                                      fontWeight: selected
-                                          ? FontWeight.w900
-                                          : FontWeight.w700,
-                                      fontSize: compact ? 10 : 11,
+                                          ? DraculaPalette.purple.withAlpha(190)
+                                          : cs.outlineVariant.withAlpha(120),
                                     ),
-                                    textAlign: TextAlign.center,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 6,
+                                      vertical: 4,
+                                    ),
+                                    child: Text(
+                                      text,
+                                      style: theme.textTheme.bodySmall
+                                          ?.copyWith(
+                                            color: selected
+                                                ? DraculaPalette.yellow
+                                                : cs.onSurfaceVariant,
+                                            fontWeight: selected
+                                                ? FontWeight.w900
+                                                : FontWeight.w700,
+                                            fontSize: compact ? 10 : 11,
+                                          ),
+                                      textAlign: TextAlign.center,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
                                   ),
                                 ),
                               ),
@@ -847,28 +853,37 @@ class _ForecastToggleBarPanelState extends State<_ForecastToggleBarPanel> {
                   const SizedBox(width: 4),
                   Text(
                     DashboardCopy.weatherForecastUnitsLegend(context),
+                    key: ValueKey(
+                      'weather_summary_forecast_legend_${widget.place.id}',
+                    ),
                     style: theme.textTheme.bodySmall?.copyWith(
-                      color: cs.onSurfaceVariant,
+                      color: DraculaPalette.foreground.withAlpha(230),
                       fontWeight: FontWeight.w800,
                       fontSize: 11,
                     ),
                   ),
                   const SizedBox(width: 4),
-                  Tooltip(
-                    message: DashboardCopy.weatherForecastSwapTooltip(context),
-                    child: GestureDetector(
-                      key: ValueKey(
-                        'weather_summary_forecast_swap_${widget.place.id}',
+                  Semantics(
+                    button: true,
+                    label: DashboardCopy.weatherForecastSwapTooltip(context),
+                    child: Tooltip(
+                      message: DashboardCopy.weatherForecastSwapTooltip(
+                        context,
                       ),
-                      behavior: HitTestBehavior.opaque,
-                      onTap: hasHourly && hasDaily ? _toggleMode : null,
-                      child: SizedBox(
-                        width: 34,
-                        height: 34,
-                        child: Center(
-                          child: PulseSwapIcon(
-                            color: DraculaPalette.cyan.withAlpha(220),
-                            size: 18,
+                      child: GestureDetector(
+                        key: ValueKey(
+                          'weather_summary_forecast_swap_${widget.place.id}',
+                        ),
+                        behavior: HitTestBehavior.opaque,
+                        onTap: hasHourly && hasDaily ? _toggleMode : null,
+                        child: SizedBox(
+                          width: 34,
+                          height: 34,
+                          child: Center(
+                            child: PulseSwapIcon(
+                              color: DraculaPalette.cyan.withAlpha(220),
+                              size: 18,
+                            ),
                           ),
                         ),
                       ),

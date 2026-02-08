@@ -207,8 +207,11 @@
     }
   ],
   "current_state": {
-    "current_slice": "Pack J phase 3 shipped (interactive hourly/7-day forecast panel + localization-safe cockpit copy routing); next is Pack J phase 4 IA lock + Pack G readiness kickoff.",
+    "current_slice": "Pack J phase 4 control IA lock shipped with Pack G kickoff accessibility pass on weather forecast panel; next is Pack G broader readiness sweep.",
     "notes": [
+      "Pack J phase 4 follow-up shipped on 2026-02-08: forecast panel now supports explicit mode-pill selection (`Hourly`/`7-day`) in addition to swap toggle, preserving deterministic mode keys while improving control discoverability.",
+      "Pack G kickoff shipped on 2026-02-08: forecast controls now include stronger accessibility semantics (button + selected state labels), larger swap tap target, and improved legend contrast.",
+      "Pack G kickoff shipped on 2026-02-08: added narrow-phone overflow regression lock in `weather_summary_narrow_layout_smoke_test.dart` to enforce no-render-overflow behavior at small widths.",
       "Pack J phase 3 shipped on 2026-02-08: Weather Summary cards now use a larger interactive forecast panel that toggles between Hourly and 7-day bar graphs with a pulsing swap affordance and non-scrolling layout.",
       "Pack J phase 3 shipped on 2026-02-08: forecast/badge cockpit copy is now routed through DashboardCopy contracts with runtime fallback (`dashboard.weather.banner.highLow`, `dashboard.weather.forecast.*`) instead of direct string literals in widget composition.",
       "Pack J phase 3 shipped on 2026-02-08: localization seeds and ARB maps were extended for new weather cockpit labels/tooltips, and runtime/seed regression tests were expanded to lock key presence and fallback behavior.",

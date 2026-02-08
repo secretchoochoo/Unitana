@@ -2,8 +2,20 @@
 
 ## Snapshot
 - **Date:** 2026-02-08
-- **Status:** Repo is green (`dart format`, `flutter analyze`, `flutter test`) after Pack J phase 3 cockpit localization hardening + interactive forecast panel contracts.
+- **Status:** Repo is green (`dart format`, `flutter analyze`, `flutter test`) after Pack J phase 4 control IA lock and Pack G kickoff accessibility pass on weather forecast controls.
 - **Operating mode:** Codex is now the primary workflow; apply edits directly in-repo (do not require patch zip workflow unless explicitly requested).
+
+## Latest changes (2026-02-08)
+- Pack J phase 4 + Pack G kickoff follow-up shipped:
+  - Weather Summary forecast header now exposes explicit mode pills (`Hourly`, `7-day`) plus larger swap tap target for improved discoverability and accessibility.
+  - forecast controls now carry explicit semantics (`button` + selected-state labels) and improved legend contrast for readability.
+  - narrow-device guardrail added:
+    - `app/unitana/test/weather_summary_narrow_layout_smoke_test.dart`
+    - locks no-overflow behavior and mode-toggle interaction contracts at `320x640`.
+- full gates re-run and green:
+  - `dart format .`
+  - `flutter analyze`
+  - `flutter test`
 
 ## Latest changes (2026-02-08)
 - Pack J phase 3 cockpit polish + localization hardening shipped:

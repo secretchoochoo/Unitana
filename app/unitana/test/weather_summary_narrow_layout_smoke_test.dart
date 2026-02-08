@@ -9,6 +9,7 @@ import 'package:unitana/app/storage.dart';
 import 'package:unitana/features/dashboard/dashboard_screen.dart';
 import 'package:unitana/models/place.dart';
 import 'package:unitana/theme/app_theme.dart';
+import 'package:unitana/theme/dracula_palette.dart';
 
 import 'dashboard_test_helpers.dart';
 import 'test_utils/pinned_header_tap.dart';
@@ -94,6 +95,31 @@ void main() {
           const ValueKey('weather_summary_forecast_mode_dest_daily'),
         );
         expect(hourlyMode, findsOneWidget);
+        expect(
+          find.byKey(
+            const ValueKey('weather_summary_forecast_mode_hourly_tap_dest'),
+          ),
+          findsOneWidget,
+        );
+        expect(
+          find.byKey(
+            const ValueKey('weather_summary_forecast_mode_daily_tap_dest'),
+          ),
+          findsOneWidget,
+        );
+        expect(
+          find.byKey(const ValueKey('weather_summary_forecast_swap_dest')),
+          findsOneWidget,
+        );
+        final legend = find.byKey(
+          const ValueKey('weather_summary_forecast_legend_dest'),
+        );
+        expect(legend, findsOneWidget);
+        final legendText = tester.widget<Text>(legend);
+        expect(
+          legendText.style?.color,
+          DraculaPalette.foreground.withAlpha(230),
+        );
 
         await tester.tap(
           find.byKey(
