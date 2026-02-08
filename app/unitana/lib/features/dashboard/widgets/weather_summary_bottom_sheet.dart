@@ -694,6 +694,12 @@ class _ForecastToggleBarPanelState extends State<_ForecastToggleBarPanel> {
     });
   }
 
+  void _setMode({required bool daily}) {
+    setState(() {
+      _showDaily = daily;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -703,10 +709,6 @@ class _ForecastToggleBarPanelState extends State<_ForecastToggleBarPanel> {
     final hasDaily = widget.daily.isNotEmpty;
     final hasAny = hasHourly || hasDaily;
     final showDaily = hasDaily && (!hasHourly || _showDaily);
-    final label = DashboardCopy.weatherForecastModeLabel(
-      context,
-      daily: showDaily,
-    );
 
     final bars = showDaily
         ? widget.daily
@@ -755,20 +757,94 @@ class _ForecastToggleBarPanelState extends State<_ForecastToggleBarPanel> {
               Row(
                 children: [
                   Expanded(
-                    child: Text(
-                      label,
-                      key: ValueKey(
-                        'weather_summary_forecast_mode_${widget.place.id}_${showDaily ? 'daily' : 'hourly'}',
-                      ),
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: DraculaPalette.yellow,
-                        fontWeight: FontWeight.w900,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                    child: LayoutBuilder(
+                      builder: (context, constraints) {
+                        final compact = constraints.maxWidth < 180;
+                        Widget modePill({
+                          required String text,
+                          required bool selected,
+                          required VoidCallback onTap,
+                          required Key key,
+                        }) {
+                          return Expanded(
+                            child: GestureDetector(
+                              key: key,
+                              behavior: HitTestBehavior.opaque,
+                              onTap: onTap,
+                              child: DecoratedBox(
+                                decoration: BoxDecoration(
+                                  color: selected
+                                      ? DraculaPalette.purple.withAlpha(72)
+                                      : cs.surface.withAlpha(10),
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                    color: selected
+                                        ? DraculaPalette.purple.withAlpha(190)
+                                        : cs.outlineVariant.withAlpha(120),
+                                  ),
+                                ),
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 6,
+                                    vertical: 4,
+                                  ),
+                                  child: Text(
+                                    text,
+                                    style: theme.textTheme.bodySmall?.copyWith(
+                                      color: selected
+                                          ? DraculaPalette.yellow
+                                          : cs.onSurfaceVariant,
+                                      fontWeight: selected
+                                          ? FontWeight.w900
+                                          : FontWeight.w700,
+                                      fontSize: compact ? 10 : 11,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          );
+                        }
+
+                        return Row(
+                          children: [
+                            modePill(
+                              key: ValueKey(
+                                'weather_summary_forecast_mode_hourly_tap_${widget.place.id}',
+                              ),
+                              text: DashboardCopy.weatherForecastModeLabel(
+                                context,
+                                daily: false,
+                              ),
+                              selected: !showDaily,
+                              onTap: () => _setMode(daily: false),
+                            ),
+                            const SizedBox(width: 4),
+                            modePill(
+                              key: ValueKey(
+                                'weather_summary_forecast_mode_daily_tap_${widget.place.id}',
+                              ),
+                              text: DashboardCopy.weatherForecastModeLabel(
+                                context,
+                                daily: true,
+                              ),
+                              selected: showDaily,
+                              onTap: () => _setMode(daily: true),
+                            ),
+                          ],
+                        );
+                      },
                     ),
                   ),
-                  const SizedBox(width: 6),
+                  SizedBox.shrink(
+                    key: ValueKey(
+                      'weather_summary_forecast_mode_${widget.place.id}_${showDaily ? 'daily' : 'hourly'}',
+                    ),
+                  ),
+                  const SizedBox(width: 4),
                   Text(
                     DashboardCopy.weatherForecastUnitsLegend(context),
                     style: theme.textTheme.bodySmall?.copyWith(
@@ -777,7 +853,7 @@ class _ForecastToggleBarPanelState extends State<_ForecastToggleBarPanel> {
                       fontSize: 11,
                     ),
                   ),
-                  const SizedBox(width: 6),
+                  const SizedBox(width: 4),
                   Tooltip(
                     message: DashboardCopy.weatherForecastSwapTooltip(context),
                     child: GestureDetector(
@@ -787,12 +863,12 @@ class _ForecastToggleBarPanelState extends State<_ForecastToggleBarPanel> {
                       behavior: HitTestBehavior.opaque,
                       onTap: hasHourly && hasDaily ? _toggleMode : null,
                       child: SizedBox(
-                        width: 22,
-                        height: 22,
+                        width: 34,
+                        height: 34,
                         child: Center(
                           child: PulseSwapIcon(
                             color: DraculaPalette.cyan.withAlpha(220),
-                            size: 16,
+                            size: 18,
                           ),
                         ),
                       ),
