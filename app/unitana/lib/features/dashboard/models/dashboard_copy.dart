@@ -419,6 +419,18 @@ class DashboardCopy {
       DashboardLocalizations.of(
         context,
       ).text('dashboard.dashboard.menu.settings', fallback: 'Settings');
+  static String settingsTitle(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.settings.title', fallback: 'Settings');
+  static String settingsOptionAbout(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.settings.option.about', fallback: 'About');
+  static String settingsOptionLicenses(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.settings.option.licenses', fallback: 'Licenses');
   static String settingsLanguageTitle(BuildContext context) =>
       DashboardLocalizations.of(
         context,
@@ -440,6 +452,32 @@ class DashboardCopy {
       DashboardLocalizations.of(context).text(
         'dashboard.settings.language.updated',
         fallback: 'Language updated',
+      );
+  static String settingsAboutTitle(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.settings.about.title', fallback: 'About Unitana');
+  static String settingsAboutTagline(BuildContext context) =>
+      DashboardLocalizations.of(context).text(
+        'dashboard.settings.about.tagline',
+        fallback: 'Travel-first decoder ring; dual reality side-by-side',
+      );
+  static String settingsAboutBody(
+    BuildContext context,
+  ) => DashboardLocalizations.of(context).text(
+    'dashboard.settings.about.body',
+    fallback:
+        'Unitana helps compare home and destination contexts with practical tools for time, weather, and conversions.',
+  );
+  static String settingsAboutLegalese(BuildContext context) =>
+      DashboardLocalizations.of(context).text(
+        'dashboard.settings.about.legalese',
+        fallback: 'Copyright 2026 Unitana contributors',
+      );
+  static String settingsLicensesTitle(BuildContext context) =>
+      DashboardLocalizations.of(context).text(
+        'dashboard.settings.licenses.title',
+        fallback: 'Open-source licenses',
       );
   static String dashboardMenuEditWidgets(BuildContext context) =>
       DashboardLocalizations.of(

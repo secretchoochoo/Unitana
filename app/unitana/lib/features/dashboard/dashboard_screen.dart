@@ -995,6 +995,138 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
+  Future<void> _openSettingsSheet() async {
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetContext) {
+        return SafeArea(
+          child: Column(
+            key: const ValueKey('settings_sheet'),
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 8, 6),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        DashboardCopy.settingsTitle(context),
+                        style: Theme.of(sheetContext).textTheme.titleLarge
+                            ?.copyWith(fontWeight: FontWeight.w800),
+                      ),
+                    ),
+                    _sheetCloseButton(sheetContext),
+                  ],
+                ),
+              ),
+              ListTile(
+                key: const ValueKey('settings_option_language'),
+                leading: const Icon(Icons.language_rounded),
+                title: Text(DashboardCopy.settingsLanguageTitle(context)),
+                onTap: () {
+                  Navigator.of(sheetContext).pop();
+                  Future.microtask(_openLanguageSettingsSheet);
+                },
+              ),
+              ListTile(
+                key: const ValueKey('settings_option_about'),
+                leading: const Icon(Icons.info_outline_rounded),
+                title: Text(DashboardCopy.settingsOptionAbout(context)),
+                onTap: () {
+                  Navigator.of(sheetContext).pop();
+                  Future.microtask(_openAboutSheet);
+                },
+              ),
+              ListTile(
+                key: const ValueKey('settings_option_licenses'),
+                leading: const Icon(Icons.gavel_rounded),
+                title: Text(DashboardCopy.settingsOptionLicenses(context)),
+                onTap: () {
+                  Navigator.of(sheetContext).pop();
+                  Future.microtask(_openLicensesPage);
+                },
+              ),
+              const SizedBox(height: 8),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _openAboutSheet() async {
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetContext) {
+        final theme = Theme.of(sheetContext);
+        return SafeArea(
+          child: Padding(
+            key: const ValueKey('settings_about_sheet'),
+            padding: const EdgeInsets.fromLTRB(16, 10, 12, 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        DashboardCopy.settingsAboutTitle(context),
+                        style: theme.textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ),
+                    _sheetCloseButton(sheetContext),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  DashboardCopy.settingsAboutTagline(context),
+                  key: const ValueKey('settings_about_tagline'),
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  DashboardCopy.settingsAboutBody(context),
+                  key: const ValueKey('settings_about_body'),
+                  style: theme.textTheme.bodyMedium,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  DashboardCopy.settingsAboutLegalese(context),
+                  key: const ValueKey('settings_about_legalese'),
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _openLicensesPage() async {
+    if (!mounted) return;
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute(
+        builder: (_) => LicensePage(
+          key: const ValueKey('settings_licenses_page'),
+          applicationName: 'Unitana',
+          applicationLegalese: DashboardCopy.settingsAboutLegalese(context),
+        ),
+        settings: const RouteSettings(name: 'settings_licenses_route'),
+      ),
+    );
+  }
+
   Future<void> _openEditProfileWizard({
     bool reopenSwitcherOnCancel = false,
     String? discardProfileIdOnCancel,
@@ -1340,6 +1472,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                     },
                                   ),
                                   ListTile(
+                                    key: const ValueKey(
+                                      'dashboard_menu_settings',
+                                    ),
                                     leading: const Icon(Icons.settings),
                                     title: Text(
                                       DashboardCopy.dashboardMenuSettings(
@@ -1348,9 +1483,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                     ),
                                     onTap: () {
                                       Navigator.of(sheetContext).pop();
-                                      Future.microtask(
-                                        _openLanguageSettingsSheet,
-                                      );
+                                      Future.microtask(_openSettingsSheet);
                                     },
                                   ),
                                   if (!_isEditingWidgets)

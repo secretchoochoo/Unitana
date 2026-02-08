@@ -2,8 +2,34 @@
 
 ## Snapshot
 - **Date:** 2026-02-08
-- **Status:** Repo is green (`dart format`, `flutter analyze`, `flutter test`) after XL Unit 1 backlog status normalization plus Pack G follow-up accessibility hardening.
+- **Status:** Repo is green (`dart format`, `flutter analyze`, `flutter test`) after XL Unit 2 (Pack G compliance surfaces + Pack D docs consistency follow-through).
 - **Operating mode:** Codex is now the primary workflow; apply edits directly in-repo (do not require patch zip workflow unless explicitly requested).
+
+## Latest changes (2026-02-08)
+- XL Unit 2 shipped:
+  - added a dedicated Settings sheet path from dashboard menu with deterministic options:
+    - `Language`
+    - `About`
+    - `Licenses`
+  - added About surface with deterministic keys/copy contracts:
+    - `settings_about_sheet`
+    - `settings_about_tagline`
+    - `settings_about_body`
+    - `settings_about_legalese`
+  - added Licenses route contract:
+    - `settings_licenses_page`
+  - expanded localization/runtime coverage for new settings/about/licenses keys across `DashboardCopy`, seed maps, and ARB files.
+  - expanded regression coverage:
+    - `app/unitana/test/dashboard_settings_about_licenses_test.dart`
+    - updated `app/unitana/test/dashboard_language_settings_test.dart`
+    - updated localization contract/runtime tests.
+- docs consistency follow-through:
+  - aligned backlog status map + current slice language in `docs/ai/context_db.json`.
+  - advanced next-slice prompt to XL Unit 3.
+- full gates re-run and green:
+  - `dart format .`
+  - `flutter analyze`
+  - `flutter test`
 
 ## Latest changes (2026-02-08)
 - XL Unit 1 (backlog hygiene) shipped:

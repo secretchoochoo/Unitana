@@ -21,10 +21,21 @@ class LocalizationSeedEs {
     'dashboard.hero.details.title.wind': 'Viento • Racha',
     'dashboard.hero.currency.ratePrefix': 'Tipo:',
     'dashboard.profiles.title': 'Perfiles',
+    'dashboard.settings.title': 'Configuración',
+    'dashboard.settings.option.about': 'Acerca de',
+    'dashboard.settings.option.licenses': 'Licencias',
     'dashboard.settings.language.title': 'Idioma',
     'dashboard.settings.language.option.system': 'Predeterminado del sistema',
     'dashboard.settings.language.option.en': 'Inglés',
     'dashboard.settings.language.option.es': 'Español',
     'dashboard.settings.language.updated': 'Idioma actualizado',
+    'dashboard.settings.about.title': 'Acerca de Unitana',
+    'dashboard.settings.about.tagline':
+        'Descifrador centrado en viajes; doble realidad en paralelo',
+    'dashboard.settings.about.body':
+        'Unitana ayuda a comparar contexto de casa y destino con herramientas prácticas de tiempo, clima y conversiones.',
+    'dashboard.settings.about.legalese':
+        'Copyright 2026 colaboradores de Unitana',
+    'dashboard.settings.licenses.title': 'Licencias de código abierto',
   };
 }

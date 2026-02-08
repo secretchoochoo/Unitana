@@ -92,6 +92,20 @@ void main() {
       LocalizationSeed.enUs['dashboard.settings.language.updated'],
       'Language updated',
     );
+    expect(LocalizationSeed.enUs['dashboard.settings.title'], 'Settings');
+    expect(LocalizationSeed.enUs['dashboard.settings.option.about'], 'About');
+    expect(
+      LocalizationSeed.enUs['dashboard.settings.option.licenses'],
+      'Licenses',
+    );
+    expect(
+      LocalizationSeed.enUs['dashboard.settings.about.title'],
+      'About Unitana',
+    );
+    expect(
+      LocalizationSeed.enUs['dashboard.settings.licenses.title'],
+      'Open-source licenses',
+    );
     expect(LocalizationSeed.enUs['dashboard.profiles.title'], 'Profiles');
     expect(
       LocalizationSeed.enUs['dashboard.profiles.delete.message'],

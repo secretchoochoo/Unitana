@@ -59,9 +59,9 @@
         "Update contributor workflow docs for Codex-first operation."
       ],
       "priority": "P1",
-      "status": "planned",
+      "status": "in_progress",
       "status_updated": "2026-02-08",
-      "status_note": "Broad docs consolidation/audit still pending as a dedicated closure slice."
+      "status_note": "XL Unit 2 started docs consolidation and backlog/prompt alignment; full repo-wide audit closure remains open."
     },
     {
       "id": "PACK_E_marquee_scene_v2_16bit",
@@ -255,8 +255,11 @@
     }
   ],
   "current_state": {
-    "current_slice": "XL Unit 1 shipped: backlog status normalization completed from local code scan; next is XL Unit 2 (Pack G + Pack D combined closure).",
+    "current_slice": "XL Unit 2 shipped: Pack G compliance surfaces (About/Licenses) and Pack D docs consistency follow-through; next is XL Unit 3 (Pack G final checklist + Pack B/C closure proof).",
     "notes": [
+      "XL Unit 2 shipped on 2026-02-08: Settings now exposes deterministic About + Licenses entry points and tests lock those dashboard->settings compliance paths.",
+      "XL Unit 2 shipped on 2026-02-08: dashboard copy/seed/ARB coverage now includes settings/about/licenses keys with fallback-safe runtime localization coverage.",
+      "Pack D follow-through in XL Unit 2: context/handoff/next-prompt alignment was refreshed to track shipped status and reduce stale planning drift.",
       "XL Unit 1 shipped on 2026-02-08: backlog entries now include explicit status metadata (`done`, `in_progress`, `planned`, `closed_with_defer`, `icebox`) to prevent drift between planning and shipped work.",
       "Backlog audit result: Packs A/H/M/N are marked done; Pack F is closed-with-defer (`clothing_sizes`); Packs B/C/E/G/J remain in progress; D/I/K/L/O remain planned.",
       "Pack G follow-up shipped on 2026-02-08: weather high/low badge temperatures were reduced for deterministic fit in tight-width card banners.",
@@ -4663,9 +4666,35 @@
     "tagline": "travel-first decoder ring; dual reality side-by-side"
   },
   "schema_version": "1.0",
-  "last_patch_id": "patch_2026-02-08_xl_unit1_backlog_status_normalization",
+  "last_patch_id": "patch_2026-02-08_xl_unit2_packg_compliance_settings_about_licenses",
   "last_patch_date": "2026-02-08",
   "patch_history": [
+    {
+      "id": "patch_2026-02-08_xl_unit2_packg_compliance_settings_about_licenses",
+      "date": "2026-02-08",
+      "title": "XL Unit 2: ship Settings About/Licenses compliance surface and docs consistency follow-through",
+      "files_changed": [
+        "app/unitana/lib/features/dashboard/dashboard_screen.dart",
+        "app/unitana/lib/features/dashboard/models/dashboard_copy.dart",
+        "app/unitana/lib/l10n/localization_seed.dart",
+        "app/unitana/lib/l10n/localization_seed_es.dart",
+        "app/unitana/lib/l10n/arb/app_en.arb",
+        "app/unitana/lib/l10n/arb/app_es.arb",
+        "app/unitana/test/dashboard_language_settings_test.dart",
+        "app/unitana/test/dashboard_settings_about_licenses_test.dart",
+        "app/unitana/test/dashboard_localizations_runtime_test.dart",
+        "app/unitana/test/localization_seed_contract_test.dart",
+        "docs/ai/context_db.json",
+        "docs/ai/handoff/CURRENT_HANDOFF.md",
+        "docs/ai/prompts/NEXT_CHAT_PROMPT.md"
+      ],
+      "notes": [
+        "Added dashboard->settings->about/licenses discoverability and deterministic interaction keys (`settings_option_about`, `settings_option_licenses`).",
+        "Added localized/fallback-safe copy for settings/about/licenses surfaces across DashboardCopy, seeds, and ARB catalogs.",
+        "Expanded regression coverage to lock About/Licenses entry-point behavior plus localization key/runtime contracts.",
+        "Advanced Pack D docs consistency by aligning backlog state, handoff status, and next prompt direction."
+      ]
+    },
     {
       "id": "patch_2026-02-08_xl_unit1_backlog_status_normalization",
       "date": "2026-02-08",

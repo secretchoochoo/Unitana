@@ -130,6 +130,26 @@ void main() {
       locale: const Locale('en'),
       key: 'dashboard.settings.language.updated',
     );
+    final settingsTitle = DashboardLocalizations.resolveForLocale(
+      locale: const Locale('en'),
+      key: 'dashboard.settings.title',
+    );
+    final settingsAbout = DashboardLocalizations.resolveForLocale(
+      locale: const Locale('en'),
+      key: 'dashboard.settings.option.about',
+    );
+    final settingsLicenses = DashboardLocalizations.resolveForLocale(
+      locale: const Locale('en'),
+      key: 'dashboard.settings.option.licenses',
+    );
+    final settingsAboutTitle = DashboardLocalizations.resolveForLocale(
+      locale: const Locale('en'),
+      key: 'dashboard.settings.about.title',
+    );
+    final settingsLicensesTitle = DashboardLocalizations.resolveForLocale(
+      locale: const Locale('en'),
+      key: 'dashboard.settings.licenses.title',
+    );
     final profileNameFallback = DashboardLocalizations.resolveForLocale(
       locale: const Locale('en'),
       key: 'dashboard.dashboard.profileNameFallback',
@@ -309,6 +329,11 @@ void main() {
     expect(settingsLanguageTitle, 'Language');
     expect(settingsLanguageOptionSystem, 'System default');
     expect(settingsLanguageUpdated, 'Language updated');
+    expect(settingsTitle, 'Settings');
+    expect(settingsAbout, 'About');
+    expect(settingsLicenses, 'Licenses');
+    expect(settingsAboutTitle, 'About Unitana');
+    expect(settingsLicensesTitle, 'Open-source licenses');
     expect(profileNameFallback, 'My Places');
     expect(setCityCta, 'Set city');
     expect(

@@ -40,7 +40,7 @@ void main() {
     return state;
   }
 
-  testWidgets('Settings opens language sheet and persists selection', (
+  testWidgets('Settings exposes About and Licenses entry points', (
     tester,
   ) async {
     SharedPreferences.setMockInitialValues(<String, Object>{});
@@ -54,26 +54,41 @@ void main() {
     );
     await tester.pumpAndSettle(const Duration(milliseconds: 200));
 
-    await tester.tap(find.byKey(const Key('dashboard_menu_button')));
-    await tester.pumpAndSettle(const Duration(milliseconds: 200));
-    await tester.tap(find.byKey(const ValueKey('dashboard_menu_settings')));
-    await tester.pumpAndSettle(const Duration(milliseconds: 200));
-    await tester.tap(find.byKey(const ValueKey('settings_option_language')));
-    await tester.pumpAndSettle(const Duration(milliseconds: 200));
+    Future<void> openSettingsSheet() async {
+      await tester.tap(find.byKey(const Key('dashboard_menu_button')));
+      await tester.pumpAndSettle(const Duration(milliseconds: 200));
+      await tester.tap(find.byKey(const ValueKey('dashboard_menu_settings')));
+      await tester.pumpAndSettle(const Duration(milliseconds: 200));
+    }
 
+    await openSettingsSheet();
+    expect(find.byKey(const ValueKey('settings_sheet')), findsOneWidget);
+    expect(find.byKey(const ValueKey('settings_option_about')), findsOneWidget);
     expect(
-      find.byKey(const ValueKey('settings_language_system')),
+      find.byKey(const ValueKey('settings_option_licenses')),
       findsOneWidget,
     );
-    expect(find.byKey(const ValueKey('settings_language_en')), findsOneWidget);
-    expect(find.byKey(const ValueKey('settings_language_es')), findsOneWidget);
 
-    await tester.tap(find.byKey(const ValueKey('settings_language_es')));
+    await tester.tap(find.byKey(const ValueKey('settings_option_about')));
+    await tester.pumpAndSettle(const Duration(milliseconds: 200));
+    expect(find.byKey(const ValueKey('settings_about_sheet')), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('settings_about_tagline')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('settings_about_legalese')),
+      findsOneWidget,
+    );
+    await tester.tap(find.byTooltip('Close this panel').last);
     await tester.pumpAndSettle(const Duration(milliseconds: 200));
 
-    expect(state.preferredLanguageCode, 'es');
-
-    final prefs = await SharedPreferences.getInstance();
-    expect(prefs.getString('preferred_language_code_v1'), 'es');
+    await openSettingsSheet();
+    await tester.tap(find.byKey(const ValueKey('settings_option_licenses')));
+    await tester.pumpAndSettle(const Duration(milliseconds: 250));
+    expect(
+      find.byKey(const ValueKey('settings_licenses_page')),
+      findsOneWidget,
+    );
   });
 }
