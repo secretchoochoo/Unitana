@@ -76,6 +76,22 @@ void main() {
       'My Places',
     );
     expect(LocalizationSeed.enUs['dashboard.dashboard.setCityCta'], 'Set city');
+    expect(
+      LocalizationSeed.enUs['dashboard.settings.language.title'],
+      'Language',
+    );
+    expect(
+      LocalizationSeed.enUs['dashboard.settings.language.option.system'],
+      'System default',
+    );
+    expect(
+      LocalizationSeed.enUs['dashboard.settings.language.option.es'],
+      'Español',
+    );
+    expect(
+      LocalizationSeed.enUs['dashboard.settings.language.updated'],
+      'Language updated',
+    );
     expect(LocalizationSeed.enUs['dashboard.profiles.title'], 'Profiles');
     expect(
       LocalizationSeed.enUs['dashboard.profiles.delete.message'],
@@ -155,6 +171,30 @@ void main() {
     expect(
       LocalizationSeed.enUs['dashboard.weather.cityNotSet'],
       'City not set',
+    );
+    expect(
+      LocalizationSeed.enUs['dashboard.weather.banner.highLow'],
+      'High • Low',
+    );
+    expect(
+      LocalizationSeed.enUs['dashboard.weather.forecast.mode.hourly'],
+      'Hourly',
+    );
+    expect(
+      LocalizationSeed.enUs['dashboard.weather.forecast.mode.daily'],
+      '7-day',
+    );
+    expect(
+      LocalizationSeed.enUs['dashboard.weather.forecast.unitsLegend'],
+      '°C | °F',
+    );
+    expect(
+      LocalizationSeed.enUs['dashboard.weather.forecast.swapTooltip'],
+      'Tap to swap hourly / 7-day',
+    );
+    expect(
+      LocalizationSeed.enUs['dashboard.weather.forecast.unavailable'],
+      'Forecast unavailable',
     );
     expect(
       LocalizationSeed.enUs['dashboard.weather.aqi.unhealthySensitive'],

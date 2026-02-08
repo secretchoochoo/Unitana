@@ -13,6 +13,7 @@ class UnitanaAppState extends ChangeNotifier {
   List<UnitanaProfile> _profiles = <UnitanaProfile>[];
   String _activeProfileId = 'profile_1';
   String? _pendingSuccessToast;
+  String _preferredLanguageCode = 'system';
 
   UnitanaAppState(this.storage);
 
@@ -20,6 +21,17 @@ class UnitanaAppState extends ChangeNotifier {
       List<UnitanaProfile>.unmodifiable(_profiles);
 
   String get activeProfileId => _activeProfileId;
+  String get preferredLanguageCode => _preferredLanguageCode;
+  Locale? get appLocale {
+    switch (_preferredLanguageCode) {
+      case 'en':
+        return const Locale('en');
+      case 'es':
+        return const Locale('es');
+      default:
+        return null;
+    }
+  }
 
   UnitanaProfile get activeProfile {
     final idx = _profiles.indexWhere((p) => p.id == _activeProfileId);
@@ -81,6 +93,9 @@ class UnitanaAppState extends ChangeNotifier {
   }
 
   Future<void> load() async {
+    final preferredLanguageRaw = await storage.loadPreferredLanguageCode();
+    _preferredLanguageCode = _normalizeLanguageCode(preferredLanguageRaw);
+
     final loadedProfiles = await storage.loadProfiles();
     final loadedActiveId = await storage.loadActiveProfileId();
 
@@ -154,6 +169,14 @@ class UnitanaAppState extends ChangeNotifier {
     await storage.saveProfiles(_profiles);
     await storage.saveActiveProfileId(_activeProfileId);
     await _persistLegacyActive();
+  }
+
+  Future<void> setPreferredLanguageCode(String code) async {
+    final normalized = _normalizeLanguageCode(code);
+    if (_preferredLanguageCode == normalized) return;
+    _preferredLanguageCode = normalized;
+    await storage.savePreferredLanguageCode(normalized);
+    notifyListeners();
   }
 
   Future<void> switchToProfile(String id) async {
@@ -279,6 +302,7 @@ class UnitanaAppState extends ChangeNotifier {
     _profiles = <UnitanaProfile>[];
     _activeProfileId = 'profile_1';
     _pendingSuccessToast = null;
+    _preferredLanguageCode = 'system';
     notifyListeners();
   }
 
@@ -291,5 +315,11 @@ class UnitanaAppState extends ChangeNotifier {
     final text = _pendingSuccessToast;
     _pendingSuccessToast = null;
     return text;
+  }
+
+  static String _normalizeLanguageCode(String? raw) {
+    final code = (raw ?? '').trim().toLowerCase();
+    if (code == 'en' || code == 'es') return code;
+    return 'system';
   }
 }

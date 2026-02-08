@@ -34,20 +34,24 @@ class _UnitanaAppState extends State<UnitanaApp> {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      theme: UnitanaTheme.dark(),
-      darkTheme: UnitanaTheme.dark(),
-      themeMode: ThemeMode.dark,
-      supportedLocales: const <Locale>[Locale('en')],
-      localizationsDelegates: const <LocalizationsDelegate<dynamic>>[
-        GlobalMaterialLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
-      ],
-      home: _ready
-          ? _HomeRouter(state: _state)
-          : const Scaffold(body: Center(child: CircularProgressIndicator())),
+    return AnimatedBuilder(
+      animation: _state,
+      builder: (context, _) => MaterialApp(
+        debugShowCheckedModeBanner: false,
+        theme: UnitanaTheme.dark(),
+        darkTheme: UnitanaTheme.dark(),
+        themeMode: ThemeMode.dark,
+        locale: _state.appLocale,
+        supportedLocales: const <Locale>[Locale('en'), Locale('es')],
+        localizationsDelegates: const <LocalizationsDelegate<dynamic>>[
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        home: _ready
+            ? _HomeRouter(state: _state)
+            : const Scaffold(body: Center(child: CircularProgressIndicator())),
+      ),
     );
   }
 }

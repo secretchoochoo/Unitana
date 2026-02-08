@@ -8,6 +8,8 @@ class _FakeFrankfurterClient extends FrankfurterClient {
   int latestRatesCalls = 0;
   int failLatestRatesCount = 0;
   Map<String, double>? latestRatesResult;
+  int eurToUsdCalls = 0;
+  double? eurToUsdResult;
 
   @override
   Future<Map<String, double>?> fetchLatestRates({
@@ -20,6 +22,12 @@ class _FakeFrankfurterClient extends FrankfurterClient {
       throw StateError('frankfurter outage');
     }
     return latestRatesResult;
+  }
+
+  @override
+  Future<double?> fetchEurToUsd({Uri? endpointOverride}) async {
+    eurToUsdCalls += 1;
+    return eurToUsdResult;
   }
 }
 
@@ -115,4 +123,44 @@ void main() {
       closeTo(1.41, 0.000001),
     );
   });
+
+  test(
+    'currency refresh keeps last stable rate when latest payload is unusable',
+    () async {
+      final fake = _FakeFrankfurterClient()
+        ..latestRatesResult = <String, double>{'EUR': 1.0, 'USD': 1.25};
+
+      final live = DashboardLiveDataController(
+        frankfurterClient: fake,
+        allowLiveRefreshInTestHarness: true,
+        refreshDebounceDuration: Duration.zero,
+        simulatedNetworkLatency: Duration.zero,
+        currencyRetryBackoffDuration: Duration.zero,
+      );
+      addTearDown(live.dispose);
+
+      await live.setCurrencyBackend(CurrencyBackend.frankfurter);
+      await live.refreshAll(places: const []);
+      expect(
+        live.currencyRate(fromCode: 'EUR', toCode: 'USD'),
+        closeTo(1.25, 0.000001),
+      );
+
+      fake
+        ..latestRatesResult = <String, double>{'EUR': 1.0}
+        ..eurToUsdResult = null;
+      live.debugSetLastCurrencyRefreshedAt(
+        DateTime.now().subtract(const Duration(hours: 13)),
+      );
+      await live.refreshAll(places: const []);
+
+      expect(fake.eurToUsdCalls, greaterThanOrEqualTo(1));
+      expect(live.lastCurrencyError, isNotNull);
+      expect(
+        live.currencyRate(fromCode: 'EUR', toCode: 'USD'),
+        closeTo(1.25, 0.000001),
+      );
+      expect(live.shouldRetryCurrencyNow, isTrue);
+    },
+  );
 }

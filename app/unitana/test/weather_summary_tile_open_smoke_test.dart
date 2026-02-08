@@ -115,6 +115,66 @@ void main() {
           find.descendant(of: sheetFinder, matching: find.text('Weather')),
           findsOneWidget,
         );
+        expect(
+          find.descendant(
+            of: sheetFinder,
+            matching: find.byKey(
+              const ValueKey('weather_summary_place_card_dest'),
+            ),
+          ),
+          findsOneWidget,
+        );
+        expect(
+          find.descendant(
+            of: sheetFinder,
+            matching: find.byKey(
+              const ValueKey('weather_summary_place_card_home'),
+            ),
+          ),
+          findsOneWidget,
+        );
+        expect(
+          find.descendant(
+            of: sheetFinder,
+            matching: find.byKey(const ValueKey('weather_summary_hourly_dest')),
+          ),
+          findsOneWidget,
+        );
+        expect(
+          find.descendant(
+            of: sheetFinder,
+            matching: find.byKey(
+              const ValueKey('weather_summary_forecast_panel_dest'),
+            ),
+          ),
+          findsOneWidget,
+        );
+        await tester.tap(
+          find.byKey(const ValueKey('weather_summary_forecast_swap_dest')),
+        );
+        await tester.pump(const Duration(milliseconds: 250));
+        expect(
+          find.descendant(
+            of: sheetFinder,
+            matching: find.byKey(const ValueKey('weather_summary_daily_dest')),
+          ),
+          findsOneWidget,
+        );
+        await tester.tap(
+          find.byKey(const ValueKey('weather_summary_forecast_swap_dest')),
+        );
+        await tester.pump(const Duration(milliseconds: 250));
+        expect(
+          find
+              .descendant(of: sheetFinder, matching: find.textContaining('°C/'))
+              .evaluate()
+              .isNotEmpty,
+          isTrue,
+        );
+        expect(
+          find.descendant(of: sheetFinder, matching: find.text('High • Low')),
+          findsWidgets,
+        );
 
         // Refresh label can be either "Not updated" (hermetic) or
         // "Updated X ago" (if Dashboard triggers an auto-refresh on open).
@@ -172,11 +232,49 @@ void main() {
           find.descendant(
             of: sheetFinder,
             matching: find.byKey(
+              const ValueKey('weather_summary_banner_hilo_dest'),
+            ),
+          ),
+          findsOneWidget,
+        );
+        await tester.drag(sheetFinder, const Offset(0, -220));
+        await tester.pump(const Duration(milliseconds: 250));
+        expect(
+          find.descendant(
+            of: sheetFinder,
+            matching: find.byKey(
               const ValueKey('weather_summary_card_scene_home'),
             ),
           ),
           findsOneWidget,
         );
+        expect(
+          find.descendant(
+            of: sheetFinder,
+            matching: find.byKey(
+              const ValueKey('weather_summary_banner_hilo_home'),
+            ),
+          ),
+          findsOneWidget,
+        );
+        expect(
+          find.descendant(
+            of: find.byKey(const ValueKey('weather_summary_banner_hilo_home')),
+            matching: find.textContaining('°F/'),
+          ),
+          findsWidgets,
+        );
+        expect(
+          find.descendant(
+            of: sheetFinder,
+            matching: find.byKey(
+              const ValueKey('weather_summary_forecast_panel_home'),
+            ),
+          ),
+          findsOneWidget,
+        );
+        await tester.drag(sheetFinder, const Offset(0, 220));
+        await tester.pump(const Duration(milliseconds: 250));
 
         expect(
           find.byKey(const ValueKey('weather_summary_refresh')),
@@ -189,35 +287,35 @@ void main() {
               .descendant(of: sheetFinder, matching: find.textContaining('☀️'))
               .evaluate()
               .length,
-          greaterThanOrEqualTo(2),
+          greaterThanOrEqualTo(1),
         );
         expect(
           find
               .descendant(of: sheetFinder, matching: find.textContaining('🌙'))
               .evaluate()
               .length,
-          greaterThanOrEqualTo(2),
+          greaterThanOrEqualTo(1),
         );
         expect(
           find
               .descendant(of: sheetFinder, matching: find.textContaining('🌬️'))
               .evaluate()
               .length,
-          greaterThanOrEqualTo(2),
+          greaterThanOrEqualTo(1),
         );
         expect(
           find
               .descendant(of: sheetFinder, matching: find.textContaining('💨'))
               .evaluate()
               .length,
-          greaterThanOrEqualTo(2),
+          greaterThanOrEqualTo(1),
         );
         expect(
           find
               .descendant(of: sheetFinder, matching: find.text('🌫️ AQI (US)'))
               .evaluate()
               .length,
-          greaterThanOrEqualTo(2),
+          greaterThanOrEqualTo(1),
         );
         expect(
           find
@@ -227,7 +325,7 @@ void main() {
               )
               .evaluate()
               .length,
-          greaterThanOrEqualTo(2),
+          greaterThanOrEqualTo(1),
         );
 
         // Drain any exceptions thrown during open/render.

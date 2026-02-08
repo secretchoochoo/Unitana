@@ -4,6 +4,30 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 @immutable
+class WeatherApiHourlyForecastPoint {
+  final DateTime timeUtc;
+  final double temperatureC;
+
+  const WeatherApiHourlyForecastPoint({
+    required this.timeUtc,
+    required this.temperatureC,
+  });
+}
+
+@immutable
+class WeatherApiDailyForecastPoint {
+  final DateTime dayUtc;
+  final double maxTemperatureC;
+  final double minTemperatureC;
+
+  const WeatherApiDailyForecastPoint({
+    required this.dayUtc,
+    required this.maxTemperatureC,
+    required this.minTemperatureC,
+  });
+}
+
+@immutable
 class WeatherApiForecast {
   final double temperatureC;
   final double windKmh;
@@ -18,6 +42,8 @@ class WeatherApiForecast {
   /// Sunrise and sunset expressed as UTC instants.
   final DateTime sunriseUtc;
   final DateTime sunsetUtc;
+  final List<WeatherApiHourlyForecastPoint> hourly;
+  final List<WeatherApiDailyForecastPoint> daily;
 
   const WeatherApiForecast({
     required this.temperatureC,
@@ -27,6 +53,8 @@ class WeatherApiForecast {
     required this.conditionText,
     required this.sunriseUtc,
     required this.sunsetUtc,
+    required this.hourly,
+    required this.daily,
   });
 }
 
@@ -130,7 +158,7 @@ class WeatherApiClient {
     final params = <String, String>{
       if (sendApiKey) 'key': apiKey,
       'q': q,
-      'days': '1',
+      'days': '7',
       'aqi': 'no',
       'alerts': 'no',
     };
@@ -190,6 +218,8 @@ class WeatherApiClient {
     // Pull today's sunrise/sunset from forecast astro.
     DateTime sunriseUtc = nowUtc;
     DateTime sunsetUtc = nowUtc.add(const Duration(hours: 12));
+    final hourlyPoints = <WeatherApiHourlyForecastPoint>[];
+    final dailyPoints = <WeatherApiDailyForecastPoint>[];
 
     final forecast = decoded['forecast'] as Map<String, dynamic>?;
     final days =
@@ -227,6 +257,43 @@ class WeatherApiClient {
           sunsetUtc = naive.subtract(Duration(seconds: offsetSeconds));
         }
       }
+
+      for (final raw in days) {
+        final dayMap = raw as Map<String, dynamic>;
+        final dateEpoch = (dayMap['date_epoch'] as num?)?.toInt();
+        final dayVals = dayMap['day'] as Map<String, dynamic>? ?? const {};
+        final maxC = (dayVals['maxtemp_c'] as num?)?.toDouble();
+        final minC = (dayVals['mintemp_c'] as num?)?.toDouble();
+        if (dateEpoch != null && maxC != null && minC != null) {
+          dailyPoints.add(
+            WeatherApiDailyForecastPoint(
+              dayUtc: DateTime.fromMillisecondsSinceEpoch(
+                dateEpoch * 1000,
+                isUtc: true,
+              ),
+              maxTemperatureC: maxC,
+              minTemperatureC: minC,
+            ),
+          );
+        }
+
+        final hours = (dayMap['hour'] as List?)?.cast<dynamic>() ?? const [];
+        for (final hourRaw in hours) {
+          final hm = hourRaw as Map<String, dynamic>;
+          final epoch = (hm['time_epoch'] as num?)?.toInt();
+          final hourTempC = (hm['temp_c'] as num?)?.toDouble();
+          if (epoch == null || hourTempC == null) continue;
+          hourlyPoints.add(
+            WeatherApiHourlyForecastPoint(
+              timeUtc: DateTime.fromMillisecondsSinceEpoch(
+                epoch * 1000,
+                isUtc: true,
+              ),
+              temperatureC: hourTempC,
+            ),
+          );
+        }
+      }
     }
 
     final result = WeatherApiForecast(
@@ -237,6 +304,8 @@ class WeatherApiClient {
       conditionText: conditionText,
       sunriseUtc: sunriseUtc,
       sunsetUtc: sunsetUtc,
+      hourly: hourlyPoints,
+      daily: dailyPoints,
     );
 
     _cache[q] = (fetchedAtUtc: nowUtc, value: result);

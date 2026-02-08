@@ -7,13 +7,7 @@ void main() {
     final deferred = ToolRegistry.deferredTools();
     final deferredIds = deferred.map((t) => t.toolId).toSet();
 
-    expect(deferredIds, {
-      'cups_grams_estimates',
-      'pace',
-      'hydration',
-      'energy',
-      'clothing_sizes',
-    });
+    expect(deferredIds, {'clothing_sizes'});
 
     for (final tool in deferred) {
       expect(
@@ -23,6 +17,10 @@ void main() {
       );
       expect(tool.deferReason, isNotNull);
       expect(tool.deferReason!.trim(), isNotEmpty);
+      if (tool.toolId == 'clothing_sizes') {
+        expect(tool.deferReason, contains('Activate only after'));
+        expect(tool.deferReason, contains('confidence'));
+      }
     }
   });
 
@@ -40,5 +38,37 @@ void main() {
 
     expect(byId['oven_temperature']?.surfaceType, ToolSurfaceType.aliasPreset);
     expect(byId['oven_temperature']?.aliasTargetToolId, 'temperature');
+  });
+
+  test('energy is enabled as configurable template', () {
+    final energy = ToolRegistry.byId['energy'];
+    expect(energy, isNotNull);
+    expect(energy!.isEnabled, isTrue);
+    expect(energy.surfaceType, ToolSurfaceType.configurableTemplate);
+    expect(energy.deferReason, isNull);
+  });
+
+  test('pace is enabled as configurable template', () {
+    final pace = ToolRegistry.byId['pace'];
+    expect(pace, isNotNull);
+    expect(pace!.isEnabled, isTrue);
+    expect(pace.surfaceType, ToolSurfaceType.configurableTemplate);
+    expect(pace.deferReason, isNull);
+  });
+
+  test('cups/grams estimates is enabled as configurable template', () {
+    final cups = ToolRegistry.byId['cups_grams_estimates'];
+    expect(cups, isNotNull);
+    expect(cups!.isEnabled, isTrue);
+    expect(cups.surfaceType, ToolSurfaceType.configurableTemplate);
+    expect(cups.deferReason, isNull);
+  });
+
+  test('hydration is enabled as dedicated surface', () {
+    final hydration = ToolRegistry.byId['hydration'];
+    expect(hydration, isNotNull);
+    expect(hydration!.isEnabled, isTrue);
+    expect(hydration.surfaceType, ToolSurfaceType.dedicated);
+    expect(hydration.deferReason, isNull);
   });
 }

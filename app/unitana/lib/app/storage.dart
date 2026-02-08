@@ -10,6 +10,7 @@ class UnitanaStorage {
   // Multi-profile storage.
   static const String _kProfiles = 'profiles_v1';
   static const String _kActiveProfileId = 'active_profile_id_v1';
+  static const String _kPreferredLanguageCode = 'preferred_language_code_v1';
 
   Future<List<Place>> loadPlaces() async {
     final prefs = await SharedPreferences.getInstance();
@@ -81,6 +82,16 @@ class UnitanaStorage {
     await prefs.setString(_kActiveProfileId, id);
   }
 
+  Future<String?> loadPreferredLanguageCode() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_kPreferredLanguageCode);
+  }
+
+  Future<void> savePreferredLanguageCode(String code) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_kPreferredLanguageCode, code);
+  }
+
   Future<void> clearAll() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_kPlaces);
@@ -88,5 +99,6 @@ class UnitanaStorage {
     await prefs.remove(_kProfileName);
     await prefs.remove(_kProfiles);
     await prefs.remove(_kActiveProfileId);
+    await prefs.remove(_kPreferredLanguageCode);
   }
 }

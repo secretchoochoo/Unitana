@@ -8,12 +8,16 @@ void main() {
   testWidgets('UnitanaApp configures localization delegates and locales', (
     tester,
   ) async {
-    SharedPreferences.setMockInitialValues(<String, Object>{});
+    SharedPreferences.setMockInitialValues(<String, Object>{
+      'preferred_language_code_v1': 'es',
+    });
     await tester.pumpWidget(const UnitanaApp());
-    await tester.pump();
+    await tester.pumpAndSettle();
 
     final app = tester.widget<MaterialApp>(find.byType(MaterialApp));
     expect(app.supportedLocales, contains(const Locale('en')));
+    expect(app.supportedLocales, contains(const Locale('es')));
+    expect(app.locale, const Locale('es'));
     expect(
       app.localizationsDelegates,
       contains(GlobalMaterialLocalizations.delegate),

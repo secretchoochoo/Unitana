@@ -5,8 +5,10 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 from pathlib import Path
 from typing import Any, Dict, List
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 
 REQUIRED_FIELDS = [
@@ -20,6 +22,24 @@ REQUIRED_FIELDS = [
     "lat",
     "lon",
 ]
+_ALPHA2 = re.compile(r"^[A-Z]{2}$")
+_ALPHA3 = re.compile(r"^[A-Z]{3}$")
+_TZ_CACHE: Dict[str, bool] = {}
+
+
+def _is_known_timezone(tz_id: str) -> bool:
+    if not tz_id:
+        return False
+    cached = _TZ_CACHE.get(tz_id)
+    if cached is not None:
+        return cached
+    try:
+        ZoneInfo(tz_id)
+        _TZ_CACHE[tz_id] = True
+        return True
+    except ZoneInfoNotFoundError:
+        _TZ_CACHE[tz_id] = False
+        return False
 
 
 def _validate_row(row: Dict[str, Any], idx: int) -> List[str]:
@@ -36,10 +56,14 @@ def _validate_row(row: Dict[str, Any], idx: int) -> List[str]:
 
     country_code = str(row.get("countryCode", "")).strip().upper()
     currency_code = str(row.get("currencyCode", "")).strip().upper()
-    if len(country_code) != 2:
+    if not _ALPHA2.match(country_code):
         errors.append("countryCode must be ISO-3166 alpha-2")
-    if len(currency_code) != 3:
+    if not _ALPHA3.match(currency_code):
         errors.append("currencyCode must be ISO-4217 alpha-3")
+
+    tz_id = str(row.get("timeZoneId", "")).strip()
+    if not _is_known_timezone(tz_id):
+        errors.append("timeZoneId is not a known IANA timezone")
 
     unit_system = row.get("defaultUnitSystem")
     if unit_system not in {"metric", "imperial"}:

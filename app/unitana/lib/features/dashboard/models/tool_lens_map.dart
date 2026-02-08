@@ -18,6 +18,7 @@ class ToolLensMap {
     ],
     ActivityLensId.foodCooking: <String>[
       CanonicalToolId.liquids,
+      CanonicalToolId.cupsGramsEstimates,
       CanonicalToolId.weight,
       CanonicalToolId.temperature,
     ],
@@ -26,6 +27,9 @@ class ToolLensMap {
       CanonicalToolId.length,
       CanonicalToolId.distance,
       CanonicalToolId.speed,
+      CanonicalToolId.pace,
+      CanonicalToolId.energy,
+      CanonicalToolId.hydration,
       CanonicalToolId.liquids,
     ],
     ActivityLensId.homeDiy: <String>[

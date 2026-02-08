@@ -1,9 +1,274 @@
 # CURRENT_HANDOFF (Unitana) - Wizard, Collapsing Header, Multi-Profile
 
 ## Snapshot
-- **Date:** 2026-02-07
-- **Status:** Repo is green (`dart format`, `flutter analyze`, `flutter test`) after Pack E ambiguity v4 + ToolPicker auto-focus scrolling + Pack H ARB/fallback bridge.
+- **Date:** 2026-02-08
+- **Status:** Repo is green (`dart format`, `flutter analyze`, `flutter test`) after Pack J phase 3 cockpit localization hardening + interactive forecast panel contracts.
 - **Operating mode:** Codex is now the primary workflow; apply edits directly in-repo (do not require patch zip workflow unless explicitly requested).
+
+## Latest changes (2026-02-08)
+- Pack J phase 3 cockpit polish + localization hardening shipped:
+  - weather cards now include a larger interactive forecast panel that toggles between `Hourly` and `7-day` bar graphs via pulsing swap affordance:
+    - `app/unitana/lib/features/dashboard/widgets/weather_summary_bottom_sheet.dart`
+  - high/low badge and forecast panel labels are now routed through `DashboardCopy` copy contracts (no direct hardcoded cockpit strings in widget paths):
+    - `dashboard.weather.banner.highLow`
+    - `dashboard.weather.forecast.mode.hourly`
+    - `dashboard.weather.forecast.mode.daily`
+    - `dashboard.weather.forecast.unitsLegend`
+    - `dashboard.weather.forecast.swapTooltip`
+    - `dashboard.weather.forecast.unavailable`
+  - copy keys seeded for runtime fallback and locale coverage:
+    - `app/unitana/lib/l10n/localization_seed.dart`
+    - `app/unitana/lib/l10n/localization_seed_es.dart`
+    - `app/unitana/lib/l10n/arb/app_en.arb`
+    - `app/unitana/lib/l10n/arb/app_es.arb`
+  - imperial/metric high-low ordering contract locked:
+    - imperial cards render `°F/°C`, metric cards render `°C/°F`.
+- regression coverage expanded:
+  - `app/unitana/test/weather_summary_tile_open_smoke_test.dart`
+  - `app/unitana/test/dashboard_localizations_runtime_test.dart`
+  - `app/unitana/test/localization_seed_contract_test.dart`
+- full gates re-run and green:
+  - `dart format .`
+  - `flutter analyze`
+  - `flutter test`
+
+## Latest changes (2026-02-08)
+- Pack J phase 2 cockpit expansion shipped:
+  - added a new `Travel readiness` section in `app/unitana/lib/features/dashboard/widgets/weather_summary_bottom_sheet.dart` between the comparison strip and per-place cards.
+  - section now renders:
+    - local clock/date for destination + home
+    - daylight vs night status per place
+    - deterministic "Call overlap now" quality (`Good` / `Limited` / `Off-hours`)
+  - retained existing weather cards and scene-key contracts.
+  - expanded weather sheet regression coverage in:
+    - `app/unitana/test/weather_summary_tile_open_smoke_test.dart`
+    - `app/unitana/test/weather_summary_close_button_smoke_test.dart`
+    - `app/unitana/test/toolpicker_activation_bundle_test.dart`
+- converter units-row overflow regression fixed:
+  - updated tool modal units/swap layout in `app/unitana/lib/features/dashboard/widgets/tool_modal_bottom_sheet.dart` so swap control no longer consumes a full third of row width.
+  - strengthened row-layout contract in:
+    - `app/unitana/test/tool_modal_units_typography_consistency_test.dart`
+- full gates re-run and green:
+  - `dart format .`
+  - `flutter analyze`
+  - `flutter test`
+
+## Latest changes (2026-02-08)
+- Pack F final deferred decision is now explicit and deterministic:
+  - `clothing_sizes` remains deferred in `app/unitana/lib/features/dashboard/models/tool_registry.dart`.
+  - defer reason now encodes activation lock criteria directly:
+    - region + category matrix,
+    - confidence bands,
+    - explicit fit uncertainty policy.
+  - architecture contract coverage tightened in:
+    - `app/unitana/test/tool_registry_architecture_matrix_test.dart`
+  - deferred matrix doc now records final state and acceptance criteria:
+    - `docs/ai/reference/DEFERRED_TOOLS_EXECUTION_MATRIX.md`
+- Pack J kickoff baseline shipped in weather sheet:
+  - added a compact "At a glance" comparison strip in `app/unitana/lib/features/dashboard/widgets/weather_summary_bottom_sheet.dart` with deterministic:
+    - time-zone delta (`±H:MM`) between destination and home,
+    - temperature delta (`°C`) when both weather snapshots are present.
+  - regression lock added in:
+    - `app/unitana/test/weather_summary_tile_open_smoke_test.dart`
+  - existing destination/home weather cards and weather-sheet open/close contracts remain unchanged.
+- full gates re-run and green:
+  - `dart format .`
+  - `flutter analyze`
+  - `flutter test`
+
+## Latest changes (2026-02-07)
+- Pack F follow-up round 4 shipped:
+  - activated deferred `hydration` as a dedicated helper surface:
+    - `app/unitana/lib/features/dashboard/models/tool_registry.dart`
+    - `app/unitana/lib/features/dashboard/models/tool_definitions.dart`
+    - `app/unitana/lib/features/dashboard/models/canonical_tools.dart`
+    - `app/unitana/lib/features/dashboard/models/tool_lens_map.dart`
+  - hydration helper implementation in `app/unitana/lib/features/dashboard/widgets/tool_modal_bottom_sheet.dart`:
+    - deterministic intake estimate inputs (`weight`, `exercise minutes`, `climate band`)
+    - explicit non-medical guardrail copy in-result
+    - dedicated result card contract (`tool_hydration_result_hydration`)
+  - regression coverage expanded:
+    - `app/unitana/test/hydration_tool_modal_interaction_test.dart`
+    - `app/unitana/test/toolpicker_activation_bundle_test.dart`
+    - `app/unitana/test/tool_registry_architecture_matrix_test.dart`
+  - deferred matrix now leaves only `clothing_sizes` deferred.
+- behavior contracts preserved:
+  - Pack N timezone behavior, Pack C/B reliability behavior, Pack H locale/runtime fallback behavior, selected-row single-marker, tool-picker auto-focus scroll, and city-picker perf guardrail remain green.
+- full gates re-run and green:
+  - `dart format .`
+  - `flutter analyze`
+  - `flutter test`
+
+## Latest changes (2026-02-07)
+- Pack F follow-up round 3 shipped:
+  - activated deferred `cups_grams_estimates` as a lookup-style estimates surface in Food & Cooking:
+    - `app/unitana/lib/features/dashboard/models/tool_registry.dart`
+    - `app/unitana/lib/features/dashboard/models/tool_definitions.dart`
+    - `app/unitana/lib/features/dashboard/models/canonical_tools.dart`
+    - `app/unitana/lib/features/dashboard/models/tool_lens_map.dart`
+  - wired cups/grams into the shared lookup modal matrix path:
+    - systems: `Volume` and `Weight`
+    - core ingredient rows (for example flour, sugar, butter, rice)
+    - explicit approximation notes per ingredient row
+    - implementation in `app/unitana/lib/features/dashboard/widgets/tool_modal_bottom_sheet.dart`
+  - expanded regression coverage:
+    - `app/unitana/test/cups_grams_estimates_matrix_interaction_test.dart`
+    - `app/unitana/test/toolpicker_activation_bundle_test.dart`
+    - `app/unitana/test/tool_registry_architecture_matrix_test.dart`
+  - deferred-matrix docs updated:
+    - `docs/ai/reference/DEFERRED_TOOLS_EXECUTION_MATRIX.md` now marks `energy`, `pace`, and `cups_grams_estimates` as activated.
+- behavior contracts preserved:
+  - Pack N timezone behavior, Pack C/B reliability behavior, Pack H locale/runtime fallback behavior, selected-row single-marker, tool-picker auto-focus scroll, and city-picker perf guardrail remain green.
+- full gates re-run and green:
+  - `dart format .`
+  - `flutter analyze`
+  - `flutter test`
+
+## Latest changes (2026-02-07)
+- Pack F follow-up round 2 shipped:
+  - activated deferred `pace` tool as enabled configurable converter surface (`min/km ↔ min/mi`) across registry + tool definitions:
+    - `app/unitana/lib/features/dashboard/models/tool_registry.dart`
+    - `app/unitana/lib/features/dashboard/models/tool_definitions.dart`
+    - `app/unitana/lib/features/dashboard/models/canonical_tools.dart`
+    - `app/unitana/lib/features/dashboard/models/tool_lens_map.dart`
+  - added deterministic pace parsing in converter engine:
+    - supports `mm:ss`, `XmYs`, and decimal-minute inputs
+    - output is normalized as `m:ss min/km` / `m:ss min/mi`
+  - expanded regression coverage:
+    - `app/unitana/test/pace_tool_modal_interaction_test.dart`
+    - `app/unitana/test/toolpicker_activation_bundle_test.dart`
+    - `app/unitana/test/tool_registry_architecture_matrix_test.dart`
+- converter consistency hardening:
+  - preserved no-downscale typography behavior for plain text unit rows.
+  - retained fit-safe handling for interactive unit-pill rows to prevent overflow/tap regressions on narrow layouts.
+  - implementation in `app/unitana/lib/features/dashboard/widgets/tool_modal_bottom_sheet.dart`.
+- deferred-matrix docs updated:
+  - `docs/ai/reference/DEFERRED_TOOLS_EXECUTION_MATRIX.md` now marks both `energy` and `pace` as activated.
+- behavior contracts preserved:
+  - Pack N timezone behavior, Pack C/B reliability behavior, Pack H locale/runtime fallback behavior, selected-row single-marker, tool-picker auto-focus scroll, and city-picker perf guardrail remain green.
+- full gates re-run and green:
+  - `dart format .`
+  - `flutter analyze`
+  - `flutter test`
+
+## Latest changes (2026-02-07)
+- Pack F follow-up slice shipped:
+  - activated deferred `energy` tool as enabled configurable converter surface (`kcal ↔ kJ`) across registry + tool definitions:
+    - `app/unitana/lib/features/dashboard/models/tool_registry.dart`
+    - `app/unitana/lib/features/dashboard/models/tool_definitions.dart`
+    - `app/unitana/lib/features/dashboard/models/canonical_tools.dart`
+    - `app/unitana/lib/features/dashboard/models/tool_lens_map.dart`
+  - added conversion engine + modal multi-unit support for energy:
+    - `ToolConverters.convertWithUnits` now supports `CanonicalToolId.energy`
+    - `tool_modal_bottom_sheet.dart` now seeds/defaults/suffix parsing for `kcal` + `kJ`
+  - converter typography consistency sweep:
+    - removed `FittedBox` downscaling from the units+swap row and switched to horizontal scroll to preserve consistent type scale across tools (notably long unit pairs like `km/h → mph`).
+    - implementation in `app/unitana/lib/features/dashboard/widgets/tool_modal_bottom_sheet.dart`
+  - regression coverage added/expanded:
+    - `app/unitana/test/tool_modal_units_typography_consistency_test.dart`
+    - `app/unitana/test/tool_registry_architecture_matrix_test.dart`
+    - `app/unitana/test/toolpicker_activation_bundle_test.dart`
+  - deferred-matrix docs updated:
+    - `docs/ai/reference/DEFERRED_TOOLS_EXECUTION_MATRIX.md`
+- behavior contracts preserved:
+  - Pack N timezone behavior, Pack C/B reliability behavior, Pack H locale/runtime fallback behavior, selected-row single-marker, tool-picker auto-focus scroll, and city-picker perf guardrail remain green.
+- full gates re-run and green:
+  - `dart format .`
+  - `flutter analyze`
+  - `flutter test`
+
+## Latest changes (2026-02-07)
+- Pack H full completion shipped:
+  - added persisted user language preference (`system`/`en`/`es`) via app storage and state:
+    - `app/unitana/lib/app/storage.dart`
+    - `app/unitana/lib/app/app_state.dart`
+  - wired app-level locale selection into `MaterialApp` with Spanish support:
+    - `app/unitana/lib/app/app.dart`
+  - replaced Settings language placeholder with working language picker bottom sheet:
+    - `app/unitana/lib/features/dashboard/dashboard_screen.dart`
+  - expanded localization copy/seed coverage for settings language UX and exported ARB updates:
+    - `app/unitana/lib/features/dashboard/models/dashboard_copy.dart`
+    - `app/unitana/lib/l10n/localization_seed.dart`
+    - `app/unitana/lib/l10n/localization_seed_es.dart`
+    - `app/unitana/lib/l10n/arb/app_en.arb`
+    - `app/unitana/lib/l10n/arb/app_es.arb`
+  - added/updated regression coverage:
+    - `app/unitana/test/dashboard_language_settings_test.dart`
+    - `app/unitana/test/app_localization_scaffold_test.dart`
+    - `app/unitana/test/dashboard_localizations_runtime_test.dart`
+    - `app/unitana/test/localization_seed_contract_test.dart`
+- behavior contracts preserved:
+  - Pack N timezone behavior, Pack C/B reliability behavior, selected-row single-marker, and tool-picker focus-scroll UX remain green.
+  - city picker perf guardrail remains green.
+- full gates re-run and green:
+  - `dart format .`
+  - `flutter analyze`
+  - `flutter test`
+
+## Latest changes (2026-02-07)
+- Pack C + Pack B reliability hardening shipped:
+  - currency refresh resilience improved in `app/unitana/lib/features/dashboard/models/dashboard_live_data.dart`:
+    - provider payload rates are normalized/sanitized before merge,
+    - partial/unusable latest payloads no longer overwrite stable cached rates,
+    - EUR->USD missing-rate paths now set deterministic error/backoff state instead of silently no-oping.
+  - weather/live refresh truthfulness improved:
+    - `lastRefreshedAt` is now updated only when a real live-weather update or currency refresh succeeds, preventing false "updated" freshness after total fallback failure.
+  - added deterministic test hook for currency staleness contracts:
+    - `debugSetLastCurrencyRefreshedAt` (testing-only).
+  - regression coverage expanded:
+    - `app/unitana/test/dashboard_currency_retry_cache_semantics_test.dart`
+      - locks "keep last stable rate on unusable payload" behavior.
+    - `app/unitana/test/dashboard_live_data_refresh_fallback_test.dart`
+      - locks that full WeatherAPI failure fallback does not claim a fresh update timestamp.
+- preserved behavior contracts:
+  - Time/Jet Lag/timezone alias + direct-zone picker behavior unchanged.
+  - selected-row single-marker contract unchanged.
+  - city-picker perf contract still green.
+- full gates re-run and green:
+  - `dart format .`
+  - `flutter analyze`
+  - `flutter test`
+
+## Latest changes (2026-02-07)
+- Pack N + Pack A correctness closure shipped:
+  - `TimezoneUtils` now initializes with `timezone/data/latest_all.dart` so the full canonical city dataset timezone IDs resolve (no partial-zone gaps from reduced tz bundles).
+  - added strict-mode timezone contracts:
+    - `TimezoneUtils.nowInZone(..., fallbackToUtcOnUnknown: false)`
+    - `TimezoneUtils.localToUtc(..., fallbackToUtcOnUnknown: false)`
+    - `TimezoneUtils.isKnownTimeZoneId(...)`
+  - expanded timezone regression coverage in `app/unitana/test/timezone_utils_global_support_test.dart`:
+    - DST boundary conversion determinism (`America/New_York`)
+    - opposite-direction/date-line path (`Pacific/Kiritimati` vs `Pacific/Honolulu`)
+    - strict unknown-zone failure behavior
+- Pack A deterministic canonical data validation closure:
+  - `CitySchemaValidator` now enforces:
+    - ISO alpha constraints (`countryCode` alpha-2, `currencyCode` alpha-3),
+    - required field presence/type/range,
+    - known IANA timezone ID validation (with cached lookup).
+  - `City.fromJson` now fails fast with `FormatException` for invalid/missing canonical fields.
+  - `CityRepository.load` no longer silently falls back to curated cities on malformed/empty canonical assets; malformed canonical data now fails deterministically.
+  - schema/parse-safety tests expanded in `app/unitana/test/city_data_schema_validation_test.dart` for missing-field and invalid-timezone failure paths.
+  - tooling contract upgraded in `app/unitana/tools/validate_cities_v1.py` to match strict ISO/timezone validation.
+- Behavior contracts preserved:
+  - alias/direct-zone picker behavior (`EST/CST/PST`), timezone-id query path, selected-row single-marker contract, time swap/seeding/history contracts, and tool-picker focus-scroll behavior remain green.
+  - perf guardrail remains green (`city_picker_perf_budget_test.dart`).
+- full gates re-run and green:
+  - `python3 tools/validate_cities_v1.py`
+  - `dart format .`
+  - `flutter analyze`
+  - `flutter test`
+
+## Latest changes (2026-02-07)
+- Reprioritization decision locked for next execution cycle:
+  - `Now`: Pack N + Pack A closure hardening (global timezone correctness + canonical city/data validation contracts).
+  - `Next`: Pack C + Pack B reliability hardening (currency + weather/AQI/pollen fallback/caching resilience).
+  - `Then`: Pack H completion (language settings + full ARB workflow on top of current runtime seed bridge).
+  - `After core stability`: Pack F -> Pack J -> Pack G.
+  - `Deferred until stabilization`: broad Pack E facelift scope, Pack L, Pack K, Pack I/O tutorial overlays.
+- Purpose of reprioritization:
+  - reduce correctness risk first (timezone/data reliability),
+  - finish trust-critical live data paths second,
+  - complete localization surface once runtime behavior is stable.
 
 ## Latest changes (2026-02-07)
 - ToolPicker UX feature shipped:

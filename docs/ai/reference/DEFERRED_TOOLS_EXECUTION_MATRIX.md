@@ -7,11 +7,14 @@ Convert current deferred-tool rationale into executable delivery slices with exp
 
 | Tool ID | UI Label | Why Deferred (current contract) | Needed to Activate | Proposed Slice |
 |---|---|---|---|---|
-| `cups_grams_estimates` | Cups ↔ Grams Estimates | Ingredient density quality is unresolved | Curated ingredient density dataset + food taxonomy keys + confidence/approximation labeling | Slice A (data contract + MVP table for core baking ingredients) |
-| `pace` | Pace | Missing training/race context model | Pace domain model (distance/time targets, split defaults, run/walk modes) + context presets | Slice B (pace converter + split calculator MVP) |
-| `hydration` | Hydration | Health-safe policy and personalization not defined | Safety policy guardrails, locale/unit defaults, optional personalization inputs | Slice C (non-medical intake helper with explicit disclaimers) |
-| `energy` | Calories / Energy | Nutrition contract and unit standards incomplete | Canonical energy unit policy (kcal/kJ), food-label semantics, rounding/display rules | Slice D (strict energy unit converter first) |
-| `clothing_sizes` | Clothing Sizes | Brand variance too high for reliable mapping | Region/category matrix + uncertainty policy + confidence badges | Slice H (reference-only launch or remain deferred) |
+| `clothing_sizes` | Clothing Sizes | High brand variance remains unresolved for deterministic fit mapping | Region/category matrix + confidence bands + explicit fit uncertainty policy + acceptance tests | Pack F final decision (defer lock) |
+
+## Newly activated in this slice
+
+- `energy` (`Calories / Energy`) is now enabled as a configurable converter tool (`kcal ↔ kJ`) with picker activation and modal conversion coverage.
+- `pace` is now enabled as a configurable converter tool (`min/km ↔ min/mi`) with deterministic pace parsing (`mm:ss`, `XmYs`, decimal) and modal conversion coverage.
+- `cups_grams_estimates` is now enabled as a lookup-style estimates surface with a core ingredient matrix and explicit approximation notes.
+- `hydration` is now enabled as a dedicated non-medical helper surface with explicit safety/guardrail copy and deterministic intake estimate math.
 
 ## Existing planning/artifacts
 
@@ -20,13 +23,14 @@ Convert current deferred-tool rationale into executable delivery slices with exp
 - Lookup-table UX baseline: `docs/ai/reference/LOOKUP_TABLE_TOOLS_UX_PATTERN.md`
 - Historical audit notes: `docs/ai/reference/TOOLS_CATALOG_AUDIT_2026-01-06.md`
 
-## Recommended activation order
+## Final decision
 
-1. `energy`
-2. `pace`
-3. `cups_grams_estimates`
-4. `hydration`
-5. `clothing_sizes` (only if quality bar is met)
+1. `clothing_sizes` remains deferred for now.
+2. Activation is blocked until all acceptance criteria are implemented:
+   - region + category matrix with explicit row provenance,
+   - confidence bands shown in-result (not hidden in footnotes),
+   - explicit fit uncertainty policy copy for every mapped row,
+   - deterministic interaction tests for picker + modal + uncertainty rendering.
 
 Rationale: ship highest confidence and lowest safety/model risk first, then progress to tools that require stronger domain policy and dataset quality controls.
 

@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:unitana/data/cities.dart';
 import 'package:unitana/data/city_schema_validator.dart';
 
 void main() {
@@ -40,5 +41,32 @@ void main() {
     }
 
     expect(failures, isEmpty, reason: failures.take(20).join('\n'));
+  });
+
+  test('City.fromJson fails deterministically on missing critical fields', () {
+    final invalid = <String, dynamic>{
+      'id': 'broken_city',
+      'cityName': 'Broken',
+      'countryCode': 'US',
+      // missing timeZoneId/currency/defaults/lat/lon
+    };
+
+    expect(() => City.fromJson(invalid), throwsFormatException);
+  });
+
+  test('City.fromJson fails deterministically on invalid timezone IDs', () {
+    final invalid = <String, dynamic>{
+      'id': 'broken_tz',
+      'cityName': 'Broken TZ',
+      'countryCode': 'US',
+      'timeZoneId': 'Mars/Olympus_Mons',
+      'currencyCode': 'USD',
+      'defaultUnitSystem': 'imperial',
+      'defaultUse24h': false,
+      'lat': 39.7,
+      'lon': -105.0,
+    };
+
+    expect(() => City.fromJson(invalid), throwsFormatException);
   });
 }

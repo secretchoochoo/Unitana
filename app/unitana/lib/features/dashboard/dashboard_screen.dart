@@ -931,10 +931,67 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return _layout.items.any((i) => i.toolId == toolId);
   }
 
-  void _comingSoon(BuildContext context, String label) {
-    UnitanaToast.showInfo(
+  Future<void> _openLanguageSettingsSheet() async {
+    final selected = await showModalBottomSheet<String>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetContext) {
+        final current = state.preferredLanguageCode;
+        final options = <({String id, String label})>[
+          (id: 'system', label: DashboardCopy.settingsLanguageSystem(context)),
+          (id: 'en', label: DashboardCopy.settingsLanguageEnglish(context)),
+          (id: 'es', label: DashboardCopy.settingsLanguageSpanish(context)),
+        ];
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 8, 6),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        DashboardCopy.settingsLanguageTitle(context),
+                        style: Theme.of(sheetContext).textTheme.titleLarge
+                            ?.copyWith(fontWeight: FontWeight.w800),
+                      ),
+                    ),
+                    _sheetCloseButton(sheetContext),
+                  ],
+                ),
+              ),
+              RadioGroup<String>(
+                // ignore: deprecated_member_use
+                groupValue: current,
+                // ignore: deprecated_member_use
+                onChanged: (value) {
+                  if (value == null) return;
+                  Navigator.of(sheetContext).pop(value);
+                },
+                child: Column(
+                  children: [
+                    for (final option in options)
+                      RadioListTile<String>(
+                        key: ValueKey('settings_language_${option.id}'),
+                        value: option.id,
+                        title: Text(option.label),
+                      ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 8),
+            ],
+          ),
+        );
+      },
+    );
+    if (selected == null || !mounted) return;
+    await state.setPreferredLanguageCode(selected);
+    if (!mounted) return;
+    UnitanaToast.showSuccess(
       context,
-      DashboardCopy.dashboardComingSoon(context, label),
+      DashboardCopy.settingsLanguageUpdated(context),
     );
   }
 
@@ -1291,11 +1348,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                     ),
                                     onTap: () {
                                       Navigator.of(sheetContext).pop();
-                                      _comingSoon(
-                                        context,
-                                        DashboardCopy.dashboardMenuSettings(
-                                          context,
-                                        ),
+                                      Future.microtask(
+                                        _openLanguageSettingsSheet,
                                       );
                                     },
                                   ),

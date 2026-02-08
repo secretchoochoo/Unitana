@@ -7,7 +7,6 @@ import 'cities.dart';
 /// Loads the city dataset from assets and caches it in memory.
 ///
 /// Primary source: assets/data/cities_v1.json
-/// Fallback: [kCuratedCities] (small built-in list)
 class CityRepository {
   CityRepository._();
 
@@ -32,31 +31,24 @@ class CityRepository {
   Future<List<City>> load() async {
     if (_loaded) return _cities;
 
-    List<City> loaded;
-    try {
-      final raw = await rootBundle.loadString(assetPath);
-      final decoded = json.decode(raw);
+    final raw = await rootBundle.loadString(assetPath);
+    final decoded = json.decode(raw);
 
-      final List<dynamic> list;
-      if (decoded is List) {
-        list = decoded;
-      } else if (decoded is Map<String, dynamic> && decoded['cities'] is List) {
-        list = decoded['cities'] as List;
-      } else {
-        list = const [];
-      }
+    final List<dynamic> list;
+    if (decoded is List) {
+      list = decoded;
+    } else if (decoded is Map<String, dynamic> && decoded['cities'] is List) {
+      list = decoded['cities'] as List;
+    } else {
+      throw const FormatException('City dataset must be a JSON array');
+    }
 
-      loaded = list
-          .whereType<Map>()
-          .map((m) => City.fromJson(Map<String, dynamic>.from(m)))
-          .where((c) => c.id.isNotEmpty && c.cityName.isNotEmpty)
-          .toList(growable: false);
-
-      if (loaded.isEmpty) {
-        loaded = kCuratedCities;
-      }
-    } catch (_) {
-      loaded = kCuratedCities;
+    final loaded = list
+        .whereType<Map>()
+        .map((m) => City.fromJson(Map<String, dynamic>.from(m)))
+        .toList(growable: false);
+    if (loaded.isEmpty) {
+      throw StateError('City dataset is empty: $assetPath');
     }
 
     _cities = loaded;

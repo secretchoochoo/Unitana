@@ -217,6 +217,8 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
   final TextEditingController _unitQtyAController = TextEditingController();
   final TextEditingController _unitPriceBController = TextEditingController();
   final TextEditingController _unitQtyBController = TextEditingController();
+  final TextEditingController _hydrationExerciseController =
+      TextEditingController();
   Timer? _noticeTimer;
   Timer? _timeTicker;
   Timer? _jetLagTipTicker;
@@ -258,6 +260,8 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
   bool _unitPriceCompareEnabled = false;
   String _unitPriceUnitA = 'g';
   String _unitPriceUnitB = 'g';
+  String _hydrationWeightUnit = 'kg';
+  String _hydrationClimateBand = 'temperate';
   int _jetLagBedtimeMinutes = 23 * 60;
   int _jetLagWakeMinutes = 7 * 60;
   bool _jetLagOverlapExpanded = false;
@@ -266,14 +270,17 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
       widget.tool.canonicalToolId == CanonicalToolId.volume ||
       widget.tool.canonicalToolId == CanonicalToolId.pressure ||
       widget.tool.canonicalToolId == CanonicalToolId.weight ||
-      widget.tool.canonicalToolId == CanonicalToolId.dataStorage;
+      widget.tool.canonicalToolId == CanonicalToolId.dataStorage ||
+      widget.tool.canonicalToolId == CanonicalToolId.energy;
   bool get _isLookupTool =>
       widget.tool.canonicalToolId == CanonicalToolId.shoeSizes ||
       widget.tool.canonicalToolId == CanonicalToolId.paperSizes ||
-      widget.tool.canonicalToolId == CanonicalToolId.mattressSizes;
+      widget.tool.canonicalToolId == CanonicalToolId.mattressSizes ||
+      widget.tool.canonicalToolId == CanonicalToolId.cupsGramsEstimates;
   bool get _isTipHelperTool => widget.tool.id == 'tip_helper';
   bool get _isTaxVatTool => widget.tool.id == 'tax_vat_helper';
   bool get _isUnitPriceTool => widget.tool.id == 'unit_price_helper';
+  bool get _isHydrationTool => widget.tool.id == 'hydration';
   bool get _isJetLagDeltaTool => widget.tool.id == 'jet_lag_delta';
   bool get _isTimeTool =>
       widget.tool.canonicalToolId == CanonicalToolId.time ||
@@ -291,6 +298,8 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
         return const <String>['g', 'kg', 'oz', 'lb', 'st'];
       case CanonicalToolId.dataStorage:
         return const <String>['B', 'KB', 'MB', 'GB', 'TB'];
+      case CanonicalToolId.energy:
+        return const <String>['kcal', 'kJ'];
       default:
         return const <String>[];
     }
@@ -337,6 +346,10 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
 
     if (_isUnitPriceTool) {
       _seedUnitPriceDefaults();
+    }
+
+    if (_isHydrationTool) {
+      _seedHydrationDefaults();
     }
 
     if (_isTimeTool) {
@@ -488,6 +501,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
     _unitQtyAController.dispose();
     _unitPriceBController.dispose();
     _unitQtyBController.dispose();
+    _hydrationExerciseController.dispose();
     _controller.dispose();
     super.dispose();
   }
@@ -543,6 +557,10 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
         _fromUnitOverride = _forward ? 'GB' : 'MB';
         _toUnitOverride = _forward ? 'MB' : 'GB';
         return;
+      case CanonicalToolId.energy:
+        _fromUnitOverride = _forward ? 'kcal' : 'kJ';
+        _toUnitOverride = _forward ? 'kJ' : 'kcal';
+        return;
       default:
         _fromUnitOverride = null;
         _toUnitOverride = null;
@@ -558,6 +576,8 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
         return const <String>['ISO', 'US'];
       case CanonicalToolId.mattressSizes:
         return const <String>['US', 'EU'];
+      case CanonicalToolId.cupsGramsEstimates:
+        return const <String>['Volume', 'Weight'];
       default:
         return const <String>[];
     }
@@ -709,6 +729,59 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
             approximate: true,
           ),
         ];
+      case CanonicalToolId.cupsGramsEstimates:
+        return const <_LookupEntry>[
+          _LookupEntry(
+            keyId: 'cupsgrams_flour',
+            label: 'Flour (all-purpose)',
+            valuesBySystem: <String, String>{
+              'Volume': '1 cup',
+              'Weight': '120 g',
+            },
+            note: 'Approximate scoop-and-level reference.',
+            approximate: true,
+          ),
+          _LookupEntry(
+            keyId: 'cupsgrams_sugar',
+            label: 'Sugar (granulated)',
+            valuesBySystem: <String, String>{
+              'Volume': '1 cup',
+              'Weight': '200 g',
+            },
+            note: 'Pack density varies by crystal size and humidity.',
+            approximate: true,
+          ),
+          _LookupEntry(
+            keyId: 'cupsgrams_brown_sugar',
+            label: 'Brown sugar (packed)',
+            valuesBySystem: <String, String>{
+              'Volume': '1 cup (packed)',
+              'Weight': '220 g',
+            },
+            note: 'Assumes packed cup measurement.',
+            approximate: true,
+          ),
+          _LookupEntry(
+            keyId: 'cupsgrams_butter',
+            label: 'Butter',
+            valuesBySystem: <String, String>{
+              'Volume': '1 cup',
+              'Weight': '227 g',
+            },
+            note: 'Equivalent to 2 US sticks.',
+            approximate: true,
+          ),
+          _LookupEntry(
+            keyId: 'cupsgrams_rice',
+            label: 'Rice (uncooked white)',
+            valuesBySystem: <String, String>{
+              'Volume': '1 cup',
+              'Weight': '185 g',
+            },
+            note: 'Estimate before cooking.',
+            approximate: true,
+          ),
+        ];
       default:
         return const <_LookupEntry>[];
     }
@@ -745,6 +818,11 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
         _lookupFromSystem = 'US';
         _lookupToSystem = 'EU';
         _lookupEntryKey = 'matt_queen';
+        return;
+      case CanonicalToolId.cupsGramsEstimates:
+        _lookupFromSystem = 'Volume';
+        _lookupToSystem = 'Weight';
+        _lookupEntryKey = 'cupsgrams_flour';
         return;
       default:
         _lookupFromSystem = null;
@@ -795,6 +873,17 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
     _unitPriceCompareEnabled = false;
     _unitPriceUnitA = 'g';
     _unitPriceUnitB = 'g';
+  }
+
+  void _seedHydrationDefaults() {
+    if (_controller.text.trim().isEmpty) {
+      _controller.text = '70';
+    }
+    if (_hydrationExerciseController.text.trim().isEmpty) {
+      _hydrationExerciseController.text = '30';
+    }
+    _hydrationWeightUnit = widget.preferMetric ? 'kg' : 'lb';
+    _hydrationClimateBand = 'temperate';
   }
 
   String _activeTipCountryCode() {
@@ -937,6 +1026,175 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
     final code = _tipCurrencyCode();
     final symbol = _currencySymbol(code);
     return '$symbol${amount.toStringAsFixed(2)}';
+  }
+
+  double? _parseHydrationWeightKg() {
+    final raw = _controller.text.trim();
+    if (raw.isEmpty) return null;
+    final parsed = double.tryParse(raw);
+    if (parsed == null || parsed.isNaN || !parsed.isFinite || parsed <= 0) {
+      return null;
+    }
+    if (_hydrationWeightUnit == 'lb') {
+      return parsed * 0.45359237;
+    }
+    return parsed;
+  }
+
+  int? _parseHydrationExerciseMinutes() {
+    final raw = _hydrationExerciseController.text.trim();
+    if (raw.isEmpty) return null;
+    final parsed = int.tryParse(raw);
+    if (parsed == null || parsed < 0) return null;
+    return parsed;
+  }
+
+  double _hydrationClimateLitersBonus() {
+    switch (_hydrationClimateBand) {
+      case 'cool':
+        return 0.0;
+      case 'warm':
+        return 0.35;
+      case 'hot':
+        return 0.7;
+      case 'temperate':
+      default:
+        return 0.15;
+    }
+  }
+
+  Widget _buildHydrationBody(BuildContext context, Color accent) {
+    final weightKg = _parseHydrationWeightKg();
+    final exerciseMinutes = _parseHydrationExerciseMinutes();
+
+    final baseLiters = weightKg == null ? null : (weightKg * 0.033);
+    final exerciseLiters = exerciseMinutes == null
+        ? null
+        : (exerciseMinutes * 0.006);
+    final climateLiters = _hydrationClimateLitersBonus();
+    final totalLiters = (baseLiters == null || exerciseLiters == null)
+        ? null
+        : math.max(1.0, baseLiters + exerciseLiters + climateLiters);
+    final totalOz = totalLiters == null ? null : totalLiters * 33.814;
+
+    String climateLabel(String band) {
+      switch (band) {
+        case 'cool':
+          return 'Cool';
+        case 'warm':
+          return 'Warm';
+        case 'hot':
+          return 'Hot';
+        case 'temperate':
+        default:
+          return 'Temperate';
+      }
+    }
+
+    return ListView(
+      key: ValueKey('tool_hydration_scroll_${widget.tool.id}'),
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+      children: [
+        TextField(
+          key: ValueKey('tool_hydration_weight_${widget.tool.id}'),
+          controller: _controller,
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          decoration: InputDecoration(
+            labelText: 'Body weight ($_hydrationWeightUnit)',
+            hintText: _hydrationWeightUnit == 'kg' ? '70' : '155',
+          ),
+          onChanged: (_) => setState(() {}),
+        ),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            ChoiceChip(
+              key: ValueKey('tool_hydration_unit_${widget.tool.id}_kg'),
+              label: const Text('kg'),
+              selected: _hydrationWeightUnit == 'kg',
+              onSelected: (_) => setState(() {
+                _hydrationWeightUnit = 'kg';
+              }),
+            ),
+            ChoiceChip(
+              key: ValueKey('tool_hydration_unit_${widget.tool.id}_lb'),
+              label: const Text('lb'),
+              selected: _hydrationWeightUnit == 'lb',
+              onSelected: (_) => setState(() {
+                _hydrationWeightUnit = 'lb';
+              }),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        TextField(
+          key: ValueKey('tool_hydration_exercise_${widget.tool.id}'),
+          controller: _hydrationExerciseController,
+          keyboardType: TextInputType.number,
+          decoration: const InputDecoration(
+            labelText: 'Exercise minutes today',
+            hintText: '30',
+          ),
+          onChanged: (_) => setState(() {}),
+        ),
+        const SizedBox(height: 10),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: ['cool', 'temperate', 'warm', 'hot'].map((band) {
+            return ChoiceChip(
+              key: ValueKey('tool_hydration_climate_${widget.tool.id}_$band'),
+              label: Text(climateLabel(band)),
+              selected: _hydrationClimateBand == band,
+              onSelected: (_) => setState(() {
+                _hydrationClimateBand = band;
+              }),
+            );
+          }).toList(),
+        ),
+        const SizedBox(height: 12),
+        Container(
+          key: ValueKey('tool_hydration_result_${widget.tool.id}'),
+          padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
+          decoration: BoxDecoration(
+            color: DraculaPalette.currentLine,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: DraculaPalette.comment.withAlpha(160)),
+          ),
+          child: (totalLiters == null || totalOz == null)
+              ? Text(
+                  'Enter valid weight and exercise minutes.',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: DraculaPalette.comment.withAlpha(230),
+                    fontWeight: FontWeight.w700,
+                  ),
+                )
+              : Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _TerminalLine(
+                      prompt: '>',
+                      input: 'Daily fluid estimate',
+                      output:
+                          '${totalLiters.toStringAsFixed(1)} L (${totalOz.toStringAsFixed(0)} fl oz)',
+                      emphasize: true,
+                      arrowColor: accent,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Non-medical estimate for healthy adults. Increase intake during heat/sweat, and follow clinician guidance for medical conditions.',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: DraculaPalette.comment.withAlpha(220),
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+        ),
+      ],
+    );
   }
 
   Widget _buildTipHelperBody(BuildContext context, Color accent) {
@@ -1505,6 +1763,8 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
           return ('ISO', 'US', 'paper_a4');
         case CanonicalToolId.mattressSizes:
           return ('US', 'EU', 'matt_queen');
+        case CanonicalToolId.cupsGramsEstimates:
+          return ('Volume', 'Weight', 'cupsgrams_flour');
         default:
           return ('', '', '');
       }
@@ -1617,6 +1877,8 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
         return _forward ? ('kg', 'lb') : ('lb', 'kg');
       case CanonicalToolId.dataStorage:
         return _forward ? ('GB', 'MB') : ('MB', 'GB');
+      case CanonicalToolId.energy:
+        return _forward ? ('kcal', 'kJ') : ('kJ', 'kcal');
       default:
         return ('', '');
     }
@@ -1800,6 +2062,9 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
       case 'speed':
         // km/h <-> mph
         return preferMetric;
+      case 'pace':
+        // min/km <-> min/mi
+        return preferMetric;
       case 'liquids':
         // cups/oz <-> ml (metric prefers ml input)
         return !preferMetric;
@@ -1825,6 +2090,9 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
         return preferMetric;
       case 'data_storage':
         // GB <-> MB
+        return true;
+      case 'energy':
+        // kcal <-> kJ
         return true;
       case 'time':
         // 24h <-> 12h
@@ -1896,6 +2164,8 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
         return _forward ? 'km' : 'mi';
       case 'speed':
         return _forward ? 'km/h' : 'mph';
+      case 'pace':
+        return _forward ? 'min/km' : 'min/mi';
       case 'temperature':
       case 'oven_temperature':
         return _forward ? '°C' : '°F';
@@ -1918,6 +2188,8 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
         return _fromUnitOverride ?? (_forward ? 'kg' : 'lb');
       case 'data_storage':
         return _fromUnitOverride ?? (_forward ? 'GB' : 'MB');
+      case 'energy':
+        return _fromUnitOverride ?? (_forward ? 'kcal' : 'kJ');
       default:
         return '';
     }
@@ -1931,6 +2203,8 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
         return _forward ? 'mi' : 'km';
       case 'speed':
         return _forward ? 'mph' : 'km/h';
+      case 'pace':
+        return _forward ? 'min/mi' : 'min/km';
       case 'temperature':
       case 'oven_temperature':
         return _forward ? '°F' : '°C';
@@ -1953,6 +2227,8 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
         return _toUnitOverride ?? (_forward ? 'lb' : 'kg');
       case 'data_storage':
         return _toUnitOverride ?? (_forward ? 'MB' : 'GB');
+      case 'energy':
+        return _toUnitOverride ?? (_forward ? 'kJ' : 'kcal');
       default:
         return '';
     }
@@ -2059,6 +2335,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
   bool get _requiresFreeformInput {
     // Height in the imperial direction accepts inputs like 5'10".
     return (widget.tool.id == 'height' && !_forward) ||
+        widget.tool.id == 'pace' ||
         widget.tool.id == 'time';
   }
 
@@ -2086,6 +2363,8 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
       'mi',
       'km/h',
       'mph',
+      'min/km',
+      'min/mi',
       '°c',
       '°f',
       '24h',
@@ -2104,6 +2383,8 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
       'mb',
       'gb',
       'tb',
+      'kcal',
+      'kj',
     ];
 
     final lower = working.toLowerCase();
@@ -4340,6 +4621,8 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                         ? _buildLookupBody(context, accent)
                         : _isUnitPriceTool
                         ? _buildUnitPriceBody(context, accent)
+                        : _isHydrationTool
+                        ? _buildHydrationBody(context, accent)
                         : _isTaxVatTool
                         ? _buildTaxVatBody(context, accent)
                         : _isTipHelperTool
@@ -4620,22 +4903,25 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                                                   child: Align(
                                                     alignment:
                                                         Alignment.centerLeft,
-                                                    child: FittedBox(
-                                                      fit: BoxFit.scaleDown,
-                                                      alignment:
-                                                          Alignment.centerLeft,
-                                                      child: unitsWidget,
-                                                    ),
+                                                    child: _supportsUnitPicker
+                                                        ? FittedBox(
+                                                            fit: BoxFit
+                                                                .scaleDown,
+                                                            alignment: Alignment
+                                                                .centerLeft,
+                                                            child: unitsWidget,
+                                                          )
+                                                        : SingleChildScrollView(
+                                                            scrollDirection:
+                                                                Axis.horizontal,
+                                                            child: unitsWidget,
+                                                          ),
                                                   ),
                                                 ),
-                                                Expanded(
-                                                  child: Align(
-                                                    alignment: Alignment.center,
-                                                    child: swapButton,
-                                                  ),
-                                                ),
-                                                const Expanded(
-                                                  child: SizedBox.shrink(),
+                                                const SizedBox(width: 10),
+                                                Align(
+                                                  alignment: Alignment.center,
+                                                  child: swapButton,
                                                 ),
                                               ],
                                             );

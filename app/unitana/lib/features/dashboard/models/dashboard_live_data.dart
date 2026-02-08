@@ -480,6 +480,38 @@ class EnvSnapshot {
   const EnvSnapshot({required this.usAqi, required this.pollenIndex});
 }
 
+@immutable
+class HourlyForecastPoint {
+  final DateTime timeUtc;
+  final double temperatureC;
+
+  const HourlyForecastPoint({
+    required this.timeUtc,
+    required this.temperatureC,
+  });
+}
+
+@immutable
+class DailyForecastPoint {
+  final DateTime dayUtc;
+  final double maxTemperatureC;
+  final double minTemperatureC;
+
+  const DailyForecastPoint({
+    required this.dayUtc,
+    required this.maxTemperatureC,
+    required this.minTemperatureC,
+  });
+}
+
+@immutable
+class WeatherForecastSnapshot {
+  final List<HourlyForecastPoint> hourly;
+  final List<DailyForecastPoint> daily;
+
+  const WeatherForecastSnapshot({required this.hourly, required this.daily});
+}
+
 /// Small live-data controller for the dashboard hero.
 ///
 /// This slice wires refresh behavior and stabilizes UI state. Real network
@@ -495,6 +527,7 @@ class DashboardLiveDataController extends ChangeNotifier {
   final Map<String, WeatherSnapshot> _weatherByPlaceId = {};
   final Map<String, SunTimesSnapshot> _sunByPlaceId = {};
   final Map<String, EnvSnapshot> _envByPlaceId = {};
+  final Map<String, WeatherForecastSnapshot> _forecastByPlaceId = {};
   WeatherDebugOverride? _debugWeatherOverride;
   Duration? _debugClockOffset;
 
@@ -548,6 +581,15 @@ class DashboardLiveDataController extends ChangeNotifier {
   @visibleForTesting
   void debugSetLastRefreshedAt(DateTime? value) {
     _lastRefreshedAt = value;
+    _notify();
+  }
+
+  /// Test hook for deterministic currency stale/fresh contracts.
+  ///
+  /// Production code should not call this.
+  @visibleForTesting
+  void debugSetLastCurrencyRefreshedAt(DateTime? value) {
+    _lastCurrencyRefreshedAt = value;
     _notify();
   }
 
@@ -1023,6 +1065,13 @@ class DashboardLiveDataController extends ChangeNotifier {
     return _envByPlaceId[place.id];
   }
 
+  WeatherForecastSnapshot? forecastFor(Place? place) {
+    if (place == null) {
+      return null;
+    }
+    return _forecastByPlaceId[place.id];
+  }
+
   void ensureSeeded(List<Place> places) {
     var changed = false;
     final nowUtc = this.nowUtc;
@@ -1038,6 +1087,10 @@ class DashboardLiveDataController extends ChangeNotifier {
       }
       if (!_envByPlaceId.containsKey(p.id)) {
         _envByPlaceId[p.id] = _seedEnv(p);
+        changed = true;
+      }
+      if (!_forecastByPlaceId.containsKey(p.id)) {
+        _forecastByPlaceId[p.id] = _seedForecast(p, nowUtc);
         changed = true;
       }
     }
@@ -1090,6 +1143,8 @@ class DashboardLiveDataController extends ChangeNotifier {
         _isRefreshing = true;
         _lastError = null;
         _notify();
+
+        var didApplyAnyLiveWeatherUpdate = false;
 
         // Simulate a short network latency.
         await Future<void>.delayed(simulatedNetworkLatency);
@@ -1156,6 +1211,8 @@ class DashboardLiveDataController extends ChangeNotifier {
                   sunriseUtc: api.sunriseUtc,
                   sunsetUtc: api.sunsetUtc,
                 );
+                _forecastByPlaceId[p.id] = _fromWeatherApiForecast(api);
+                didApplyAnyLiveWeatherUpdate = true;
 
                 await _maybeRefreshEnvForPlace(
                   place: p,
@@ -1216,6 +1273,8 @@ class DashboardLiveDataController extends ChangeNotifier {
                   sunriseUtc: om.sunriseUtc,
                   sunsetUtc: om.sunsetUtc,
                 );
+                _forecastByPlaceId[p.id] = _fromOpenMeteoForecast(om);
+                didApplyAnyLiveWeatherUpdate = true;
 
                 await _maybeRefreshEnvForPlace(
                   place: p,
@@ -1242,11 +1301,15 @@ class DashboardLiveDataController extends ChangeNotifier {
             // shows placeholders for AQI/Pollen or Sunrise/Sunset.
             _envByPlaceId[p.id] = _seedEnv(p);
             _sunByPlaceId[p.id] = _seedSunTimes(p, nowUtc);
+            _forecastByPlaceId[p.id] = _seedForecast(p, nowUtc);
           }
+          didApplyAnyLiveWeatherUpdate = true;
         }
-        await _maybeRefreshCurrency();
-
-        _lastRefreshedAt = DateTime.now();
+        final didRefreshCurrency = await _maybeRefreshCurrency();
+        final now = DateTime.now();
+        if (didApplyAnyLiveWeatherUpdate || didRefreshCurrency) {
+          _lastRefreshedAt = now;
+        }
 
         if (!currencyNetworkEnabled) {
           _eurToUsd = 1.10;
@@ -1267,6 +1330,51 @@ class DashboardLiveDataController extends ChangeNotifier {
     _weatherByPlaceId.putIfAbsent(p.id, () => _seedWeather(p));
     _sunByPlaceId.putIfAbsent(p.id, () => _seedSunTimes(p, nowUtc));
     _envByPlaceId.putIfAbsent(p.id, () => _seedEnv(p));
+    _forecastByPlaceId.putIfAbsent(p.id, () => _seedForecast(p, nowUtc));
+  }
+
+  WeatherForecastSnapshot _fromWeatherApiForecast(WeatherApiForecast f) {
+    return WeatherForecastSnapshot(
+      hourly: f.hourly
+          .map(
+            (h) => HourlyForecastPoint(
+              timeUtc: h.timeUtc,
+              temperatureC: h.temperatureC,
+            ),
+          )
+          .toList(),
+      daily: f.daily
+          .map(
+            (d) => DailyForecastPoint(
+              dayUtc: d.dayUtc,
+              maxTemperatureC: d.maxTemperatureC,
+              minTemperatureC: d.minTemperatureC,
+            ),
+          )
+          .toList(),
+    );
+  }
+
+  WeatherForecastSnapshot _fromOpenMeteoForecast(OpenMeteoTodayForecast f) {
+    return WeatherForecastSnapshot(
+      hourly: f.hourly
+          .map(
+            (h) => HourlyForecastPoint(
+              timeUtc: h.timeUtc,
+              temperatureC: h.temperatureC,
+            ),
+          )
+          .toList(),
+      daily: f.daily
+          .map(
+            (d) => DailyForecastPoint(
+              dayUtc: d.dayUtc,
+              maxTemperatureC: d.maxTemperatureC,
+              minTemperatureC: d.minTemperatureC,
+            ),
+          )
+          .toList(),
+    );
   }
 
   static double _pollenIndexFromGrains(double grains) {
@@ -1309,28 +1417,33 @@ class DashboardLiveDataController extends ChangeNotifier {
     }
   }
 
-  Future<void> _maybeRefreshCurrency() async {
-    if (!currencyNetworkEnabled) return;
+  Future<bool> _maybeRefreshCurrency() async {
+    if (!currencyNetworkEnabled) return false;
 
     final now = DateTime.now();
     final stale = isCurrencyStale;
-    if (!stale) return;
+    if (!stale) return false;
 
     final errAt = _lastCurrencyErrorAt;
     if (errAt != null && now.difference(errAt) < currencyRetryBackoffDuration) {
-      return;
+      return false;
     }
 
     try {
       double? rate;
+      Map<String, double>? normalizedRates;
       switch (_currencyBackend) {
         case CurrencyBackend.frankfurter:
           final fetched = await _frankfurter.fetchLatestRates(base: 'EUR');
           if (fetched != null && fetched.isNotEmpty) {
-            _eurBaseRates
-              ..clear()
-              ..addAll(fetched);
-            rate = fetched['USD'];
+            normalizedRates = _normalizeEurBaseRates(fetched);
+            rate = normalizedRates['USD'];
+            if (rate == null || rate <= 0) {
+              rate = await _frankfurter.fetchEurToUsd();
+              if (rate != null && rate > 0) {
+                normalizedRates['USD'] = rate;
+              }
+            }
           } else {
             rate = await _frankfurter.fetchEurToUsd();
           }
@@ -1340,7 +1453,16 @@ class DashboardLiveDataController extends ChangeNotifier {
           break;
       }
 
-      if (rate == null || rate <= 0) return;
+      if (normalizedRates != null && normalizedRates.isNotEmpty) {
+        _eurBaseRates.addAll(normalizedRates);
+      }
+      if (rate == null || rate <= 0) {
+        _lastCurrencyError = StateError(
+          'Currency payload missing EUR->USD rate',
+        );
+        _lastCurrencyErrorAt = now;
+        return false;
+      }
 
       _eurToUsd = rate;
       _eurBaseRates['USD'] = rate;
@@ -1351,11 +1473,23 @@ class DashboardLiveDataController extends ChangeNotifier {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setDouble(_kCachedEurToUsdRate, rate);
       await prefs.setInt(_kCachedEurToUsdUpdatedAt, now.millisecondsSinceEpoch);
+      return true;
     } catch (e) {
       // Best-effort only. Keep the last stable value.
       _lastCurrencyError = e;
       _lastCurrencyErrorAt = now;
+      return false;
     }
+  }
+
+  static Map<String, double> _normalizeEurBaseRates(Map<String, double> raw) {
+    final out = <String, double>{'EUR': 1.0};
+    raw.forEach((code, value) {
+      final cc = code.trim().toUpperCase();
+      if (cc.isEmpty || !value.isFinite || value <= 0) return;
+      out[cc] = value;
+    });
+    return out;
   }
 
   Map<String, double> _effectiveEurBaseRates() {
@@ -1528,6 +1662,53 @@ class DashboardLiveDataController extends ChangeNotifier {
       conditionText: current.conditionText,
       conditionCode: current.conditionCode,
     );
+  }
+
+  WeatherForecastSnapshot _seedForecast(Place p, DateTime nowUtc) {
+    final seed = (p.id.hashCode ^ p.cityName.hashCode).abs();
+    final base =
+        _weatherByPlaceId[p.id]?.temperatureC ?? _seedWeather(p).temperatureC;
+
+    final hourly = <HourlyForecastPoint>[];
+    for (var i = 1; i <= 24; i += 1) {
+      final temp =
+          base +
+          math.sin((i / 24.0) * math.pi * 2.0) * 3.5 +
+          ((seed % 7) - 3) * 0.1;
+      hourly.add(
+        HourlyForecastPoint(
+          timeUtc: nowUtc.add(Duration(hours: i)),
+          temperatureC: temp.clamp(-35.0, 48.0),
+        ),
+      );
+    }
+
+    final daily = <DailyForecastPoint>[];
+    for (var i = 0; i < 7; i += 1) {
+      final trend = (i - 3) * 0.6;
+      final max = (base + 4.0 + trend + ((seed + i) % 5) * 0.2).clamp(
+        -30.0,
+        50.0,
+      );
+      final min = (base - 4.0 + trend - ((seed + i) % 4) * 0.2).clamp(
+        -40.0,
+        42.0,
+      );
+      final day = DateTime.utc(
+        nowUtc.year,
+        nowUtc.month,
+        nowUtc.day,
+      ).add(Duration(days: i));
+      daily.add(
+        DailyForecastPoint(
+          dayUtc: day,
+          maxTemperatureC: max,
+          minTemperatureC: min,
+        ),
+      );
+    }
+
+    return WeatherForecastSnapshot(hourly: hourly, daily: daily);
   }
 
   @override

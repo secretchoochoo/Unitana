@@ -23,6 +23,10 @@ class CanonicalToolId {
   static const String mattressSizes = 'mattress_sizes';
   static const String weather = 'weather';
   static const String dataStorage = 'data_storage';
+  static const String energy = 'energy';
+  static const String pace = 'pace';
+  static const String cupsGramsEstimates = 'cups_grams_estimates';
+  static const String hydration = 'hydration';
   static const String tipHelper = 'tip_helper';
 
   static const List<String> all = <String>[
@@ -41,6 +45,10 @@ class CanonicalToolId {
     paperSizes,
     mattressSizes,
     weather,
+    energy,
+    pace,
+    cupsGramsEstimates,
+    hydration,
     dataStorage,
     tipHelper,
   ];
@@ -193,6 +201,34 @@ class CanonicalTools {
     icon: Icons.cloud_rounded,
   );
 
+  static const CanonicalTool energy = CanonicalTool(
+    id: CanonicalToolId.energy,
+    name: 'Calories / Energy',
+    descriptor: 'kcal ↔ kJ',
+    icon: Icons.local_fire_department_rounded,
+  );
+
+  static const CanonicalTool pace = CanonicalTool(
+    id: CanonicalToolId.pace,
+    name: 'Pace',
+    descriptor: 'min/km ↔ min/mi',
+    icon: Icons.directions_run_rounded,
+  );
+
+  static const CanonicalTool cupsGramsEstimates = CanonicalTool(
+    id: CanonicalToolId.cupsGramsEstimates,
+    name: 'Cups ↔ Grams Estimates',
+    descriptor: 'Common ingredient estimate lookup',
+    icon: Icons.restaurant_menu_rounded,
+  );
+
+  static const CanonicalTool hydration = CanonicalTool(
+    id: CanonicalToolId.hydration,
+    name: 'Hydration',
+    descriptor: 'Daily fluid intake estimate helper',
+    icon: Icons.water_drop_rounded,
+  );
+
   static const CanonicalTool tipHelper = CanonicalTool(
     id: CanonicalToolId.tipHelper,
     name: 'Tip Helper',
@@ -216,6 +252,10 @@ class CanonicalTools {
     paperSizes,
     mattressSizes,
     weather,
+    energy,
+    pace,
+    cupsGramsEstimates,
+    hydration,
     tipHelper,
   ];
 

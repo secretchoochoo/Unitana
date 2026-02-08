@@ -23,6 +23,21 @@ class _FixedOpenMeteoClient extends OpenMeteoClient {
       isDay: true,
       sunriseUtc: now.subtract(const Duration(hours: 4)),
       sunsetUtc: now.add(const Duration(hours: 4)),
+      hourly: [
+        for (var i = 1; i <= 12; i += 1)
+          OpenMeteoHourlyForecastPoint(
+            timeUtc: now.add(Duration(hours: i)),
+            temperatureC: 11 + (i * 0.2),
+          ),
+      ],
+      daily: [
+        for (var i = 0; i < 7; i += 1)
+          OpenMeteoDailyForecastPoint(
+            dayUtc: DateTime.utc(2026, 2, 6 + i),
+            maxTemperatureC: 13 + i.toDouble(),
+            minTemperatureC: 6 + i.toDouble(),
+          ),
+      ],
     );
   }
 }

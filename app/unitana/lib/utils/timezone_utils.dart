@@ -1,16 +1,8 @@
 import 'package:flutter/foundation.dart';
-import 'package:timezone/data/latest.dart' as tzdata;
+import 'package:timezone/data/latest_all.dart' as tzdata;
 import 'package:timezone/timezone.dart' as tz;
 
-/// Lightweight timezone helpers for the two canonical Unitana places.
-///
-/// We intentionally avoid pulling in a full timezone database package for the
-/// dashboard hero. Instead we implement DST rules for:
-/// - America/Denver (US rules, 2007+)
-/// - Europe/Lisbon (EU rules)
-///
-/// If additional timezones are required, expand this file carefully and add
-/// focused unit tests.
+/// Timezone helpers backed by IANA data via the `timezone` package.
 @immutable
 class ZoneTime {
   final DateTime local;
@@ -36,15 +28,33 @@ class TimezoneUtils {
     _tzReady = true;
   }
 
-  static ZoneTime nowInZone(String tzId, {DateTime? nowUtc}) {
+  static bool isKnownTimeZoneId(String tzId) {
+    final normalized = tzId.trim();
+    if (normalized.isEmpty) return false;
+    if (normalized.toUpperCase() == 'UTC') return true;
     _ensureTzReady();
+    try {
+      tz.getLocation(normalized);
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  static ZoneTime nowInZone(
+    String tzId, {
+    DateTime? nowUtc,
+    bool fallbackToUtcOnUnknown = true,
+  }) {
+    _ensureTzReady();
+    final normalized = tzId.trim();
     final utc = (nowUtc ?? DateTime.now().toUtc());
-    if (tzId.trim().toUpperCase() == 'UTC') {
+    if (normalized.toUpperCase() == 'UTC') {
       return ZoneTime(local: utc, offsetMinutes: 0, abbreviation: 'UTC');
     }
 
     try {
-      final location = tz.getLocation(tzId);
+      final location = tz.getLocation(normalized);
       final local = tz.TZDateTime.from(utc, location);
       return ZoneTime(
         local: local,
@@ -52,6 +62,9 @@ class TimezoneUtils {
         abbreviation: local.timeZoneName,
       );
     } catch (_) {
+      if (!fallbackToUtcOnUnknown) {
+        throw ArgumentError.value(tzId, 'tzId', 'Unknown timezone ID');
+      }
       return ZoneTime(local: utc, offsetMinutes: 0, abbreviation: 'UTC');
     }
   }
@@ -61,9 +74,14 @@ class TimezoneUtils {
   /// This is a lightweight helper for demo data and avoids introducing a
   /// full timezone database. It converges in a couple of iterations for
   /// whole-hour offsets and DST boundaries.
-  static DateTime localToUtc(String tzId, DateTime local) {
+  static DateTime localToUtc(
+    String tzId,
+    DateTime local, {
+    bool fallbackToUtcOnUnknown = true,
+  }) {
     _ensureTzReady();
-    if (tzId.trim().toUpperCase() == 'UTC') {
+    final normalized = tzId.trim();
+    if (normalized.toUpperCase() == 'UTC') {
       return DateTime.utc(
         local.year,
         local.month,
@@ -76,7 +94,7 @@ class TimezoneUtils {
       );
     }
     try {
-      final location = tz.getLocation(tzId);
+      final location = tz.getLocation(normalized);
       final zoned = tz.TZDateTime(
         location,
         local.year,
@@ -90,6 +108,9 @@ class TimezoneUtils {
       );
       return zoned.toUtc();
     } catch (_) {
+      if (!fallbackToUtcOnUnknown) {
+        throw ArgumentError.value(tzId, 'tzId', 'Unknown timezone ID');
+      }
       return DateTime.utc(
         local.year,
         local.month,

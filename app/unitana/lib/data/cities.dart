@@ -6,6 +6,8 @@
 
 import 'dart:math' as math;
 
+import 'city_schema_validator.dart';
+
 /// Currency symbols used for display.
 ///
 /// We intentionally display both symbol and ISO code (e.g. "$ USD")
@@ -179,23 +181,26 @@ class City {
   }
 
   factory City.fromJson(Map<String, dynamic> json) {
+    final errors = CitySchemaValidator.validateRecord(json);
+    if (errors.isNotEmpty) {
+      final id = (json['id'] ?? 'unknown-id').toString();
+      throw FormatException('Invalid city record ($id): ${errors.join(', ')}');
+    }
     return City(
-      id: (json['id'] ?? '').toString(),
-      cityName: (json['cityName'] ?? '').toString(),
-      countryCode: (json['countryCode'] ?? '').toString(),
-      timeZoneId: (json['timeZoneId'] ?? '').toString(),
-      currencyCode: (json['currencyCode'] ?? '').toString(),
+      id: json['id'].toString().trim(),
+      cityName: json['cityName'].toString().trim(),
+      countryCode: json['countryCode'].toString().trim(),
+      timeZoneId: json['timeZoneId'].toString().trim(),
+      currencyCode: json['currencyCode'].toString().trim(),
       admin1Code: json['admin1Code']?.toString(),
       admin1Name: json['admin1Name']?.toString(),
       countryName: json['countryName']?.toString(),
       iso3: json['iso3']?.toString(),
       continent: json['continent']?.toString(),
       defaultUnitSystem: json['defaultUnitSystem']?.toString(),
-      defaultUse24h: (json['defaultUse24h'] is bool)
-          ? json['defaultUse24h'] as bool
-          : null,
-      lat: (json['lat'] is num) ? (json['lat'] as num).toDouble() : null,
-      lon: (json['lon'] is num) ? (json['lon'] as num).toDouble() : null,
+      defaultUse24h: json['defaultUse24h'] as bool,
+      lat: (json['lat'] as num).toDouble(),
+      lon: (json['lon'] as num).toDouble(),
     );
   }
 

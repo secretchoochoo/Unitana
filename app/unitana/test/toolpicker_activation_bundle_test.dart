@@ -241,4 +241,101 @@ void main() {
       findsOneWidget,
     );
   });
+
+  testWidgets('energy is enabled and performs conversion in modal', (
+    tester,
+  ) async {
+    await pumpDashboardForTest(tester);
+    await _openToolPicker(tester);
+    await _searchTool(tester, 'energy');
+
+    await tester.tap(
+      find.byKey(const ValueKey('toolpicker_search_tool_energy')),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const ValueKey('tool_title_energy')), findsOneWidget);
+
+    await tester.enterText(
+      find.byKey(const ValueKey('tool_input_energy')),
+      '500',
+    );
+    await tester.tap(find.byKey(const ValueKey('tool_run_energy')));
+    await tester.pumpAndSettle();
+
+    final result = find.byKey(const ValueKey('tool_result_energy'));
+    expect(result, findsOneWidget);
+    expect(
+      find.descendant(of: result, matching: find.byType(RichText)),
+      findsWidgets,
+    );
+  });
+
+  testWidgets('pace is enabled and performs conversion in modal', (
+    tester,
+  ) async {
+    await pumpDashboardForTest(tester);
+    await _openToolPicker(tester);
+    await _searchTool(tester, 'pace');
+
+    await tester.tap(find.byKey(const ValueKey('toolpicker_search_tool_pace')));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const ValueKey('tool_title_pace')), findsOneWidget);
+
+    await tester.enterText(
+      find.byKey(const ValueKey('tool_input_pace')),
+      '5:00',
+    );
+    await tester.tap(find.byKey(const ValueKey('tool_run_pace')));
+    await tester.pumpAndSettle();
+
+    final result = find.byKey(const ValueKey('tool_result_pace'));
+    expect(result, findsOneWidget);
+    expect(
+      find.descendant(of: result, matching: find.byType(RichText)),
+      findsWidgets,
+    );
+  });
+
+  testWidgets('cups/grams estimates is enabled and opens lookup modal', (
+    tester,
+  ) async {
+    await pumpDashboardForTest(tester);
+    await _openToolPicker(tester);
+    await _searchTool(tester, 'grams estimates');
+
+    await tester.tap(
+      find.byKey(const ValueKey('toolpicker_search_tool_cups_grams_estimates')),
+    );
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const ValueKey('tool_title_cups_grams_estimates')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('tool_lookup_result_cups_grams_estimates')),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('hydration is enabled and opens dedicated helper modal', (
+    tester,
+  ) async {
+    await pumpDashboardForTest(tester);
+    await _openToolPicker(tester);
+    await _searchTool(tester, 'hydration');
+
+    await tester.tap(
+      find.byKey(const ValueKey('toolpicker_search_tool_hydration')),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const ValueKey('tool_title_hydration')), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('tool_hydration_result_hydration')),
+      findsOneWidget,
+    );
+  });
 }

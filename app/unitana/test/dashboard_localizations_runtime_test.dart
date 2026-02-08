@@ -52,9 +52,14 @@ void main() {
         locale: const Locale('es'),
         key: 'dashboard.time.converter.title',
       );
+      final settingsTitleEs = DashboardLocalizations.resolveForLocale(
+        locale: const Locale('es'),
+        key: 'dashboard.settings.language.title',
+      );
 
       expect(weatherEs, 'Clima');
       expect(citiesEs, 'Ciudades');
+      expect(settingsTitleEs, 'Idioma');
       expect(englishFallback, 'Convert Local Time');
     },
   );
@@ -111,6 +116,19 @@ void main() {
     final openMenu = DashboardLocalizations.resolveForLocale(
       locale: const Locale('en'),
       key: 'dashboard.dashboard.tooltip.openMenu',
+    );
+    final settingsLanguageTitle = DashboardLocalizations.resolveForLocale(
+      locale: const Locale('en'),
+      key: 'dashboard.settings.language.title',
+    );
+    final settingsLanguageOptionSystem =
+        DashboardLocalizations.resolveForLocale(
+          locale: const Locale('en'),
+          key: 'dashboard.settings.language.option.system',
+        );
+    final settingsLanguageUpdated = DashboardLocalizations.resolveForLocale(
+      locale: const Locale('en'),
+      key: 'dashboard.settings.language.updated',
     );
     final profileNameFallback = DashboardLocalizations.resolveForLocale(
       locale: const Locale('en'),
@@ -218,6 +236,30 @@ void main() {
       locale: const Locale('en'),
       key: 'dashboard.weather.cityNotSet',
     );
+    final weatherHighLow = DashboardLocalizations.resolveForLocale(
+      locale: const Locale('en'),
+      key: 'dashboard.weather.banner.highLow',
+    );
+    final weatherForecastHourly = DashboardLocalizations.resolveForLocale(
+      locale: const Locale('en'),
+      key: 'dashboard.weather.forecast.mode.hourly',
+    );
+    final weatherForecastDaily = DashboardLocalizations.resolveForLocale(
+      locale: const Locale('en'),
+      key: 'dashboard.weather.forecast.mode.daily',
+    );
+    final weatherForecastLegend = DashboardLocalizations.resolveForLocale(
+      locale: const Locale('en'),
+      key: 'dashboard.weather.forecast.unitsLegend',
+    );
+    final weatherForecastSwap = DashboardLocalizations.resolveForLocale(
+      locale: const Locale('en'),
+      key: 'dashboard.weather.forecast.swapTooltip',
+    );
+    final weatherForecastUnavailable = DashboardLocalizations.resolveForLocale(
+      locale: const Locale('en'),
+      key: 'dashboard.weather.forecast.unavailable',
+    );
     final aqiBand = DashboardLocalizations.resolveForLocale(
       locale: const Locale('en'),
       key: 'dashboard.weather.aqi.veryUnhealthy',
@@ -264,6 +306,9 @@ void main() {
     expect(lookupFrom, 'From: US');
     expect(comingSoon, 'Settings: coming soon');
     expect(openMenu, 'Open menu');
+    expect(settingsLanguageTitle, 'Language');
+    expect(settingsLanguageOptionSystem, 'System default');
+    expect(settingsLanguageUpdated, 'Language updated');
     expect(profileNameFallback, 'My Places');
     expect(setCityCta, 'Set city');
     expect(
@@ -295,6 +340,12 @@ void main() {
     expect(zoneHeader, 'Direct Time Zones');
     expect(invalidInput, 'Enter date/time as YYYY-MM-DD HH:MM');
     expect(cityFallback, 'City not set');
+    expect(weatherHighLow, 'High • Low');
+    expect(weatherForecastHourly, 'Hourly');
+    expect(weatherForecastDaily, '7-day');
+    expect(weatherForecastLegend, '°C | °F');
+    expect(weatherForecastSwap, 'Tap to swap hourly / 7-day');
+    expect(weatherForecastUnavailable, 'Forecast unavailable');
     expect(aqiBand, 'Very Unhealthy');
     expect(pollenBand, 'Very High');
     expect(rainLight, 'Light rain');

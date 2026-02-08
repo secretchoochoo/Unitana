@@ -419,6 +419,28 @@ class DashboardCopy {
       DashboardLocalizations.of(
         context,
       ).text('dashboard.dashboard.menu.settings', fallback: 'Settings');
+  static String settingsLanguageTitle(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.settings.language.title', fallback: 'Language');
+  static String settingsLanguageSystem(BuildContext context) =>
+      DashboardLocalizations.of(context).text(
+        'dashboard.settings.language.option.system',
+        fallback: 'System default',
+      );
+  static String settingsLanguageEnglish(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.settings.language.option.en', fallback: 'English');
+  static String settingsLanguageSpanish(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.settings.language.option.es', fallback: 'Español');
+  static String settingsLanguageUpdated(BuildContext context) =>
+      DashboardLocalizations.of(context).text(
+        'dashboard.settings.language.updated',
+        fallback: 'Language updated',
+      );
   static String dashboardMenuEditWidgets(BuildContext context) =>
       DashboardLocalizations.of(
         context,
@@ -1062,6 +1084,33 @@ class DashboardCopy {
       DashboardLocalizations.of(
         context,
       ).text('dashboard.weather.header.pollen', fallback: '🌼 Pollen (0-5)');
+  static String weatherBannerHighLow(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.weather.banner.highLow', fallback: 'High • Low');
+  static String weatherForecastModeLabel(
+    BuildContext context, {
+    required bool daily,
+  }) => DashboardLocalizations.of(context).text(
+    daily
+        ? 'dashboard.weather.forecast.mode.daily'
+        : 'dashboard.weather.forecast.mode.hourly',
+    fallback: daily ? '7-day' : 'Hourly',
+  );
+  static String weatherForecastUnitsLegend(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.weather.forecast.unitsLegend', fallback: '°C | °F');
+  static String weatherForecastSwapTooltip(BuildContext context) =>
+      DashboardLocalizations.of(context).text(
+        'dashboard.weather.forecast.swapTooltip',
+        fallback: 'Tap to swap hourly / 7-day',
+      );
+  static String weatherForecastUnavailable(BuildContext context) =>
+      DashboardLocalizations.of(context).text(
+        'dashboard.weather.forecast.unavailable',
+        fallback: 'Forecast unavailable',
+      );
   static String weatherAqiBand(BuildContext context, String bandKey) =>
       DashboardLocalizations.of(context).text(
         'dashboard.weather.aqi.$bandKey',

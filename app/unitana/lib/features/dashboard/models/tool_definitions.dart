@@ -99,6 +99,16 @@ class ToolDefinitions {
     defaultSecondary: '355 ml',
   );
 
+  static const cupsGramsEstimates = ToolDefinition(
+    id: 'cups_grams_estimates',
+    canonicalToolId: CanonicalToolId.cupsGramsEstimates,
+    lensId: ActivityLensId.foodCooking,
+    title: 'Cups ↔ Grams Estimates',
+    icon: Icons.restaurant_menu_rounded,
+    defaultPrimary: 'Flour (all-purpose)',
+    defaultSecondary: '1 cup ≈ 120 g',
+  );
+
   static const area = ToolDefinition(
     id: 'area',
     canonicalToolId: CanonicalToolId.area,
@@ -147,6 +157,16 @@ class ToolDefinitions {
     icon: Icons.speed_rounded,
     defaultPrimary: '100 km/h',
     defaultSecondary: '62 mph',
+  );
+
+  static const pace = ToolDefinition(
+    id: 'pace',
+    canonicalToolId: CanonicalToolId.pace,
+    lensId: ActivityLensId.healthFitness,
+    title: 'Pace',
+    icon: Icons.directions_run_rounded,
+    defaultPrimary: '5:30 min/km',
+    defaultSecondary: '8:51 min/mi',
   );
 
   static const temperature = ToolDefinition(
@@ -207,6 +227,26 @@ class ToolDefinitions {
     icon: Icons.sd_storage_rounded,
     defaultPrimary: '1 GB',
     defaultSecondary: '1024 MB',
+  );
+
+  static const energy = ToolDefinition(
+    id: 'energy',
+    canonicalToolId: CanonicalToolId.energy,
+    lensId: ActivityLensId.healthFitness,
+    title: 'Calories / Energy',
+    icon: Icons.local_fire_department_rounded,
+    defaultPrimary: '500 kcal',
+    defaultSecondary: '2092 kJ',
+  );
+
+  static const hydration = ToolDefinition(
+    id: 'hydration',
+    canonicalToolId: CanonicalToolId.hydration,
+    lensId: ActivityLensId.healthFitness,
+    title: 'Hydration',
+    icon: Icons.water_drop_rounded,
+    defaultPrimary: '70 kg • 45 min',
+    defaultSecondary: '2.7 L / day estimate',
   );
 
   static const currencyConvert = ToolDefinition(
@@ -324,16 +364,20 @@ class ToolDefinitions {
     length,
     baking,
     liquids,
+    cupsGramsEstimates,
     area,
     volume,
     pressure,
     distance,
     speed,
+    pace,
     temperature,
     ovenTemperature,
     time,
     jetLagDelta,
     dataStorage,
+    energy,
+    hydration,
     currencyConvert,
     shoeSizes,
     paperSizes,
@@ -351,17 +395,21 @@ class ToolDefinitions {
     'length': length,
     'baking': baking,
     'liquids': liquids,
+    'cups_grams_estimates': cupsGramsEstimates,
     'area': area,
     'volume': volume,
     'pressure': pressure,
     'distance': distance,
     'speed': speed,
+    'pace': pace,
     'temperature': temperature,
     'oven_temperature': ovenTemperature,
     'time': time,
     'jet_lag_delta': jetLagDelta,
     'time_zone_converter': timeZoneConverter,
     'data_storage': dataStorage,
+    'energy': energy,
+    'hydration': hydration,
     'currency_convert': currencyConvert,
     'shoe_sizes': shoeSizes,
     'paper_sizes': paperSizes,
@@ -409,6 +457,8 @@ class ToolConverters {
         return _convertDistance(forward: forward, input: input);
       case CanonicalToolId.speed:
         return _convertSpeed(forward: forward, input: input);
+      case CanonicalToolId.pace:
+        return _convertPace(forward: forward, input: input);
       case CanonicalToolId.temperature:
         return _convertTemperature(forward: forward, input: input);
       case CanonicalToolId.length:
@@ -477,6 +527,12 @@ class ToolConverters {
         );
       case CanonicalToolId.dataStorage:
         return _convertDataStorageWithUnits(
+          fromUnit: fromUnit,
+          toUnit: toUnit,
+          input: input,
+        );
+      case CanonicalToolId.energy:
+        return _convertEnergyWithUnits(
           fromUnit: fromUnit,
           toUnit: toUnit,
           input: input,
@@ -617,6 +673,25 @@ class ToolConverters {
     return '${_fmt(out)} $toUnit';
   }
 
+  static String? _convertEnergyWithUnits({
+    required String fromUnit,
+    required String toUnit,
+    required String input,
+  }) {
+    final value = double.tryParse(input.trim());
+    if (value == null) return null;
+
+    // Normalize into kilocalories as base unit.
+    const kcalPer = <String, double>{'kcal': 1.0, 'kJ': 1 / 4.184};
+    final fromFactor = kcalPer[fromUnit];
+    final toFactor = kcalPer[toUnit];
+    if (fromFactor == null || toFactor == null) return null;
+
+    final kcal = value * fromFactor;
+    final out = kcal / toFactor;
+    return '${_fmt(out)} $toUnit';
+  }
+
   /// Converts between 24h and 12h time representations.
   ///
   /// `forward == true` means 24h -> 12h.
@@ -749,6 +824,51 @@ class ToolConverters {
     }
     final kmh = value / mphPerKmh;
     return '${_fmt(kmh)} km/h';
+  }
+
+  static String? _convertPace({required bool forward, required String input}) {
+    final minutes = _parsePaceMinutes(input);
+    if (minutes == null || minutes <= 0) return null;
+
+    const kmPerMi = 1.609344;
+    // forward => min/km -> min/mi
+    final converted = forward ? (minutes * kmPerMi) : (minutes / kmPerMi);
+    final unit = forward ? 'min/mi' : 'min/km';
+    return '${_fmtPaceMinutes(converted)} $unit';
+  }
+
+  static double? _parsePaceMinutes(String input) {
+    final raw = input.trim().toLowerCase();
+    if (raw.isEmpty) return null;
+
+    // mm:ss or m:ss
+    final colon = RegExp(r'^(\d{1,2}):(\d{1,2})$').firstMatch(raw);
+    if (colon != null) {
+      final mm = int.tryParse(colon.group(1)!);
+      final ss = int.tryParse(colon.group(2)!);
+      if (mm == null || ss == null || ss < 0 || ss > 59) return null;
+      return mm + (ss / 60.0);
+    }
+
+    // 5m30s / 5m / 30s
+    final token = RegExp(
+      r'^(?:(\d{1,2})m)?\s*(?:(\d{1,2})s)?$',
+    ).firstMatch(raw);
+    if (token != null && (token.group(1) != null || token.group(2) != null)) {
+      final mm = int.tryParse(token.group(1) ?? '0');
+      final ss = int.tryParse(token.group(2) ?? '0');
+      if (mm == null || ss == null || ss < 0 || ss > 59) return null;
+      return mm + (ss / 60.0);
+    }
+
+    return double.tryParse(raw);
+  }
+
+  static String _fmtPaceMinutes(double minutes) {
+    final totalSeconds = (minutes * 60).round();
+    final mm = totalSeconds ~/ 60;
+    final ss = totalSeconds % 60;
+    return '$mm:${ss.toString().padLeft(2, '0')}';
   }
 
   static String? _convertTemperature({

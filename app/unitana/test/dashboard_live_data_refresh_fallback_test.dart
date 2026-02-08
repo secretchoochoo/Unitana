@@ -57,6 +57,21 @@ class _FixedOpenMeteoClient extends OpenMeteoClient {
       isDay: true,
       sunriseUtc: now.subtract(const Duration(hours: 4)),
       sunsetUtc: now.add(const Duration(hours: 4)),
+      hourly: [
+        for (var i = 1; i <= 12; i += 1)
+          OpenMeteoHourlyForecastPoint(
+            timeUtc: now.add(Duration(hours: i)),
+            temperatureC: 6 + (i * 0.1),
+          ),
+      ],
+      daily: [
+        for (var i = 0; i < 7; i += 1)
+          OpenMeteoDailyForecastPoint(
+            dayUtc: DateTime.utc(2026, 2, 6 + i),
+            maxTemperatureC: 9 + i.toDouble(),
+            minTemperatureC: 1 + i.toDouble(),
+          ),
+      ],
     );
   }
 }
@@ -128,6 +143,7 @@ void main() {
     expect(live.weatherFor(p), isNotNull);
     expect(live.sunFor(p), isNotNull);
     expect(live.envFor(p), isNotNull);
+    expect(live.lastRefreshedAt, isNull);
   });
 
   test(
@@ -186,6 +202,7 @@ void main() {
       expect(env, isNotNull);
       expect(env!.usAqi, isNotNull);
       expect(env.pollenIndex, isNotNull);
+      expect(live.lastRefreshedAt, isNotNull);
     },
   );
 }
