@@ -351,9 +351,9 @@
       ],
       "priority": "P1",
       "size": "XL",
-      "status": "planned",
+      "status": "done",
       "status_updated": "2026-02-09",
-      "status_note": "Queued from backlog expansion; implementation pending."
+      "status_note": "XL-C shipped: theme labels simplified to System/Dark/Light, light-mode CTA accent de-pinked, and readability token sweep applied across key dashboard/tool surfaces."
     },
     {
       "id": "PACK_V_emergency_weather_system_and_marquee_states",
@@ -422,8 +422,12 @@
     }
   ],
   "current_state": {
-    "current_slice": "XL-B shipped: Pack Q language expansion + completeness gates (EN/ES/FR/PT-PT locale wiring and runtime localization contract hardening). Next is XL-C (Pack U + Pack L readability finalization).",
+    "current_slice": "XL-C shipped: Pack U readability + naming finalization (System/Dark/Light labels + light-mode contrast sweep). Next is XL-D (Pack V emergency weather system + marquee alert states).",
     "notes": [
+      "XL-C shipped on 2026-02-09: user-facing theme names were simplified to `System`, `Dark`, and `Light` across dashboard settings copy/seed/ARB contracts.",
+      "XL-C shipped on 2026-02-09: light-mode primary CTA token was shifted from saturated pink to a calmer contrast-safe blue action tone, reducing visual clash across tool modals and wizard CTAs.",
+      "XL-C shipped on 2026-02-09: light-theme lens accent mapping was tuned to muted Solarized-adjacent tones for travel/health/weather/money categories and contract tests were updated accordingly.",
+      "XL-C shipped on 2026-02-09: hero readability pass updated border/delta contrast behavior on light theme using semantic color-scheme tokens rather than fixed Dracula literals.",
       "XL-B follow-up shipped on 2026-02-09: localization application was extended across tool-picker labels, tool/widget display labels, and first-run wizard copy surfaces so locale changes affect menu/tools/widgets/wizard text consistently.",
       "XL-B follow-up shipped on 2026-02-09: fixed dashboard profile-edit crash from unmounted context access in `_editProfileFromBoard` by guarding `mounted` and capturing toast copy before async state transitions.",
       "XL-B follow-up shipped on 2026-02-09: first-run city picker modal background now uses active theme surfaces (light-mode readability fix).",

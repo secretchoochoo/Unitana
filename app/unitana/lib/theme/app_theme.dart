@@ -109,7 +109,7 @@ class UnitanaTheme {
     const cyan = Color(0xFF2AA198);
     const green = Color(0xFF859900);
     const orange = Color(0xFFCB4B16);
-    const magenta = Color(0xFFD33682);
+    const actionBlue = Color(0xFF3F7FAE);
 
     final scheme = const ColorScheme.light(
       primary: blue,
@@ -157,7 +157,7 @@ class UnitanaTheme {
       iconTheme: const IconThemeData(color: base03),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
-          backgroundColor: magenta,
+          backgroundColor: actionBlue,
           foregroundColor: base03,
           padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
           shape: const StadiumBorder(),

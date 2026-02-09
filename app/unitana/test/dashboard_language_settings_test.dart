@@ -143,6 +143,8 @@ void main() {
     expect(find.byKey(const ValueKey('settings_theme_system')), findsOneWidget);
     expect(find.byKey(const ValueKey('settings_theme_dark')), findsOneWidget);
     expect(find.byKey(const ValueKey('settings_theme_light')), findsOneWidget);
+    expect(find.text('Dark'), findsOneWidget);
+    expect(find.text('Light'), findsOneWidget);
 
     await tester.tap(find.byKey(const ValueKey('settings_theme_light')));
     await tester.pumpAndSettle(const Duration(milliseconds: 200));

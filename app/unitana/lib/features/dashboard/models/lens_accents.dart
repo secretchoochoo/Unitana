@@ -43,13 +43,21 @@ class LensAccents {
     if (brightness != Brightness.light) return colorFor(lensId);
     switch (lensId) {
       case ActivityLensId.travelEssentials:
-        // Muted Solarized-adjacent blue for light surfaces.
-        return const Color(0xFF2A7FB8);
+        return const Color(0xFF3D7194);
+      case ActivityLensId.foodCooking:
+        return const Color(0xFFB77838);
       case ActivityLensId.healthFitness:
-        // Softer olive-green for accessibility on light backgrounds.
-        return const Color(0xFF6D7F1E);
+        return const Color(0xFF627228);
+      case ActivityLensId.homeDiy:
+        return const Color(0xFF6D63A6);
       case ActivityLensId.weatherTime:
         return const Color(0xFF586E75);
+      case ActivityLensId.moneyShopping:
+        return const Color(0xFFA84F84);
+      case ActivityLensId.oddUseful:
+        return const Color(0xFFB95A5A);
+      case ActivityLensId.quickTools:
+        return const Color(0xFF6D63A6);
       default:
         return colorFor(lensId);
     }

@@ -103,11 +103,11 @@ void main() {
     expect(LocalizationSeed.enUs['dashboard.settings.theme.title'], 'Theme');
     expect(
       LocalizationSeed.enUs['dashboard.settings.theme.option.dark'],
-      'Dracula Dark',
+      'Dark',
     );
     expect(
       LocalizationSeed.enUs['dashboard.settings.theme.option.light'],
-      'Solarized Light',
+      'Light',
     );
     expect(LocalizationSeed.enUs['dashboard.settings.title'], 'Settings');
     expect(LocalizationSeed.enUs['dashboard.settings.option.about'], 'About');

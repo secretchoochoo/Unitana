@@ -142,8 +142,8 @@ class LocalizationSeed {
     'dashboard.settings.language.updated': 'Language updated',
     'dashboard.settings.theme.title': 'Theme',
     'dashboard.settings.theme.option.system': 'System',
-    'dashboard.settings.theme.option.dark': 'Dracula Dark',
-    'dashboard.settings.theme.option.light': 'Solarized Light',
+    'dashboard.settings.theme.option.dark': 'Dark',
+    'dashboard.settings.theme.option.light': 'Light',
     'dashboard.settings.theme.updated': 'Theme updated',
     'dashboard.settings.profileSuggest.title':
         'Auto-suggest profile by location',

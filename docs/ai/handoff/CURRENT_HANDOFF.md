@@ -2,8 +2,26 @@
 
 ## Snapshot
 - **Date:** 2026-02-09
-- **Status:** Repo is green (`dart format`, `flutter analyze`, `flutter test`) after XL-B (Pack Q language expansion + completeness gates).
+- **Status:** Repo is green (`dart format`, `flutter analyze`, `flutter test`) after XL-C (Pack U readability + naming finalization).
 - **Operating mode:** Codex is now the primary workflow; apply edits directly in-repo (do not require patch zip workflow unless explicitly requested).
+
+## Latest changes (2026-02-09)
+- XL-C shipped (Pack U readability + naming finalization):
+  - theme naming simplification:
+    - settings now presents `System`, `Dark`, `Light` labels (no branded theme names in the picker).
+    - copy/seed/ARB contracts updated for theme label keys.
+  - light-mode readability token sweep:
+    - primary filled CTA token shifted away from saturated pink to a calmer Solarized-adjacent blue.
+    - lens accent colors for light mode were rebalanced to muted tones (travel/health/weather/money/etc.) for better contrast and less visual harshness.
+  - hero readability parity:
+    - `PlacesHeroV2` border and delta readout in light mode now use semantic `ColorScheme` tokens instead of fixed Dracula literals.
+  - regression updates:
+    - localization seed contract and lens accent contract tests updated for the new XL-C expectations.
+    - settings-theme sheet test now locks visible `Dark` / `Light` labels.
+  - full gates re-run and green:
+    - `dart format .`
+    - `flutter analyze`
+    - `flutter test`
 
 ## Latest changes (2026-02-09)
 - XL-B follow-up shipped (post-validation fixes):

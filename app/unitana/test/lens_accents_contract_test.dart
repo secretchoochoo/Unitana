@@ -20,7 +20,7 @@ void main() {
       ActivityLensId.healthFitness,
       Brightness.light,
     );
-    expect(travel, const Color(0xFF2A7FB8));
-    expect(health, const Color(0xFF6D7F1E));
+    expect(travel, const Color(0xFF3D7194));
+    expect(health, const Color(0xFF627228));
   });
 }

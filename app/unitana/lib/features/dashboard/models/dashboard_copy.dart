@@ -445,12 +445,11 @@ class DashboardCopy {
   static String settingsThemeDark(BuildContext context) =>
       DashboardLocalizations.of(
         context,
-      ).text('dashboard.settings.theme.option.dark', fallback: 'Dracula Dark');
+      ).text('dashboard.settings.theme.option.dark', fallback: 'Dark');
   static String settingsThemeLight(BuildContext context) =>
-      DashboardLocalizations.of(context).text(
-        'dashboard.settings.theme.option.light',
-        fallback: 'Solarized Light',
-      );
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.settings.theme.option.light', fallback: 'Light');
   static String settingsThemeUpdated(BuildContext context) =>
       DashboardLocalizations.of(
         context,

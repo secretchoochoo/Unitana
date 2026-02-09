@@ -26,5 +26,10 @@ class LocalizationSeedPt {
     'dashboard.settings.language.option.fr': 'Frances',
     'dashboard.settings.language.option.ptPT': 'Portugues (Portugal)',
     'dashboard.settings.language.updated': 'Idioma atualizado',
+    'dashboard.settings.theme.title': 'Tema',
+    'dashboard.settings.theme.option.system': 'Sistema',
+    'dashboard.settings.theme.option.dark': 'Escuro',
+    'dashboard.settings.theme.option.light': 'Claro',
+    'dashboard.settings.theme.updated': 'Tema atualizado',
   };
 }

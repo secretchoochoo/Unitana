@@ -323,5 +323,10 @@
   "dashboard.weather.section.home": "",
   "dashboard.weather.title": "Clima",
   "dashboard.weather.tooltip.close": "",
-  "dashboard.weather.tooltip.refresh": ""
+  "dashboard.weather.tooltip.refresh": "",
+  "dashboard.settings.theme.title": "Tema",
+  "dashboard.settings.theme.option.system": "Sistema",
+  "dashboard.settings.theme.option.dark": "Oscuro",
+  "dashboard.settings.theme.option.light": "Claro",
+  "dashboard.settings.theme.updated": "Tema actualizado"
 }

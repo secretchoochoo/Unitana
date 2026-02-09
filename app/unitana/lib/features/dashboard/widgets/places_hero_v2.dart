@@ -127,7 +127,9 @@ class PlacesHeroV2 extends StatelessWidget {
                 color: cs.surface,
                 borderRadius: BorderRadius.circular(radius),
                 border: Border.all(
-                  color: DraculaPalette.currentLine.withAlpha(115),
+                  color: Theme.of(context).brightness == Brightness.light
+                      ? cs.outlineVariant.withAlpha(205)
+                      : DraculaPalette.currentLine.withAlpha(115),
                 ),
               ),
               child: Column(
@@ -459,7 +461,9 @@ class _ClocksHeaderBlock extends StatelessWidget {
     );
 
     final TextStyle deltaStyle = timeStyle.copyWith(
-      color: DraculaPalette.cyan.withAlpha(235),
+      color: Theme.of(context).brightness == Brightness.light
+          ? cs.primary.withAlpha(225)
+          : DraculaPalette.cyan.withAlpha(235),
     );
 
     return Padding(

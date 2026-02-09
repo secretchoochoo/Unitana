@@ -31,6 +31,11 @@ class LocalizationSeedEs {
     'dashboard.settings.language.option.fr': 'Francés',
     'dashboard.settings.language.option.ptPT': 'Portugués (Portugal)',
     'dashboard.settings.language.updated': 'Idioma actualizado',
+    'dashboard.settings.theme.title': 'Tema',
+    'dashboard.settings.theme.option.system': 'Sistema',
+    'dashboard.settings.theme.option.dark': 'Oscuro',
+    'dashboard.settings.theme.option.light': 'Claro',
+    'dashboard.settings.theme.updated': 'Tema actualizado',
     'dashboard.settings.about.title': 'Acerca de Unitana',
     'dashboard.settings.about.tagline':
         'Descifrador centrado en viajes; doble realidad en paralelo',
