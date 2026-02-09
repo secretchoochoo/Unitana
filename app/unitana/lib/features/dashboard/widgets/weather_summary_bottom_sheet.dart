@@ -1100,9 +1100,12 @@ class _TempBarGraph extends StatelessWidget {
 
   String _fLabel(double c) => '${((c * 9 / 5) + 32).round()}°F';
   String _cLabel(double c) => '${c.round()}°C';
-  String _barLabel(double c) {
+  String _barLabel(double c, {required bool showDual}) {
     final f = ((c * 9 / 5) + 32).round();
     final cc = c.round();
+    if (showDual) {
+      return preferMetric ? '$cc/$f' : '$f/$cc';
+    }
     if (preferMetric) {
       return '$cc°C';
     }
@@ -1120,6 +1123,7 @@ class _TempBarGraph extends StatelessWidget {
       return math.max(a, b.temperatureC);
     });
     final range = math.max(1.0, maxC - minC);
+    final showDualBarLabels = bars.length <= 5;
 
     return Row(
       key: graphKey,
@@ -1163,7 +1167,10 @@ class _TempBarGraph extends StatelessWidget {
                                         fit: BoxFit.scaleDown,
                                         alignment: Alignment.center,
                                         child: Text(
-                                          _barLabel(item.temperatureC),
+                                          _barLabel(
+                                            item.temperatureC,
+                                            showDual: showDualBarLabels,
+                                          ),
                                           style: theme.textTheme.bodySmall
                                               ?.copyWith(
                                                 color:
@@ -1171,7 +1178,9 @@ class _TempBarGraph extends StatelessWidget {
                                                       context,
                                                     ).withAlpha(228),
                                                 fontWeight: FontWeight.w800,
-                                                fontSize: 6.5,
+                                                fontSize: showDualBarLabels
+                                                    ? 7
+                                                    : 7.5,
                                               ),
                                           maxLines: 1,
                                           overflow: TextOverflow.ellipsis,
@@ -1238,7 +1247,7 @@ class _TempBarGraph extends StatelessWidget {
                                 style: theme.textTheme.bodySmall?.copyWith(
                                   color: cs.onSurfaceVariant,
                                   fontWeight: FontWeight.w700,
-                                  fontSize: 8,
+                                  fontSize: 8.5,
                                 ),
                                 textAlign: TextAlign.center,
                                 maxLines: 1,

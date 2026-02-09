@@ -2,8 +2,32 @@
 
 ## Snapshot
 - **Date:** 2026-02-09
-- **Status:** Repo is green (`dart format`, `flutter analyze`, `flutter test`) after XL-H phase 1 (profiles + price/baking utility uplift).
+- **Status:** Repo is green (`dart format`, `flutter analyze`, `flutter test`) after XL-H2 + XL-I continuation slices.
 - **Operating mode:** Codex is now the primary workflow; apply edits directly in-repo (do not require patch zip workflow unless explicitly requested).
+
+## Latest changes (2026-02-09)
+- XL-H phase 2 shipped (Pack X retro baseline + product-direction lock):
+  - added Pack X baseline artifact:
+    - `docs/ai/reference/PACK_X_RETRO_BASELINE_XL_H2.md`
+  - baseline captures:
+    - strengths to preserve,
+    - prioritized UX/UI/perf debt,
+    - Price Compare and Baking/Cups productization direction,
+    - recommended post-XL-H2 execution order.
+  - Price Compare follow-through (`app/unitana/lib/features/dashboard/widgets/tool_modal_bottom_sheet.dart`):
+    - compare mode now auto-guards unit-family consistency across Product A/B.
+    - prevents dead-end mismatches by aligning secondary family when needed.
+  - Cups↔Grams utility follow-through:
+    - matrix systems expanded from `Volume/Weight` to `Cup/Tbsp/Tsp/Weight`.
+    - richer per-ingredient references retained with deterministic lookup behavior.
+
+## Latest changes (2026-02-09)
+- XL-I shipped (Pack E + Pack J harmonization pass):
+  - weather forecast graph readability and consistency pass in
+    `app/unitana/lib/features/dashboard/widgets/weather_summary_bottom_sheet.dart`:
+    - adaptive bar-label density (dual-value labels only when bar count is small).
+    - improved compact label sizing/legibility for axis and x-labels on narrow screens.
+  - preserves existing weather/time contracts while reducing compact-surface readability churn.
 
 ## Latest changes (2026-02-09)
 - XL-H phase 1 shipped (Pack X kickoff + profiles/tool utility polish):

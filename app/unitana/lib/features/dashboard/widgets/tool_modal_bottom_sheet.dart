@@ -654,7 +654,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
       case CanonicalToolId.mattressSizes:
         return const <String>['US', 'EU', 'UK', 'AU', 'JP'];
       case CanonicalToolId.cupsGramsEstimates:
-        return const <String>['Volume', 'Weight'];
+        return const <String>['Cup', 'Tbsp', 'Tsp', 'Weight'];
       default:
         return const <String>[];
     }
@@ -1079,7 +1079,9 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
             keyId: 'cupsgrams_flour',
             label: 'Flour (all-purpose)',
             valuesBySystem: <String, String>{
-              'Volume': '1 cup (16 tbsp / 48 tsp)',
+              'Cup': '1 cup',
+              'Tbsp': '16 tbsp',
+              'Tsp': '48 tsp',
               'Weight': '120 g',
             },
             note: 'Approximate scoop-and-level reference.',
@@ -1089,7 +1091,9 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
             keyId: 'cupsgrams_sugar',
             label: 'Sugar (granulated)',
             valuesBySystem: <String, String>{
-              'Volume': '1 cup (16 tbsp / 48 tsp)',
+              'Cup': '1 cup',
+              'Tbsp': '16 tbsp',
+              'Tsp': '48 tsp',
               'Weight': '200 g',
             },
             note: 'Pack density varies by crystal size and humidity.',
@@ -1099,7 +1103,9 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
             keyId: 'cupsgrams_brown_sugar',
             label: 'Brown sugar (packed)',
             valuesBySystem: <String, String>{
-              'Volume': '1 cup packed (16 tbsp)',
+              'Cup': '1 cup packed',
+              'Tbsp': '16 tbsp packed',
+              'Tsp': '48 tsp packed',
               'Weight': '220 g',
             },
             note: 'Assumes packed cup measurement.',
@@ -1109,7 +1115,9 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
             keyId: 'cupsgrams_butter',
             label: 'Butter',
             valuesBySystem: <String, String>{
-              'Volume': '1 cup / 2 sticks',
+              'Cup': '1 cup / 2 sticks',
+              'Tbsp': '16 tbsp',
+              'Tsp': '48 tsp',
               'Weight': '227 g',
             },
             note: 'Equivalent to 2 US sticks.',
@@ -1119,7 +1127,9 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
             keyId: 'cupsgrams_rice',
             label: 'Rice (uncooked white)',
             valuesBySystem: <String, String>{
-              'Volume': '1 cup (16 tbsp / 48 tsp)',
+              'Cup': '1 cup',
+              'Tbsp': '16 tbsp',
+              'Tsp': '48 tsp',
               'Weight': '185 g',
             },
             note: 'Estimate before cooking.',
@@ -1129,7 +1139,9 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
             keyId: 'cupsgrams_oats',
             label: 'Oats (rolled)',
             valuesBySystem: <String, String>{
-              'Volume': '1 cup (16 tbsp / 48 tsp)',
+              'Cup': '1 cup',
+              'Tbsp': '16 tbsp',
+              'Tsp': '48 tsp',
               'Weight': '90 g',
             },
             note: 'Rolled oats are lighter by volume than flour.',
@@ -1139,7 +1151,9 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
             keyId: 'cupsgrams_honey',
             label: 'Honey',
             valuesBySystem: <String, String>{
-              'Volume': '1 cup (16 tbsp / 48 tsp)',
+              'Cup': '1 cup',
+              'Tbsp': '16 tbsp',
+              'Tsp': '48 tsp',
               'Weight': '340 g',
             },
             note: 'Dense liquid; weight is significantly higher per cup.',
@@ -1184,7 +1198,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
         _lookupEntryKey = 'matt_queen';
         return;
       case CanonicalToolId.cupsGramsEstimates:
-        _lookupFromSystem = 'Volume';
+        _lookupFromSystem = 'Cup';
         _lookupToSystem = 'Weight';
         _lookupEntryKey = 'cupsgrams_flour';
         return;
@@ -1340,6 +1354,38 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
   bool _isUnitPriceMassUnit(String unit) => _unitPriceMassToG.containsKey(unit);
   bool _isUnitPriceVolumeUnit(String unit) =>
       _unitPriceVolumeToMl.containsKey(unit);
+
+  bool _sameUnitPriceFamily(String a, String b) {
+    return (_isUnitPriceMassUnit(a) && _isUnitPriceMassUnit(b)) ||
+        (_isUnitPriceVolumeUnit(a) && _isUnitPriceVolumeUnit(b));
+  }
+
+  String _defaultFamilyUnitFor(String unit) {
+    if (_isUnitPriceMassUnit(unit)) return 'g';
+    if (_isUnitPriceVolumeUnit(unit)) return 'mL';
+    return 'g';
+  }
+
+  void _handleUnitPriceUnitSelected({
+    required bool forProductA,
+    required String unit,
+  }) {
+    setState(() {
+      if (forProductA) {
+        _unitPriceUnitA = unit;
+        if (_unitPriceCompareEnabled &&
+            !_sameUnitPriceFamily(_unitPriceUnitA, _unitPriceUnitB)) {
+          _unitPriceUnitB = _defaultFamilyUnitFor(unit);
+        }
+      } else {
+        _unitPriceUnitB = unit;
+        if (_unitPriceCompareEnabled &&
+            !_sameUnitPriceFamily(_unitPriceUnitA, _unitPriceUnitB)) {
+          _unitPriceUnitA = _defaultFamilyUnitFor(unit);
+        }
+      }
+    });
+  }
 
   List<String> get _unitPriceUnits => const <String>[
     'g',
@@ -2158,7 +2204,8 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
           priceController: _unitPriceAController,
           qtyController: _unitQtyAController,
           selectedUnit: _unitPriceUnitA,
-          onUnitSelected: (unit) => setState(() => _unitPriceUnitA = unit),
+          onUnitSelected: (unit) =>
+              _handleUnitPriceUnitSelected(forProductA: true, unit: unit),
           keyPrefix: '${widget.tool.id}_a',
         ),
         const SizedBox(height: 8),
@@ -2172,7 +2219,15 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
               context,
             ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w700),
           ),
-          onChanged: (v) => setState(() => _unitPriceCompareEnabled = v),
+          onChanged: (v) {
+            setState(() {
+              _unitPriceCompareEnabled = v;
+              if (_unitPriceCompareEnabled &&
+                  !_sameUnitPriceFamily(_unitPriceUnitA, _unitPriceUnitB)) {
+                _unitPriceUnitB = _defaultFamilyUnitFor(_unitPriceUnitA);
+              }
+            });
+          },
         ),
         if (_unitPriceCompareEnabled) ...[
           productCard(
@@ -2180,7 +2235,8 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
             priceController: _unitPriceBController,
             qtyController: _unitQtyBController,
             selectedUnit: _unitPriceUnitB,
-            onUnitSelected: (unit) => setState(() => _unitPriceUnitB = unit),
+            onUnitSelected: (unit) =>
+                _handleUnitPriceUnitSelected(forProductA: false, unit: unit),
             keyPrefix: '${widget.tool.id}_b',
           ),
           const SizedBox(height: 8),
@@ -2295,7 +2351,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
         case CanonicalToolId.mattressSizes:
           return ('US', 'EU', 'matt_queen');
         case CanonicalToolId.cupsGramsEstimates:
-          return ('Volume', 'Weight', 'cupsgrams_flour');
+          return ('Cup', 'Weight', 'cupsgrams_flour');
         default:
           return ('', '', '');
       }

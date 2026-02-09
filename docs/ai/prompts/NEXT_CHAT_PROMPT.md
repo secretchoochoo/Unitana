@@ -1,19 +1,19 @@
-NEXT CHAT PROMPT — XL-H Phase 2: Pack X Retro Baseline + Price/Baking Productization
+NEXT CHAT PROMPT — XL-J: Pack E + Pack J Closure Artifacts
 
 You are taking over Unitana (Flutter) in a fresh, high-context window.
 
 Read these files first:
 1) `docs/ai/handoff/CURRENT_HANDOFF.md`
 2) `docs/ai/context_db.json`
-3) `docs/ai/prompts/NEXT_CHAT_PROMPT.md`
-4) `app/unitana/lib/features/dashboard/widgets/profiles_board_screen.dart`
-5) `app/unitana/lib/features/dashboard/widgets/tool_modal_bottom_sheet.dart`
-6) `app/unitana/lib/features/dashboard/models/tool_definitions.dart`
-7) `app/unitana/lib/features/dashboard/models/dashboard_copy.dart`
-8) `app/unitana/lib/features/dashboard/widgets/dashboard_board.dart`
-9) `app/unitana/test/baking_tool_modal_fraction_units_test.dart`
-10) `app/unitana/test/unit_price_helper_modal_interaction_test.dart`
-11) `app/unitana/test/profile_switcher_switch_profile_flow_test.dart`
+3) `docs/ai/reference/PACK_X_RETRO_BASELINE_XL_H2.md`
+4) `docs/ai/prompts/NEXT_CHAT_PROMPT.md`
+5) `app/unitana/lib/features/dashboard/widgets/weather_summary_bottom_sheet.dart`
+6) `app/unitana/lib/features/dashboard/widgets/hero_alive_marquee.dart`
+7) `app/unitana/lib/features/dashboard/widgets/places_hero_v2.dart`
+8) `app/unitana/lib/features/dashboard/widgets/tool_modal_bottom_sheet.dart`
+9) `app/unitana/test/weather_summary_narrow_layout_smoke_test.dart`
+10) `app/unitana/test/hero_alive_marquee_paint_extremes_test.dart`
+11) `app/unitana/test/dashboard_places_hero_v2_test.dart`
 
 ## Core operating rules
 - Keep repo green if any code/docs are touched:
@@ -28,36 +28,34 @@ Read these files first:
   - goldens opt-in only
 
 ## Mission
-Execute XL-H phase 2 by combining:
-1) Pack X retro baseline artifact (prioritized, actionable).
-2) productization direction for Price Compare and Baking/Cups tools.
+Close remaining artifact debt for Pack E and Pack J:
+1) Pack E: document and lock marquee V2 readability/spec decisions.
+2) Pack J: document and lock weather product-positioning closure decisions.
 
 ## Required outcomes
-1) Pack X retro artifact
-- Add a concise retro document with:
-  - strongest app UX patterns to preserve
-  - highest-priority UX/readability/perf debt
-  - consistency/haptics/interaction gaps
-  - recommended execution sequence for XL-I onward
+1) Pack E closure artifact
+- Add a concise reference doc defining:
+  - scene readability principles
+  - spacing/token rules
+  - animation/perf constraints
+  - acceptance checks for small screens
 
-2) Price Compare product direction
-- Define and implement/prepare next-step contracts for dual-reality shopping:
-  - home vs destination currency context clarity
-  - normalized basket comparisons
-  - unit-family guardrails and copy clarity
+2) Pack J closure artifact
+- Add a concise product-positioning doc defining:
+  - weather cockpit intent and scope
+  - what is in/out of scope for this app phase
+  - required contracts and tests
+  - unresolved follow-up ideas with priorities
 
-3) Baking/Cups direction
-- Clarify tool split responsibilities:
-  - Baking converter (unit conversion workflow)
-  - Cups↔Grams matrix (ingredient density lookup workflow)
-- Add/adjust copy and interaction cues to reduce confusion.
+3) Code follow-through (only if needed)
+- Apply only minimal code/copy/test updates required to align runtime behavior with the closure docs.
 
 4) Preserve existing contracts
 - No regressions to:
-  - profile board edit/reorder/add behavior
-  - matrix tool selection/copy behavior
-  - world time map widget contracts
-  - localization and emergency weather contracts
+  - profile board behavior
+  - matrix interactions/sync
+  - world time map readouts
+  - localization and emergency weather surfaces
 
 5) Docs update
 - Update:
@@ -66,17 +64,17 @@ Execute XL-H phase 2 by combining:
   - `docs/ai/prompts/NEXT_CHAT_PROMPT.md`
 
 ## Suggested execution order
-1) retro findings capture
-2) copy/UX polish for Price Compare and Baking/Cups roles
-3) targeted regression tests
+1) Pack E closure artifact
+2) Pack J closure artifact
+3) minimal alignment edits/tests
 4) full gates
 5) docs/handoff refresh
 
 ## Definition of done
-- Pack X retro baseline exists and is actionable.
-- Price Compare and Baking/Cups direction is materially clearer in-product.
+- Pack E and Pack J closure artifacts exist and are actionable.
+- Runtime behavior remains consistent with closure contracts.
 - Repo green (`format`, `analyze`, `test`).
 
 ## Forward plan after this slice
-- Next slice: XL-I (Pack E marquee V2 continuation + weather/time visual harmonization).
-- Following slice: XL-J (Pack W opt-in lofi audio foundation, off by default).
+- Next slice: XL-K (Pack L + Pack K closure pass).
+- Following slice: XL-L (Pack D docs architecture consolidation).

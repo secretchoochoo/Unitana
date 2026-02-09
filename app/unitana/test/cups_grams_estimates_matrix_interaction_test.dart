@@ -89,7 +89,7 @@ void main() {
     final resultRichText = tester.widget<RichText>(resultRichTextFinder);
     final resultText = resultRichText.text.toPlainText();
 
-    expect(resultText, contains('Volume: 1 cup'));
+    expect(resultText, contains('Cup: 1 cup'));
     expect(resultText, contains('Weight: 200 g'));
   });
 }
