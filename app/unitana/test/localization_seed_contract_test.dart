@@ -92,6 +92,15 @@ void main() {
       LocalizationSeed.enUs['dashboard.settings.language.updated'],
       'Language updated',
     );
+    expect(LocalizationSeed.enUs['dashboard.settings.theme.title'], 'Theme');
+    expect(
+      LocalizationSeed.enUs['dashboard.settings.theme.option.dark'],
+      'Dracula Dark',
+    );
+    expect(
+      LocalizationSeed.enUs['dashboard.settings.theme.option.light'],
+      'Solarized Light',
+    );
     expect(LocalizationSeed.enUs['dashboard.settings.title'], 'Settings');
     expect(LocalizationSeed.enUs['dashboard.settings.option.about'], 'About');
     expect(

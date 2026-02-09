@@ -103,40 +103,23 @@ void main() {
     await tester.tap(shoeTool);
     await tester.pumpAndSettle(const Duration(milliseconds: 250));
 
-    expect(find.text('Shoe Sizes'), findsOneWidget);
+    expect(find.text('Shoes'), findsOneWidget);
 
     // Open the Shoe Sizes modal.
-    final shoeSizesTile = find.text('Shoe Sizes');
+    final shoeSizesTile = find.text('Shoes');
     await ensureVisibleAligned(tester, shoeSizesTile);
     await tester.tap(shoeSizesTile, warnIfMissed: false);
     await tester.pumpAndSettle(const Duration(milliseconds: 250));
 
     expect(
-      find.byKey(const ValueKey('tool_lookup_from_shoe_sizes')),
+      find.byKey(const ValueKey('tool_lookup_matrix_shoe_sizes')),
       findsOneWidget,
     );
     expect(
-      find.byKey(const ValueKey('tool_lookup_to_shoe_sizes')),
+      find.byKey(const ValueKey('tool_lookup_matrix_row_shoe_sizes_shoe_9')),
       findsOneWidget,
     );
-    expect(
-      find.byKey(const ValueKey('tool_lookup_size_shoe_sizes')),
-      findsOneWidget,
-    );
-
-    final resultRichTextFinder = find
-        .descendant(
-          of: find.byKey(const ValueKey('tool_lookup_result_shoe_sizes')),
-          matching: find.byType(RichText),
-        )
-        .first;
-
-    expect(resultRichTextFinder, findsOneWidget);
-
-    final resultRichText = tester.widget<RichText>(resultRichTextFinder);
-    final resultText = resultRichText.text.toPlainText();
-
-    expect(resultText, contains('US Men: 9'));
-    expect(resultText, contains('EU: 42'));
+    expect(find.textContaining('42'), findsWidgets);
+    expect(find.textContaining('US Men'), findsWidgets);
   });
 }

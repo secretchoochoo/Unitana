@@ -17,19 +17,30 @@ Future<void> _searchTool(WidgetTester tester, String query) async {
 }
 
 void main() {
-  testWidgets('world clock delta is enabled and opens Time modal', (
+  testWidgets('world time map is enabled and opens world map modal', (
     tester,
   ) async {
     await pumpDashboardForTest(tester);
     await _openToolPicker(tester);
-    await _searchTool(tester, 'world clock');
+    await _searchTool(tester, 'world time map');
 
     await tester.tap(
       find.byKey(const ValueKey('toolpicker_search_tool_world_clock_delta')),
     );
     await tester.pumpAndSettle();
 
-    expect(find.byKey(const ValueKey('tool_title_time')), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('tool_title_world_clock_delta')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('tool_time_world_map_card')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('tool_time_dual_analog_row')),
+      findsNothing,
+    );
   });
 
   testWidgets('jet lag delta is enabled and opens Time modal', (tester) async {
@@ -99,7 +110,7 @@ void main() {
       findsOneWidget,
     );
     expect(
-      find.byKey(const ValueKey('tool_lookup_result_paper_sizes')),
+      find.byKey(const ValueKey('tool_lookup_matrix_paper_sizes')),
       findsOneWidget,
     );
   });
@@ -121,7 +132,7 @@ void main() {
       findsOneWidget,
     );
     expect(
-      find.byKey(const ValueKey('tool_lookup_result_mattress_sizes')),
+      find.byKey(const ValueKey('tool_lookup_matrix_mattress_sizes')),
       findsOneWidget,
     );
   });
@@ -220,12 +231,12 @@ void main() {
     );
   });
 
-  testWidgets('unit price helper is enabled and opens dedicated modal', (
+  testWidgets('price compare is enabled and opens dedicated modal', (
     tester,
   ) async {
     await pumpDashboardForTest(tester);
     await _openToolPicker(tester);
-    await _searchTool(tester, 'unit price');
+    await _searchTool(tester, 'price compare');
 
     await tester.tap(
       find.byKey(const ValueKey('toolpicker_search_tool_unit_price_helper')),

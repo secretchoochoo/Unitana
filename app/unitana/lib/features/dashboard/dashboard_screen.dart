@@ -55,6 +55,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   bool _isEditingWidgets = false;
   String? _focusTileId;
+  String? _focusToolTileId;
 
   UnitanaAppState get state => widget.state;
 
@@ -915,6 +916,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       canAddWidget: true,
       onAddWidget: () async {
         if (_dashboardHasToolId(picked.id)) {
+          _focusExistingToolTile(picked.id);
           throw DuplicateDashboardWidgetException(
             toolId: picked.id,
             title: picked.title,
@@ -929,6 +931,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
     // Includes the default, always-present tiles and user-added tiles.
     if (ToolDefinitions.defaultTiles.any((t) => t.id == toolId)) return true;
     return _layout.items.any((i) => i.toolId == toolId);
+  }
+
+  void _focusExistingToolTile(String toolId) {
+    if (!mounted) return;
+    setState(() {
+      _focusToolTileId = toolId;
+    });
   }
 
   Future<void> _openLanguageSettingsSheet() async {
@@ -995,14 +1004,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Future<void> _openSettingsSheet() async {
-    await showModalBottomSheet<void>(
+  Future<void> _openThemeSettingsSheet() async {
+    final selected = await showModalBottomSheet<String>(
       context: context,
       showDragHandle: true,
       builder: (sheetContext) {
+        final current = state.preferredThemeMode;
+        final options = <({String id, String label})>[
+          (id: 'system', label: DashboardCopy.settingsThemeSystem(context)),
+          (id: 'dark', label: DashboardCopy.settingsThemeDark(context)),
+          (id: 'light', label: DashboardCopy.settingsThemeLight(context)),
+        ];
         return SafeArea(
           child: Column(
-            key: const ValueKey('settings_sheet'),
             mainAxisSize: MainAxisSize.min,
             children: [
               Padding(
@@ -1011,7 +1025,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   children: [
                     Expanded(
                       child: Text(
-                        DashboardCopy.settingsTitle(context),
+                        DashboardCopy.settingsThemeTitle(context),
                         style: Theme.of(sheetContext).textTheme.titleLarge
                             ?.copyWith(fontWeight: FontWeight.w800),
                       ),
@@ -1020,35 +1034,145 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ],
                 ),
               ),
-              ListTile(
-                key: const ValueKey('settings_option_language'),
-                leading: const Icon(Icons.language_rounded),
-                title: Text(DashboardCopy.settingsLanguageTitle(context)),
-                onTap: () {
-                  Navigator.of(sheetContext).pop();
-                  Future.microtask(_openLanguageSettingsSheet);
+              RadioGroup<String>(
+                // ignore: deprecated_member_use
+                groupValue: current,
+                // ignore: deprecated_member_use
+                onChanged: (value) {
+                  if (value == null) return;
+                  Navigator.of(sheetContext).pop(value);
                 },
-              ),
-              ListTile(
-                key: const ValueKey('settings_option_about'),
-                leading: const Icon(Icons.info_outline_rounded),
-                title: Text(DashboardCopy.settingsOptionAbout(context)),
-                onTap: () {
-                  Navigator.of(sheetContext).pop();
-                  Future.microtask(_openAboutSheet);
-                },
-              ),
-              ListTile(
-                key: const ValueKey('settings_option_licenses'),
-                leading: const Icon(Icons.gavel_rounded),
-                title: Text(DashboardCopy.settingsOptionLicenses(context)),
-                onTap: () {
-                  Navigator.of(sheetContext).pop();
-                  Future.microtask(_openLicensesPage);
-                },
+                child: Column(
+                  children: [
+                    for (final option in options)
+                      RadioListTile<String>(
+                        key: ValueKey('settings_theme_${option.id}'),
+                        value: option.id,
+                        title: Text(option.label),
+                      ),
+                  ],
+                ),
               ),
               const SizedBox(height: 8),
             ],
+          ),
+        );
+      },
+    );
+    if (selected == null || !mounted) return;
+    await state.setPreferredThemeMode(selected);
+    if (!mounted) return;
+    UnitanaToast.showSuccess(
+      context,
+      DashboardCopy.settingsThemeUpdated(context),
+    );
+  }
+
+  Future<void> _openSettingsSheet() async {
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetContext) {
+        UnitanaProfile? suggestedProfile;
+        final suggestedId = state.autoSuggestedProfileId;
+        if (suggestedId != null) {
+          for (final profile in state.profiles) {
+            if (profile.id == suggestedId) {
+              suggestedProfile = profile;
+              break;
+            }
+          }
+        }
+        final fallbackSuggestion = suggestedProfile == null
+            ? DashboardCopy.settingsProfileSuggestReasonUnavailable(context)
+            : DashboardCopy.settingsProfileSuggestSuggested(
+                context,
+                profileName: suggestedProfile.name,
+              );
+        final explainability =
+            state.autoProfileSuggestionReason?.trim().isNotEmpty == true
+            ? state.autoProfileSuggestionReason!.trim()
+            : fallbackSuggestion;
+        return SafeArea(
+          child: SingleChildScrollView(
+            child: Column(
+              key: const ValueKey('settings_sheet'),
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 8, 6),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          DashboardCopy.settingsTitle(context),
+                          style: Theme.of(sheetContext).textTheme.titleLarge
+                              ?.copyWith(fontWeight: FontWeight.w800),
+                        ),
+                      ),
+                      _sheetCloseButton(sheetContext),
+                    ],
+                  ),
+                ),
+                ListTile(
+                  key: const ValueKey('settings_option_theme'),
+                  leading: const Icon(Icons.palette_outlined),
+                  title: Text(DashboardCopy.settingsThemeTitle(context)),
+                  onTap: () {
+                    Navigator.of(sheetContext).pop();
+                    Future.microtask(_openThemeSettingsSheet);
+                  },
+                ),
+                ListTile(
+                  key: const ValueKey('settings_option_language'),
+                  leading: const Icon(Icons.language_rounded),
+                  title: Text(DashboardCopy.settingsLanguageTitle(context)),
+                  onTap: () {
+                    Navigator.of(sheetContext).pop();
+                    Future.microtask(_openLanguageSettingsSheet);
+                  },
+                ),
+                SwitchListTile(
+                  key: const ValueKey('settings_option_profile_suggest'),
+                  secondary: const Icon(Icons.my_location_rounded),
+                  value: state.autoProfileSuggestEnabled,
+                  title: Text(
+                    DashboardCopy.settingsProfileSuggestTitle(context),
+                  ),
+                  subtitle: Text(
+                    '${state.autoProfileSuggestEnabled ? DashboardCopy.settingsProfileSuggestEnabled(context) : DashboardCopy.settingsProfileSuggestDisabled(context)} · $explainability',
+                  ),
+                  onChanged: (enabled) async {
+                    await state.setAutoProfileSuggestEnabled(enabled);
+                    await state.evaluateAutoProfileSuggestion(signal: null);
+                    if (!mounted) return;
+                    UnitanaToast.showSuccess(
+                      context,
+                      DashboardCopy.settingsProfileSuggestUpdated(context),
+                    );
+                  },
+                ),
+                ListTile(
+                  key: const ValueKey('settings_option_about'),
+                  leading: const Icon(Icons.info_outline_rounded),
+                  title: Text(DashboardCopy.settingsOptionAbout(context)),
+                  onTap: () {
+                    Navigator.of(sheetContext).pop();
+                    Future.microtask(_openAboutSheet);
+                  },
+                ),
+                ListTile(
+                  key: const ValueKey('settings_option_licenses'),
+                  leading: const Icon(Icons.gavel_rounded),
+                  title: Text(DashboardCopy.settingsOptionLicenses(context)),
+                  onTap: () {
+                    Navigator.of(sheetContext).pop();
+                    Future.microtask(_openLicensesPage);
+                  },
+                ),
+                const SizedBox(height: 8),
+              ],
+            ),
           ),
         );
       },
@@ -1677,10 +1801,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         isEditing: _isEditingWidgets,
                         includePlacesHero: false,
                         focusActionTileId: _focusTileId,
+                        focusToolTileId: _focusToolTileId,
                         onEnteredEditMode: (focusId) =>
                             _enterEditWidgets(focusTileId: focusId),
                         onConsumedFocusTileId: () =>
                             setState(() => _focusTileId = null),
+                        onConsumedFocusToolTileId: () =>
+                            setState(() => _focusToolTileId = null),
                       ),
                     ),
                   ),

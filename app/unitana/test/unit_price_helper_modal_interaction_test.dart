@@ -17,12 +17,12 @@ Future<void> _searchTool(WidgetTester tester, String query) async {
 }
 
 void main() {
-  testWidgets('Unit Price Helper computes normalized values and compare text', (
+  testWidgets('Price Compare computes normalized values and compare text', (
     tester,
   ) async {
     await pumpDashboardForTest(tester);
     await _openToolPicker(tester);
-    await _searchTool(tester, 'unit price');
+    await _searchTool(tester, 'price compare');
 
     await tester.tap(
       find.byKey(const ValueKey('toolpicker_search_tool_unit_price_helper')),

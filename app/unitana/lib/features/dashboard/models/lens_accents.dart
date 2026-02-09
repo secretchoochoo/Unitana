@@ -10,6 +10,10 @@ import 'activity_lenses.dart';
 class LensAccents {
   const LensAccents._();
 
+  static const Map<String, Color> _toolOverrides = <String, Color>{
+    'shoe_sizes': DraculaPalette.red,
+  };
+
   static Color colorFor(String lensId) {
     switch (lensId) {
       case ActivityLensId.travelEssentials:
@@ -21,7 +25,8 @@ class LensAccents {
       case ActivityLensId.homeDiy:
         return DraculaPalette.purple;
       case ActivityLensId.weatherTime:
-        return DraculaPalette.yellow;
+        // Keep Weather & Time calmer than yellow while preserving a cool tone.
+        return DraculaPalette.comment;
       case ActivityLensId.moneyShopping:
         return DraculaPalette.pink;
       case ActivityLensId.oddUseful:
@@ -34,6 +39,22 @@ class LensAccents {
     }
   }
 
+  static Color colorForBrightness(String lensId, Brightness brightness) {
+    if (brightness != Brightness.light) return colorFor(lensId);
+    switch (lensId) {
+      case ActivityLensId.travelEssentials:
+        // Muted Solarized-adjacent blue for light surfaces.
+        return const Color(0xFF2A7FB8);
+      case ActivityLensId.healthFitness:
+        // Softer olive-green for accessibility on light backgrounds.
+        return const Color(0xFF6D7F1E);
+      case ActivityLensId.weatherTime:
+        return const Color(0xFF586E75);
+      default:
+        return colorFor(lensId);
+    }
+  }
+
   /// Used when you want subtle tinting rather than a full accent.
   ///
   /// This keeps icons readable on the Dracula background without turning the
@@ -41,6 +62,32 @@ class LensAccents {
   static Color iconTintFor(String lensId) {
     // Slightly soften accents so they sit well with Dracula foreground.
     return colorFor(lensId).withValues(alpha: 0.92);
+  }
+
+  static Color iconTintForBrightness(String lensId, Brightness brightness) {
+    final alpha = brightness == Brightness.light ? 0.88 : 0.92;
+    return colorForBrightness(lensId, brightness).withValues(alpha: alpha);
+  }
+
+  static Color toolIconTintFor({required String toolId, String? lensId}) {
+    final override = _toolOverrides[toolId];
+    if (override != null) {
+      return override.withValues(alpha: 0.92);
+    }
+    return iconTintFor(lensId ?? '');
+  }
+
+  static Color toolIconTintForBrightness({
+    required String toolId,
+    String? lensId,
+    required Brightness brightness,
+  }) {
+    final override = _toolOverrides[toolId];
+    if (override != null) {
+      final alpha = brightness == Brightness.light ? 0.88 : 0.92;
+      return override.withValues(alpha: alpha);
+    }
+    return iconTintForBrightness(lensId ?? '', brightness);
   }
 }
 

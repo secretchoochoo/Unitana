@@ -13,6 +13,37 @@ import '../models/dashboard_live_data.dart';
 import 'hero_alive_marquee.dart';
 import 'pulse_swap_icon.dart';
 
+class _WeatherSheetThemePolicy {
+  const _WeatherSheetThemePolicy._();
+
+  static bool isLight(BuildContext context) =>
+      Theme.of(context).brightness == Brightness.light;
+
+  static Color textPrimary(BuildContext context) =>
+      Theme.of(context).colorScheme.onSurface.withAlpha(235);
+
+  static Color panelBorder(BuildContext context) => isLight(context)
+      ? Theme.of(context).colorScheme.outline.withAlpha(195)
+      : DraculaPalette.comment.withAlpha(160);
+
+  static Color coolTone(BuildContext context) => isLight(context)
+      ? Theme.of(context).colorScheme.primary.withAlpha(225)
+      : DraculaPalette.cyan;
+
+  static Color warmTone(BuildContext context) =>
+      isLight(context) ? const Color(0xFF8A3D12) : DraculaPalette.orange;
+
+  static Color goodTone(BuildContext context) =>
+      isLight(context) ? const Color(0xFF2E7D32) : DraculaPalette.green;
+
+  static Color magentaTone(BuildContext context) =>
+      isLight(context) ? const Color(0xFF8B2D62) : DraculaPalette.pink;
+
+  static Color purpleTone(BuildContext context) => isLight(context)
+      ? Theme.of(context).colorScheme.secondary
+      : DraculaPalette.purple;
+}
+
 class WeatherSummaryBottomSheet extends StatelessWidget {
   final DashboardLiveDataController liveData;
   final Place? home;
@@ -126,7 +157,9 @@ class WeatherSummaryBottomSheet extends StatelessWidget {
                               ),
                               visualDensity: VisualDensity.compact,
                               side: BorderSide(
-                                color: DraculaPalette.comment.withAlpha(160),
+                                color: _WeatherSheetThemePolicy.panelBorder(
+                                  context,
+                                ),
                               ),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12),
@@ -140,7 +173,9 @@ class WeatherSummaryBottomSheet extends StatelessWidget {
                                   ? Icons.hourglass_top_rounded
                                   : Icons.refresh_rounded,
                               size: 18,
-                              color: DraculaPalette.foreground.withAlpha(220),
+                              color: _WeatherSheetThemePolicy.textPrimary(
+                                context,
+                              ).withAlpha(220),
                             ),
                           ),
                         ),
@@ -156,7 +191,9 @@ class WeatherSummaryBottomSheet extends StatelessWidget {
                               ),
                               visualDensity: VisualDensity.compact,
                               side: BorderSide(
-                                color: DraculaPalette.comment.withAlpha(160),
+                                color: _WeatherSheetThemePolicy.panelBorder(
+                                  context,
+                                ),
                               ),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12),
@@ -166,7 +203,9 @@ class WeatherSummaryBottomSheet extends StatelessWidget {
                             child: Icon(
                               Icons.close_rounded,
                               size: 18,
-                              color: DraculaPalette.foreground.withAlpha(220),
+                              color: _WeatherSheetThemePolicy.textPrimary(
+                                context,
+                              ).withAlpha(220),
                             ),
                           ),
                         ),
@@ -390,8 +429,8 @@ class WeatherSummaryBottomSheet extends StatelessWidget {
                 borderRadius: BorderRadius.circular(12),
                 gradient: LinearGradient(
                   colors: <Color>[
-                    DraculaPalette.cyan.withAlpha(46),
-                    DraculaPalette.purple.withAlpha(56),
+                    _WeatherSheetThemePolicy.coolTone(context).withAlpha(46),
+                    _WeatherSheetThemePolicy.purpleTone(context).withAlpha(56),
                   ],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
@@ -456,7 +495,9 @@ class WeatherSummaryBottomSheet extends StatelessWidget {
                               Text(
                                 '$tempPrimary  ·  $tempSecondary',
                                 style: theme.textTheme.titleMedium?.copyWith(
-                                  color: DraculaPalette.green,
+                                  color: _WeatherSheetThemePolicy.goodTone(
+                                    context,
+                                  ),
                                   fontWeight: FontWeight.w900,
                                 ),
                                 maxLines: 1,
@@ -510,12 +551,14 @@ class WeatherSummaryBottomSheet extends StatelessWidget {
                                       alignment: Alignment.centerLeft,
                                       child: Text(
                                         '↑ $bannerHigh',
-                                        style: theme.textTheme.bodySmall
-                                            ?.copyWith(
-                                              fontSize: isTight ? 8 : 9,
-                                              color: DraculaPalette.orange,
-                                              fontWeight: FontWeight.w800,
-                                            ),
+                                        style: theme.textTheme.bodySmall?.copyWith(
+                                          fontSize: isTight ? 7 : 8,
+                                          color:
+                                              _WeatherSheetThemePolicy.warmTone(
+                                                context,
+                                              ),
+                                          fontWeight: FontWeight.w800,
+                                        ),
                                         maxLines: 1,
                                       ),
                                     ),
@@ -527,12 +570,14 @@ class WeatherSummaryBottomSheet extends StatelessWidget {
                                       alignment: Alignment.centerLeft,
                                       child: Text(
                                         '↓ $bannerLow',
-                                        style: theme.textTheme.bodySmall
-                                            ?.copyWith(
-                                              fontSize: isTight ? 8 : 9,
-                                              color: DraculaPalette.cyan,
-                                              fontWeight: FontWeight.w800,
-                                            ),
+                                        style: theme.textTheme.bodySmall?.copyWith(
+                                          fontSize: isTight ? 7 : 8,
+                                          color:
+                                              _WeatherSheetThemePolicy.coolTone(
+                                                context,
+                                              ),
+                                          fontWeight: FontWeight.w800,
+                                        ),
                                         maxLines: 1,
                                       ),
                                     ),
@@ -688,6 +733,15 @@ class _ForecastToggleBarPanel extends StatefulWidget {
 class _ForecastToggleBarPanelState extends State<_ForecastToggleBarPanel> {
   bool _showDaily = false;
 
+  String _compactHourLabel(DateTime local, {required bool use24h}) {
+    if (use24h) {
+      return local.hour.toString().padLeft(2, '0');
+    }
+    final hour12 = ((local.hour + 11) % 12) + 1;
+    final suffix = local.hour >= 12 ? 'p' : 'a';
+    return '$hour12$suffix';
+  }
+
   void _toggleMode() {
     setState(() {
       _showDaily = !_showDaily;
@@ -727,11 +781,11 @@ class _ForecastToggleBarPanelState extends State<_ForecastToggleBarPanel> {
         : widget.hourly
               .map(
                 (h) => _TempBarDatum(
-                  label: TimezoneUtils.formatClock(
+                  label: _compactHourLabel(
                     TimezoneUtils.nowInZone(
                       widget.place.timeZoneId,
                       nowUtc: h.timeUtc,
-                    ),
+                    ).local,
                     use24h: widget.place.use24h,
                   ),
                   temperatureC: h.temperatureC,
@@ -763,6 +817,7 @@ class _ForecastToggleBarPanelState extends State<_ForecastToggleBarPanel> {
                         Widget modePill({
                           required String text,
                           required bool selected,
+                          required Color activeColor,
                           required VoidCallback onTap,
                           required Key key,
                         }) {
@@ -778,12 +833,16 @@ class _ForecastToggleBarPanelState extends State<_ForecastToggleBarPanel> {
                                 child: DecoratedBox(
                                   decoration: BoxDecoration(
                                     color: selected
-                                        ? DraculaPalette.purple.withAlpha(72)
+                                        ? _WeatherSheetThemePolicy.magentaTone(
+                                            context,
+                                          ).withAlpha(72)
                                         : cs.surface.withAlpha(10),
                                     borderRadius: BorderRadius.circular(8),
                                     border: Border.all(
                                       color: selected
-                                          ? DraculaPalette.purple.withAlpha(190)
+                                          ? _WeatherSheetThemePolicy.magentaTone(
+                                              context,
+                                            ).withAlpha(190)
                                           : cs.outlineVariant.withAlpha(120),
                                     ),
                                   ),
@@ -797,8 +856,8 @@ class _ForecastToggleBarPanelState extends State<_ForecastToggleBarPanel> {
                                       style: theme.textTheme.bodySmall
                                           ?.copyWith(
                                             color: selected
-                                                ? DraculaPalette.yellow
-                                                : cs.onSurfaceVariant,
+                                                ? activeColor
+                                                : activeColor.withAlpha(180),
                                             fontWeight: selected
                                                 ? FontWeight.w900
                                                 : FontWeight.w700,
@@ -826,6 +885,9 @@ class _ForecastToggleBarPanelState extends State<_ForecastToggleBarPanel> {
                                 daily: false,
                               ),
                               selected: !showDaily,
+                              activeColor: _WeatherSheetThemePolicy.coolTone(
+                                context,
+                              ),
                               onTap: () => _setMode(daily: false),
                             ),
                             const SizedBox(width: 4),
@@ -838,6 +900,9 @@ class _ForecastToggleBarPanelState extends State<_ForecastToggleBarPanel> {
                                 daily: true,
                               ),
                               selected: showDaily,
+                              activeColor: _WeatherSheetThemePolicy.magentaTone(
+                                context,
+                              ),
                               onTap: () => _setMode(daily: true),
                             ),
                           ],
@@ -857,7 +922,9 @@ class _ForecastToggleBarPanelState extends State<_ForecastToggleBarPanel> {
                       'weather_summary_forecast_legend_${widget.place.id}',
                     ),
                     style: theme.textTheme.bodySmall?.copyWith(
-                      color: DraculaPalette.foreground.withAlpha(230),
+                      color: _WeatherSheetThemePolicy.textPrimary(
+                        context,
+                      ).withAlpha(230),
                       fontWeight: FontWeight.w800,
                       fontSize: 11,
                     ),
@@ -881,7 +948,9 @@ class _ForecastToggleBarPanelState extends State<_ForecastToggleBarPanel> {
                           height: 34,
                           child: Center(
                             child: PulseSwapIcon(
-                              color: DraculaPalette.cyan.withAlpha(220),
+                              color: _WeatherSheetThemePolicy.coolTone(
+                                context,
+                              ).withAlpha(220),
                               size: 18,
                             ),
                           ),
@@ -915,6 +984,8 @@ class _ForecastToggleBarPanelState extends State<_ForecastToggleBarPanel> {
                     height: 120,
                     child: _TempBarGraph(
                       bars: bars,
+                      preferMetric: widget.place.unitSystem == 'metric',
+                      dailyMode: showDaily,
                       graphKey: showDaily
                           ? ValueKey('weather_summary_daily_${widget.place.id}')
                           : ValueKey(
@@ -940,12 +1011,27 @@ class _TempBarDatum {
 
 class _TempBarGraph extends StatelessWidget {
   final List<_TempBarDatum> bars;
+  final bool preferMetric;
+  final bool dailyMode;
   final Key graphKey;
 
-  const _TempBarGraph({required this.bars, required this.graphKey});
+  const _TempBarGraph({
+    required this.bars,
+    required this.preferMetric,
+    required this.dailyMode,
+    required this.graphKey,
+  });
 
   String _fLabel(double c) => '${((c * 9 / 5) + 32).round()}°F';
   String _cLabel(double c) => '${c.round()}°C';
+  String _barLabel(double c) {
+    final f = ((c * 9 / 5) + 32).round();
+    final cc = c.round();
+    if (preferMetric) {
+      return '$cc°C';
+    }
+    return '$f°F';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -967,7 +1053,7 @@ class _TempBarGraph extends StatelessWidget {
           child: _AxisLabels(
             top: _cLabel(maxC),
             bottom: _cLabel(minC),
-            color: DraculaPalette.cyan,
+            color: _WeatherSheetThemePolicy.coolTone(context),
           ),
         ),
         Expanded(
@@ -992,25 +1078,68 @@ class _TempBarGraph extends StatelessWidget {
                               ),
                               child: Align(
                                 alignment: Alignment.bottomCenter,
-                                child: DecoratedBox(
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(4),
-                                    gradient: LinearGradient(
-                                      colors: [
-                                        DraculaPalette.purple.withAlpha(220),
-                                        DraculaPalette.pink.withAlpha(220),
-                                      ],
-                                      begin: Alignment.bottomCenter,
-                                      end: Alignment.topCenter,
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.end,
+                                  children: [
+                                    SizedBox(
+                                      width: double.infinity,
+                                      child: FittedBox(
+                                        fit: BoxFit.scaleDown,
+                                        alignment: Alignment.center,
+                                        child: Text(
+                                          _barLabel(item.temperatureC),
+                                          style: theme.textTheme.bodySmall
+                                              ?.copyWith(
+                                                color:
+                                                    _WeatherSheetThemePolicy.textPrimary(
+                                                      context,
+                                                    ).withAlpha(228),
+                                                fontWeight: FontWeight.w800,
+                                                fontSize: 6.5,
+                                              ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          softWrap: false,
+                                          textAlign: TextAlign.center,
+                                        ),
+                                      ),
                                     ),
-                                  ),
-                                  child: SizedBox(
-                                    height:
-                                        12 +
-                                        (((item.temperatureC - minC) / range) *
-                                            64),
-                                    width: double.infinity,
-                                  ),
+                                    const SizedBox(height: 2),
+                                    DecoratedBox(
+                                      decoration: BoxDecoration(
+                                        borderRadius: BorderRadius.circular(4),
+                                        gradient: LinearGradient(
+                                          colors: dailyMode
+                                              ? <Color>[
+                                                  _WeatherSheetThemePolicy.magentaTone(
+                                                    context,
+                                                  ).withAlpha(220),
+                                                  _WeatherSheetThemePolicy.warmTone(
+                                                    context,
+                                                  ).withAlpha(220),
+                                                ]
+                                              : <Color>[
+                                                  _WeatherSheetThemePolicy.coolTone(
+                                                    context,
+                                                  ).withAlpha(220),
+                                                  _WeatherSheetThemePolicy.magentaTone(
+                                                    context,
+                                                  ).withAlpha(210),
+                                                ],
+                                          begin: Alignment.bottomCenter,
+                                          end: Alignment.topCenter,
+                                        ),
+                                      ),
+                                      child: SizedBox(
+                                        height:
+                                            10 +
+                                            (((item.temperatureC - minC) /
+                                                    range) *
+                                                58),
+                                        width: double.infinity,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
                             ),
@@ -1025,16 +1154,20 @@ class _TempBarGraph extends StatelessWidget {
                         Expanded(
                           child: Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 1),
-                            child: Text(
-                              item.label,
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: cs.onSurfaceVariant,
-                                fontWeight: FontWeight.w700,
-                                fontSize: 10,
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              alignment: Alignment.center,
+                              child: Text(
+                                item.label,
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: cs.onSurfaceVariant,
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 8,
+                                ),
+                                textAlign: TextAlign.center,
+                                maxLines: 1,
+                                overflow: TextOverflow.visible,
                               ),
-                              textAlign: TextAlign.center,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
                         ),
@@ -1050,7 +1183,7 @@ class _TempBarGraph extends StatelessWidget {
           child: _AxisLabels(
             top: _fLabel(maxC),
             bottom: _fLabel(minC),
-            color: DraculaPalette.orange,
+            color: _WeatherSheetThemePolicy.warmTone(context),
           ),
         ),
       ],

@@ -9,6 +9,7 @@ import '../../../data/country_currency_map.dart';
 import '../../../models/place.dart';
 import '../../../common/feedback/unitana_toast.dart';
 import '../../../utils/timezone_utils.dart';
+import '../../../theme/dracula_palette.dart';
 import '../models/dashboard_board_item.dart';
 import '../models/dashboard_copy.dart';
 import '../models/dashboard_live_data.dart';
@@ -70,8 +71,10 @@ class DashboardBoard extends StatefulWidget {
   /// otherwise tests (and users) will see duplicate hero widgets.
   final bool includePlacesHero;
   final String? focusActionTileId;
+  final String? focusToolTileId;
   final ValueChanged<String?> onEnteredEditMode;
   final VoidCallback onConsumedFocusTileId;
+  final VoidCallback onConsumedFocusToolTileId;
   const DashboardBoard({
     super.key,
     required this.state,
@@ -82,8 +85,10 @@ class DashboardBoard extends StatefulWidget {
     required this.isEditing,
     this.includePlacesHero = true,
     required this.focusActionTileId,
+    required this.focusToolTileId,
     required this.onEnteredEditMode,
     required this.onConsumedFocusTileId,
+    required this.onConsumedFocusToolTileId,
   });
 
   @override
@@ -94,6 +99,11 @@ class _DashboardBoardState extends State<DashboardBoard>
     with SingleTickerProviderStateMixin {
   String? _lastFocusId;
   bool _pendingShowActions = false;
+  String? _lastFocusToolId;
+  bool _pendingFocusTool = false;
+  final Map<String, GlobalKey> _toolTileKeys = <String, GlobalKey>{};
+  final Set<String> _pulsingToolIds = <String>{};
+  final Map<String, Timer> _pulseTimers = <String, Timer>{};
 
   late final AnimationController _wiggle;
 
@@ -282,6 +292,7 @@ class _DashboardBoardState extends State<DashboardBoard>
       _wiggle.repeat();
     }
     _syncFocus(widget.focusActionTileId);
+    _syncToolFocus(widget.focusToolTileId);
   }
 
   @override
@@ -289,6 +300,9 @@ class _DashboardBoardState extends State<DashboardBoard>
     super.didUpdateWidget(oldWidget);
     if (oldWidget.focusActionTileId != widget.focusActionTileId) {
       _syncFocus(widget.focusActionTileId);
+    }
+    if (oldWidget.focusToolTileId != widget.focusToolTileId) {
+      _syncToolFocus(widget.focusToolTileId);
     }
 
     if (oldWidget.isEditing != widget.isEditing) {
@@ -310,6 +324,71 @@ class _DashboardBoardState extends State<DashboardBoard>
     _pendingShowActions = id != null && id.trim().isNotEmpty;
   }
 
+  void _syncToolFocus(String? toolId) {
+    _lastFocusToolId = toolId;
+    _pendingFocusTool = toolId != null && toolId.trim().isNotEmpty;
+  }
+
+  GlobalKey _toolTileKeyFor(String toolId) {
+    return _toolTileKeys.putIfAbsent(toolId, GlobalKey.new);
+  }
+
+  Future<void> _pulseToolTile(String toolId) async {
+    if (!mounted) return;
+    _pulseTimers.remove(toolId)?.cancel();
+    setState(() {
+      _pulsingToolIds.add(toolId);
+    });
+    _pulseTimers[toolId] = Timer(const Duration(milliseconds: 850), () {
+      if (!mounted) return;
+      setState(() {
+        _pulsingToolIds.remove(toolId);
+      });
+      _pulseTimers.remove(toolId);
+    });
+  }
+
+  Future<void> _focusExistingToolTile(String toolId) async {
+    final targetContext = _toolTileKeyFor(toolId).currentContext;
+    if (targetContext == null) return;
+    await Scrollable.ensureVisible(
+      targetContext,
+      duration: const Duration(milliseconds: 320),
+      curve: Curves.easeOutCubic,
+      alignment: 0.35,
+    );
+    if (!mounted) return;
+    unawaited(_pulseToolTile(toolId));
+  }
+
+  Widget _wrapToolFocusFrame({required String toolId, required Widget child}) {
+    final pulsing = _pulsingToolIds.contains(toolId);
+    return AnimatedContainer(
+      key: _toolTileKeyFor(toolId),
+      duration: const Duration(milliseconds: 180),
+      curve: Curves.easeOut,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: pulsing
+              ? DraculaPalette.cyan.withAlpha(225)
+              : Colors.transparent,
+          width: pulsing ? 2.6 : 0,
+        ),
+        boxShadow: pulsing
+            ? <BoxShadow>[
+                BoxShadow(
+                  color: DraculaPalette.cyan.withAlpha(80),
+                  blurRadius: 16,
+                  spreadRadius: 1,
+                ),
+              ]
+            : const <BoxShadow>[],
+      ),
+      child: child,
+    );
+  }
+
   void _showTransientBanner(String text, {String? bannerKey}) {
     UnitanaToast.showSuccess(
       context,
@@ -320,12 +399,27 @@ class _DashboardBoardState extends State<DashboardBoard>
 
   @override
   void dispose() {
+    for (final timer in _pulseTimers.values) {
+      timer.cancel();
+    }
+    _pulseTimers.clear();
     _wiggle.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    if (_pendingFocusTool && _lastFocusToolId != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        final toolId = _lastFocusToolId;
+        if (toolId == null) return;
+        _pendingFocusTool = false;
+        widget.onConsumedFocusToolTileId();
+        unawaited(_focusExistingToolTile(toolId));
+      });
+    }
+
     if (widget.isEditing && _pendingShowActions && _lastFocusId != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) async {
         if (!mounted) {
@@ -710,6 +804,34 @@ class _DashboardBoardState extends State<DashboardBoard>
       return (plan.tilePrimaryLabel, secondary);
     }
 
+    (String, String) worldTimeMapPreviewLabels({
+      required Place? homePlace,
+      required Place? destinationPlace,
+    }) {
+      if (homePlace == null || destinationPlace == null) {
+        return (tool.defaultPrimary, tool.defaultSecondary);
+      }
+      final nowUtc = DateTime.now().toUtc();
+      final homeNow = TimezoneUtils.nowInZone(
+        homePlace.timeZoneId,
+        nowUtc: nowUtc,
+      );
+      final destinationNow = TimezoneUtils.nowInZone(
+        destinationPlace.timeZoneId,
+        nowUtc: nowUtc,
+      );
+      final homeOffset = homeNow.offsetMinutes / 60.0;
+      final destinationOffset = destinationNow.offsetMinutes / 60.0;
+      final delta = (destinationNow.offsetMinutes - homeNow.offsetMinutes) / 60;
+      String offsetLabel(double hours) =>
+          'UTC${hours >= 0 ? '+' : ''}${hours.toStringAsFixed(1)}';
+      final primary =
+          '${offsetLabel(homeOffset)} • ${offsetLabel(destinationOffset)}';
+      final sign = delta >= 0 ? '+' : '';
+      final secondary = '$sign${delta.toStringAsFixed(1)}h home→destination';
+      return (primary, secondary);
+    }
+
     final isCurrency = tool.id == 'currency_convert';
     final bool currencyLabelsLookBroken =
         isCurrency &&
@@ -730,6 +852,11 @@ class _DashboardBoardState extends State<DashboardBoard>
         ? _weatherSummaryLabels(activePlace: activePlace)
         : tool.id == 'jet_lag_delta'
         ? jetLagPreviewLabels(homePlace: home, destinationPlace: destination)
+        : tool.id == 'world_clock_delta'
+        ? worldTimeMapPreviewLabels(
+            homePlace: home,
+            destinationPlace: destination,
+          )
         : (isCurrency &&
               (latest == null ||
                   currencyLabelsLookBroken ||
@@ -740,6 +867,7 @@ class _DashboardBoardState extends State<DashboardBoard>
     final prefer24h = activePlace?.use24h ?? false;
     final primary = labels.$1;
     final secondary = labels.$2;
+    final brightness = Theme.of(context).brightness;
     final footerLabel = widget.isEditing
         ? ''
         : (isCurrency && widget.liveData.isCurrencyStale)
@@ -756,7 +884,11 @@ class _DashboardBoardState extends State<DashboardBoard>
       leadingIcon: tool.icon,
       accentColor: tool.lensId == null
           ? null
-          : LensAccents.iconTintFor(tool.lensId!),
+          : LensAccents.toolIconTintForBrightness(
+              toolId: tool.id,
+              lensId: tool.lensId,
+              brightness: brightness,
+            ),
       primary: primary,
       secondary: secondary,
       footer: footerLabel,
@@ -817,7 +949,7 @@ class _DashboardBoardState extends State<DashboardBoard>
       //
       // KeyedSubtree is not reliably hit-testable because it does not
       // necessarily introduce its own RenderObject.
-      return tile;
+      return _wrapToolFocusFrame(toolId: tool.id, child: tile);
     }
 
     final payload = _payloadForToolTile(item: item, currentIndex: currentIndex);
@@ -827,7 +959,11 @@ class _DashboardBoardState extends State<DashboardBoard>
       leadingIcon: tool.icon,
       accentColor: tool.lensId == null
           ? null
-          : LensAccents.iconTintFor(tool.lensId!),
+          : LensAccents.toolIconTintForBrightness(
+              toolId: tool.id,
+              lensId: tool.lensId,
+              brightness: brightness,
+            ),
       primary: primary,
       secondary: secondary,
       footer: '',
@@ -907,7 +1043,10 @@ class _DashboardBoardState extends State<DashboardBoard>
       builder: (context, candidates, rejects) => stack,
     );
 
-    return _maybeWiggle(item.id, target);
+    return _wrapToolFocusFrame(
+      toolId: tool.id,
+      child: _maybeWiggle(item.id, target),
+    );
   }
 
   Future<bool> _confirmRemoveTile(BuildContext context, String label) async {
@@ -991,6 +1130,7 @@ class _DashboardBoardState extends State<DashboardBoard>
             '${picked.title} is already on your dashboard.',
             key: ValueKey('toast_duplicate_tool_${picked.id}'),
           );
+          unawaited(_focusExistingToolTile(picked.id));
           return;
         }
         final isDefaultTile = _isDefaultToolTile(item);
@@ -1115,6 +1255,7 @@ class _DashboardBoardState extends State<DashboardBoard>
         '${picked.title} is already on your dashboard.',
         key: ValueKey('toast_duplicate_tool_${picked.id}'),
       );
+      unawaited(_focusExistingToolTile(picked.id));
       return;
     }
 
@@ -1544,10 +1685,12 @@ class _ToolPickerSheetState extends State<ToolPickerSheet> {
             enabled: t.isEnabled,
             leading: Icon(
               t.icon,
-              color: LensAccents.iconTintFor(
-                t.lenses.isEmpty
+              color: LensAccents.toolIconTintForBrightness(
+                toolId: t.toolId,
+                lensId: t.lenses.isEmpty
                     ? ActivityLensId.travelEssentials
                     : t.lenses.first,
+                brightness: theme.brightness,
               ),
             ),
             title: Text(t.label),
@@ -1636,8 +1779,6 @@ class _ToolPickerSheetState extends State<ToolPickerSheet> {
   }) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
-    final accent = LensAccents.iconTintFor(lensId);
-
     final visible = tools.where(_matchesQuery).toList(growable: false);
     if (visible.isEmpty) {
       return <Widget>[
@@ -1660,7 +1801,14 @@ class _ToolPickerSheetState extends State<ToolPickerSheet> {
         ListTile(
           key: Key('toolpicker_tool_${t.toolId}'),
           enabled: t.isEnabled,
-          leading: Icon(t.icon, color: accent),
+          leading: Icon(
+            t.icon,
+            color: LensAccents.toolIconTintForBrightness(
+              toolId: t.toolId,
+              lensId: lensId,
+              brightness: theme.brightness,
+            ),
+          ),
           title: Text(t.label),
           subtitle: t.deferReason == null
               ? null

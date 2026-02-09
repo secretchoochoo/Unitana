@@ -136,6 +136,55 @@ class ToolModalBottomSheet extends StatefulWidget {
   State<ToolModalBottomSheet> createState() => _ToolModalBottomSheetState();
 }
 
+/// Shared color policy for tool sheets across dark/light themes.
+///
+/// Principle:
+/// - Dark mode keeps Dracula semantics.
+/// - Light mode prioritizes readability first (near-black text on light cards),
+///   and uses accents sparingly for emphasis only.
+class _ToolModalThemePolicy {
+  const _ToolModalThemePolicy._();
+
+  static bool isLight(BuildContext context) =>
+      Theme.of(context).brightness == Brightness.light;
+
+  static Color textPrimary(BuildContext context) =>
+      Theme.of(context).colorScheme.onSurface.withAlpha(238);
+
+  static Color textMuted(BuildContext context, {int alpha = 225}) =>
+      Theme.of(context).colorScheme.onSurfaceVariant.withAlpha(alpha);
+
+  static Color panelBg(BuildContext context) => isLight(context)
+      ? Theme.of(context).colorScheme.surfaceContainerHighest.withAlpha(235)
+      : DraculaPalette.currentLine;
+
+  static Color panelBgSoft(BuildContext context) => isLight(context)
+      ? Theme.of(context).colorScheme.surfaceContainerHighest.withAlpha(210)
+      : DraculaPalette.currentLine.withAlpha(180);
+
+  static Color panelBorder(BuildContext context, {int alpha = 170}) =>
+      isLight(context)
+      ? Theme.of(context).colorScheme.outline.withAlpha(205)
+      : DraculaPalette.comment.withAlpha(alpha);
+
+  static Color headingTone(BuildContext context) => isLight(context)
+      ? Theme.of(context).colorScheme.primary.withAlpha(225)
+      : DraculaPalette.purple;
+
+  static Color successTone(BuildContext context) =>
+      isLight(context) ? const Color(0xFF2E7D32) : DraculaPalette.green;
+
+  static Color warningTone(BuildContext context) =>
+      isLight(context) ? const Color(0xFF8A3D12) : DraculaPalette.orange;
+
+  static Color infoTone(BuildContext context) => isLight(context)
+      ? Theme.of(context).colorScheme.primary.withAlpha(225)
+      : DraculaPalette.cyan;
+
+  static Color dangerTone(BuildContext context) =>
+      isLight(context) ? const Color(0xFFB00020) : DraculaPalette.pink;
+}
+
 class _TerminalLine extends StatelessWidget {
   final String prompt;
   final String input;
@@ -153,9 +202,11 @@ class _TerminalLine extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final primaryText = _ToolModalThemePolicy.textPrimary(context);
+    final promptTone = _ToolModalThemePolicy.successTone(context);
     final base = Theme.of(context).textTheme.bodyMedium?.copyWith(
       fontFamily: 'monospace',
-      color: DraculaPalette.foreground,
+      color: primaryText,
       fontWeight: emphasize ? FontWeight.w800 : FontWeight.w600,
     );
 
@@ -166,7 +217,7 @@ class _TerminalLine extends StatelessWidget {
           TextSpan(
             text: prompt,
             style: base?.copyWith(
-              color: DraculaPalette.green,
+              color: promptTone,
               fontWeight: FontWeight.w900,
             ),
           ),
@@ -219,6 +270,9 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
   final TextEditingController _unitQtyBController = TextEditingController();
   final TextEditingController _hydrationExerciseController =
       TextEditingController();
+  final TextEditingController _paceGoalTimeController = TextEditingController(
+    text: '25:00',
+  );
   Timer? _noticeTimer;
   Timer? _timeTicker;
   Timer? _jetLagTipTicker;
@@ -265,6 +319,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
   int _jetLagBedtimeMinutes = 23 * 60;
   int _jetLagWakeMinutes = 7 * 60;
   bool _jetLagOverlapExpanded = false;
+  double _paceGoalDistanceKm = 5.0;
 
   bool get _isMultiUnitTool =>
       widget.tool.canonicalToolId == CanonicalToolId.volume ||
@@ -277,11 +332,16 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
       widget.tool.canonicalToolId == CanonicalToolId.paperSizes ||
       widget.tool.canonicalToolId == CanonicalToolId.mattressSizes ||
       widget.tool.canonicalToolId == CanonicalToolId.cupsGramsEstimates;
+  bool get _isFullMatrixLookupTool =>
+      widget.tool.canonicalToolId == CanonicalToolId.shoeSizes ||
+      widget.tool.canonicalToolId == CanonicalToolId.paperSizes ||
+      widget.tool.canonicalToolId == CanonicalToolId.mattressSizes;
   bool get _isTipHelperTool => widget.tool.id == 'tip_helper';
   bool get _isTaxVatTool => widget.tool.id == 'tax_vat_helper';
   bool get _isUnitPriceTool => widget.tool.id == 'unit_price_helper';
   bool get _isHydrationTool => widget.tool.id == 'hydration';
   bool get _isJetLagDeltaTool => widget.tool.id == 'jet_lag_delta';
+  bool get _isWorldClockMapTool => widget.tool.id == 'world_clock_delta';
   bool get _isTimeTool =>
       widget.tool.canonicalToolId == CanonicalToolId.time ||
       widget.tool.id == 'time';
@@ -502,6 +562,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
     _unitPriceBController.dispose();
     _unitQtyBController.dispose();
     _hydrationExerciseController.dispose();
+    _paceGoalTimeController.dispose();
     _controller.dispose();
     super.dispose();
   }
@@ -589,57 +650,57 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
         return const <_LookupEntry>[
           _LookupEntry(
             keyId: 'shoe_7',
-            label: 'US Men 7',
+            label: '25.0',
             valuesBySystem: <String, String>{
               'US Men': '7',
               'US Women': '8.5',
               'EU': '40',
               'UK': '6',
-              'JP (cm)': '25',
+              'JP (cm)': '25.0 cm',
             },
           ),
           _LookupEntry(
             keyId: 'shoe_8',
-            label: 'US Men 8',
+            label: '26.0',
             valuesBySystem: <String, String>{
               'US Men': '8',
               'US Women': '9.5',
               'EU': '41',
               'UK': '7',
-              'JP (cm)': '26',
+              'JP (cm)': '26.0 cm',
             },
           ),
           _LookupEntry(
             keyId: 'shoe_9',
-            label: 'US Men 9',
+            label: '27.0',
             valuesBySystem: <String, String>{
               'US Men': '9',
               'US Women': '10.5',
               'EU': '42',
               'UK': '8',
-              'JP (cm)': '27',
+              'JP (cm)': '27.0 cm',
             },
           ),
           _LookupEntry(
             keyId: 'shoe_10',
-            label: 'US Men 10',
+            label: '28.0',
             valuesBySystem: <String, String>{
               'US Men': '10',
               'US Women': '11.5',
               'EU': '43',
               'UK': '9',
-              'JP (cm)': '28',
+              'JP (cm)': '28.0 cm',
             },
           ),
           _LookupEntry(
             keyId: 'shoe_11',
-            label: 'US Men 11',
+            label: '29.0',
             valuesBySystem: <String, String>{
               'US Men': '11',
               'US Women': '12.5',
               'EU': '44.5',
               'UK': '10',
-              'JP (cm)': '29',
+              'JP (cm)': '29.0 cm',
             },
           ),
         ];
@@ -649,7 +710,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
             keyId: 'paper_a4',
             label: 'A4',
             valuesBySystem: <String, String>{
-              'ISO': 'A4 (210 x 297 mm)',
+              'ISO': '210 x 297 mm',
               'US': 'Letter (8.5 x 11 in)',
             },
             note: 'Nearest US equivalent.',
@@ -659,7 +720,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
             keyId: 'paper_a3',
             label: 'A3',
             valuesBySystem: <String, String>{
-              'ISO': 'A3 (297 x 420 mm)',
+              'ISO': '297 x 420 mm',
               'US': 'Tabloid (11 x 17 in)',
             },
             note: 'Nearest US equivalent.',
@@ -670,7 +731,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
             label: 'Letter',
             valuesBySystem: <String, String>{
               'ISO': 'A4 (210 x 297 mm)',
-              'US': 'Letter (8.5 x 11 in)',
+              'US': '216 x 279 mm (8.5 x 11 in)',
             },
             note: 'Nearest ISO equivalent.',
             approximate: true,
@@ -680,7 +741,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
             label: 'Legal',
             valuesBySystem: <String, String>{
               'ISO': 'B4 (250 x 353 mm)',
-              'US': 'Legal (8.5 x 14 in)',
+              'US': '216 x 356 mm (8.5 x 14 in)',
             },
             note: 'Nearest ISO equivalent.',
             approximate: true,
@@ -1064,6 +1125,9 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
   }
 
   Widget _buildHydrationBody(BuildContext context, Color accent) {
+    final panelBg = _ToolModalThemePolicy.panelBg(context);
+    final panelBorder = _ToolModalThemePolicy.panelBorder(context);
+    final textMuted = _ToolModalThemePolicy.textMuted(context);
     final weightKg = _parseHydrationWeightKg();
     final exerciseMinutes = _parseHydrationExerciseMinutes();
 
@@ -1159,15 +1223,15 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
           key: ValueKey('tool_hydration_result_${widget.tool.id}'),
           padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
           decoration: BoxDecoration(
-            color: DraculaPalette.currentLine,
+            color: panelBg,
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: DraculaPalette.comment.withAlpha(160)),
+            border: Border.all(color: panelBorder),
           ),
           child: (totalLiters == null || totalOz == null)
               ? Text(
                   'Enter valid weight and exercise minutes.',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: DraculaPalette.comment.withAlpha(230),
+                    color: textMuted,
                     fontWeight: FontWeight.w700,
                   ),
                 )
@@ -1186,7 +1250,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                     Text(
                       'Non-medical estimate for healthy adults. Increase intake during heat/sweat, and follow clinician guidance for medical conditions.',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: DraculaPalette.comment.withAlpha(220),
+                        color: textMuted,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
@@ -1198,6 +1262,9 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
   }
 
   Widget _buildTipHelperBody(BuildContext context, Color accent) {
+    final panelBg = _ToolModalThemePolicy.panelBg(context);
+    final panelBorder = _ToolModalThemePolicy.panelBorder(context);
+    final textMuted = _ToolModalThemePolicy.textMuted(context);
     final amount = _parseTipAmount();
     final tipRaw = amount == null ? null : amount * (_tipPercent / 100.0);
     final totalRaw = amount == null ? null : amount + tipRaw!;
@@ -1249,7 +1316,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
               DashboardCopy.tipSplitLabel(context),
               style: Theme.of(context).textTheme.titleSmall?.copyWith(
                 fontWeight: FontWeight.w800,
-                color: DraculaPalette.purple,
+                color: _ToolModalThemePolicy.headingTone(context),
               ),
             ),
             const Spacer(),
@@ -1304,15 +1371,15 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
           key: ValueKey('tool_tip_result_${widget.tool.id}'),
           padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
           decoration: BoxDecoration(
-            color: DraculaPalette.currentLine,
+            color: panelBg,
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: DraculaPalette.comment.withAlpha(160)),
+            border: Border.all(color: panelBorder),
           ),
           child: amount == null
               ? Text(
                   DashboardCopy.tipInvalidAmount(context),
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: DraculaPalette.comment.withAlpha(230),
+                    color: textMuted,
                     fontWeight: FontWeight.w700,
                   ),
                 )
@@ -1357,7 +1424,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                           ),
                         ),
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: DraculaPalette.comment.withAlpha(220),
+                          color: textMuted,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
@@ -1370,6 +1437,9 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
   }
 
   Widget _buildTaxVatBody(BuildContext context, Color accent) {
+    final panelBg = _ToolModalThemePolicy.panelBg(context);
+    final panelBorder = _ToolModalThemePolicy.panelBorder(context);
+    final textMuted = _ToolModalThemePolicy.textMuted(context);
     final amount = _parseTaxVatAmount();
     final rate = _taxPercent / 100.0;
     final isAddOn = _taxMode == 'add_on';
@@ -1443,15 +1513,15 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
           key: ValueKey('tool_tax_result_${widget.tool.id}'),
           padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
           decoration: BoxDecoration(
-            color: DraculaPalette.currentLine,
+            color: panelBg,
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: DraculaPalette.comment.withAlpha(160)),
+            border: Border.all(color: panelBorder),
           ),
           child: amount == null
               ? Text(
                   DashboardCopy.taxInvalidAmount(context),
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: DraculaPalette.comment.withAlpha(230),
+                    color: textMuted,
                     fontWeight: FontWeight.w700,
                   ),
                 )
@@ -1485,7 +1555,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                     Text(
                       DashboardCopy.taxModeHelp(context, isAddOn: isAddOn),
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: DraculaPalette.comment.withAlpha(220),
+                        color: textMuted,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
@@ -1497,6 +1567,10 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
   }
 
   Widget _buildUnitPriceBody(BuildContext context, Color accent) {
+    final panelBg = _ToolModalThemePolicy.panelBg(context);
+    final panelBgSoft = _ToolModalThemePolicy.panelBgSoft(context);
+    final panelBorder = _ToolModalThemePolicy.panelBorder(context);
+    final textMuted = _ToolModalThemePolicy.textMuted(context);
     final priceA = _parsePositiveText(_unitPriceAController.text);
     final qtyA = _parsePositiveText(_unitQtyAController.text);
     final baseA = (priceA == null || qtyA == null)
@@ -1570,9 +1644,9 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
       return Container(
         padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
         decoration: BoxDecoration(
-          color: DraculaPalette.currentLine.withAlpha(180),
+          color: panelBgSoft,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: DraculaPalette.comment.withAlpha(130)),
+          border: Border.all(color: panelBorder),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1580,7 +1654,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
             Text(
               title,
               style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                color: DraculaPalette.purple,
+                color: _ToolModalThemePolicy.headingTone(context),
                 fontWeight: FontWeight.w800,
               ),
             ),
@@ -1656,6 +1730,22 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
       key: ValueKey('tool_unit_price_scroll_${widget.tool.id}'),
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
       children: [
+        Container(
+          padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+          decoration: BoxDecoration(
+            color: panelBgSoft,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: panelBorder),
+          ),
+          child: Text(
+            DashboardCopy.unitPriceCoach(context),
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: textMuted,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
         productCard(
           title: DashboardCopy.unitPriceProductTitle(context, isA: true),
           priceController: _unitPriceAController,
@@ -1692,15 +1782,15 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
           key: ValueKey('tool_unit_price_result_${widget.tool.id}'),
           padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
           decoration: BoxDecoration(
-            color: DraculaPalette.currentLine,
+            color: panelBg,
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: DraculaPalette.comment.withAlpha(160)),
+            border: Border.all(color: panelBorder),
           ),
           child: perBaseA == null
               ? Text(
                   DashboardCopy.unitPriceInvalidProductA(context),
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: DraculaPalette.comment.withAlpha(230),
+                    color: textMuted,
                     fontWeight: FontWeight.w700,
                   ),
                 )
@@ -1732,7 +1822,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                           'tool_unit_price_compare_result_${widget.tool.id}',
                         ),
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: DraculaPalette.comment.withAlpha(220),
+                          color: textMuted,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
@@ -1792,7 +1882,10 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                 ),
                 title: Text(value),
                 trailing: value == current
-                    ? Icon(Icons.check_rounded, color: DraculaPalette.purple)
+                    ? Icon(
+                        Icons.check_rounded,
+                        color: _ToolModalThemePolicy.headingTone(context),
+                      )
                     : null,
                 onTap: () => Navigator.of(context).pop(value),
               ),
@@ -1827,7 +1920,10 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                 ),
                 title: Text(row.label),
                 trailing: row.keyId == _lookupEntryKey
-                    ? Icon(Icons.check_rounded, color: DraculaPalette.purple)
+                    ? Icon(
+                        Icons.check_rounded,
+                        color: _ToolModalThemePolicy.headingTone(context),
+                      )
                     : null,
                 onTap: () => Navigator.of(context).pop(row.keyId),
               ),
@@ -1929,7 +2025,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                         style: Theme.of(context).textTheme.titleMedium
                             ?.copyWith(
                               fontWeight: FontWeight.w800,
-                              color: DraculaPalette.foreground,
+                              color: _ToolModalThemePolicy.textPrimary(context),
                             ),
                       ),
                     ),
@@ -1961,7 +2057,9 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                           u,
                           style: Theme.of(context).textTheme.titleMedium
                               ?.copyWith(
-                                color: DraculaPalette.foreground,
+                                color: _ToolModalThemePolicy.textPrimary(
+                                  context,
+                                ),
                                 fontWeight: FontWeight.w700,
                               ),
                         ),
@@ -1976,7 +2074,10 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                                     symbol,
                                     style: Theme.of(context).textTheme.bodySmall
                                         ?.copyWith(
-                                          color: DraculaPalette.comment,
+                                          color:
+                                              _ToolModalThemePolicy.textMuted(
+                                                context,
+                                              ),
                                           fontWeight: FontWeight.w700,
                                         ),
                                   );
@@ -1986,7 +2087,9 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                         trailing: (u == current)
                             ? Icon(
                                 Icons.check_rounded,
-                                color: DraculaPalette.purple,
+                                color: _ToolModalThemePolicy.headingTone(
+                                  context,
+                                ),
                               )
                             : null,
                         onTap: () => Navigator.of(context).pop(u),
@@ -2339,6 +2442,300 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
         widget.tool.id == 'time';
   }
 
+  String _toolInputHint(BuildContext context) {
+    if (widget.tool.id == 'pace') {
+      return DashboardCopy.paceInputHint(context);
+    }
+    return DashboardCopy.toolInputHint(context);
+  }
+
+  String? _toolInputCoachCopy(BuildContext context) {
+    if (widget.tool.id == 'pace') {
+      return DashboardCopy.paceInputCoach(context, fromUnit: _fromUnit);
+    }
+    return null;
+  }
+
+  double? _parsePaceMinutesValue(String raw) {
+    final cleaned = raw.trim();
+    if (cleaned.isEmpty) return null;
+    final mmss = RegExp(r'^(\d{1,2}):([0-5]\d)$').firstMatch(cleaned);
+    if (mmss != null) {
+      final min = int.parse(mmss.group(1)!);
+      final sec = int.parse(mmss.group(2)!);
+      return min + (sec / 60.0);
+    }
+    final asDouble = double.tryParse(cleaned);
+    if (asDouble == null || asDouble <= 0) return null;
+    return asDouble;
+  }
+
+  double? _currentPaceMinutes() {
+    final fromInput = _parsePaceMinutesValue(_controller.text);
+    if (fromInput != null) return fromInput;
+    final latest = widget.session.latestFor(widget.tool.id);
+    if (latest == null) return null;
+    return _parsePaceMinutesValue(_stripKnownUnitSuffix(latest.inputLabel));
+  }
+
+  double? _currentPacePerKmMinutes() {
+    if (widget.tool.id != 'pace') return null;
+    final input = _currentPaceMinutes();
+    if (input == null || input <= 0) return null;
+    return _fromUnit == 'min/mi' ? (input / 1.609344) : input;
+  }
+
+  String _formatPace(double minutes) {
+    final whole = minutes.floor();
+    final sec = ((minutes - whole) * 60).round().clamp(0, 59);
+    return '$whole:${sec.toString().padLeft(2, '0')}';
+  }
+
+  String _formatDurationMinutes(double minutes) {
+    final totalSeconds = (minutes * 60).round();
+    final hours = totalSeconds ~/ 3600;
+    final mins = (totalSeconds % 3600) ~/ 60;
+    final secs = totalSeconds % 60;
+    if (hours > 0) {
+      return '$hours:${mins.toString().padLeft(2, '0')}:${secs.toString().padLeft(2, '0')}';
+    }
+    return '${mins.toString().padLeft(2, '0')}:${secs.toString().padLeft(2, '0')}';
+  }
+
+  double? _parseDurationMinutesValue(String raw) {
+    final cleaned = raw.trim();
+    if (cleaned.isEmpty) return null;
+    final hhmmss = RegExp(
+      r'^(\d{1,2}):([0-5]\d):([0-5]\d)$',
+    ).firstMatch(cleaned);
+    if (hhmmss != null) {
+      final hh = int.parse(hhmmss.group(1)!);
+      final mm = int.parse(hhmmss.group(2)!);
+      final ss = int.parse(hhmmss.group(3)!);
+      return (hh * 60) + mm + (ss / 60.0);
+    }
+    final mmss = RegExp(r'^(\d{1,3}):([0-5]\d)$').firstMatch(cleaned);
+    if (mmss != null) {
+      final mm = int.parse(mmss.group(1)!);
+      final ss = int.parse(mmss.group(2)!);
+      return mm + (ss / 60.0);
+    }
+    return null;
+  }
+
+  List<({String label, double minutes})> _goalCheckpointPlan({
+    required double goalDurationMinutes,
+    required double goalDistanceKm,
+  }) {
+    const checkpoints = <double>[0.25, 0.50, 0.75, 1.0];
+    return checkpoints
+        .map((fraction) {
+          final km = goalDistanceKm * fraction;
+          final minutesAtCheckpoint = goalDurationMinutes * fraction;
+          final kmLabel = km >= 10
+              ? km.toStringAsFixed(1)
+              : km.toStringAsFixed(2);
+          return (
+            label: '${(fraction * 100).round()}% • ${kmLabel}km',
+            minutes: minutesAtCheckpoint,
+          );
+        })
+        .toList(growable: false);
+  }
+
+  Widget _buildPaceInsightsCard(BuildContext context, Color accent) {
+    final perKm = _currentPacePerKmMinutes();
+    final panelBg = _ToolModalThemePolicy.panelBg(context);
+    final panelBorder = _ToolModalThemePolicy.panelBorder(context);
+    final textMuted = _ToolModalThemePolicy.textMuted(context);
+    final headingTone = _ToolModalThemePolicy.headingTone(context);
+    if (perKm == null || perKm <= 0) {
+      return const SizedBox.shrink();
+    }
+
+    final kmh = 60 / perKm;
+    final mph = kmh / 1.609344;
+    final perMi = perKm * 1.609344;
+    final goalDuration = _parseDurationMinutesValue(
+      _paceGoalTimeController.text,
+    );
+    final goalPerKm = (goalDuration != null && goalDuration > 0)
+        ? (goalDuration / _paceGoalDistanceKm)
+        : null;
+    final goalPerMi = goalPerKm == null ? null : (goalPerKm * 1.609344);
+    final checkpoints = goalDuration == null
+        ? const <({String label, double minutes})>[]
+        : _goalCheckpointPlan(
+            goalDurationMinutes: goalDuration,
+            goalDistanceKm: _paceGoalDistanceKm,
+          );
+    final raceTargets = <({String label, double km})>[
+      (label: '5K', km: 5.0),
+      (label: '10K', km: 10.0),
+      (label: 'Half', km: 21.0975),
+      (label: 'Marathon', km: 42.195),
+    ];
+
+    return Container(
+      key: const ValueKey('tool_pace_insights_card'),
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
+      decoration: BoxDecoration(
+        color: panelBg,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: panelBorder),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Pace Insights',
+            style: Theme.of(context).textTheme.titleSmall?.copyWith(
+              color: headingTone,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            '${_formatPace(perKm)} min/km • ${_formatPace(perMi)} min/mi',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: accent,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            '${kmh.toStringAsFixed(1)} km/h • ${mph.toStringAsFixed(1)} mph',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: textMuted.withAlpha(236),
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 6,
+            children: [
+              for (final target in raceTargets)
+                DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: panelBg.withAlpha(216),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: panelBorder.withAlpha(170)),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(8, 6, 8, 6),
+                    child: Text(
+                      '${target.label} ${_formatDurationMinutes(perKm * target.km)}',
+                      style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                        color: _ToolModalThemePolicy.textPrimary(context),
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Divider(height: 1, color: panelBorder.withAlpha(150)),
+          const SizedBox(height: 10),
+          Text(
+            'Goal Planner',
+            style: Theme.of(context).textTheme.titleSmall?.copyWith(
+              color: headingTone,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Wrap(
+            spacing: 8,
+            runSpacing: 6,
+            children: [
+              for (final item in const <({String label, double km})>[
+                (label: '5K', km: 5.0),
+                (label: '10K', km: 10.0),
+                (label: 'Half', km: 21.0975),
+                (label: 'Marathon', km: 42.195),
+              ])
+                ChoiceChip(
+                  key: ValueKey('tool_pace_goal_dist_${item.label}'),
+                  label: Text(item.label),
+                  selected: _paceGoalDistanceKm == item.km,
+                  onSelected: (_) {
+                    setState(() {
+                      _paceGoalDistanceKm = item.km;
+                    });
+                  },
+                ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          TextField(
+            key: const ValueKey('tool_pace_goal_input'),
+            controller: _paceGoalTimeController,
+            keyboardType: TextInputType.datetime,
+            decoration: const InputDecoration(
+              hintText: 'Goal time (mm:ss or h:mm:ss)',
+            ),
+            onChanged: (_) => setState(() {}),
+          ),
+          if (goalPerKm != null) ...[
+            const SizedBox(height: 8),
+            Text(
+              'Required pace: ${_formatPace(goalPerKm)} min/km • ${_formatPace(goalPerMi!)} min/mi',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: accent,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const SizedBox(height: 6),
+            SizedBox(
+              height: 90,
+              child: _PaceCheckpointBarChart(
+                checkpoints: checkpoints,
+                accent: accent,
+                textColor: _ToolModalThemePolicy.textPrimary(context),
+              ),
+            ),
+            const SizedBox(height: 6),
+            Wrap(
+              spacing: 8,
+              runSpacing: 6,
+              children: [
+                for (final cp in checkpoints)
+                  DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: panelBg.withAlpha(216),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: panelBorder.withAlpha(160)),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(8, 6, 8, 6),
+                      child: Text(
+                        '${cp.label} ${_formatDurationMinutes(cp.minutes)}',
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                          color: _ToolModalThemePolicy.textPrimary(context),
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ] else ...[
+            const SizedBox(height: 6),
+            Text(
+              'Enter a goal time to see required pace and split checkpoints.',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: textMuted,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
   String _stripKnownUnitSuffix(String label) {
     var working = label.trim();
     // Strip common currency symbol prefixes so currency history entries can
@@ -2413,12 +2810,314 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
     return '$whole.$trimmed';
   }
 
+  String _lookupReferenceLabel(_LookupEntry row) {
+    return switch (widget.tool.canonicalToolId) {
+      CanonicalToolId.shoeSizes => row.valuesBySystem['JP (cm)'] ?? row.label,
+      CanonicalToolId.paperSizes => row.label,
+      CanonicalToolId.mattressSizes => row.label,
+      _ => row.label,
+    };
+  }
+
+  String _lookupReferenceHeader() {
+    return switch (widget.tool.canonicalToolId) {
+      CanonicalToolId.shoeSizes => 'Foot (cm)',
+      CanonicalToolId.paperSizes => 'Size',
+      CanonicalToolId.mattressSizes => 'Class',
+      _ => 'Key',
+    };
+  }
+
+  List<String> _lookupMatrixValueSystems() {
+    final systems = _lookupSystemsForTool();
+    if (widget.tool.canonicalToolId == CanonicalToolId.shoeSizes) {
+      return systems.where((s) => s != 'JP (cm)').toList(growable: false);
+    }
+    return systems;
+  }
+
   Widget _buildLookupBody(BuildContext context, Color accent) {
+    final panelBg = _ToolModalThemePolicy.panelBg(context);
+    final panelBorder = _ToolModalThemePolicy.panelBorder(context);
+    final textPrimary = _ToolModalThemePolicy.textPrimary(context);
+    final textMuted = _ToolModalThemePolicy.textMuted(context);
+    final headingTone = _ToolModalThemePolicy.headingTone(context);
+    final selectedTone = _ToolModalThemePolicy.dangerTone(context);
     final row = _activeLookupEntry();
     final from = _lookupFromSystem;
     final to = _lookupToSystem;
     if (row == null || from == null || to == null) {
       return const SizedBox.shrink();
+    }
+
+    Future<void> copyLookupCell({
+      required String value,
+      required String label,
+    }) async {
+      final copiedLabel = DashboardCopy.copiedNotice(context, label);
+      await Clipboard.setData(ClipboardData(text: value));
+      if (!mounted) return;
+      _showNotice(copiedLabel, UnitanaNoticeKind.info);
+    }
+
+    if (_isFullMatrixLookupTool) {
+      final systems = _lookupMatrixValueSystems();
+      final rows = _lookupEntriesForTool();
+
+      Widget headerCell(
+        String text, {
+        required double width,
+        required Alignment alignment,
+      }) {
+        return SizedBox(
+          width: width,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+            child: Align(
+              alignment: alignment,
+              child: Text(
+                text,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                  color: textMuted,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ),
+          ),
+        );
+      }
+
+      Widget valueCell({
+        required String keySuffix,
+        required String text,
+        required String copyLabel,
+        required String rowKey,
+        required double width,
+        required bool selected,
+        Alignment alignment = Alignment.center,
+      }) {
+        return SizedBox(
+          width: width,
+          child: InkWell(
+            key: ValueKey(
+              'tool_lookup_matrix_cell_${widget.tool.id}_$keySuffix',
+            ),
+            borderRadius: BorderRadius.circular(8),
+            onTap: () async {
+              setState(() {
+                _lookupEntryKey = rowKey;
+              });
+              await copyLookupCell(value: text, label: copyLabel);
+            },
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 9),
+              child: Align(
+                alignment: alignment,
+                child: Text(
+                  text,
+                  textAlign: alignment == Alignment.centerLeft
+                      ? TextAlign.left
+                      : TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: textPrimary,
+                    fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      }
+
+      return Padding(
+        key: ValueKey('tool_lookup_scroll_${widget.tool.id}'),
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              DashboardCopy.lookupSizeMatrix(context),
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w800,
+                color: headingTone,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              DashboardCopy.lookupMatrixHelp(context),
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: textMuted,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Expanded(
+              child: Container(
+                key: ValueKey('tool_lookup_matrix_${widget.tool.id}'),
+                decoration: BoxDecoration(
+                  color: panelBg,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: panelBorder),
+                ),
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    const sizeColWidth = 116.0;
+                    final valueColWidth = systems.length >= 4 ? 108.0 : 120.0;
+                    final tableWidth =
+                        sizeColWidth + (systems.length * valueColWidth);
+                    final canFitWithoutHorizontal =
+                        systems.length <= 2 &&
+                        tableWidth <= constraints.maxWidth + 4;
+                    final fullWidth = canFitWithoutHorizontal
+                        ? constraints.maxWidth
+                        : tableWidth;
+
+                    Widget table = SizedBox(
+                      width: fullWidth,
+                      child: Column(
+                        children: [
+                          Row(
+                            children: [
+                              headerCell(
+                                _lookupReferenceHeader(),
+                                width: canFitWithoutHorizontal
+                                    ? sizeColWidth + 12
+                                    : sizeColWidth,
+                                alignment: Alignment.centerLeft,
+                              ),
+                              for (final system in systems)
+                                headerCell(
+                                  system,
+                                  width: canFitWithoutHorizontal
+                                      ? (fullWidth - (sizeColWidth + 12)) /
+                                            systems.length
+                                      : valueColWidth,
+                                  alignment: Alignment.center,
+                                ),
+                            ],
+                          ),
+                          Divider(height: 1, color: textMuted.withAlpha(90)),
+                          Expanded(
+                            child: ListView.builder(
+                              itemCount: rows.length,
+                              itemBuilder: (context, i) {
+                                final entry = rows[i];
+                                final selected = entry.keyId == _lookupEntryKey;
+                                final adaptiveValueWidth =
+                                    canFitWithoutHorizontal
+                                    ? (fullWidth - (sizeColWidth + 12)) /
+                                          systems.length
+                                    : valueColWidth;
+                                final adaptiveSizeWidth =
+                                    canFitWithoutHorizontal
+                                    ? sizeColWidth + 12
+                                    : sizeColWidth;
+                                return Column(
+                                  children: [
+                                    Container(
+                                      key: ValueKey(
+                                        'tool_lookup_matrix_row_${widget.tool.id}_${entry.keyId}',
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: selected
+                                            ? accent.withAlpha(36)
+                                            : Colors.transparent,
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          SizedBox(
+                                            width: adaptiveSizeWidth,
+                                            child: InkWell(
+                                              key: ValueKey(
+                                                'tool_lookup_matrix_size_${widget.tool.id}_${entry.keyId}',
+                                              ),
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
+                                              onTap: () {
+                                                setState(() {
+                                                  _lookupEntryKey = entry.keyId;
+                                                });
+                                              },
+                                              child: Padding(
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                      horizontal: 8,
+                                                      vertical: 9,
+                                                    ),
+                                                child: Align(
+                                                  alignment:
+                                                      Alignment.centerLeft,
+                                                  child: Text(
+                                                    _lookupReferenceLabel(
+                                                      entry,
+                                                    ),
+                                                    maxLines: 1,
+                                                    overflow:
+                                                        TextOverflow.ellipsis,
+                                                    style: Theme.of(context)
+                                                        .textTheme
+                                                        .bodyMedium
+                                                        ?.copyWith(
+                                                          color: selected
+                                                              ? selectedTone
+                                                              : textPrimary,
+                                                          fontWeight: selected
+                                                              ? FontWeight.w800
+                                                              : FontWeight.w700,
+                                                        ),
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                          for (final system in systems)
+                                            valueCell(
+                                              keySuffix:
+                                                  '${entry.keyId}_${_sanitizeUnitKey(system)}',
+                                              text: _lookupValue(
+                                                row: entry,
+                                                system: system,
+                                              ),
+                                              copyLabel: '$system value',
+                                              rowKey: entry.keyId,
+                                              width: adaptiveValueWidth,
+                                              selected: selected,
+                                            ),
+                                        ],
+                                      ),
+                                    ),
+                                    if (i != rows.length - 1)
+                                      Divider(
+                                        height: 1,
+                                        color: textMuted.withAlpha(70),
+                                      ),
+                                  ],
+                                );
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+
+                    if (!canFitWithoutHorizontal) {
+                      table = SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: table,
+                      );
+                    }
+                    return table;
+                  },
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
     }
 
     final fromValue = _lookupValue(row: row, system: from);
@@ -2430,16 +3129,6 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
       row,
       if (idx >= 0 && idx < rows.length - 1) rows[idx + 1],
     ];
-
-    Future<void> copyLookupCell({
-      required String value,
-      required String label,
-    }) async {
-      final copiedLabel = DashboardCopy.copiedNotice(context, label);
-      await Clipboard.setData(ClipboardData(text: value));
-      if (!mounted) return;
-      _showNotice(copiedLabel, UnitanaNoticeKind.info);
-    }
 
     Widget matrixHeaderCell(String text, {required Alignment alignment}) {
       return Expanded(
@@ -2453,7 +3142,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                   ? TextAlign.left
                   : TextAlign.center,
               style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                color: DraculaPalette.comment.withAlpha(230),
+                color: textMuted,
                 fontWeight: FontWeight.w800,
               ),
             ),
@@ -2486,7 +3175,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: DraculaPalette.foreground,
+                  color: textPrimary,
                   fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
                 ),
               ),
@@ -2555,9 +3244,9 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
           key: ValueKey('tool_lookup_result_${widget.tool.id}'),
           padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
           decoration: BoxDecoration(
-            color: DraculaPalette.currentLine,
+            color: panelBg,
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: DraculaPalette.comment.withAlpha(160)),
+            border: Border.all(color: panelBorder),
           ),
           child: _TerminalLine(
             prompt: '>',
@@ -2574,7 +3263,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                 ? DashboardCopy.lookupApproximate(context, row.note!)
                 : row.note!,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: DraculaPalette.comment.withAlpha(230),
+              color: textMuted,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -2585,14 +3274,14 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
             DashboardCopy.lookupSizeMatrix(context),
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
               fontWeight: FontWeight.w800,
-              color: DraculaPalette.purple,
+              color: headingTone,
             ),
           ),
           const SizedBox(height: 2),
           Text(
             DashboardCopy.lookupMatrixHelp(context),
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: DraculaPalette.comment.withAlpha(230),
+              color: textMuted,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -2600,9 +3289,9 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
           Container(
             key: ValueKey('tool_lookup_matrix_${widget.tool.id}'),
             decoration: BoxDecoration(
-              color: DraculaPalette.currentLine,
+              color: panelBg,
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: DraculaPalette.comment.withAlpha(160)),
+              border: Border.all(color: panelBorder),
             ),
             child: Column(
               children: [
@@ -2613,7 +3302,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                     matrixHeaderCell(to, alignment: Alignment.center),
                   ],
                 ),
-                Divider(height: 1, color: DraculaPalette.comment.withAlpha(90)),
+                Divider(height: 1, color: textMuted.withAlpha(90)),
                 for (var i = 0; i < proximityRows.length; i++) ...[
                   Builder(
                     builder: (context) {
@@ -2665,8 +3354,8 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                                           .bodyMedium
                                           ?.copyWith(
                                             color: isSelected
-                                                ? DraculaPalette.pink
-                                                : DraculaPalette.foreground,
+                                                ? selectedTone
+                                                : textPrimary,
                                             fontWeight: isSelected
                                                 ? FontWeight.w800
                                                 : FontWeight.w700,
@@ -2694,10 +3383,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                     },
                   ),
                   if (i != proximityRows.length - 1)
-                    Divider(
-                      height: 1,
-                      color: DraculaPalette.comment.withAlpha(70),
-                    ),
+                    Divider(height: 1, color: textMuted.withAlpha(70)),
                 ],
               ],
             ),
@@ -3149,8 +3835,8 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                                 DashboardCopy.timePickerSearching(context),
                                 style: Theme.of(context).textTheme.bodySmall
                                     ?.copyWith(
-                                      color: DraculaPalette.comment.withAlpha(
-                                        220,
+                                      color: _ToolModalThemePolicy.textMuted(
+                                        context,
                                       ),
                                       fontWeight: FontWeight.w700,
                                     ),
@@ -3235,8 +3921,9 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                                 ),
                                 style: Theme.of(context).textTheme.labelLarge
                                     ?.copyWith(
-                                      color: DraculaPalette.comment.withAlpha(
-                                        232,
+                                      color: _ToolModalThemePolicy.textMuted(
+                                        context,
+                                        alpha: 232,
                                       ),
                                       fontWeight: FontWeight.w700,
                                     ),
@@ -3272,8 +3959,10 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                                     trailing: isSelected
                                         ? Icon(
                                             Icons.check_rounded,
-                                            color: DraculaPalette.purple
-                                                .withAlpha(238),
+                                            color:
+                                                _ToolModalThemePolicy.headingTone(
+                                                  context,
+                                                ).withAlpha(238),
                                           )
                                         : null,
                                     onTap: () => Navigator.of(context).pop((
@@ -3300,8 +3989,8 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                                   ),
                                   style: Theme.of(context).textTheme.bodySmall
                                       ?.copyWith(
-                                        color: DraculaPalette.comment.withAlpha(
-                                          220,
+                                        color: _ToolModalThemePolicy.textMuted(
+                                          context,
                                         ),
                                         fontWeight: FontWeight.w700,
                                       ),
@@ -3322,8 +4011,9 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                                   ),
                                   style: Theme.of(context).textTheme.labelLarge
                                       ?.copyWith(
-                                        color: DraculaPalette.comment.withAlpha(
-                                          232,
+                                        color: _ToolModalThemePolicy.textMuted(
+                                          context,
+                                          alpha: 232,
                                         ),
                                         fontWeight: FontWeight.w700,
                                       ),
@@ -3347,8 +4037,10 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                                       trailing: isSelected
                                           ? Icon(
                                               Icons.check_rounded,
-                                              color: DraculaPalette.purple
-                                                  .withAlpha(238),
+                                              color:
+                                                  _ToolModalThemePolicy.headingTone(
+                                                    context,
+                                                  ).withAlpha(238),
                                             )
                                           : null,
                                       onTap: () => Navigator.of(context).pop((
@@ -3417,6 +4109,14 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
   }
 
   Widget _buildTimeToolBody(BuildContext context, Color accent) {
+    final panelBg = _ToolModalThemePolicy.panelBg(context);
+    final panelBorder = _ToolModalThemePolicy.panelBorder(context);
+    final textPrimary = _ToolModalThemePolicy.textPrimary(context);
+    final textMuted = _ToolModalThemePolicy.textMuted(context);
+    final headingTone = _ToolModalThemePolicy.headingTone(context);
+    final infoTone = _ToolModalThemePolicy.infoTone(context);
+    final warningTone = _ToolModalThemePolicy.warningTone(context);
+
     final options = _timeZoneOptions();
     if (options.isEmpty) {
       return const SizedBox.shrink();
@@ -3578,14 +4278,14 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
               TextSpan(
                 text: breakValueLine ? '$label\n' : '$label ',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: labelColor ?? DraculaPalette.comment.withAlpha(222),
+                  color: labelColor ?? textMuted.withAlpha(222),
                   fontWeight: FontWeight.w800,
                 ),
               ),
               TextSpan(
                 text: value,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: valueColor ?? DraculaPalette.foreground.withAlpha(238),
+                  color: valueColor ?? textPrimary,
                   fontWeight: FontWeight.w700,
                   fontStyle: italicValue ? FontStyle.italic : FontStyle.normal,
                 ),
@@ -3599,9 +4299,9 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
         key: const ValueKey('tool_time_now_card'),
         padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
         decoration: BoxDecoration(
-          color: DraculaPalette.currentLine,
+          color: panelBg,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: DraculaPalette.cyan.withAlpha(120)),
+          border: Border.all(color: panelBorder),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -3610,7 +4310,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
               factsTitle,
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.w800,
-                color: DraculaPalette.cyan,
+                color: infoTone,
               ),
             ),
             if (showDualAnalogClocks) ...[
@@ -3625,7 +4325,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                       flagPrefix: fromPrefix,
                       localTime: fromNow.local,
                       digitalHud: fromDigitalHud,
-                      accentColor: DraculaPalette.cyan.withAlpha(232),
+                      accentColor: infoTone.withAlpha(232),
                     ),
                   ),
                   const SizedBox(width: 10),
@@ -3636,7 +4336,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                       flagPrefix: toPrefix,
                       localTime: toNow.local,
                       digitalHud: toDigitalHud,
-                      accentColor: DraculaPalette.orange.withAlpha(232),
+                      accentColor: warningTone.withAlpha(232),
                     ),
                   ),
                 ],
@@ -3688,7 +4388,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                 label: DashboardCopy.timeFactsOffsetLabel(context),
                 value:
                     '$toOffsetLabel vs $fromOffsetLabel: $deltaMetricLabel · $directionCompact',
-                valueColor: DraculaPalette.foreground.withAlpha(240),
+                valueColor: textPrimary,
                 breakValueLine: true,
               )
             else
@@ -3701,8 +4401,8 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
               factsMetaLine(
                 label: DashboardCopy.timeFactsDateLabel(context),
                 value: dateImpactCompact,
-                labelColor: DraculaPalette.comment.withAlpha(220),
-                valueColor: DraculaPalette.foreground.withAlpha(240),
+                labelColor: textMuted,
+                valueColor: textPrimary,
               ),
               if (flightEstimate != null) ...[
                 const SizedBox(height: 4),
@@ -3712,8 +4412,8 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                     'Estimated flight time: ',
                     '',
                   ),
-                  labelColor: DraculaPalette.cyan.withAlpha(220),
-                  valueColor: DraculaPalette.cyan.withAlpha(236),
+                  labelColor: infoTone.withAlpha(220),
+                  valueColor: infoTone.withAlpha(236),
                   italicValue: true,
                 ),
               ],
@@ -3760,28 +4460,28 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
             TextSpan(
               text: DashboardCopy.jetLagSleepPrefix(context),
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: DraculaPalette.comment.withAlpha(236),
+                color: textMuted.withAlpha(236),
                 fontWeight: FontWeight.w700,
               ),
             ),
             TextSpan(
               text: sleepValue,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: DraculaPalette.foreground.withAlpha(240),
+                color: textPrimary.withAlpha(240),
                 fontWeight: FontWeight.w700,
               ),
             ),
             TextSpan(
               text: DashboardCopy.jetLagWakePrefix(context),
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: DraculaPalette.comment.withAlpha(236),
+                color: textMuted.withAlpha(236),
                 fontWeight: FontWeight.w700,
               ),
             ),
             TextSpan(
               text: wakeValue,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: DraculaPalette.foreground.withAlpha(240),
+                color: textPrimary.withAlpha(240),
                 fontWeight: FontWeight.w700,
               ),
             ),
@@ -3828,14 +4528,14 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
               TextSpan(
                 text: '$label ',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: labelColor ?? DraculaPalette.orange.withAlpha(220),
+                  color: labelColor ?? warningTone.withAlpha(220),
                   fontWeight: FontWeight.w800,
                 ),
               ),
               TextSpan(
                 text: value,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: valueColor ?? DraculaPalette.foreground.withAlpha(238),
+                  color: valueColor ?? textPrimary,
                   fontWeight: FontWeight.w700,
                   fontStyle: italicValue ? FontStyle.italic : FontStyle.normal,
                 ),
@@ -3848,18 +4548,18 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
       InlineSpan styledCallWindowLine(String line) {
         final baseStyle = Theme.of(context).textTheme.bodySmall?.copyWith(
           fontWeight: FontWeight.w700,
-          color: DraculaPalette.foreground.withAlpha(235),
+          color: textPrimary.withAlpha(235),
         );
         final toCityStyle = baseStyle?.copyWith(
-          color: DraculaPalette.orange.withAlpha(242),
+          color: warningTone.withAlpha(242),
           fontWeight: FontWeight.w800,
         );
         final fromCityStyle = baseStyle?.copyWith(
-          color: DraculaPalette.cyan.withAlpha(238),
+          color: infoTone.withAlpha(238),
           fontWeight: FontWeight.w800,
         );
         final timeStyle = baseStyle?.copyWith(
-          color: DraculaPalette.foreground.withAlpha(248),
+          color: textPrimary.withAlpha(248),
           fontWeight: FontWeight.w900,
         );
 
@@ -3931,9 +4631,9 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
         key: const ValueKey('tool_time_planner_card'),
         padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
         decoration: BoxDecoration(
-          color: DraculaPalette.currentLine,
+          color: panelBg,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: DraculaPalette.orange.withAlpha(150)),
+          border: Border.all(color: panelBorder),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -3942,7 +4642,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
               DashboardCopy.jetLagPlanTitle(context),
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.w900,
-                color: DraculaPalette.orange,
+                color: warningTone,
               ),
             ),
             const SizedBox(height: 8),
@@ -4023,7 +4723,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                   TextSpan(
                     text: DashboardCopy.jetLagTonightTargetLabel(context),
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: DraculaPalette.orange.withAlpha(218),
+                      color: warningTone.withAlpha(218),
                       fontWeight: FontWeight.w800,
                     ),
                   ),
@@ -4046,7 +4746,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                     TextSpan(
                       text: DashboardCopy.jetLagBaselineLabel(context),
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: DraculaPalette.orange.withAlpha(218),
+                        color: warningTone.withAlpha(218),
                         fontWeight: FontWeight.w800,
                       ),
                     ),
@@ -4062,7 +4762,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
             Text(
               '💡 ${DashboardCopy.quickTipsTitle(context)}',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: DraculaPalette.orange,
+                color: warningTone,
                 fontWeight: FontWeight.w800,
               ),
             ),
@@ -4082,7 +4782,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                     tipText,
                     key: ValueKey('tool_jetlag_tip_text_$tipIndex'),
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: DraculaPalette.comment.withAlpha(236),
+                      color: textMuted.withAlpha(236),
                       fontWeight: FontWeight.w700,
                     ),
                   ),
@@ -4094,7 +4794,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
               Text(
                 '📞 ${DashboardCopy.callWindowsTitle(context)}',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: DraculaPalette.orange,
+                  color: warningTone,
                   fontWeight: FontWeight.w800,
                 ),
               ),
@@ -4125,7 +4825,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                       DashboardCopy.overlapIntro(context),
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         fontWeight: FontWeight.w700,
-                        color: DraculaPalette.comment.withAlpha(232),
+                        color: textMuted.withAlpha(232),
                         fontStyle: FontStyle.italic,
                       ),
                     ),
@@ -4159,15 +4859,74 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
       );
     }
 
+    Widget buildWorldTimeMapCard() {
+      String cityFromLabel(String raw, String fallback) {
+        final cleaned = raw
+            .replaceFirst(RegExp(r'^\s*(Home|Destination)\s*·\s*'), '')
+            .trim();
+        final comma = cleaned.indexOf(',');
+        if (comma <= 0) return cleaned.isEmpty ? fallback : cleaned;
+        final city = cleaned.substring(0, comma).trim();
+        return city.isEmpty ? fallback : city;
+      }
+
+      final fromCity = cityFromLabel(fromDisplayLabel, labelFor(fromId));
+      final toCity = cityFromLabel(toDisplayLabel, labelFor(toId));
+      final fromOffsetHours = fromNow.offsetMinutes / 60.0;
+      final toOffsetHours = toNow.offsetMinutes / 60.0;
+      final deltaHours = ((toNow.offsetMinutes - fromNow.offsetMinutes) / 60.0)
+          .toStringAsFixed(1);
+      final sameZone = fromNow.offsetMinutes == toNow.offsetMinutes;
+
+      return Container(
+        key: const ValueKey('tool_time_world_map_card'),
+        padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
+        decoration: BoxDecoration(
+          color: panelBg,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: panelBorder),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'World Time Zones',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w900,
+                color: headingTone,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              sameZone
+                  ? '$fromCity and $toCity are in the same UTC band right now.'
+                  : '$toCity is ${deltaHours.startsWith('-') ? '' : '+'}$deltaHours hours from $fromCity.',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: textMuted,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 8),
+            _WorldTimeZoneBandMap(
+              fromCity: fromCity,
+              toCity: toCity,
+              fromOffsetHours: fromOffsetHours,
+              toOffsetHours: toOffsetHours,
+            ),
+          ],
+        ),
+      );
+    }
+
     return ListView(
       key: const ValueKey('tool_time_scroll'),
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
       children: [
         Container(
           decoration: BoxDecoration(
-            color: DraculaPalette.currentLine,
+            color: panelBg,
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: DraculaPalette.comment.withAlpha(160)),
+            border: Border.all(color: panelBorder),
           ),
           child: Column(
             children: [
@@ -4184,7 +4943,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                 trailing: const Icon(Icons.arrow_drop_down_rounded),
                 onTap: () => _pickTimeZone(isFrom: true),
               ),
-              Divider(color: DraculaPalette.comment.withAlpha(120), height: 1),
+              Divider(color: textMuted.withAlpha(120), height: 1),
               ListTile(
                 key: const ValueKey('tool_time_to_zone'),
                 dense: true,
@@ -4215,9 +4974,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                           minimumSize: const Size(0, 34),
                           padding: const EdgeInsets.symmetric(horizontal: 12),
                           visualDensity: VisualDensity.compact,
-                          side: BorderSide(
-                            color: DraculaPalette.comment.withAlpha(160),
-                          ),
+                          side: BorderSide(color: panelBorder),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
@@ -4260,16 +5017,21 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
           const SizedBox(height: 10),
           buildJetLagPlannerCard(),
         ],
-        if (!_isJetLagDeltaTool) buildCurrentClocksCard(),
+        if (!_isJetLagDeltaTool && !_isWorldClockMapTool)
+          buildCurrentClocksCard(),
+        if (_isWorldClockMapTool) ...[
+          const SizedBox(height: 10),
+          buildWorldTimeMapCard(),
+        ],
         if (_isTimeZoneConverterTool) ...[
           const SizedBox(height: 10),
           Container(
             key: const ValueKey('tool_time_converter_card'),
             padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
             decoration: BoxDecoration(
-              color: DraculaPalette.currentLine,
+              color: panelBg,
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: DraculaPalette.comment.withAlpha(160)),
+              border: Border.all(color: panelBorder),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -4278,7 +5040,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                   DashboardCopy.convertLocalTimeTitle(context),
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.w800,
-                    color: DraculaPalette.purple,
+                    color: headingTone,
                   ),
                 ),
                 const SizedBox(height: 6),
@@ -4288,7 +5050,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                     fromDisplayLabel,
                   ),
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: DraculaPalette.comment.withAlpha(220),
+                    color: textMuted,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
@@ -4332,7 +5094,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                   DashboardCopy.historyTitle(context),
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.w800,
-                    color: DraculaPalette.purple,
+                    color: headingTone,
                   ),
                 ),
                 OutlinedButton(
@@ -4359,9 +5121,9 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
           Container(
             key: const ValueKey('tool_time_history_container'),
             decoration: BoxDecoration(
-              color: DraculaPalette.currentLine,
+              color: panelBg,
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: DraculaPalette.comment.withAlpha(160)),
+              border: Border.all(color: panelBorder),
             ),
             child: timeConverterHistory.isEmpty
                 ? const Padding(
@@ -4385,9 +5147,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                               .toIso8601String()
                               .substring(11, 16),
                           style: Theme.of(context).textTheme.labelSmall
-                              ?.copyWith(
-                                color: DraculaPalette.comment.withAlpha(200),
-                              ),
+                              ?.copyWith(color: textMuted.withAlpha(200)),
                         ),
                       );
                     },
@@ -4411,20 +5171,20 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
       if (widget.currencyShouldRetryNow) {
         return (
           DashboardCopy.currencyStaleRetryNow(context, ageLabel),
-          DraculaPalette.orange,
+          _ToolModalThemePolicy.warningTone(context),
           true,
         );
       }
       return (
         DashboardCopy.currencyStaleRetrySoon(context, ageLabel),
-        DraculaPalette.comment,
+        _ToolModalThemePolicy.textMuted(context),
         false,
       );
     }
 
     return (
       DashboardCopy.currencyUsingCachedRates(context),
-      DraculaPalette.orange,
+      _ToolModalThemePolicy.warningTone(context),
       false,
     );
   }
@@ -4436,11 +5196,19 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
       builder: (context, _) {
         // Some tools may not have a lensId (legacy or internal tools). Fall back
         // to the default accent mapping rather than failing compilation.
-        final accent = LensAccents.iconTintFor(widget.tool.lensId ?? '');
+        final accent = LensAccents.toolIconTintForBrightness(
+          toolId: widget.tool.id,
+          lensId: widget.tool.lensId,
+          brightness: Theme.of(context).brightness,
+        );
         final viewInsets = MediaQuery.of(context).viewInsets;
         final history = widget.session.historyFor(widget.tool.id);
         final numericPolicy = ToolNumericPolicies.forToolId(widget.tool.id);
         final currencyStatus = _currencyStatusBanner();
+        final textPrimary = _ToolModalThemePolicy.textPrimary(context);
+        final textMuted = _ToolModalThemePolicy.textMuted(context);
+        final panelBg = _ToolModalThemePolicy.panelBg(context);
+        final panelBorder = _ToolModalThemePolicy.panelBorder(context);
 
         return Padding(
           padding: EdgeInsets.only(bottom: viewInsets.bottom),
@@ -4481,8 +5249,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                                             .merge(
                                               GoogleFonts.robotoSlab(
                                                 fontWeight: FontWeight.w800,
-                                                color:
-                                                    DraculaPalette.foreground,
+                                                color: textPrimary,
                                               ),
                                             ),
                                   ),
@@ -4501,9 +5268,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                                 horizontal: 10,
                               ),
                               visualDensity: VisualDensity.compact,
-                              side: BorderSide(
-                                color: DraculaPalette.comment.withAlpha(160),
-                              ),
+                              side: BorderSide(color: panelBorder),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12),
                               ),
@@ -4512,7 +5277,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                             child: Icon(
                               Icons.close_rounded,
                               size: 18,
-                              color: DraculaPalette.foreground.withAlpha(220),
+                              color: textPrimary.withAlpha(220),
                             ),
                           ),
                         ),
@@ -4545,7 +5310,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                       child: DecoratedBox(
                         key: ValueKey('tool_currency_status_${widget.tool.id}'),
                         decoration: BoxDecoration(
-                          color: DraculaPalette.currentLine,
+                          color: panelBg,
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
                             color: currencyStatus.$2.withAlpha(170),
@@ -4643,6 +5408,9 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                                   // below the editor to keep the layout green.
                                   final isNarrow = constraints.maxWidth <= 340;
 
+                                  final helperText = _toolInputCoachCopy(
+                                    context,
+                                  );
                                   final inputBlock = Column(
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
@@ -4652,9 +5420,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                                         style: Theme.of(context)
                                             .textTheme
                                             .labelLarge
-                                            ?.copyWith(
-                                              color: DraculaPalette.comment,
-                                            ),
+                                            ?.copyWith(color: textMuted),
                                       ),
                                       const SizedBox(height: 6),
                                       TextField(
@@ -4678,12 +5444,23 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                                                 ),
                                               ],
                                         decoration: InputDecoration(
-                                          hintText: DashboardCopy.toolInputHint(
-                                            context,
-                                          ),
+                                          hintText: _toolInputHint(context),
                                         ),
                                         onSubmitted: (_) => _runConversion(),
                                       ),
+                                      if (helperText != null) ...[
+                                        const SizedBox(height: 6),
+                                        Text(
+                                          helperText,
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .bodySmall
+                                              ?.copyWith(
+                                                color: textMuted,
+                                                fontWeight: FontWeight.w700,
+                                              ),
+                                        ),
+                                      ],
                                       const SizedBox(height: 8),
                                       LayoutBuilder(
                                         builder: (context, _) {
@@ -4717,12 +5494,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                                                               VisualDensity
                                                                   .compact,
                                                           side: BorderSide(
-                                                            color:
-                                                                DraculaPalette
-                                                                    .comment
-                                                                    .withAlpha(
-                                                                      160,
-                                                                    ),
+                                                            color: panelBorder,
                                                           ),
                                                           shape: RoundedRectangleBorder(
                                                             borderRadius:
@@ -4797,12 +5569,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                                                               VisualDensity
                                                                   .compact,
                                                           side: BorderSide(
-                                                            color:
-                                                                DraculaPalette
-                                                                    .comment
-                                                                    .withAlpha(
-                                                                      160,
-                                                                    ),
+                                                            color: panelBorder,
                                                           ),
                                                           shape: RoundedRectangleBorder(
                                                             borderRadius:
@@ -4877,8 +5644,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                                                 visualDensity:
                                                     VisualDensity.compact,
                                                 side: BorderSide(
-                                                  color: DraculaPalette.comment
-                                                      .withAlpha(160),
+                                                  color: panelBorder,
                                                 ),
                                                 shape: RoundedRectangleBorder(
                                                   borderRadius:
@@ -4941,8 +5707,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                                                 visualDensity:
                                                     VisualDensity.compact,
                                                 side: BorderSide(
-                                                  color: DraculaPalette.comment
-                                                      .withAlpha(160),
+                                                  color: panelBorder,
                                                 ),
                                                 shape: RoundedRectangleBorder(
                                                   borderRadius:
@@ -5119,6 +5884,10 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                                 lensId: widget.tool.lensId,
                                 line: _resultLine,
                               ),
+                              if (widget.tool.id == 'pace') ...[
+                                const SizedBox(height: 10),
+                                _buildPaceInsightsCard(context, accent),
+                              ],
 
                               const SizedBox(height: 12),
                               const Divider(height: 1),
@@ -5138,7 +5907,10 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                                           .titleMedium
                                           ?.copyWith(
                                             fontWeight: FontWeight.w800,
-                                            color: DraculaPalette.purple,
+                                            color:
+                                                _ToolModalThemePolicy.headingTone(
+                                                  context,
+                                                ),
                                           ),
                                     ),
                                     Text(
@@ -5148,8 +5920,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                                           .labelMedium
                                           ?.copyWith(
                                             fontStyle: FontStyle.italic,
-                                            color: DraculaPalette.comment
-                                                .withAlpha(220),
+                                            color: textMuted,
                                           ),
                                     ),
                                   ],
@@ -5164,13 +5935,9 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                                 ),
                                 child: Container(
                                   decoration: BoxDecoration(
-                                    color: DraculaPalette.currentLine,
+                                    color: panelBg,
                                     borderRadius: BorderRadius.circular(14),
-                                    border: Border.all(
-                                      color: DraculaPalette.comment.withAlpha(
-                                        160,
-                                      ),
-                                    ),
+                                    border: Border.all(color: panelBorder),
                                   ),
                                   child: history.isEmpty
                                       ? const _EmptyHistory()
@@ -5270,23 +6037,28 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                                                                 isMostRecent,
                                                             arrowColor:
                                                                 isMostRecent
-                                                                ? DraculaPalette
-                                                                      .purple
-                                                                : DraculaPalette
-                                                                      .comment,
+                                                                ? _ToolModalThemePolicy.headingTone(
+                                                                    context,
+                                                                  )
+                                                                : _ToolModalThemePolicy.textMuted(
+                                                                    context,
+                                                                  ),
                                                           ),
                                                           const SizedBox(
                                                             height: 6,
                                                           ),
                                                           Text(
                                                             timestamp,
-                                                            style: Theme.of(context)
-                                                                .textTheme
-                                                                .labelSmall
-                                                                ?.copyWith(
-                                                                  color: DraculaPalette
-                                                                      .comment,
-                                                                ),
+                                                            style:
+                                                                Theme.of(
+                                                                      context,
+                                                                    )
+                                                                    .textTheme
+                                                                    .labelSmall
+                                                                    ?.copyWith(
+                                                                      color:
+                                                                          textMuted,
+                                                                    ),
                                                           ),
                                                         ],
                                                       ),
@@ -5295,8 +6067,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                                                     Icon(
                                                       Icons.copy_rounded,
                                                       size: 16,
-                                                      color: DraculaPalette
-                                                          .comment
+                                                      color: textMuted
                                                           .withAlpha(200),
                                                     ),
                                                   ],
@@ -5341,7 +6112,10 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                                     minimumSize: const Size(0, 0),
                                     tapTargetSize:
                                         MaterialTapTargetSize.shrinkWrap,
-                                    foregroundColor: const Color(0xFFFBBF24),
+                                    foregroundColor:
+                                        _ToolModalThemePolicy.warningTone(
+                                          context,
+                                        ),
                                   ),
                                   child: Text(
                                     DashboardCopy.clearHistoryButtonLabel(
@@ -5351,7 +6125,10 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                                         .textTheme
                                         .labelLarge
                                         ?.copyWith(
-                                          color: const Color(0xFFFBBF24),
+                                          color:
+                                              _ToolModalThemePolicy.warningTone(
+                                                context,
+                                              ),
                                         ),
                                   ),
                                 ),
@@ -5382,7 +6159,13 @@ class _ResultCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final accent = LensAccents.iconTintFor(lensId ?? '');
+    final accent = LensAccents.toolIconTintForBrightness(
+      toolId: toolId,
+      lensId: lensId,
+      brightness: Theme.of(context).brightness,
+    );
+    final panelBg = _ToolModalThemePolicy.panelBg(context);
+    final panelBorder = _ToolModalThemePolicy.panelBorder(context);
 
     final resolved = line;
     String input;
@@ -5403,9 +6186,9 @@ class _ResultCard extends StatelessWidget {
       key: ValueKey('tool_result_$toolId'),
       padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
       decoration: BoxDecoration(
-        color: DraculaPalette.currentLine,
+        color: panelBg,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: DraculaPalette.comment.withAlpha(160)),
+        border: Border.all(color: panelBorder),
       ),
       child: _TerminalLine(
         prompt: '>',
@@ -5431,16 +6214,19 @@ class _TimeZoneQuickChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final panelBg = _ToolModalThemePolicy.panelBgSoft(context);
+    final panelBorder = _ToolModalThemePolicy.panelBorder(context, alpha: 145);
+    final textPrimary = _ToolModalThemePolicy.textPrimary(context);
     return ActionChip(
       onPressed: onTap,
       visualDensity: VisualDensity.compact,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      side: BorderSide(color: DraculaPalette.comment.withAlpha(145)),
-      backgroundColor: DraculaPalette.currentLine.withAlpha(200),
+      side: BorderSide(color: panelBorder),
+      backgroundColor: panelBg,
       label: Text(
         '$label · $detail',
         style: Theme.of(context).textTheme.labelMedium?.copyWith(
-          color: DraculaPalette.foreground.withAlpha(235),
+          color: textPrimary,
           fontWeight: FontWeight.w700,
         ),
       ),
@@ -5466,6 +6252,10 @@ class _TimeAnalogClockFace extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final panelBg = _ToolModalThemePolicy.panelBgSoft(context);
+    final panelBorder = _ToolModalThemePolicy.panelBorder(context, alpha: 120);
+    final textPrimary = _ToolModalThemePolicy.textPrimary(context);
+    final isLight = _ToolModalThemePolicy.isLight(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -5474,7 +6264,7 @@ class _TimeAnalogClockFace extends StatelessWidget {
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: Theme.of(context).textTheme.labelLarge?.copyWith(
-            color: DraculaPalette.foreground.withAlpha(238),
+            color: textPrimary,
             fontWeight: FontWeight.w800,
           ),
         ),
@@ -5487,11 +6277,8 @@ class _TimeAnalogClockFace extends StatelessWidget {
                 child: DecoratedBox(
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: DraculaPalette.background.withAlpha(120),
-                    border: Border.all(
-                      color: DraculaPalette.comment.withAlpha(120),
-                      width: 1.2,
-                    ),
+                    color: panelBg,
+                    border: Border.all(color: panelBorder, width: 1.2),
                   ),
                 ),
               ),
@@ -5500,6 +6287,8 @@ class _TimeAnalogClockFace extends StatelessWidget {
                   painter: _TimeAnalogClockPainter(
                     localTime: localTime,
                     accentColor: accentColor,
+                    tickColor: _ToolModalThemePolicy.textMuted(context),
+                    handColor: _ToolModalThemePolicy.textPrimary(context),
                   ),
                 ),
               ),
@@ -5514,10 +6303,14 @@ class _TimeAnalogClockFace extends StatelessWidget {
                       vertical: 3,
                     ),
                     decoration: BoxDecoration(
-                      color: DraculaPalette.currentLine.withAlpha(235),
+                      color: panelBg,
                       borderRadius: BorderRadius.circular(9),
                       border: Border.all(
-                        color: accentColor.withAlpha(165),
+                        color:
+                            (isLight
+                                    ? Theme.of(context).colorScheme.outline
+                                    : accentColor)
+                                .withAlpha(165),
                         width: 1,
                       ),
                     ),
@@ -5526,7 +6319,7 @@ class _TimeAnalogClockFace extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: DraculaPalette.foreground.withAlpha(245),
+                        color: textPrimary,
                         fontWeight: FontWeight.w800,
                         letterSpacing: 0.2,
                       ),
@@ -5545,10 +6338,14 @@ class _TimeAnalogClockFace extends StatelessWidget {
 class _TimeAnalogClockPainter extends CustomPainter {
   final DateTime localTime;
   final Color accentColor;
+  final Color tickColor;
+  final Color handColor;
 
   const _TimeAnalogClockPainter({
     required this.localTime,
     required this.accentColor,
+    required this.tickColor,
+    required this.handColor,
   });
 
   @override
@@ -5557,7 +6354,7 @@ class _TimeAnalogClockPainter extends CustomPainter {
     final radius = math.min(size.width, size.height) / 2;
 
     final tickPaint = Paint()
-      ..color = DraculaPalette.comment.withAlpha(135)
+      ..color = tickColor.withAlpha(150)
       ..strokeCap = StrokeCap.round
       ..strokeWidth = 1.2;
 
@@ -5576,7 +6373,7 @@ class _TimeAnalogClockPainter extends CustomPainter {
     final hourAngle = (math.pi * 2 * (hours / 12)) - (math.pi / 2);
 
     final hourHandPaint = Paint()
-      ..color = DraculaPalette.foreground.withAlpha(242)
+      ..color = handColor.withAlpha(242)
       ..strokeCap = StrokeCap.round
       ..strokeWidth = 3;
     final minuteHandPaint = Paint()
@@ -5599,7 +6396,326 @@ class _TimeAnalogClockPainter extends CustomPainter {
   bool shouldRepaint(covariant _TimeAnalogClockPainter oldDelegate) {
     return oldDelegate.localTime.minute != localTime.minute ||
         oldDelegate.localTime.hour != localTime.hour ||
-        oldDelegate.accentColor != accentColor;
+        oldDelegate.accentColor != accentColor ||
+        oldDelegate.tickColor != tickColor ||
+        oldDelegate.handColor != handColor;
+  }
+}
+
+class _WorldTimeZoneBandMap extends StatelessWidget {
+  final String fromCity;
+  final String toCity;
+  final double fromOffsetHours;
+  final double toOffsetHours;
+
+  const _WorldTimeZoneBandMap({
+    required this.fromCity,
+    required this.toCity,
+    required this.fromOffsetHours,
+    required this.toOffsetHours,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final panelBg = _ToolModalThemePolicy.panelBgSoft(context);
+    final panelBorder = _ToolModalThemePolicy.panelBorder(context, alpha: 130);
+    final muted = _ToolModalThemePolicy.textMuted(context);
+    final infoTone = _ToolModalThemePolicy.infoTone(context);
+    final destTone = _ToolModalThemePolicy.dangerTone(context);
+    final style = Theme.of(context).textTheme;
+    final bands = List<int>.generate(27, (index) => index - 12);
+    int nearestBand(double offset) {
+      var best = bands.first;
+      var bestDiff = (bands.first - offset).abs();
+      for (final band in bands.skip(1)) {
+        final diff = (band - offset).abs();
+        if (diff < bestDiff) {
+          best = band;
+          bestDiff = diff;
+        }
+      }
+      return best;
+    }
+
+    final fromBand = nearestBand(fromOffsetHours);
+    final toBand = nearestBand(toOffsetHours);
+
+    Color bandColor(int band) {
+      final isHome = band == fromBand;
+      final isDest = band == toBand;
+      if (isHome && isDest) {
+        return Color.lerp(infoTone, destTone, 0.5)!.withAlpha(185);
+      }
+      if (isHome) return infoTone.withAlpha(195);
+      if (isDest) return destTone.withAlpha(195);
+      return panelBg.withAlpha(170);
+    }
+
+    Widget legendPill({
+      required String city,
+      required double offset,
+      required Color tone,
+      required TextAlign align,
+    }) {
+      final offsetText =
+          'UTC${offset >= 0 ? '+' : ''}${offset.toStringAsFixed(1)}';
+      return DecoratedBox(
+        decoration: BoxDecoration(
+          color: panelBg.withAlpha(210),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: tone.withAlpha(170)),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(8, 5, 8, 5),
+          child: Column(
+            crossAxisAlignment: align == TextAlign.right
+                ? CrossAxisAlignment.end
+                : CrossAxisAlignment.start,
+            children: [
+              Text(
+                city,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: align,
+                style: style.bodySmall?.copyWith(
+                  color: tone,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              Text(
+                offsetText,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: align,
+                style: style.labelSmall?.copyWith(
+                  color: muted.withAlpha(230),
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return Container(
+      key: const ValueKey('tool_time_world_map_bands'),
+      height: 150,
+      decoration: BoxDecoration(
+        color: panelBg,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: panelBorder),
+      ),
+      child: Column(
+        children: [
+          Expanded(
+            child: Stack(
+              children: [
+                Positioned.fill(
+                  child: Opacity(
+                    opacity: 0.5,
+                    child: ColorFiltered(
+                      colorFilter: ColorFilter.mode(
+                        muted.withAlpha(210),
+                        BlendMode.modulate,
+                      ),
+                      child: Image.asset(
+                        'assets/maps/world_outline.png',
+                        fit: BoxFit.cover,
+                        alignment: const Alignment(0.06, -0.08),
+                      ),
+                    ),
+                  ),
+                ),
+                Positioned.fill(
+                  child: IgnorePointer(
+                    child: CustomPaint(
+                      painter: _WorldTimeBackdropPainter(
+                        color: muted.withAlpha(60),
+                      ),
+                    ),
+                  ),
+                ),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    for (final band in bands)
+                      Expanded(
+                        child: Tooltip(
+                          message:
+                              'UTC${band >= 0 ? '+' : ''}$band${band == fromBand ? ' • Home' : ''}${band == toBand ? ' • Destination' : ''}',
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: bandColor(band),
+                              border: Border(
+                                right: BorderSide(
+                                  color: muted.withAlpha(78),
+                                  width: 0.8,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(8, 6, 8, 6),
+            child: Row(
+              children: [
+                Expanded(
+                  child: legendPill(
+                    city: fromCity,
+                    offset: fromOffsetHours,
+                    tone: infoTone,
+                    align: TextAlign.left,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: legendPill(
+                    city: toCity,
+                    offset: toOffsetHours,
+                    tone: destTone,
+                    align: TextAlign.right,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _WorldTimeBackdropPainter extends CustomPainter {
+  final Color color;
+
+  const _WorldTimeBackdropPainter({required this.color});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final gridStroke = Paint()
+      ..color = color.withAlpha(56)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 0.75;
+    final latitudeStroke = Paint()
+      ..color = color.withAlpha(78)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 0.95;
+
+    // Light lat/long graticule over raster Earth map.
+    for (var i = 1; i <= 5; i++) {
+      final y = size.height * (i / 6);
+      canvas.drawLine(Offset(0, y), Offset(size.width, y), gridStroke);
+    }
+    for (var i = 1; i <= 23; i++) {
+      final x = size.width * (i / 24);
+      canvas.drawLine(Offset(x, 0), Offset(x, size.height), gridStroke);
+    }
+    final equatorY = size.height * 0.5;
+    final tropicNorthY = size.height * (1 / 3);
+    final tropicSouthY = size.height * (2 / 3);
+    final polarSouthY = size.height * 0.82;
+    canvas.drawLine(
+      Offset(0, equatorY),
+      Offset(size.width, equatorY),
+      latitudeStroke,
+    );
+    canvas.drawLine(
+      Offset(0, tropicNorthY),
+      Offset(size.width, tropicNorthY),
+      latitudeStroke,
+    );
+    canvas.drawLine(
+      Offset(0, tropicSouthY),
+      Offset(size.width, tropicSouthY),
+      latitudeStroke,
+    );
+    canvas.drawLine(
+      Offset(0, polarSouthY),
+      Offset(size.width, polarSouthY),
+      latitudeStroke,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _WorldTimeBackdropPainter oldDelegate) {
+    return oldDelegate.color != color;
+  }
+}
+
+class _PaceCheckpointBarChart extends StatelessWidget {
+  final List<({String label, double minutes})> checkpoints;
+  final Color accent;
+  final Color textColor;
+
+  const _PaceCheckpointBarChart({
+    required this.checkpoints,
+    required this.accent,
+    required this.textColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (checkpoints.isEmpty) return const SizedBox.shrink();
+    final maxMinutes = checkpoints
+        .map((cp) => cp.minutes)
+        .fold<double>(0, (a, b) => math.max(a, b));
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        for (final cp in checkpoints)
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 3),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      cp.label.split('•').first.trim(),
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        color: textColor.withAlpha(220),
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Expanded(
+                    child: Align(
+                      alignment: Alignment.bottomCenter,
+                      child: FractionallySizedBox(
+                        heightFactor: maxMinutes <= 0
+                            ? 0
+                            : (cp.minutes / maxMinutes),
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.bottomCenter,
+                              end: Alignment.topCenter,
+                              colors: [
+                                accent.withAlpha(170),
+                                accent.withAlpha(105),
+                              ],
+                            ),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+      ],
+    );
   }
 }
 
@@ -5612,7 +6728,7 @@ class _EmptyHistory extends StatelessWidget {
       child: Text(
         'No history yet',
         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-          color: DraculaPalette.comment,
+          color: _ToolModalThemePolicy.textMuted(context),
           fontWeight: FontWeight.w700,
           fontFamily: 'monospace',
         ),

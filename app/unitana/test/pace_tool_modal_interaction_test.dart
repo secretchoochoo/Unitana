@@ -44,6 +44,29 @@ void main() {
         .toPlainText();
     expect(resultText, contains('5:00 min/km'));
     expect(resultText, contains('8:03 min/mi'));
+    expect(
+      find.byKey(const ValueKey('tool_pace_insights_card')),
+      findsOneWidget,
+    );
+    expect(find.textContaining('5K'), findsWidgets);
+    expect(find.byKey(const ValueKey('tool_pace_goal_input')), findsOneWidget);
+    await tester.enterText(
+      find.byKey(const ValueKey('tool_pace_goal_input')),
+      '26:00',
+    );
+    await tester.pumpAndSettle(const Duration(milliseconds: 150));
+    expect(find.textContaining('Required pace:'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.byKey(const ValueKey('tool_history_pace_0')),
+      120,
+      scrollable: find
+          .descendant(
+            of: find.byKey(const ValueKey('tool_scroll_pace')),
+            matching: find.byType(Scrollable),
+          )
+          .first,
+    );
+    await tester.pumpAndSettle(const Duration(milliseconds: 120));
     expect(find.byKey(const ValueKey('tool_history_pace_0')), findsOneWidget);
   });
 }

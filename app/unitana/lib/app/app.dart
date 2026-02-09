@@ -38,9 +38,9 @@ class _UnitanaAppState extends State<UnitanaApp> {
       animation: _state,
       builder: (context, _) => MaterialApp(
         debugShowCheckedModeBanner: false,
-        theme: UnitanaTheme.dark(),
+        theme: UnitanaTheme.light(),
         darkTheme: UnitanaTheme.dark(),
-        themeMode: ThemeMode.dark,
+        themeMode: _state.appThemeMode,
         locale: _state.appLocale,
         supportedLocales: const <Locale>[Locale('en'), Locale('es')],
         localizationsDelegates: const <LocalizationsDelegate<dynamic>>[

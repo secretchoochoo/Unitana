@@ -1,9 +1,122 @@
 # CURRENT_HANDOFF (Unitana) - Wizard, Collapsing Header, Multi-Profile
 
 ## Snapshot
-- **Date:** 2026-02-08
-- **Status:** Repo is green (`dart format`, `flutter analyze`, `flutter test`) after XL Unit 3 (Pack G final checklist + Pack B/C closure-proof contracts).
+- **Date:** 2026-02-09
+- **Status:** Repo is green (`dart format`, `flutter analyze`, `flutter test`) after XL Unit 10 (Pack J/Pack L readability follow-through + Pace goal-planner expansion).
 - **Operating mode:** Codex is now the primary workflow; apply edits directly in-repo (do not require patch zip workflow unless explicitly requested).
+
+## Latest changes (2026-02-09)
+- XL Unit 10 shipped (Pack J + Pack L + Pace utility expansion):
+  - World Time Map card:
+    - removed explicit `HOME` / `DESTINATION` legend tags.
+    - kept city + UTC legend values and highlighted timezone lanes.
+  - Pace tool:
+    - added `Goal Planner` inside Pace modal:
+      - race distance chips: `5K`, `10K`, `Half`, `Marathon`
+      - goal time input (`mm:ss` and `h:mm:ss`)
+      - required pace output (`min/km` + `min/mi`)
+      - checkpoint split plan and compact checkpoint bar chart
+  - Pinned mini-hero redesign:
+    - moved date into row 1 (time/delta row) to free vertical space.
+    - replaced terminal-heavy composition with compact non-terminal 3-line grouping while preserving the same size contract and no-overflow behavior.
+  - docs/backlog audit:
+    - updated `context_db` statuses for Pack K and Pack L from `planned` to `in_progress` to match shipped phase work.
+  - full gates re-run and green:
+    - `dart format .`
+    - `flutter analyze`
+    - `flutter test`
+
+## Latest changes (2026-02-08)
+- XL Unit 8 shipped (Pack L scaffold + map realism pass):
+  - Pack L scaffold:
+    - app-level theme mode persistence + routing:
+      - `preferred_theme_mode_v1` in storage
+      - `UnitanaAppState.appThemeMode` wired into `MaterialApp.themeMode`
+    - Settings now includes Theme picker:
+      - `System`
+      - `Dracula Dark`
+      - `Solarized Light`
+    - initial light companion palette implemented in `app/unitana/lib/theme/app_theme.dart` (`UnitanaTheme.light()`), with Dracula dark preserved as default.
+  - World Time Map realism pass:
+    - replaced abstract custom-only landmass drawing with a true Earth basemap asset (`assets/maps/world_outline.png`) rendered behind timezone lanes.
+    - retained Dracula-tinted overlay + graticule to stay visually coherent with the existing map card style.
+  - test hardening:
+    - settings sheet interaction tests now `ensureVisible` for about/licenses taps under scrollable content.
+  - full gates re-run and green:
+    - `dart format .`
+    - `flutter analyze`
+    - `flutter test`
+
+## Latest changes (2026-02-08)
+- XL Unit 7 shipped (Pack K phase-1 + map/readability polish):
+  - Pack K phase-1 settings/model contracts:
+    - Settings now exposes persisted opt-in toggle `Auto-suggest profile by location` (`settings_option_profile_suggest`), defaulting off.
+    - Added deterministic suggestion engine `ProfileAutoSelector` (`app/unitana/lib/features/dashboard/models/profile_auto_selector.dart`) with:
+      - geo-confidence scoring from city-coordinate proximity,
+      - recency tie-breakers from per-profile activation timestamps,
+      - inert/explicit location-unavailable behavior,
+      - no automatic profile switching (suggestion only).
+    - Added storage/app-state persistence for suggestion contracts:
+      - `auto_profile_suggest_enabled_v1`
+      - `auto_profile_suggest_reason_v1`
+      - `auto_profile_suggest_profile_id_v1`
+      - `profile_last_activated_at_by_id_v1`
+  - Pack J/map readability follow-through:
+    - World Time Map backdrop now renders lon/lat-projected full-continent outlines (including Antarctica) for recognizable Earth geometry under timezone lanes.
+    - forecast bar labels in weather sheet now use compact primary-unit labels (`°C`/`°F`) to prevent clipping on narrow widths while keeping dual-unit axis context.
+  - localization/runtime copy additions for profile-suggest settings:
+    - `dashboard.settings.profileSuggest.*` keys in copy/seed/ARB paths.
+  - regression coverage additions/updates:
+    - `app/unitana/test/profile_auto_selector_test.dart`
+    - `app/unitana/test/dashboard_language_settings_test.dart`
+    - `app/unitana/test/dashboard_settings_about_licenses_test.dart`
+  - full gates re-run and green:
+    - `dart format .`
+    - `flutter analyze`
+    - `flutter test`
+
+## Latest changes (2026-02-08)
+- XL Unit 6 shipped (matrix UX + world map readability pass):
+  - matrix-table UX refactor in `app/unitana/lib/features/dashboard/widgets/tool_modal_bottom_sheet.dart`:
+    - removed duplicate-feeling generic `Reference` semantics and introduced tool-specific canonical first columns:
+      - shoe sizes: `Foot (cm)` (JP baseline)
+      - paper sizes: `Size`
+      - mattress sizes: `Class`
+    - shoe matrix now uses neutral foot-length rows (`JP (cm)` baseline) with mapped values in `US Men`, `US Women`, `EU`, `UK`.
+    - paper matrix payload now favors dimensions in system columns to reduce repeated alias text.
+    - helper copy now matches actual behavior (`Tap a row to focus. Tap any value cell to copy.`).
+  - world-map readability pass in `app/unitana/lib/features/dashboard/widgets/tool_modal_bottom_sheet.dart`:
+    - upgraded background painter from abstract continent hints to a recognizable Earth silhouette with denser graticule lines, while keeping timezone-lane highlighting behavior unchanged.
+  - localization copy/seed update for new matrix helper contract:
+    - `app/unitana/lib/features/dashboard/models/dashboard_copy.dart`
+    - `app/unitana/lib/l10n/localization_seed.dart`
+    - `app/unitana/lib/l10n/arb/app_en.arb`
+  - full gates re-run and green:
+    - `dart format .`
+    - `flutter analyze`
+    - `flutter test`
+
+## Latest changes (2026-02-08)
+- XL Unit 4 shipped (combined Pack J/XL4 critique closure + tool UX consistency pass):
+  - weather cockpit polish in `app/unitana/lib/features/dashboard/widgets/weather_summary_bottom_sheet.dart`:
+    - high/low badge temperature lines reduced slightly to prevent truncation in tight card widths.
+    - forecast bars now show per-bar dual-unit temperatures (hourly temp and daily highs are explicit on the bars).
+    - forecast mode labels now use stronger Dracula palette contrast (`Hourly` cyan, `7-day` pink), and bar fills use mode-aware Dracula gradients.
+  - world clock critique pass:
+    - `World Clock Delta` discovery entry renamed to `World Time Map` in `app/unitana/lib/features/dashboard/models/tool_registry.dart`.
+    - added a dedicated `world_clock_delta` tool definition with `time` canonical engine in `app/unitana/lib/features/dashboard/models/tool_definitions.dart`.
+    - time-family modal now renders a world UTC band visualization card for `world_clock_delta` in `app/unitana/lib/features/dashboard/widgets/tool_modal_bottom_sheet.dart`.
+  - pace and unit-price ELI UX pass:
+    - pace now uses explicit `mm:ss` hint/coaching copy (`DashboardCopy.paceInputHint`/`paceInputCoach`) to reduce novice confusion.
+    - unit price helper now includes a compact “how to use” coach panel (`DashboardCopy.unitPriceCoach`) before product cards.
+  - aesthetic consistency fix:
+    - shoe sizes modal accent now uses Dracula red (tool-specific accent override) instead of default quick-tools purple.
+  - activation contract test updates:
+    - `app/unitana/test/toolpicker_activation_bundle_test.dart` updated for `World Time Map` label/title contract.
+- full gates re-run and green:
+  - `dart format .`
+  - `flutter analyze`
+  - `flutter test`
 
 ## Latest changes (2026-02-08)
 - XL Unit 3 shipped:

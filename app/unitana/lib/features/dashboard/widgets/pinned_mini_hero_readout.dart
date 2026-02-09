@@ -65,16 +65,6 @@ class PinnedMiniHeroReadout extends StatelessWidget {
 
   bool _isImperial(Place p) => p.unitSystem.toLowerCase() == 'imperial';
 
-  String _tempLine(WeatherSnapshot? w, {required Place place}) {
-    if (w == null) return '—';
-    final c = w.temperatureC.round();
-    final f = (c * 9 / 5 + 32).round();
-    if (_isImperial(place)) {
-      return '$f°F ($c°C)';
-    }
-    return '$c°C ($f°F)';
-  }
-
   String _windLine(double? kmh, {required Place place}) {
     if (kmh == null) return '—';
     final vKmh = kmh.round();
@@ -185,6 +175,20 @@ class PinnedMiniHeroReadout extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final isLight = Theme.of(context).brightness == Brightness.light;
+    final mutedColor = isLight
+        ? cs.onSurfaceVariant.withAlpha(225)
+        : DraculaPalette.comment;
+    final deltaColor = isLight
+        ? cs.primary.withAlpha(235)
+        : DraculaPalette.cyan;
+    final pollenColor = isLight
+        ? const Color(0xFF7B6000)
+        : DraculaPalette.yellow;
+    final currencyColor = isLight
+        ? const Color(0xFF8A3D12)
+        : DraculaPalette.orange;
+
     final nowUtc = liveData.nowUtc;
     final primaryZone = TimezoneUtils.nowInZone(
       primary.timeZoneId,
@@ -224,43 +228,43 @@ class PinnedMiniHeroReadout extends StatelessWidget {
     final env = liveData.envFor(primary);
     final aqi = env?.usAqi;
     final pollen = env?.pollenIndex;
+    Color aqiTone(int? v) {
+      if (!isLight) return _aqiColor(v);
+      if (v == null) return cs.onSurfaceVariant.withAlpha(200);
+      if (v <= 50) return const Color(0xFF2E7D32);
+      if (v <= 100) return const Color(0xFF8A6D00);
+      if (v <= 150) return const Color(0xFFB35A00);
+      return const Color(0xFFB00020);
+    }
 
     final line1 = <InlineSpan>[
       TextSpan(
-        text: timeLine,
-        style: GoogleFonts.robotoMono(
-          fontSize: 15,
+        text: '$timeLine  ·  ',
+        style: GoogleFonts.robotoSlab(
+          fontSize: 14,
           fontWeight: FontWeight.w700,
-          color: cs.onSurface.withAlpha(230),
-        ),
-      ),
-      TextSpan(
-        text: '  ·  ',
-        style: GoogleFonts.robotoMono(
-          fontSize: 15,
-          fontWeight: FontWeight.w700,
-          color: DraculaPalette.comment,
+          color: cs.onSurface.withAlpha(232),
+          letterSpacing: 0.1,
         ),
       ),
       TextSpan(
         text: TimezoneUtils.formatDeltaLabel(
           TimezoneUtils.deltaHours(primaryZone, secondaryZone),
         ),
-        style: GoogleFonts.robotoMono(
-          fontSize: 15,
+        style: GoogleFonts.robotoSlab(
+          fontSize: 14,
           fontWeight: FontWeight.w800,
-          color: DraculaPalette.cyan,
+          color: deltaColor,
+          letterSpacing: 0.1,
         ),
       ),
-    ];
-
-    final line2 = <InlineSpan>[
       TextSpan(
-        text: dateLine,
-        style: GoogleFonts.robotoMono(
-          fontSize: 13,
-          fontWeight: FontWeight.w600,
-          color: DraculaPalette.comment,
+        text: '   $dateLine',
+        style: GoogleFonts.roboto(
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+          color: mutedColor.withAlpha(236),
+          letterSpacing: 0.2,
         ),
       ),
     ];
@@ -277,130 +281,139 @@ class PinnedMiniHeroReadout extends StatelessWidget {
 
     final aqiBand = _aqiBandShort(aqi);
     final pollenBand = _pollenBandShort(pollen);
-
-    final line3 = <InlineSpan>[
+    final aqiSummary = 'AQI ${aqi ?? '—'}${aqiBand.isEmpty ? '' : ' $aqiBand'}';
+    final pollenSummary =
+        'Pollen ${pollen == null ? '—' : pollen.toStringAsFixed(1)}'
+        '${pollenBand.isEmpty ? '' : ' $pollenBand'}';
+    final tempSummary = _isImperial(primary)
+        ? (weather == null
+              ? '—'
+              : '${(weather.temperatureC * 9 / 5 + 32).round()}°F')
+        : (weather == null ? '—' : '${weather.temperatureC.round()}°C');
+    final currencySummary = _currencyLine();
+    final line2 = <InlineSpan>[
       TextSpan(
-        text: '🌅 $sunriseText  ·  ',
-        style: GoogleFonts.robotoMono(
+        text: '🌅 $sunriseText',
+        style: GoogleFonts.roboto(
           fontSize: 13,
-          fontWeight: FontWeight.w600,
-          color: DraculaPalette.pink,
+          fontWeight: FontWeight.w700,
+          color: cs.onSurface.withAlpha(228),
         ),
       ),
       TextSpan(
-        text: '🌇 $sunsetText  ·  ',
-        style: GoogleFonts.robotoMono(
+        text: '  ·  ',
+        style: GoogleFonts.roboto(
           fontSize: 13,
-          fontWeight: FontWeight.w600,
-          color: DraculaPalette.pink,
+          fontWeight: FontWeight.w700,
+          color: mutedColor,
         ),
       ),
       TextSpan(
-        text: '🌬 $windText  ·  ',
-        style: GoogleFonts.robotoMono(
+        text: '🌇 $sunsetText',
+        style: GoogleFonts.roboto(
           fontSize: 13,
-          fontWeight: FontWeight.w600,
-          color: DraculaPalette.comment,
+          fontWeight: FontWeight.w700,
+          color: cs.onSurface.withAlpha(228),
+        ),
+      ),
+      TextSpan(
+        text: '  ·  ',
+        style: GoogleFonts.roboto(
+          fontSize: 13,
+          fontWeight: FontWeight.w700,
+          color: mutedColor,
+        ),
+      ),
+      TextSpan(
+        text: '🌬 $windText',
+        style: GoogleFonts.roboto(
+          fontSize: 13,
+          fontWeight: FontWeight.w700,
+          color: cs.onSurface.withAlpha(228),
+        ),
+      ),
+      TextSpan(
+        text: '  ·  ',
+        style: GoogleFonts.roboto(
+          fontSize: 13,
+          fontWeight: FontWeight.w700,
+          color: mutedColor,
         ),
       ),
       TextSpan(
         text: '💨 $gustText',
-        style: GoogleFonts.robotoMono(
+        style: GoogleFonts.roboto(
           fontSize: 13,
-          fontWeight: FontWeight.w600,
-          color: DraculaPalette.comment,
+          fontWeight: FontWeight.w700,
+          color: cs.onSurface.withAlpha(228),
         ),
       ),
     ];
-
-    final currency = _currencyLine();
-    final line4 = <InlineSpan>[
+    final line3 = <InlineSpan>[
       TextSpan(
-        text: '■ ',
-        style: GoogleFonts.robotoMono(
-          fontSize: 13,
-          fontWeight: FontWeight.w900,
-          color: _aqiColor(aqi),
-        ),
-      ),
-      TextSpan(
-        text: 'AQI ${aqi ?? '—'}',
-        style: GoogleFonts.robotoMono(
+        text: aqiSummary,
+        style: GoogleFonts.roboto(
           fontSize: 13,
           fontWeight: FontWeight.w700,
-          color: _aqiColor(aqi),
-        ),
-      ),
-      if (aqiBand.isNotEmpty)
-        TextSpan(
-          text: ' $aqiBand',
-          style: GoogleFonts.robotoMono(
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-            color: _aqiColor(aqi).withAlpha(220),
-          ),
-        ),
-      TextSpan(
-        text: '  ·  ',
-        style: GoogleFonts.robotoMono(
-          fontSize: 13,
-          fontWeight: FontWeight.w600,
-          color: DraculaPalette.comment,
-        ),
-      ),
-      TextSpan(
-        text: '🌸 Pollen ${pollen == null ? '—' : pollen.toStringAsFixed(1)}',
-        style: GoogleFonts.robotoMono(
-          fontSize: 13,
-          fontWeight: FontWeight.w700,
-          color: DraculaPalette.yellow,
-        ),
-      ),
-      if (pollenBand.isNotEmpty)
-        TextSpan(
-          text: ' $pollenBand',
-          style: GoogleFonts.robotoMono(
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-            color: DraculaPalette.yellow.withAlpha(220),
-          ),
-        ),
-      TextSpan(
-        text: '  ·  ',
-        style: GoogleFonts.robotoMono(
-          fontSize: 13,
-          fontWeight: FontWeight.w600,
-          color: DraculaPalette.comment,
-        ),
-      ),
-      TextSpan(
-        text: '🌡 ${_tempLine(weather, place: primary)}',
-        style: GoogleFonts.robotoMono(
-          fontSize: 13,
-          fontWeight: FontWeight.w700,
-          color: cs.onSurface.withAlpha(220),
+          color: aqiTone(aqi).withAlpha(232),
         ),
       ),
       TextSpan(
         text: '  ·  ',
-        style: GoogleFonts.robotoMono(
+        style: GoogleFonts.roboto(
           fontSize: 13,
-          fontWeight: FontWeight.w600,
-          color: DraculaPalette.comment,
+          fontWeight: FontWeight.w700,
+          color: mutedColor,
         ),
       ),
       TextSpan(
-        text: currency,
-        style: GoogleFonts.robotoMono(
-          fontSize: 14,
+        text: pollenSummary,
+        style: GoogleFonts.roboto(
+          fontSize: 13,
+          fontWeight: FontWeight.w700,
+          color: pollenColor.withAlpha(232),
+        ),
+      ),
+      TextSpan(
+        text: '  ·  ',
+        style: GoogleFonts.roboto(
+          fontSize: 13,
+          fontWeight: FontWeight.w700,
+          color: mutedColor,
+        ),
+      ),
+      TextSpan(
+        text: '🌡 $tempSummary',
+        style: GoogleFonts.roboto(
+          fontSize: 13,
+          fontWeight: FontWeight.w700,
+          color: cs.onSurface.withAlpha(228),
+        ),
+      ),
+      TextSpan(
+        text: '  ·  ',
+        style: GoogleFonts.roboto(
+          fontSize: 13,
+          fontWeight: FontWeight.w700,
+          color: mutedColor,
+        ),
+      ),
+      TextSpan(
+        text: currencySummary,
+        style: GoogleFonts.roboto(
+          fontSize: 13,
           fontWeight: FontWeight.w800,
-          color: DraculaPalette.orange,
+          color: currencyColor.withAlpha(228),
         ),
       ),
     ];
 
-    final pillBg = cs.surfaceContainerHighest.withAlpha(77);
-    final pillBorder = cs.outlineVariant.withAlpha(179);
+    final pillBg = isLight
+        ? cs.surfaceContainerHighest.withAlpha(208)
+        : cs.surfaceContainerHighest.withAlpha(77);
+    final pillBorder = isLight
+        ? cs.outline.withAlpha(210)
+        : cs.outlineVariant.withAlpha(179);
 
     Widget richLine(
       List<InlineSpan> spans, {
@@ -414,7 +427,7 @@ class PinnedMiniHeroReadout extends StatelessWidget {
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
         color: pillBg,
         borderRadius: BorderRadius.circular(18),
@@ -424,12 +437,10 @@ class PinnedMiniHeroReadout extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           richLine(line1, align: TextAlign.center),
-          const SizedBox(height: 2),
+          const SizedBox(height: 3),
           richLine(line2, align: TextAlign.center),
-          const SizedBox(height: 5),
-          richLine(line3, align: TextAlign.left),
-          const SizedBox(height: 2),
-          richLine(line4, align: TextAlign.center),
+          const SizedBox(height: 1),
+          richLine(line3, align: TextAlign.center),
         ],
       ),
     );

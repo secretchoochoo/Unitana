@@ -69,7 +69,10 @@ void main() {
       findsOneWidget,
     );
 
-    await tester.tap(find.byKey(const ValueKey('settings_option_about')));
+    final aboutOption = find.byKey(const ValueKey('settings_option_about'));
+    await tester.ensureVisible(aboutOption);
+    await tester.pumpAndSettle(const Duration(milliseconds: 100));
+    await tester.tap(aboutOption);
     await tester.pumpAndSettle(const Duration(milliseconds: 200));
     expect(find.byKey(const ValueKey('settings_about_sheet')), findsOneWidget);
     expect(
@@ -84,7 +87,12 @@ void main() {
     await tester.pumpAndSettle(const Duration(milliseconds: 200));
 
     await openSettingsSheet();
-    await tester.tap(find.byKey(const ValueKey('settings_option_licenses')));
+    final licensesOption = find.byKey(
+      const ValueKey('settings_option_licenses'),
+    );
+    await tester.ensureVisible(licensesOption);
+    await tester.pumpAndSettle(const Duration(milliseconds: 100));
+    await tester.tap(licensesOption);
     await tester.pumpAndSettle(const Duration(milliseconds: 250));
     expect(
       find.byKey(const ValueKey('settings_licenses_page')),

@@ -76,4 +76,71 @@ void main() {
     final prefs = await SharedPreferences.getInstance();
     expect(prefs.getString('preferred_language_code_v1'), 'es');
   });
+
+  testWidgets('Settings exposes profile auto-suggest toggle (off by default)', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues(<String, Object>{});
+    final state = buildSeededState();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: UnitanaTheme.dark(),
+        home: DashboardScreen(state: state),
+      ),
+    );
+    await tester.pumpAndSettle(const Duration(milliseconds: 200));
+
+    await tester.tap(find.byKey(const Key('dashboard_menu_button')));
+    await tester.pumpAndSettle(const Duration(milliseconds: 200));
+    await tester.tap(find.byKey(const ValueKey('dashboard_menu_settings')));
+    await tester.pumpAndSettle(const Duration(milliseconds: 200));
+
+    final toggle = find.byKey(
+      const ValueKey('settings_option_profile_suggest'),
+    );
+    expect(toggle, findsOneWidget);
+    expect(state.autoProfileSuggestEnabled, isFalse);
+
+    await tester.tap(toggle);
+    await tester.pumpAndSettle(const Duration(milliseconds: 200));
+    expect(state.autoProfileSuggestEnabled, isTrue);
+
+    final prefs = await SharedPreferences.getInstance();
+    expect(prefs.getBool('auto_profile_suggest_enabled_v1'), isTrue);
+    expect(state.activeProfileId, 'profile_1');
+  });
+
+  testWidgets('Settings opens theme sheet and persists selection', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues(<String, Object>{});
+    final state = buildSeededState();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: UnitanaTheme.dark(),
+        home: DashboardScreen(state: state),
+      ),
+    );
+    await tester.pumpAndSettle(const Duration(milliseconds: 200));
+
+    await tester.tap(find.byKey(const Key('dashboard_menu_button')));
+    await tester.pumpAndSettle(const Duration(milliseconds: 200));
+    await tester.tap(find.byKey(const ValueKey('dashboard_menu_settings')));
+    await tester.pumpAndSettle(const Duration(milliseconds: 200));
+    await tester.tap(find.byKey(const ValueKey('settings_option_theme')));
+    await tester.pumpAndSettle(const Duration(milliseconds: 200));
+
+    expect(find.byKey(const ValueKey('settings_theme_system')), findsOneWidget);
+    expect(find.byKey(const ValueKey('settings_theme_dark')), findsOneWidget);
+    expect(find.byKey(const ValueKey('settings_theme_light')), findsOneWidget);
+
+    await tester.tap(find.byKey(const ValueKey('settings_theme_light')));
+    await tester.pumpAndSettle(const Duration(milliseconds: 200));
+
+    expect(state.preferredThemeMode, 'light');
+    final prefs = await SharedPreferences.getInstance();
+    expect(prefs.getString('preferred_theme_mode_v1'), 'light');
+  });
 }

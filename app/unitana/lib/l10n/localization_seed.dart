@@ -57,7 +57,7 @@ class LocalizationSeed {
     'dashboard.lookup.resetDefaults': 'Reset Defaults',
     'dashboard.lookup.sizeMatrix': 'Size Matrix',
     'dashboard.lookup.matrixHelp':
-        'Selected row centered when possible. Tap a value cell to copy.',
+        'Tap a row to focus. Tap any value cell to copy.',
     'dashboard.lookup.approximate': 'Approximate: {note}',
     'dashboard.time.direction.sameZone': 'Same zone',
     'dashboard.time.direction.eastbound': 'Eastbound',
@@ -138,6 +138,21 @@ class LocalizationSeed {
     'dashboard.settings.language.option.en': 'English',
     'dashboard.settings.language.option.es': 'Español',
     'dashboard.settings.language.updated': 'Language updated',
+    'dashboard.settings.theme.title': 'Theme',
+    'dashboard.settings.theme.option.system': 'System',
+    'dashboard.settings.theme.option.dark': 'Dracula Dark',
+    'dashboard.settings.theme.option.light': 'Solarized Light',
+    'dashboard.settings.theme.updated': 'Theme updated',
+    'dashboard.settings.profileSuggest.title':
+        'Auto-suggest profile by location',
+    'dashboard.settings.profileSuggest.enabled': 'On',
+    'dashboard.settings.profileSuggest.disabled': 'Off',
+    'dashboard.settings.profileSuggest.updated':
+        'Profile suggestion setting updated',
+    'dashboard.settings.profileSuggest.reason.unavailable':
+        'Location unavailable; profile suggestions are idle.',
+    'dashboard.settings.profileSuggest.suggested':
+        'Suggested profile: {profileName}',
     'dashboard.settings.about.title': 'About Unitana',
     'dashboard.settings.about.tagline':
         'Travel-first decoder ring; dual reality side-by-side',

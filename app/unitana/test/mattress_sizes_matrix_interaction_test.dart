@@ -66,9 +66,7 @@ void main() {
 
     await tester.tap(
       find.byKey(
-        const ValueKey(
-          'tool_lookup_matrix_cell_mattress_sizes_matt_queen_from',
-        ),
+        const ValueKey('tool_lookup_matrix_cell_mattress_sizes_matt_queen_US'),
       ),
     );
     await tester.pump(const Duration(milliseconds: 120));
@@ -82,17 +80,13 @@ void main() {
     );
     await tester.pumpAndSettle(const Duration(milliseconds: 120));
 
-    final resultRichTextFinder = find
-        .descendant(
-          of: find.byKey(const ValueKey('tool_lookup_result_mattress_sizes')),
-          matching: find.byType(RichText),
-        )
-        .first;
-    expect(resultRichTextFinder, findsOneWidget);
-    final resultRichText = tester.widget<RichText>(resultRichTextFinder);
-    final resultText = resultRichText.text.toPlainText();
-
-    expect(resultText, contains('Full (54 x 75 in)'));
-    expect(resultText, contains('Double (140 x 200 cm)'));
+    expect(
+      find.byKey(
+        const ValueKey('tool_lookup_matrix_row_mattress_sizes_matt_full'),
+      ),
+      findsOneWidget,
+    );
+    expect(find.textContaining('Full (54 x 75 in)'), findsWidgets);
+    expect(find.textContaining('Double (140 x 200 cm)'), findsWidgets);
   });
 }

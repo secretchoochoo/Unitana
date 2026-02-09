@@ -121,8 +121,7 @@ class DashboardCopy {
   static String lookupMatrixHelp(BuildContext context) =>
       DashboardLocalizations.of(context).text(
         'dashboard.lookup.matrixHelp',
-        fallback:
-            'Selected row centered when possible. Tap a value cell to copy.',
+        fallback: 'Tap a row to focus. Tap any value cell to copy.',
       );
   static String lookupApproximate(BuildContext context, String note) =>
       DashboardLocalizations.of(context).text(
@@ -435,6 +434,27 @@ class DashboardCopy {
       DashboardLocalizations.of(
         context,
       ).text('dashboard.settings.language.title', fallback: 'Language');
+  static String settingsThemeTitle(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.settings.theme.title', fallback: 'Theme');
+  static String settingsThemeSystem(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.settings.theme.option.system', fallback: 'System');
+  static String settingsThemeDark(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.settings.theme.option.dark', fallback: 'Dracula Dark');
+  static String settingsThemeLight(BuildContext context) =>
+      DashboardLocalizations.of(context).text(
+        'dashboard.settings.theme.option.light',
+        fallback: 'Solarized Light',
+      );
+  static String settingsThemeUpdated(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.settings.theme.updated', fallback: 'Theme updated');
   static String settingsLanguageSystem(BuildContext context) =>
       DashboardLocalizations.of(context).text(
         'dashboard.settings.language.option.system',
@@ -453,6 +473,37 @@ class DashboardCopy {
         'dashboard.settings.language.updated',
         fallback: 'Language updated',
       );
+  static String settingsProfileSuggestTitle(BuildContext context) =>
+      DashboardLocalizations.of(context).text(
+        'dashboard.settings.profileSuggest.title',
+        fallback: 'Auto-suggest profile by location',
+      );
+  static String settingsProfileSuggestEnabled(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.settings.profileSuggest.enabled', fallback: 'On');
+  static String settingsProfileSuggestDisabled(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.settings.profileSuggest.disabled', fallback: 'Off');
+  static String settingsProfileSuggestUpdated(BuildContext context) =>
+      DashboardLocalizations.of(context).text(
+        'dashboard.settings.profileSuggest.updated',
+        fallback: 'Profile suggestion setting updated',
+      );
+  static String settingsProfileSuggestReasonUnavailable(BuildContext context) =>
+      DashboardLocalizations.of(context).text(
+        'dashboard.settings.profileSuggest.reason.unavailable',
+        fallback: 'Location unavailable; profile suggestions are idle.',
+      );
+  static String settingsProfileSuggestSuggested(
+    BuildContext context, {
+    required String profileName,
+  }) => DashboardLocalizations.of(context).text(
+    'dashboard.settings.profileSuggest.suggested',
+    params: <String, String>{'profileName': profileName},
+    fallback: 'Suggested profile: $profileName',
+  );
   static String settingsAboutTitle(BuildContext context) =>
       DashboardLocalizations.of(
         context,
@@ -958,6 +1009,13 @@ class DashboardCopy {
         'dashboard.unitPrice.invalidProductA',
         fallback: 'Enter valid price and quantity for Product A.',
       );
+  static String unitPriceCoach(
+    BuildContext context,
+  ) => DashboardLocalizations.of(context).text(
+    'dashboard.unitPrice.coach',
+    fallback:
+        'How to use: enter shelf price and package size for Product A. Turn on comparison to add Product B in the same unit family (mass or volume).',
+  );
   static String toolPickerTitle(BuildContext context) =>
       DashboardLocalizations.of(
         context,
@@ -1015,6 +1073,19 @@ class DashboardCopy {
       DashboardLocalizations.of(
         context,
       ).text('dashboard.tool.input.hint', fallback: 'Enter Value');
+  static String paceInputHint(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.pace.input.hint', fallback: '5:30');
+  static String paceInputCoach(
+    BuildContext context, {
+    required String fromUnit,
+  }) => DashboardLocalizations.of(context).text(
+    'dashboard.pace.input.coach',
+    params: <String, String>{'fromUnit': fromUnit},
+    fallback:
+        'Enter minutes:seconds in $fromUnit (example: 5:30). We will convert that pace directly.',
+  );
   static String unitPickerTitle(
     BuildContext context, {
     required bool isCurrencyTool,

@@ -169,9 +169,9 @@
         "Add test matrix for permission denied, stale location, near-border ambiguity, and travel-day churn."
       ],
       "priority": "P1",
-      "status": "planned",
-      "status_updated": "2026-02-08",
-      "status_note": "No implementation yet; remains a future opt-in discovery/prototype track."
+      "status": "in_progress",
+      "status_updated": "2026-02-09",
+      "status_note": "Phase-1 shipped: opt-in setting + deterministic suggestion engine + persistence contracts; no silent auto-switch behavior remains enforced."
     },
     {
       "id": "PACK_L_dual_theme_system_dark_light",
@@ -185,9 +185,9 @@
         "Document token map and accessibility constraints in a dedicated reference spec before implementation."
       ],
       "priority": "P1",
-      "status": "planned",
-      "status_updated": "2026-02-08",
-      "status_note": "No dual-theme implementation yet; Dracula-only runtime remains current behavior."
+      "status": "in_progress",
+      "status_updated": "2026-02-09",
+      "status_note": "Theme mode scaffold is shipped (`System`/`Dracula Dark`/`Solarized Light`) with ongoing readability parity sweeps across dashboard/tool surfaces."
     },
     {
       "id": "PACK_M_jet_lag_tool_rethink_actionable_planning",
@@ -255,8 +255,35 @@
     }
   ],
   "current_state": {
-    "current_slice": "XL Unit 3 shipped: Pack G final checklist artifacts plus Pack B/C closure-proof contracts; next is XL Unit 4 (Pack E final readability closure or Pack K discovery).",
+    "current_slice": "XL Unit 10 shipped: Pack J/Pack L readability follow-through + Pace planner expansion; next is XL Unit 11 (Pack D docs consolidation + remaining Pack J mini-hero polish signoff).",
     "notes": [
+      "XL Unit 10 shipped on 2026-02-09: World Time Map legend labels were simplified (city + UTC only; removed explicit Home/Destination tags) while preserving lane highlighting and Earth basemap.",
+      "XL Unit 10 shipped on 2026-02-09: Pace gained Goal Planner controls (5K/10K/Half/Marathon chips, goal-time parsing, required pace output, split checkpoints, compact bar chart).",
+      "XL Unit 10 shipped on 2026-02-09: pinned mini-hero was redesigned to a compact non-terminal 3-line composition (date folded into row 1, denser rows 2/3 with grouped weather+air+temp+FX data).",
+      "Backlog audit refreshed on 2026-02-09: Packs K/L moved to in-progress based on shipped phase work; Pack D/J remain open for closure artifacts.",
+      "XL Unit 8 shipped on 2026-02-08: app now persists preferred theme mode (`dark` default, `system`, `light`) and wires `MaterialApp.themeMode` from app state.",
+      "XL Unit 8 shipped on 2026-02-08: Settings now includes a dedicated Theme picker (`System`, `Dracula Dark`, `Solarized Light`) with persisted storage contract `preferred_theme_mode_v1`.",
+      "XL Unit 8 shipped on 2026-02-08: added initial light-theme token mapping in `UnitanaTheme.light()` while preserving Dracula dark as default.",
+      "XL Unit 8 shipped on 2026-02-08: World Time Map now renders a true Earth map background via raster basemap asset (`assets/maps/world_outline.png`) with tinted overlay + graticule lanes.",
+      "XL Unit 8 shipped on 2026-02-08: settings/about/licenses regression tests were hardened with `ensureVisible` to keep deterministic sheet interaction under scrollable settings content.",
+      "XL Unit 7 shipped on 2026-02-08: Settings now includes persisted `Auto-suggest profile by location` opt-in (default off), with explainability copy and no silent profile switching.",
+      "XL Unit 7 shipped on 2026-02-08: added deterministic profile auto-selector engine (`ProfileAutoSelector`) with geo-confidence scoring and recency tie-breakers; location-unavailable path remains inert by design.",
+      "XL Unit 7 shipped on 2026-02-08: app-state/storage contracts now persist auto-suggest enablement, latest suggestion reason, suggested profile id, and per-profile activation recency map.",
+      "XL Unit 7 shipped on 2026-02-08: World Time Map backdrop now uses lon/lat-projected continent outlines (including Antarctica) for recognizable Earth geometry under timezone lanes.",
+      "XL Unit 7 shipped on 2026-02-08: forecast bar labels now use compact primary-unit values (`°C` or `°F`) to avoid narrow-width truncation while preserving dual-unit min/max axis context.",
+      "XL Unit 6 shipped on 2026-02-08: full-matrix lookup tables now use canonical first-column semantics per tool (`Foot (cm)` for shoes, `Size` for paper, `Class` for mattresses) instead of duplicate reference labels.",
+      "XL Unit 6 shipped on 2026-02-08: shoe matrix rows are now keyed by neutral foot-length baseline (`JP (cm)`) while mapped system columns remain explicit (`US Men`, `US Women`, `EU`, `UK`).",
+      "XL Unit 6 shipped on 2026-02-08: paper matrix values now emphasize dimensional payloads in system columns, reducing repeated label noise and improving scanability.",
+      "XL Unit 6 shipped on 2026-02-08: world timezone map backdrop was upgraded from abstract blobs to a recognizable Earth silhouette (continent geometry + denser graticule) while preserving lane-highlight interaction contracts.",
+      "XL Unit 6 shipped on 2026-02-08: lookup matrix helper copy now reflects actual behavior (`Tap a row to focus. Tap any value cell to copy.`).",
+      "XL Unit 4 shipped on 2026-02-08: weather high/low badge line text was reduced again for tighter fit stability on narrow city-banner widths.",
+      "XL Unit 4 shipped on 2026-02-08: weather forecast bars now render explicit dual-unit per-bar labels so hourly temperatures and daily highs are visible directly on the chart panel.",
+      "XL Unit 4 shipped on 2026-02-08: forecast mode pills now use stronger Dracula palette contrast (`Hourly` cyan, `7-day` pink) and mode-aware bar gradients.",
+      "XL Unit 4 shipped on 2026-02-08: `World Clock Delta` was relabeled to `World Time Map`, and `world_clock_delta` now opens a dedicated UTC band map card within the time-family modal.",
+      "XL Unit 4 shipped on 2026-02-08: pace input now includes deterministic `mm:ss` coaching copy and hint text to reduce novice UX confusion.",
+      "XL Unit 4 shipped on 2026-02-08: unit-price helper now includes an inline how-to guidance panel before data entry cards.",
+      "XL Unit 4 shipped on 2026-02-08: shoe-sizes modal accent was normalized to Dracula red for cross-tool aesthetic consistency.",
+      "XL Unit 4 shipped on 2026-02-08: activation-bundle test contracts were updated for `World Time Map` naming while preserving `world_clock_delta` tool-id stability.",
       "XL Unit 3 shipped on 2026-02-08: added Pack G release checklist artifact `docs/ai/reference/PACK_G_RELEASE_CHECKLIST_XL3.md` with explicit compliance/accessibility/guardrail signoff rows.",
       "XL Unit 3 shipped on 2026-02-08: Pack B closure-proof coverage expanded with deterministic mixed success/fallback batch behavior in `dashboard_live_data_refresh_fallback_test.dart`.",
       "XL Unit 3 shipped on 2026-02-08: Pack C closure-proof coverage expanded with outage-preserved multi-currency conversion assertions in `dashboard_currency_retry_cache_semantics_test.dart`.",

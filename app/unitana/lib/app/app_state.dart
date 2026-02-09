@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../features/dashboard/models/profile_auto_selector.dart';
 import '../models/place.dart';
 import 'storage.dart';
 
@@ -14,6 +15,11 @@ class UnitanaAppState extends ChangeNotifier {
   String _activeProfileId = 'profile_1';
   String? _pendingSuccessToast;
   String _preferredLanguageCode = 'system';
+  String _preferredThemeMode = 'dark';
+  bool _autoProfileSuggestEnabled = false;
+  String? _autoProfileSuggestionReason;
+  String? _autoSuggestedProfileId;
+  Map<String, int> _profileLastActivatedEpochById = const <String, int>{};
 
   UnitanaAppState(this.storage);
 
@@ -22,6 +28,21 @@ class UnitanaAppState extends ChangeNotifier {
 
   String get activeProfileId => _activeProfileId;
   String get preferredLanguageCode => _preferredLanguageCode;
+  String get preferredThemeMode => _preferredThemeMode;
+  ThemeMode get appThemeMode {
+    switch (_preferredThemeMode) {
+      case 'light':
+        return ThemeMode.light;
+      case 'system':
+        return ThemeMode.system;
+      default:
+        return ThemeMode.dark;
+    }
+  }
+
+  bool get autoProfileSuggestEnabled => _autoProfileSuggestEnabled;
+  String? get autoProfileSuggestionReason => _autoProfileSuggestionReason;
+  String? get autoSuggestedProfileId => _autoSuggestedProfileId;
   Locale? get appLocale {
     switch (_preferredLanguageCode) {
       case 'en':
@@ -95,6 +116,13 @@ class UnitanaAppState extends ChangeNotifier {
   Future<void> load() async {
     final preferredLanguageRaw = await storage.loadPreferredLanguageCode();
     _preferredLanguageCode = _normalizeLanguageCode(preferredLanguageRaw);
+    final preferredThemeRaw = await storage.loadPreferredThemeMode();
+    _preferredThemeMode = _normalizeThemeMode(preferredThemeRaw);
+    _autoProfileSuggestEnabled = await storage.loadAutoProfileSuggestEnabled();
+    _autoProfileSuggestionReason = await storage.loadAutoProfileSuggestReason();
+    _autoSuggestedProfileId = await storage.loadAutoProfileSuggestProfileId();
+    _profileLastActivatedEpochById = await storage
+        .loadProfileLastActivatedAtById();
 
     final loadedProfiles = await storage.loadProfiles();
     final loadedActiveId = await storage.loadActiveProfileId();
@@ -124,6 +152,12 @@ class UnitanaAppState extends ChangeNotifier {
         }
       }
 
+      _profileLastActivatedEpochById = _normalizeRecencyMap(
+        _profileLastActivatedEpochById,
+      );
+      _touchProfileRecency(_activeProfileId, notify: false);
+      await _persistRecencyMap();
+
       // Keep legacy keys in sync with the active profile for older flows.
       await _persistLegacyActive();
       notifyListeners();
@@ -146,6 +180,7 @@ class UnitanaAppState extends ChangeNotifier {
 
     _profiles = <UnitanaProfile>[profile];
     _activeProfileId = profile.id;
+    _touchProfileRecency(_activeProfileId, notify: false);
 
     await storage.saveProfiles(_profiles);
     await storage.saveActiveProfileId(_activeProfileId);
@@ -171,6 +206,18 @@ class UnitanaAppState extends ChangeNotifier {
     await _persistLegacyActive();
   }
 
+  Future<void> _persistRecencyMap() async {
+    await storage.saveProfileLastActivatedAtById(
+      _profileLastActivatedEpochById,
+    );
+  }
+
+  Future<void> _persistAutoSuggestionState() async {
+    await storage.saveAutoProfileSuggestEnabled(_autoProfileSuggestEnabled);
+    await storage.saveAutoProfileSuggestReason(_autoProfileSuggestionReason);
+    await storage.saveAutoProfileSuggestProfileId(_autoSuggestedProfileId);
+  }
+
   Future<void> setPreferredLanguageCode(String code) async {
     final normalized = _normalizeLanguageCode(code);
     if (_preferredLanguageCode == normalized) return;
@@ -179,12 +226,22 @@ class UnitanaAppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> setPreferredThemeMode(String mode) async {
+    final normalized = _normalizeThemeMode(mode);
+    if (_preferredThemeMode == normalized) return;
+    _preferredThemeMode = normalized;
+    await storage.savePreferredThemeMode(normalized);
+    notifyListeners();
+  }
+
   Future<void> switchToProfile(String id) async {
     if (id.trim().isEmpty) return;
     if (_activeProfileId == id) return;
     if (!_profiles.any((p) => p.id == id)) return;
     _activeProfileId = id;
+    _touchProfileRecency(_activeProfileId, notify: false);
     await _persistProfiles();
+    await _persistRecencyMap();
     notifyListeners();
   }
 
@@ -232,7 +289,9 @@ class UnitanaAppState extends ChangeNotifier {
 
     _profiles = <UnitanaProfile>[..._profiles, profile];
     _activeProfileId = id;
+    _touchProfileRecency(_activeProfileId, notify: false);
     await _persistProfiles();
+    await _persistRecencyMap();
     notifyListeners();
   }
 
@@ -278,9 +337,12 @@ class UnitanaAppState extends ChangeNotifier {
 
     if (wasActive) {
       _activeProfileId = _profiles.first.id;
+      _touchProfileRecency(_activeProfileId, notify: false);
     }
 
+    _profileLastActivatedEpochById.remove(targetId);
     await _persistProfiles();
+    await _persistRecencyMap();
     notifyListeners();
   }
 
@@ -303,6 +365,47 @@ class UnitanaAppState extends ChangeNotifier {
     _activeProfileId = 'profile_1';
     _pendingSuccessToast = null;
     _preferredLanguageCode = 'system';
+    _preferredThemeMode = 'dark';
+    _autoProfileSuggestEnabled = false;
+    _autoProfileSuggestionReason = null;
+    _autoSuggestedProfileId = null;
+    _profileLastActivatedEpochById = const <String, int>{};
+    notifyListeners();
+  }
+
+  Future<void> setAutoProfileSuggestEnabled(bool enabled) async {
+    if (_autoProfileSuggestEnabled == enabled) return;
+    _autoProfileSuggestEnabled = enabled;
+    if (!enabled) {
+      _autoSuggestedProfileId = null;
+      _autoProfileSuggestionReason =
+          'Disabled. Turn on to evaluate location-based profile suggestions.';
+    }
+    await _persistAutoSuggestionState();
+    notifyListeners();
+  }
+
+  Future<void> evaluateAutoProfileSuggestion({
+    required ProfileLocationSignal? signal,
+  }) async {
+    if (!_autoProfileSuggestEnabled) {
+      _autoSuggestedProfileId = null;
+      _autoProfileSuggestionReason =
+          'Disabled. Turn on to evaluate location-based profile suggestions.';
+      await _persistAutoSuggestionState();
+      notifyListeners();
+      return;
+    }
+
+    final result = await ProfileAutoSelector.evaluate(
+      profiles: _profiles,
+      activeProfileId: _activeProfileId,
+      lastActivatedEpochByProfileId: _profileLastActivatedEpochById,
+      signal: signal,
+    );
+    _autoSuggestedProfileId = result.profileId;
+    _autoProfileSuggestionReason = result.reason;
+    await _persistAutoSuggestionState();
     notifyListeners();
   }
 
@@ -321,5 +424,35 @@ class UnitanaAppState extends ChangeNotifier {
     final code = (raw ?? '').trim().toLowerCase();
     if (code == 'en' || code == 'es') return code;
     return 'system';
+  }
+
+  static String _normalizeThemeMode(String? raw) {
+    final mode = (raw ?? '').trim().toLowerCase();
+    if (mode == 'light' || mode == 'dark' || mode == 'system') return mode;
+    return 'dark';
+  }
+
+  void _touchProfileRecency(String profileId, {bool notify = true}) {
+    if (profileId.trim().isEmpty) return;
+    final now = DateTime.now().toUtc().millisecondsSinceEpoch;
+    final next = Map<String, int>.from(_profileLastActivatedEpochById);
+    next[profileId] = now;
+    _profileLastActivatedEpochById = _normalizeRecencyMap(next);
+    if (notify) {
+      notifyListeners();
+    }
+  }
+
+  Map<String, int> _normalizeRecencyMap(Map<String, int> input) {
+    if (_profiles.isEmpty) return const <String, int>{};
+    final allowed = _profiles.map((p) => p.id).toSet();
+    final out = <String, int>{};
+    for (final entry in input.entries) {
+      final id = entry.key.trim();
+      final ts = entry.value;
+      if (id.isEmpty || !allowed.contains(id) || ts <= 0) continue;
+      out[id] = ts;
+    }
+    return out;
   }
 }

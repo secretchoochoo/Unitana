@@ -105,9 +105,14 @@ class _DataRefreshStatusLabelState extends State<DataRefreshStatusLabel> {
             !widget.liveData.isRefreshing &&
             last != null &&
             DateTime.now().difference(last) > widget.staleAfter;
+        final isLight = Theme.of(context).brightness == Brightness.light;
         final Color labelColor = isStale
-            ? DraculaPalette.orange.withAlpha(235)
-            : DraculaPalette.purple.withAlpha(220);
+            ? (isLight
+                  ? const Color(0xFF8A3D12) // Solarized-adjacent deep orange
+                  : DraculaPalette.orange.withAlpha(235))
+            : (isLight
+                  ? cs.onSurface.withAlpha(210)
+                  : DraculaPalette.purple.withAlpha(220));
 
         final baseStyle =
             (widget.compact
@@ -136,7 +141,9 @@ class _DataRefreshStatusLabelState extends State<DataRefreshStatusLabel> {
             vertical: widget.compact ? 4 : 5,
           ),
           decoration: BoxDecoration(
-            color: cs.surface.withAlpha(120),
+            color: isLight
+                ? cs.surfaceContainerHighest
+                : cs.surface.withAlpha(120),
             borderRadius: BorderRadius.circular(widget.compact ? 10 : 12),
             border: Border.all(color: cs.outlineVariant.withAlpha(160)),
           ),

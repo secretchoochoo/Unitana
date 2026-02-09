@@ -261,7 +261,7 @@ class ToolRegistry {
     ),
     ToolRegistryTool(
       toolId: 'world_clock_delta',
-      label: 'World Clock Delta',
+      label: 'World Time Map',
       icon: Icons.public_rounded,
       isEnabled: true,
       surfaceType: ToolSurfaceType.aliasPreset,
@@ -296,7 +296,7 @@ class ToolRegistry {
     ),
     ToolRegistryTool(
       toolId: 'unit_price_helper',
-      label: 'Unit Price Helper',
+      label: 'Price Compare',
       icon: Icons.local_offer_rounded,
       isEnabled: true,
       surfaceType: ToolSurfaceType.dedicated,
@@ -306,7 +306,7 @@ class ToolRegistry {
     // Quick Tools
     ToolRegistryTool(
       toolId: 'shoe_sizes',
-      label: 'Shoe Sizes',
+      label: 'Shoes',
       icon: Icons.directions_walk_rounded,
       isEnabled: true,
       surfaceType: ToolSurfaceType.configurableTemplate,

@@ -53,6 +53,10 @@ class ToolDefinitions {
     'oven_temperature': 'Oven Temp',
     'body_weight': 'Body Wt',
     'time_zone_converter': 'TZ Converter',
+    'paper_sizes': 'Paper',
+    'mattress_sizes': 'Mattress',
+    'shoe_sizes': 'Shoes',
+    'world_clock_delta': 'World Map',
   };
 
   static String widgetTitleFor(ToolDefinition tool) {
@@ -263,7 +267,7 @@ class ToolDefinitions {
     id: 'shoe_sizes',
     canonicalToolId: CanonicalToolId.shoeSizes,
     lensId: ActivityLensId.quickTools,
-    title: 'Shoe Sizes',
+    title: 'Shoes',
     icon: Icons.directions_run_rounded,
     defaultPrimary: '42 EU',
     defaultSecondary: '9 US M',
@@ -314,6 +318,16 @@ class ToolDefinitions {
     defaultSecondary: '—',
   );
 
+  static const worldClockDelta = ToolDefinition(
+    id: 'world_clock_delta',
+    canonicalToolId: CanonicalToolId.time,
+    lensId: ActivityLensId.weatherTime,
+    title: 'World Time Map',
+    icon: Icons.public_rounded,
+    defaultPrimary: 'UTC map',
+    defaultSecondary: 'Home vs Destination',
+  );
+
   static const tipHelper = ToolDefinition(
     id: 'tip_helper',
     canonicalToolId: CanonicalToolId.tipHelper,
@@ -338,7 +352,7 @@ class ToolDefinitions {
     id: 'unit_price_helper',
     canonicalToolId: 'unit_price_helper',
     lensId: ActivityLensId.moneyShopping,
-    title: 'Unit Price Helper',
+    title: 'Price Compare',
     icon: Icons.local_offer_rounded,
     defaultPrimary: '\$4.99',
     defaultSecondary: '500 g',
@@ -385,6 +399,7 @@ class ToolDefinitions {
     weight,
     bodyWeight,
     weatherSummary,
+    worldClockDelta,
     tipHelper,
     taxVatHelper,
     unitPriceHelper,
@@ -417,6 +432,7 @@ class ToolDefinitions {
     'weight': weight,
     'body_weight': bodyWeight,
     'weather_summary': weatherSummary,
+    'world_clock_delta': worldClockDelta,
     'tip_helper': tipHelper,
     'tax_vat_helper': taxVatHelper,
     'unit_price_helper': unitPriceHelper,

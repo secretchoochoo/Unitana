@@ -30,6 +30,7 @@ flutter:
   assets:
     - assets/data/cities_v1.json
     - assets/brand/unitana_logo.png
+    - assets/maps/world_outline.png
     - assets/fonts/
 
   fonts:
