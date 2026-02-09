@@ -468,6 +468,15 @@ class DashboardCopy {
       DashboardLocalizations.of(
         context,
       ).text('dashboard.settings.language.option.es', fallback: 'Español');
+  static String settingsLanguageFrench(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.settings.language.option.fr', fallback: 'Français');
+  static String settingsLanguagePortuguesePortugal(BuildContext context) =>
+      DashboardLocalizations.of(context).text(
+        'dashboard.settings.language.option.ptPT',
+        fallback: 'Português (Portugal)',
+      );
   static String settingsLanguageUpdated(BuildContext context) =>
       DashboardLocalizations.of(context).text(
         'dashboard.settings.language.updated',
@@ -1470,6 +1479,126 @@ class DashboardCopy {
         params: <String, String>{'count': '$remaining'},
         fallback: '+$remaining more',
       );
+  static String toolDisplayName(
+    BuildContext context, {
+    required String toolId,
+    required String fallback,
+  }) => DashboardLocalizations.of(
+    context,
+  ).text('dashboard.tools.$toolId.title', fallback: fallback);
+  static String toolWidgetDisplayName(
+    BuildContext context, {
+    required String toolId,
+    required String fallback,
+  }) => DashboardLocalizations.of(
+    context,
+  ).text('dashboard.tools.$toolId.widgetTitle', fallback: fallback);
+  static String lensName(
+    BuildContext context, {
+    required String lensId,
+    required String fallback,
+  }) => DashboardLocalizations.of(
+    context,
+  ).text('dashboard.lens.$lensId.name', fallback: fallback);
+  static String lensDescriptor(
+    BuildContext context, {
+    required String lensId,
+    required String fallback,
+  }) => DashboardLocalizations.of(
+    context,
+  ).text('dashboard.lens.$lensId.description', fallback: fallback);
+  static String firstRunCancelTooltip(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.firstRun.tooltip.cancel', fallback: 'Cancel setup');
+  static String firstRunWelcomeTitle(BuildContext context) =>
+      DashboardLocalizations.of(context).text(
+        'dashboard.firstRun.welcome.title',
+        fallback: 'Welcome to Unitana',
+      );
+  static String firstRunWelcomeTagline(
+    BuildContext context,
+  ) => DashboardLocalizations.of(context).text(
+    'dashboard.firstRun.welcome.tagline',
+    fallback:
+        'A dual-reality dashboard for the stuff\nyour brain keeps converting anyway.',
+  );
+  static String firstRunPlacesTitle(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.firstRun.places.title', fallback: 'Pick Your Places');
+  static String firstRunPlacesSubtitle(BuildContext context) =>
+      DashboardLocalizations.of(context).text(
+        'dashboard.firstRun.places.subtitle',
+        fallback: 'Your here and your there, side by side.',
+      );
+  static String firstRunPickBothPreview(BuildContext context) =>
+      DashboardLocalizations.of(context).text(
+        'dashboard.firstRun.places.pickBoth',
+        fallback: 'Pick both places to preview the mini hero.',
+      );
+  static String firstRunChooseHome(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.firstRun.cta.chooseHome', fallback: 'Choose Home city');
+  static String firstRunChooseDestination(BuildContext context) =>
+      DashboardLocalizations.of(context).text(
+        'dashboard.firstRun.cta.chooseDestination',
+        fallback: 'Choose Destination city',
+      );
+  static String firstRunUnitMetric(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.firstRun.unit.metric', fallback: 'Metric');
+  static String firstRunUnitImperial(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.firstRun.unit.imperial', fallback: 'Imperial');
+  static String firstRunClock12h(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.firstRun.clock.12h', fallback: '12-Hour');
+  static String firstRunClock24h(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.firstRun.clock.24h', fallback: '24-Hour');
+  static String firstRunConfirmTitle(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.firstRun.confirm.title', fallback: 'Name and Confirm');
+  static String firstRunConfirmSubtitle(
+    BuildContext context,
+  ) => DashboardLocalizations.of(context).text(
+    'dashboard.firstRun.confirm.subtitle',
+    fallback:
+        'This name shows in the header and in your profile list. Keep it short.',
+  );
+  static String firstRunProfileNameLabel(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.firstRun.profileName.label', fallback: 'Profile Name');
+  static String firstRunProfileNameHint(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.firstRun.profileName.hint', fallback: 'Lisbon');
+  static String firstRunPickCitiesHint(BuildContext context) =>
+      DashboardLocalizations.of(context).text(
+        'dashboard.firstRun.confirm.pickCities',
+        fallback: 'Go back and pick Home + Destination to preview the hero.',
+      );
+  static String firstRunSaveChanges(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.firstRun.cta.saveChanges', fallback: 'Save Changes');
+  static String firstRunCreateProfile(BuildContext context) =>
+      DashboardLocalizations.of(context).text(
+        'dashboard.firstRun.cta.createProfile',
+        fallback: 'Create Profile',
+      );
+  static String ratesStaleShort(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.dashboard.ratesStaleShort', fallback: 'Rates stale');
 
   static String dateImpactTitleCase(String dateImpactRaw) {
     return switch (dateImpactRaw.toLowerCase()) {

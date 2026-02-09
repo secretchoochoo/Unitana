@@ -42,7 +42,12 @@ class _UnitanaAppState extends State<UnitanaApp> {
         darkTheme: UnitanaTheme.dark(),
         themeMode: _state.appThemeMode,
         locale: _state.appLocale,
-        supportedLocales: const <Locale>[Locale('en'), Locale('es')],
+        supportedLocales: const <Locale>[
+          Locale('en'),
+          Locale('es'),
+          Locale('fr'),
+          Locale('pt', 'PT'),
+        ],
         localizationsDelegates: const <LocalizationsDelegate<dynamic>>[
           GlobalMaterialLocalizations.delegate,
           GlobalWidgetsLocalizations.delegate,

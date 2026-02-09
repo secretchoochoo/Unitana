@@ -1,4 +1,4 @@
-NEXT CHAT PROMPT — XL Unit 11: Pack D Consolidation + Pack J/Pace Signoff
+NEXT CHAT PROMPT — XL-C: Pack U + Pack L Theme Readability Finalization
 
 You are taking over Unitana (Flutter) in a fresh, high-context window.
 
@@ -6,13 +6,15 @@ Read these files first:
 1) `docs/ai/handoff/CURRENT_HANDOFF.md`
 2) `docs/ai/context_db.json`
 3) `docs/ai/prompts/NEXT_CHAT_PROMPT.md`
-4) `app/unitana/lib/features/dashboard/widgets/pinned_mini_hero_readout.dart`
-5) `app/unitana/lib/features/dashboard/widgets/tool_modal_bottom_sheet.dart`
-6) `app/unitana/lib/features/dashboard/widgets/weather_summary_bottom_sheet.dart`
-7) `app/unitana/lib/features/dashboard/models/tool_definitions.dart`
-8) `app/unitana/lib/features/dashboard/models/tool_registry.dart`
-9) `app/unitana/test/pace_tool_modal_interaction_test.dart`
-10) `app/unitana/test/small_device_overflow_sweep_test.dart`
+4) `app/unitana/lib/theme/app_theme.dart`
+5) `app/unitana/lib/features/dashboard/models/tool_registry.dart`
+6) `app/unitana/lib/features/dashboard/widgets/tool_modal_bottom_sheet.dart`
+7) `app/unitana/lib/features/dashboard/widgets/dashboard_board.dart`
+8) `app/unitana/lib/features/dashboard/widgets/places_hero_v2.dart`
+9) `app/unitana/lib/features/dashboard/dashboard_screen.dart`
+10) `app/unitana/test/dashboard_theme_mode_persistence_test.dart`
+11) `app/unitana/test/tool_modal_units_typography_consistency_test.dart`
+12) `app/unitana/test/weather_summary_narrow_layout_smoke_test.dart`
 
 ## Core operating rules
 - Keep repo green if any code/docs are touched:
@@ -27,34 +29,34 @@ Read these files first:
   - goldens opt-in only
 
 ## Mission
-Execute XL Unit 11 as a combined closure slice:
-1) Pack D docs/text consolidation pass.
-2) Pack J mini-hero readability signoff polish.
-3) Pace planner usability refinement and contract hardening.
+Execute XL-C by closing Pack U + Pack L readability/naming finalization:
+1) finish light/dark readability parity across high-traffic surfaces.
+2) simplify user-facing theme naming to `Light` and `Dark`.
+3) reduce low-contrast hotspots in tools/modals/widgets without regressing existing behavior.
 
 ## Required outcomes
-1) Pack D consolidation closure
-- Audit current AI handoff/context/prompt files for stale or duplicated status notes.
-- Normalize “done / in_progress / planned” language so backlog state is unambiguous.
-- Keep pending work explicit and short (no handoff drift).
+1) Theme naming simplification
+- Settings should present `System`, `Dark`, `Light` (user-facing labels).
+- Keep internal theme/token architecture stable.
 
-2) Pack J mini-hero signoff
-- Keep the compact mini-hero size contract (no overflows on small screens).
-- Improve spacing/legibility in both dark/light themes where needed without reintroducing extra rows.
-- Preserve all existing data contracts (delta, sun, wind, AQI, pollen, temp, FX).
+2) Readability sweep (dark + light)
+- Audit and fix low-contrast text/controls in:
+  - dashboard hero and mini-hero
+  - tool menu + tool modal headers
+  - high-traffic tool modals (weather/time/pace/unit-price)
+  - widget cards (especially long-title truncation/readability zones)
+- Replace oversaturated light-mode CTA pink with a contrast-safe accent.
 
-3) Pace planner refinement
-- Improve novice readability for goal planner outputs (labels + split checkpoints).
-- Keep deterministic parsing behavior for `mm:ss` and `h:mm:ss`.
-- Expand regression checks only where they lock correctness/UX-critical behavior.
+3) Consistency contracts
+- Preserve tool accent semantics while ensuring text contrast is WCAG-pragmatic on both themes.
+- Avoid one-off color hacks; prefer semantic token-level adjustments.
 
 4) Preserve existing contracts
 - No regressions to:
-  - Pack N timezone conversion/search behavior
-  - Pack H locale/runtime fallback
-  - Pack K opt-in/no-silent-switch profile suggestion contracts
-  - matrix lookup copy/tap contracts
-  - city-picker perf budgets
+  - Pack Q locale selection/persistence/runtime fallback
+  - Pack R/S matrix behavior and widget sync
+  - weather forecast panel interaction/layout contracts
+  - profile suggestion and dashboard interaction tests
 
 5) Docs update
 - Update:
@@ -63,18 +65,18 @@ Execute XL Unit 11 as a combined closure slice:
   - `docs/ai/prompts/NEXT_CHAT_PROMPT.md`
 
 ## Suggested execution order
-1) docs/backlog audit + normalization
-2) mini-hero polish pass + targeted overflow tests
-3) pace planner UX/readability refinements + tests
+1) token/readability audit and targeted fixes
+2) theme label simplification in settings/localization keys
+3) regression updates for readability-sensitive tests
 4) full gates
-5) handoff refresh
+5) docs/handoff refresh
 
 ## Definition of done
-- Backlog/docs state is auditable and current.
-- Mini-hero is readable at same size in both themes with no overflow regressions.
-- Pace planner is clearer for novice users while preserving deterministic behavior.
+- Theme labels are simplified to `System`/`Dark`/`Light`.
+- Light and dark readability debt is materially reduced on high-traffic surfaces.
+- Existing interaction/layout contracts remain intact.
 - Repo green (`format`, `analyze`, `test`).
 
 ## Forward plan after this slice
-- Next slice: Pack K phase-2 explainability UX and safe-switch boundary hardening.
-- Following slice: Pack I + Pack O tutorial overlay planning.
+- Next slice: XL-D (Pack V emergency weather system + marquee alert states).
+- Following slice: XL-E (Pack T world time map widget reimagination + matrix polish follow-up).

@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -44,6 +46,60 @@ class ConversionRecord {
   });
 }
 
+@immutable
+class MatrixWidgetSelection {
+  final String rowKey;
+  final String system;
+  final String value;
+  final String referenceLabel;
+  final String primaryLabel;
+  final String secondaryLabel;
+
+  const MatrixWidgetSelection({
+    required this.rowKey,
+    required this.system,
+    required this.value,
+    required this.referenceLabel,
+    required this.primaryLabel,
+    required this.secondaryLabel,
+  });
+
+  Map<String, Object?> toJson() => <String, Object?>{
+    'rowKey': rowKey,
+    'system': system,
+    'value': value,
+    'referenceLabel': referenceLabel,
+    'primaryLabel': primaryLabel,
+    'secondaryLabel': secondaryLabel,
+  };
+
+  static MatrixWidgetSelection? fromJson(Object? raw) {
+    final map = raw is Map ? raw : null;
+    if (map == null) return null;
+    final rowKey = map['rowKey']?.toString().trim() ?? '';
+    final system = map['system']?.toString().trim() ?? '';
+    final value = map['value']?.toString().trim() ?? '';
+    final referenceLabel = map['referenceLabel']?.toString().trim() ?? '';
+    final primaryLabel = map['primaryLabel']?.toString().trim() ?? '';
+    final secondaryLabel = map['secondaryLabel']?.toString().trim() ?? '';
+    if (rowKey.isEmpty ||
+        system.isEmpty ||
+        value.isEmpty ||
+        primaryLabel.isEmpty ||
+        secondaryLabel.isEmpty) {
+      return null;
+    }
+    return MatrixWidgetSelection(
+      rowKey: rowKey,
+      system: system,
+      value: value,
+      referenceLabel: referenceLabel,
+      primaryLabel: primaryLabel,
+      secondaryLabel: secondaryLabel,
+    );
+  }
+}
+
 /// Session-scoped state for the dashboard page.
 ///
 /// - selected reality: drives hero + tools
@@ -54,6 +110,8 @@ class DashboardSessionController extends ChangeNotifier {
   DashboardSessionController({this.prefsNamespace = ''});
 
   static const String _kHeroEnvMode = 'hero_env_mode_v1';
+  static const String _kMatrixWidgetSelectionByTool =
+      'matrix_widget_selection_by_tool_v1';
 
   String _k(String base) =>
       prefsNamespace.trim().isEmpty ? base : '$base::${prefsNamespace.trim()}';
@@ -82,6 +140,8 @@ class DashboardSessionController extends ChangeNotifier {
   //
   // Session-scoped only: not persisted. Defaults to AQI as a neutral baseline.
   HeroEnvPillMode _heroEnvPillMode = HeroEnvPillMode.aqi;
+  Map<String, MatrixWidgetSelection> _matrixWidgetSelectionByTool =
+      const <String, MatrixWidgetSelection>{};
 
   /// Best-effort load of persisted env pill mode.
   ///
@@ -93,14 +153,25 @@ class DashboardSessionController extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     final raw =
         prefs.getString(_k(_kHeroEnvMode)) ?? prefs.getString(_kHeroEnvMode);
-    if (raw == null || raw.trim().isEmpty) return;
-    final norm = raw.trim().toLowerCase();
-    final next = norm == 'pollen'
-        ? HeroEnvPillMode.pollen
-        : HeroEnvPillMode.aqi;
-    if (next == _heroEnvPillMode) return;
+    final next = (raw == null || raw.trim().isEmpty)
+        ? _heroEnvPillMode
+        : (raw.trim().toLowerCase() == 'pollen'
+              ? HeroEnvPillMode.pollen
+              : HeroEnvPillMode.aqi);
+    final matrixRaw =
+        prefs.getString(_k(_kMatrixWidgetSelectionByTool)) ??
+        prefs.getString(_kMatrixWidgetSelectionByTool);
+    final loadedMatrix = _decodeMatrixWidgetSelections(matrixRaw);
+    final matrixChanged = !_mapsEqual(
+      _matrixWidgetSelectionByTool,
+      loadedMatrix,
+    );
+    final envChanged = next != _heroEnvPillMode;
     _heroEnvPillMode = next;
-    notifyListeners();
+    _matrixWidgetSelectionByTool = loadedMatrix;
+    if (envChanged || matrixChanged) {
+      notifyListeners();
+    }
   }
 
   Future<void> _persistEnvMode() async {
@@ -112,6 +183,20 @@ class DashboardSessionController extends ChangeNotifier {
     await prefs.setString(_k(_kHeroEnvMode), v);
     if (prefsNamespace.trim().isNotEmpty) {
       await prefs.remove(_kHeroEnvMode);
+    }
+  }
+
+  Future<void> _persistMatrixWidgetSelections() async {
+    if (!_envModeLoaded) return;
+    final prefs = await SharedPreferences.getInstance();
+    final payload = jsonEncode(
+      _matrixWidgetSelectionByTool.map(
+        (key, value) => MapEntry<String, Object?>(key, value.toJson()),
+      ),
+    );
+    await prefs.setString(_k(_kMatrixWidgetSelectionByTool), payload);
+    if (prefsNamespace.trim().isNotEmpty) {
+      await prefs.remove(_kMatrixWidgetSelectionByTool);
     }
   }
 
@@ -162,6 +247,48 @@ class DashboardSessionController extends ChangeNotifier {
   }
 
   HeroEnvPillMode get heroEnvPillMode => _heroEnvPillMode;
+
+  MatrixWidgetSelection? matrixWidgetSelectionFor(String toolId) {
+    final key = toolId.trim();
+    if (key.isEmpty) return null;
+    return _matrixWidgetSelectionByTool[key];
+  }
+
+  Future<void> setMatrixWidgetSelection({
+    required String toolId,
+    required String rowKey,
+    required String system,
+    required String value,
+    required String referenceLabel,
+    required String primaryLabel,
+    required String secondaryLabel,
+  }) async {
+    final normalizedToolId = toolId.trim();
+    if (normalizedToolId.isEmpty) return;
+    final selection = MatrixWidgetSelection(
+      rowKey: rowKey,
+      system: system,
+      value: value,
+      referenceLabel: referenceLabel,
+      primaryLabel: primaryLabel,
+      secondaryLabel: secondaryLabel,
+    );
+    final current = _matrixWidgetSelectionByTool[normalizedToolId];
+    if (current != null &&
+        current.rowKey == selection.rowKey &&
+        current.system == selection.system &&
+        current.value == selection.value &&
+        current.primaryLabel == selection.primaryLabel &&
+        current.secondaryLabel == selection.secondaryLabel) {
+      return;
+    }
+    _matrixWidgetSelectionByTool = <String, MatrixWidgetSelection>{
+      ..._matrixWidgetSelectionByTool,
+      normalizedToolId: selection,
+    };
+    await _persistMatrixWidgetSelections();
+    notifyListeners();
+  }
 
   void setHeroEnvPillMode(HeroEnvPillMode value) {
     if (_heroEnvPillMode == value) return;
@@ -216,6 +343,53 @@ class DashboardSessionController extends ChangeNotifier {
     if (list == null || list.isEmpty) return;
     _history.remove(toolId);
     notifyListeners();
+  }
+
+  Map<String, MatrixWidgetSelection> _decodeMatrixWidgetSelections(
+    String? raw,
+  ) {
+    if (raw == null || raw.trim().isEmpty) {
+      return const <String, MatrixWidgetSelection>{};
+    }
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is! Map) {
+        return const <String, MatrixWidgetSelection>{};
+      }
+      final out = <String, MatrixWidgetSelection>{};
+      decoded.forEach((key, value) {
+        final k = key.toString().trim();
+        if (k.isEmpty) return;
+        final parsed = MatrixWidgetSelection.fromJson(value);
+        if (parsed == null) return;
+        out[k] = parsed;
+      });
+      return out;
+    } catch (_) {
+      return const <String, MatrixWidgetSelection>{};
+    }
+  }
+
+  bool _mapsEqual(
+    Map<String, MatrixWidgetSelection> a,
+    Map<String, MatrixWidgetSelection> b,
+  ) {
+    if (identical(a, b)) return true;
+    if (a.length != b.length) return false;
+    for (final entry in a.entries) {
+      final other = b[entry.key];
+      final value = entry.value;
+      if (other == null) return false;
+      if (value.rowKey != other.rowKey ||
+          value.system != other.system ||
+          value.value != other.value ||
+          value.referenceLabel != other.referenceLabel ||
+          value.primaryLabel != other.primaryLabel ||
+          value.secondaryLabel != other.secondaryLabel) {
+        return false;
+      }
+    }
+    return true;
   }
 
   /// Tool ids ordered by most-recent use.

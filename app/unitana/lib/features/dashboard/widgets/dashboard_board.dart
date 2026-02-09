@@ -868,18 +868,28 @@ class _DashboardBoardState extends State<DashboardBoard>
     final primary = labels.$1;
     final secondary = labels.$2;
     final brightness = Theme.of(context).brightness;
+    final localizedWidgetTitle = DashboardCopy.toolWidgetDisplayName(
+      context,
+      toolId: tool.id,
+      fallback: ToolDefinitions.widgetTitleFor(tool),
+    );
+    final localizedToolTitle = DashboardCopy.toolDisplayName(
+      context,
+      toolId: tool.id,
+      fallback: tool.title,
+    );
     final footerLabel = widget.isEditing
         ? ''
         : (isCurrency && widget.liveData.isCurrencyStale)
-        ? 'Rates stale'
-        : 'Convert';
+        ? DashboardCopy.ratesStaleShort(context)
+        : DashboardCopy.convertCta(context);
 
     final isDefaultTile = _isDefaultToolTile(item);
     final canEdit = item.userAdded || isDefaultTile;
 
     final tile = UnitanaTile(
       interactionKey: ValueKey('dashboard_item_${item.id}'),
-      title: ToolDefinitions.widgetTitleFor(tool),
+      title: localizedWidgetTitle,
       // UnitanaTile expects an IconData, not an Icon widget.
       leadingIcon: tool.icon,
       accentColor: tool.lensId == null
@@ -955,7 +965,7 @@ class _DashboardBoardState extends State<DashboardBoard>
     final payload = _payloadForToolTile(item: item, currentIndex: currentIndex);
 
     final previewTile = UnitanaTile(
-      title: ToolDefinitions.widgetTitleFor(tool),
+      title: localizedWidgetTitle,
       leadingIcon: tool.icon,
       accentColor: tool.lensId == null
           ? null
@@ -1006,7 +1016,10 @@ class _DashboardBoardState extends State<DashboardBoard>
               _EditIconButton(
                 icon: Icons.delete_outline_rounded,
                 onTap: () async {
-                  final ok = await _confirmRemoveTile(context, tool.title);
+                  final ok = await _confirmRemoveTile(
+                    context,
+                    localizedToolTitle,
+                  );
                   if (!ok) {
                     return;
                   }
@@ -1291,6 +1304,11 @@ class _DashboardBoardState extends State<DashboardBoard>
     required ConversionRecord? latest,
     required Place? activePlace,
   }) {
+    final matrixSelection = _matrixSelectionForTool(tool.id);
+    if (matrixSelection != null) {
+      return (matrixSelection.primaryLabel, matrixSelection.secondaryLabel);
+    }
+
     // Default to tool defaults, then prefer the most recent run.
     var a = latest?.inputLabel ?? tool.defaultPrimary;
     var b = latest?.outputLabel ?? tool.defaultSecondary;
@@ -1337,6 +1355,17 @@ class _DashboardBoardState extends State<DashboardBoard>
     final bIsImperial = !bIsMetric;
     if (!aIsImperial && bIsImperial) return (b, a);
     return (a, b);
+  }
+
+  MatrixWidgetSelection? _matrixSelectionForTool(String toolId) {
+    switch (toolId) {
+      case 'shoe_sizes':
+      case 'paper_sizes':
+      case 'mattress_sizes':
+        return widget.session.matrixWidgetSelectionFor(toolId);
+      default:
+        return null;
+    }
   }
 
   (String, String) _weatherSummaryLabels({required Place? activePlace}) {
@@ -1554,6 +1583,30 @@ class _ToolPickerSheetState extends State<ToolPickerSheet> {
 
   DashboardSessionController? get _session => widget.session;
 
+  String _localizedToolLabel(BuildContext context, ToolRegistryTool tool) {
+    return DashboardCopy.toolDisplayName(
+      context,
+      toolId: tool.toolId,
+      fallback: tool.label,
+    );
+  }
+
+  String _localizedLensName(BuildContext context, ActivityLens lens) {
+    return DashboardCopy.lensName(
+      context,
+      lensId: lens.id,
+      fallback: lens.name,
+    );
+  }
+
+  String _localizedLensDescriptor(BuildContext context, ActivityLens lens) {
+    return DashboardCopy.lensDescriptor(
+      context,
+      lensId: lens.id,
+      fallback: lens.descriptor,
+    );
+  }
+
   String _disabledBadgeFor(BuildContext context, ToolRegistryTool tool) {
     switch (tool.surfaceType) {
       case ToolSurfaceType.deferred:
@@ -1641,7 +1694,13 @@ class _ToolPickerSheetState extends State<ToolPickerSheet> {
   bool _matchesQuery(ToolRegistryTool tool) {
     final q = _query.trim().toLowerCase();
     if (q.isEmpty) return true;
-    return tool.label.toLowerCase().contains(q);
+    final fallback = tool.label.toLowerCase();
+    final localized = DashboardCopy.toolDisplayName(
+      context,
+      toolId: tool.toolId,
+      fallback: tool.label,
+    ).toLowerCase();
+    return fallback.contains(q) || localized.contains(q);
   }
 
   List<ToolRegistryTool> _searchResults() {
@@ -1650,7 +1709,11 @@ class _ToolPickerSheetState extends State<ToolPickerSheet> {
 
     final matches = ToolRegistry.all.where(_matchesQuery).toList();
     // Keep results deterministic and readable.
-    matches.sort((a, b) => a.label.compareTo(b.label));
+    matches.sort((a, b) {
+      final aLabel = _localizedToolLabel(context, a);
+      final bLabel = _localizedToolLabel(context, b);
+      return aLabel.compareTo(bLabel);
+    });
     return matches;
   }
 
@@ -1693,11 +1756,15 @@ class _ToolPickerSheetState extends State<ToolPickerSheet> {
                 brightness: theme.brightness,
               ),
             ),
-            title: Text(t.label),
+            title: Text(_localizedToolLabel(context, t)),
             subtitle: () {
               final lensName = t.lenses.isEmpty
                   ? null
-                  : (ActivityLenses.byId(t.lenses.first)?.name ?? '');
+                  : () {
+                      final lens = ActivityLenses.byId(t.lenses.first);
+                      if (lens == null) return '';
+                      return _localizedLensName(context, lens);
+                    }();
               final deferReason = t.deferReason?.trim();
               if (deferReason != null && deferReason.isNotEmpty) {
                 final prefix = (lensName == null || lensName.isEmpty)
@@ -1809,7 +1876,7 @@ class _ToolPickerSheetState extends State<ToolPickerSheet> {
               brightness: theme.brightness,
             ),
           ),
-          title: Text(t.label),
+          title: Text(_localizedToolLabel(context, t)),
           subtitle: t.deferReason == null
               ? null
               : Text(
@@ -1854,8 +1921,8 @@ class _ToolPickerSheetState extends State<ToolPickerSheet> {
       child: ListTile(
         key: ValueKey('toolpicker_lens_${lens.id}'),
         leading: Icon(lens.icon, color: LensAccents.iconTintFor(lens.id)),
-        title: Text(lens.name),
-        subtitle: Text(lens.descriptor),
+        title: Text(_localizedLensName(context, lens)),
+        subtitle: Text(_localizedLensDescriptor(context, lens)),
         trailing: Icon(
           expanded ? Icons.expand_less_rounded : Icons.expand_more_rounded,
           color: scheme.onSurfaceVariant,
@@ -1894,7 +1961,7 @@ class _ToolPickerSheetState extends State<ToolPickerSheet> {
       key: const ValueKey('toolpicker_recent'),
       leading: const Icon(Icons.history_rounded),
       title: Text(DashboardCopy.toolPickerMostRecent(context)),
-      subtitle: Text(tool.label),
+      subtitle: Text(_localizedToolLabel(context, tool)),
       trailing: const Icon(Icons.chevron_right_rounded),
       onTap: () => Navigator.of(context).pop(mapped),
     );

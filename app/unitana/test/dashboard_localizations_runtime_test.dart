@@ -31,11 +31,47 @@ void main() {
 
   test('DashboardLocalizations falls back to english when locale missing', () {
     final value = DashboardLocalizations.resolveForLocale(
-      locale: const Locale('fr'),
+      locale: const Locale('de'),
       key: 'dashboard.tool.cta.swap',
     );
     expect(value, 'Swap');
   });
+
+  test('DashboardLocalizations resolves french and portuguese seed keys', () {
+    final frTitle = DashboardLocalizations.resolveForLocale(
+      locale: const Locale('fr'),
+      key: 'dashboard.settings.language.title',
+    );
+    final ptTitle = DashboardLocalizations.resolveForLocale(
+      locale: const Locale('pt', 'PT'),
+      key: 'dashboard.settings.language.title',
+    );
+    final ptCities = DashboardLocalizations.resolveForLocale(
+      locale: const Locale('pt', 'PT'),
+      key: 'dashboard.time.picker.mode.cities',
+    );
+
+    expect(frTitle, 'Langue');
+    expect(ptTitle, 'Idioma');
+    expect(ptCities, 'Cidades');
+  });
+
+  test(
+    'DashboardLocalizations auto-translates fallback strings for pt locale',
+    () {
+      final ptToolName = DashboardLocalizations.resolveForLocale(
+        locale: const Locale('pt', 'PT'),
+        key: 'dashboard.tools.distance.title',
+        fallback: 'Distance',
+      );
+      final ptPickerTitle = DashboardLocalizations.resolveForLocale(
+        locale: const Locale('pt', 'PT'),
+        key: 'dashboard.toolPicker.title',
+      );
+      expect(ptToolName, 'Distancia');
+      expect(ptPickerTitle, isNot('Choose a tool'));
+    },
+  );
 
   test(
     'DashboardLocalizations uses partial spanish seed and falls back to english',

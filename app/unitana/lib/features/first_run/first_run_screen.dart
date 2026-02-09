@@ -7,12 +7,12 @@ import 'package:unitana/data/cities.dart';
 import 'package:unitana/data/city_repository.dart';
 import 'package:unitana/features/dashboard/dashboard_screen.dart';
 import 'package:unitana/features/dashboard/models/dashboard_live_data.dart';
+import 'package:unitana/features/dashboard/models/dashboard_copy.dart';
 import 'package:unitana/features/dashboard/models/dashboard_session_controller.dart';
 import 'package:unitana/features/dashboard/widgets/compact_reality_toggle.dart';
 import 'package:unitana/features/dashboard/widgets/pinned_mini_hero_readout.dart';
 import 'package:unitana/features/dashboard/widgets/places_hero_v2.dart';
 import 'package:unitana/models/place.dart';
-import 'package:unitana/theme/dracula_palette.dart';
 import 'package:unitana/widgets/city_picker.dart';
 
 enum FirstRunExitAction { saved, cancelled }
@@ -272,10 +272,11 @@ class _FirstRunScreenState extends State<FirstRunScreen> {
     required List<City> cities,
     City? initial,
   }) async {
+    final theme = Theme.of(context);
     return showModalBottomSheet<City>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: DraculaPalette.background,
+      backgroundColor: theme.colorScheme.surface,
       builder: (ctx) => CityPicker(cities: cities, selected: initial),
     );
   }
@@ -348,7 +349,9 @@ class _FirstRunScreenState extends State<FirstRunScreen> {
       return;
     }
 
-    widget.state.setPendingSuccessToast('Profile created');
+    widget.state.setPendingSuccessToast(
+      DashboardCopy.dashboardProfileCreated(context),
+    );
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(builder: (_) => DashboardScreen(state: widget.state)),
       (route) => false,
@@ -392,7 +395,7 @@ class _FirstRunScreenState extends State<FirstRunScreen> {
                     alignment: Alignment.centerRight,
                     child: IconButton(
                       key: const Key('first_run_cancel_button'),
-                      tooltip: 'Cancel setup',
+                      tooltip: DashboardCopy.firstRunCancelTooltip(context),
                       onPressed: _cancelAndClose,
                       icon: const Icon(Icons.close_rounded),
                     ),
@@ -470,8 +473,12 @@ class _FirstRunScreenState extends State<FirstRunScreen> {
                                 icon: const Icon(Icons.check),
                                 label: Text(
                                   widget.editMode
-                                      ? 'Save Changes'
-                                      : 'Create Profile',
+                                      ? DashboardCopy.firstRunSaveChanges(
+                                          context,
+                                        )
+                                      : DashboardCopy.firstRunCreateProfile(
+                                          context,
+                                        ),
                                 ),
                               ),
                             )
@@ -634,7 +641,7 @@ class _FirstRunScreenState extends State<FirstRunScreen> {
                       ),
                       const SizedBox(height: 18),
                       Text(
-                        'Welcome to Unitana',
+                        DashboardCopy.firstRunWelcomeTitle(context),
                         style: headlineStyle,
                         textAlign: TextAlign.center,
                       ),
@@ -650,8 +657,7 @@ class _FirstRunScreenState extends State<FirstRunScreen> {
                           ),
                         ),
                         child: Text(
-                          'A dual-reality dashboard for the stuff\n'
-                          'your brain keeps converting anyway.',
+                          DashboardCopy.firstRunWelcomeTagline(context),
                           style: taglineStyle,
                           textAlign: TextAlign.center,
                         ),
@@ -754,13 +760,13 @@ class _FirstRunScreenState extends State<FirstRunScreen> {
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     Text(
-                      'Pick Your Places',
+                      DashboardCopy.firstRunPlacesTitle(context),
                       style: titleStyle,
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 10),
                     Text(
-                      'Your here and your there, side by side.',
+                      DashboardCopy.firstRunPlacesSubtitle(context),
                       style: subStyle,
                       textAlign: TextAlign.center,
                     ),
@@ -770,7 +776,9 @@ class _FirstRunScreenState extends State<FirstRunScreen> {
                       key: const Key('first_run_home_city_button'),
                       onPressed: () => _pickCity(home: true),
                       icon: Icons.home,
-                      label: _homeCity?.display ?? 'Choose Home city',
+                      label:
+                          _homeCity?.display ??
+                          DashboardCopy.firstRunChooseHome(context),
                     ),
                     if (_homeCity != null) ...[
                       const SizedBox(height: 10),
@@ -793,7 +801,9 @@ class _FirstRunScreenState extends State<FirstRunScreen> {
                       key: const Key('first_run_dest_city_button'),
                       onPressed: () => _pickCity(home: false),
                       icon: Icons.flight_takeoff,
-                      label: _destCity?.display ?? 'Choose Destination city',
+                      label:
+                          _destCity?.display ??
+                          DashboardCopy.firstRunChooseDestination(context),
                     ),
                     if (_destCity != null) ...[
                       const SizedBox(height: 10),
@@ -849,7 +859,7 @@ class _FirstRunScreenState extends State<FirstRunScreen> {
             children: [
               Center(
                 child: Text(
-                  'Name and Confirm',
+                  DashboardCopy.firstRunConfirmTitle(context),
                   style: titleStyle,
                   textAlign: TextAlign.center,
                 ),
@@ -857,7 +867,7 @@ class _FirstRunScreenState extends State<FirstRunScreen> {
               const SizedBox(height: 10),
               Center(
                 child: Text(
-                  'This name shows in the header and in your profile list. Keep it short.',
+                  DashboardCopy.firstRunConfirmSubtitle(context),
                   style: subStyle,
                   textAlign: TextAlign.center,
                 ),
@@ -866,13 +876,15 @@ class _FirstRunScreenState extends State<FirstRunScreen> {
               TextField(
                 key: const ValueKey('first_run_profile_name_field'),
                 decoration: InputDecoration(
-                  labelText: 'Profile Name',
+                  labelText: DashboardCopy.firstRunProfileNameLabel(context),
                   labelStyle: (tt.bodySmall ?? const TextStyle(fontSize: 12))
                       .copyWith(
                         color: cs.primary.withAlpha(220),
                         fontWeight: FontWeight.w700,
                       ),
-                  hintText: _destCity?.cityName ?? 'Lisbon',
+                  hintText:
+                      _destCity?.cityName ??
+                      DashboardCopy.firstRunProfileNameHint(context),
                   filled: true,
                   fillColor: cs.surfaceContainerHighest.withAlpha(55),
                   border: OutlineInputBorder(
@@ -893,7 +905,7 @@ class _FirstRunScreenState extends State<FirstRunScreen> {
                     border: Border.all(color: cs.outlineVariant.withAlpha(160)),
                   ),
                   child: Text(
-                    'Go back and pick Home + Destination to preview the hero.',
+                    DashboardCopy.firstRunPickCitiesHint(context),
                     style: subStyle,
                     textAlign: TextAlign.center,
                   ),
@@ -1000,12 +1012,12 @@ class _FirstRunScreenState extends State<FirstRunScreen> {
           runSpacing: 8,
           children: [
             pill(
-              label: 'Metric',
+              label: DashboardCopy.firstRunUnitMetric(context),
               selected: unitSystem == 'metric',
               onTap: () => onPickUnit('metric'),
             ),
             pill(
-              label: 'Imperial',
+              label: DashboardCopy.firstRunUnitImperial(context),
               selected: unitSystem == 'imperial',
               onTap: () => onPickUnit('imperial'),
             ),
@@ -1018,12 +1030,12 @@ class _FirstRunScreenState extends State<FirstRunScreen> {
           runSpacing: 8,
           children: [
             pill(
-              label: '12-Hour',
+              label: DashboardCopy.firstRunClock12h(context),
               selected: !use24h,
               onTap: () => onPickClock(false),
             ),
             pill(
-              label: '24-Hour',
+              label: DashboardCopy.firstRunClock24h(context),
               selected: use24h,
               onTap: () => onPickClock(true),
             ),

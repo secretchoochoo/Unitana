@@ -632,11 +632,18 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
   List<String> _lookupSystemsForTool() {
     switch (widget.tool.canonicalToolId) {
       case CanonicalToolId.shoeSizes:
-        return const <String>['US Men', 'US Women', 'EU', 'UK', 'JP (cm)'];
+        return const <String>[
+          'US Men',
+          'US Women',
+          'EU',
+          'UK',
+          'AU',
+          'JP (cm)',
+        ];
       case CanonicalToolId.paperSizes:
-        return const <String>['ISO', 'US'];
+        return const <String>['ISO', 'US', 'JIS'];
       case CanonicalToolId.mattressSizes:
-        return const <String>['US', 'EU'];
+        return const <String>['US', 'EU', 'UK', 'AU'];
       case CanonicalToolId.cupsGramsEstimates:
         return const <String>['Volume', 'Weight'];
       default:
@@ -649,6 +656,42 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
       case CanonicalToolId.shoeSizes:
         return const <_LookupEntry>[
           _LookupEntry(
+            keyId: 'shoe_4',
+            label: '22.0',
+            valuesBySystem: <String, String>{
+              'US Men': '4',
+              'US Women': '5.5',
+              'EU': '36',
+              'UK': '3.5',
+              'AU': '3.5',
+              'JP (cm)': '22.0 cm',
+            },
+          ),
+          _LookupEntry(
+            keyId: 'shoe_5',
+            label: '23.0',
+            valuesBySystem: <String, String>{
+              'US Men': '5',
+              'US Women': '6.5',
+              'EU': '37',
+              'UK': '4.5',
+              'AU': '4.5',
+              'JP (cm)': '23.0 cm',
+            },
+          ),
+          _LookupEntry(
+            keyId: 'shoe_6',
+            label: '24.0',
+            valuesBySystem: <String, String>{
+              'US Men': '6',
+              'US Women': '7.5',
+              'EU': '38',
+              'UK': '5.5',
+              'AU': '5.5',
+              'JP (cm)': '24.0 cm',
+            },
+          ),
+          _LookupEntry(
             keyId: 'shoe_7',
             label: '25.0',
             valuesBySystem: <String, String>{
@@ -656,6 +699,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
               'US Women': '8.5',
               'EU': '40',
               'UK': '6',
+              'AU': '6',
               'JP (cm)': '25.0 cm',
             },
           ),
@@ -667,6 +711,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
               'US Women': '9.5',
               'EU': '41',
               'UK': '7',
+              'AU': '7',
               'JP (cm)': '26.0 cm',
             },
           ),
@@ -678,6 +723,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
               'US Women': '10.5',
               'EU': '42',
               'UK': '8',
+              'AU': '8',
               'JP (cm)': '27.0 cm',
             },
           ),
@@ -689,6 +735,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
               'US Women': '11.5',
               'EU': '43',
               'UK': '9',
+              'AU': '9',
               'JP (cm)': '28.0 cm',
             },
           ),
@@ -700,30 +747,102 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
               'US Women': '12.5',
               'EU': '44.5',
               'UK': '10',
+              'AU': '10',
               'JP (cm)': '29.0 cm',
+            },
+          ),
+          _LookupEntry(
+            keyId: 'shoe_12',
+            label: '30.0',
+            valuesBySystem: <String, String>{
+              'US Men': '12',
+              'US Women': '13.5',
+              'EU': '46',
+              'UK': '11',
+              'AU': '11',
+              'JP (cm)': '30.0 cm',
+            },
+          ),
+          _LookupEntry(
+            keyId: 'shoe_13',
+            label: '31.0',
+            valuesBySystem: <String, String>{
+              'US Men': '13',
+              'US Women': '14.5',
+              'EU': '47',
+              'UK': '12',
+              'AU': '12',
+              'JP (cm)': '31.0 cm',
+            },
+          ),
+          _LookupEntry(
+            keyId: 'shoe_14',
+            label: '32.0',
+            valuesBySystem: <String, String>{
+              'US Men': '14',
+              'US Women': '15.5',
+              'EU': '48',
+              'UK': '13',
+              'AU': '13',
+              'JP (cm)': '32.0 cm',
             },
           ),
         ];
       case CanonicalToolId.paperSizes:
         return const <_LookupEntry>[
           _LookupEntry(
+            keyId: 'paper_a5',
+            label: 'A5',
+            valuesBySystem: <String, String>{
+              'ISO': 'A5 (148 x 210 mm)',
+              'US': 'Half Letter (5.5 x 8.5 in)',
+              'JIS': 'B6 (128 x 182 mm)',
+            },
+            note: 'Closest common equivalents by region.',
+            approximate: true,
+          ),
+          _LookupEntry(
             keyId: 'paper_a4',
             label: 'A4',
             valuesBySystem: <String, String>{
-              'ISO': '210 x 297 mm',
+              'ISO': 'A4 (210 x 297 mm)',
               'US': 'Letter (8.5 x 11 in)',
+              'JIS': 'B5 (182 x 257 mm)',
             },
-            note: 'Nearest US equivalent.',
+            note: 'Closest common equivalents by region.',
             approximate: true,
           ),
           _LookupEntry(
             keyId: 'paper_a3',
             label: 'A3',
             valuesBySystem: <String, String>{
-              'ISO': '297 x 420 mm',
+              'ISO': 'A3 (297 x 420 mm)',
               'US': 'Tabloid (11 x 17 in)',
+              'JIS': 'B4 (257 x 364 mm)',
             },
-            note: 'Nearest US equivalent.',
+            note: 'Closest common equivalents by region.',
+            approximate: true,
+          ),
+          _LookupEntry(
+            keyId: 'paper_b5',
+            label: 'B5',
+            valuesBySystem: <String, String>{
+              'ISO': 'B5 (176 x 250 mm)',
+              'US': 'Statement (5.5 x 8.5 in)',
+              'JIS': 'B5 (182 x 257 mm)',
+            },
+            note: 'ISO B-series and JIS B-series are different dimensions.',
+            approximate: true,
+          ),
+          _LookupEntry(
+            keyId: 'paper_b4',
+            label: 'B4',
+            valuesBySystem: <String, String>{
+              'ISO': 'B4 (250 x 353 mm)',
+              'US': 'Legal (8.5 x 14 in)',
+              'JIS': 'B4 (257 x 364 mm)',
+            },
+            note: 'ISO B-series and JIS B-series are different dimensions.',
             approximate: true,
           ),
           _LookupEntry(
@@ -732,8 +851,9 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
             valuesBySystem: <String, String>{
               'ISO': 'A4 (210 x 297 mm)',
               'US': '216 x 279 mm (8.5 x 11 in)',
+              'JIS': 'B5 (182 x 257 mm)',
             },
-            note: 'Nearest ISO equivalent.',
+            note: 'Closest common equivalents by region.',
             approximate: true,
           ),
           _LookupEntry(
@@ -742,8 +862,20 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
             valuesBySystem: <String, String>{
               'ISO': 'B4 (250 x 353 mm)',
               'US': '216 x 356 mm (8.5 x 14 in)',
+              'JIS': 'B4 (257 x 364 mm)',
             },
-            note: 'Nearest ISO equivalent.',
+            note: 'Closest common equivalents by region.',
+            approximate: true,
+          ),
+          _LookupEntry(
+            keyId: 'paper_arch_d',
+            label: 'ARCH D',
+            valuesBySystem: <String, String>{
+              'ISO': 'A1 (594 x 841 mm)',
+              'US': 'ARCH D (24 x 36 in)',
+              'JIS': 'B2 (515 x 728 mm)',
+            },
+            note: 'Architecture/engineering sheet equivalents.',
             approximate: true,
           ),
         ];
@@ -755,8 +887,22 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
             valuesBySystem: <String, String>{
               'US': 'Twin (38 x 75 in)',
               'EU': 'Single (90 x 200 cm)',
+              'UK': 'Single (90 x 190 cm)',
+              'AU': 'Single (92 x 188 cm)',
             },
             note: 'Regional naming varies by vendor.',
+            approximate: true,
+          ),
+          _LookupEntry(
+            keyId: 'matt_single_xl',
+            label: 'Twin XL / Long Single',
+            valuesBySystem: <String, String>{
+              'US': 'Twin XL (38 x 80 in)',
+              'EU': 'Single XL (90 x 210 cm)',
+              'UK': 'Long Single (90 x 200 cm)',
+              'AU': 'Long Single (92 x 203 cm)',
+            },
+            note: 'Useful for dorm and split-king setups.',
             approximate: true,
           ),
           _LookupEntry(
@@ -765,6 +911,8 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
             valuesBySystem: <String, String>{
               'US': 'Full (54 x 75 in)',
               'EU': 'Double (140 x 200 cm)',
+              'UK': 'Double (135 x 190 cm)',
+              'AU': 'Double (138 x 188 cm)',
             },
             note: 'Regional naming varies by vendor.',
             approximate: true,
@@ -775,6 +923,8 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
             valuesBySystem: <String, String>{
               'US': 'Queen (60 x 80 in)',
               'EU': 'King (160 x 200 cm)',
+              'UK': 'King (150 x 200 cm)',
+              'AU': 'Queen (153 x 203 cm)',
             },
             note: 'Approximate cross-region equivalent.',
             approximate: true,
@@ -785,8 +935,22 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
             valuesBySystem: <String, String>{
               'US': 'King (76 x 80 in)',
               'EU': 'Super King (180 x 200 cm)',
+              'UK': 'Super King (180 x 200 cm)',
+              'AU': 'King (183 x 203 cm)',
             },
             note: 'Approximate cross-region equivalent.',
+            approximate: true,
+          ),
+          _LookupEntry(
+            keyId: 'matt_super_king_us',
+            label: 'California King',
+            valuesBySystem: <String, String>{
+              'US': 'California King (72 x 84 in)',
+              'EU': 'Super King (180 x 210 cm)',
+              'UK': 'Super King (180 x 200 cm)',
+              'AU': 'Super King (203 x 203 cm)',
+            },
+            note: 'Cross-region equivalence is approximate by shape and area.',
             approximate: true,
           ),
         ];
@@ -2823,7 +2987,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
     return switch (widget.tool.canonicalToolId) {
       CanonicalToolId.shoeSizes => 'Foot (cm)',
       CanonicalToolId.paperSizes => 'Size',
-      CanonicalToolId.mattressSizes => 'Class',
+      CanonicalToolId.mattressSizes => 'Size',
       _ => 'Key',
     };
   }
@@ -2853,9 +3017,27 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
     Future<void> copyLookupCell({
       required String value,
       required String label,
+      _LookupEntry? row,
+      String? system,
     }) async {
       final copiedLabel = DashboardCopy.copiedNotice(context, label);
-      await Clipboard.setData(ClipboardData(text: value));
+      final normalized = value.trim();
+      await Clipboard.setData(ClipboardData(text: normalized));
+      if (row != null &&
+          system != null &&
+          (widget.tool.canonicalToolId == CanonicalToolId.shoeSizes ||
+              widget.tool.canonicalToolId == CanonicalToolId.paperSizes ||
+              widget.tool.canonicalToolId == CanonicalToolId.mattressSizes)) {
+        await widget.session.setMatrixWidgetSelection(
+          toolId: widget.tool.id,
+          rowKey: row.keyId,
+          system: system,
+          value: normalized,
+          referenceLabel: _lookupReferenceLabel(row),
+          primaryLabel: normalized,
+          secondaryLabel: '$system • ${_lookupReferenceLabel(row)}',
+        );
+      }
       if (!mounted) return;
       _showNotice(copiedLabel, UnitanaNoticeKind.info);
     }
@@ -2894,6 +3076,8 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
         required String text,
         required String copyLabel,
         required String rowKey,
+        required _LookupEntry row,
+        required String system,
         required double width,
         required bool selected,
         Alignment alignment = Alignment.center,
@@ -2909,7 +3093,12 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
               setState(() {
                 _lookupEntryKey = rowKey;
               });
-              await copyLookupCell(value: text, label: copyLabel);
+              await copyLookupCell(
+                value: text,
+                label: copyLabel,
+                row: row,
+                system: system,
+              );
             },
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 9),
@@ -3084,6 +3273,8 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                                               ),
                                               copyLabel: '$system value',
                                               rowKey: entry.keyId,
+                                              row: entry,
+                                              system: system,
                                               width: adaptiveValueWidth,
                                               selected: selected,
                                             ),
@@ -3156,13 +3347,20 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
       required String text,
       required bool isSelected,
       required String copyLabel,
+      required String system,
+      required _LookupEntry rowEntry,
       Alignment alignment = Alignment.center,
     }) {
       return Expanded(
         child: InkWell(
           key: ValueKey('tool_lookup_matrix_cell_${widget.tool.id}_$keySuffix'),
           borderRadius: BorderRadius.circular(8),
-          onTap: () => copyLookupCell(value: text, label: copyLabel),
+          onTap: () => copyLookupCell(
+            value: text,
+            label: copyLabel,
+            row: rowEntry,
+            system: system,
+          ),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 9),
             child: Align(
@@ -3370,12 +3568,16 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                               text: _lookupValue(row: n, system: from),
                               isSelected: isSelected,
                               copyLabel: '$from value',
+                              system: from,
+                              rowEntry: n,
                             ),
                             matrixValueCell(
                               keySuffix: '${n.keyId}_to',
                               text: _lookupValue(row: n, system: to),
                               isSelected: isSelected,
                               copyLabel: '$to value',
+                              system: to,
+                              rowEntry: n,
                             ),
                           ],
                         ),
@@ -4168,11 +4370,19 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
       if (!widget.canAddWidget || widget.onAddWidget == null) return;
       final addedLabel = DashboardCopy.addedWidgetNotice(
         context,
-        widget.tool.title,
+        DashboardCopy.toolDisplayName(
+          context,
+          toolId: widget.tool.id,
+          fallback: widget.tool.title,
+        ),
       );
       final duplicateLabel = DashboardCopy.duplicateWidgetNotice(
         context,
-        widget.tool.title,
+        DashboardCopy.toolDisplayName(
+          context,
+          toolId: widget.tool.id,
+          fallback: widget.tool.title,
+        ),
       );
       final failedLabel = DashboardCopy.addWidgetFailedNotice(context);
       try {
@@ -5233,7 +5443,11 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                                 const SizedBox(width: 12),
                                 Flexible(
                                   child: Text(
-                                    widget.tool.title,
+                                    DashboardCopy.toolDisplayName(
+                                      context,
+                                      toolId: widget.tool.id,
+                                      fallback: widget.tool.title,
+                                    ),
                                     key: ValueKey(
                                       'tool_title_${widget.tool.id}',
                                     ),
@@ -5718,12 +5932,22 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                                                 final addedLabel =
                                                     DashboardCopy.addedWidgetNotice(
                                                       context,
-                                                      widget.tool.title,
+                                                      DashboardCopy.toolDisplayName(
+                                                        context,
+                                                        toolId: widget.tool.id,
+                                                        fallback:
+                                                            widget.tool.title,
+                                                      ),
                                                     );
                                                 final duplicateLabel =
                                                     DashboardCopy.duplicateWidgetNotice(
                                                       context,
-                                                      widget.tool.title,
+                                                      DashboardCopy.toolDisplayName(
+                                                        context,
+                                                        toolId: widget.tool.id,
+                                                        fallback:
+                                                            widget.tool.title,
+                                                      ),
                                                     );
                                                 final failedLabel =
                                                     DashboardCopy.addWidgetFailedNotice(

@@ -67,14 +67,22 @@ void main() {
     );
     expect(find.byKey(const ValueKey('settings_language_en')), findsOneWidget);
     expect(find.byKey(const ValueKey('settings_language_es')), findsOneWidget);
+    expect(find.byKey(const ValueKey('settings_language_fr')), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('settings_language_pt-PT')),
+      findsOneWidget,
+    );
 
-    await tester.tap(find.byKey(const ValueKey('settings_language_es')));
+    final ptOption = find.byKey(const ValueKey('settings_language_pt-PT'));
+    await tester.ensureVisible(ptOption);
+    await tester.pumpAndSettle(const Duration(milliseconds: 200));
+    await tester.tap(ptOption);
     await tester.pumpAndSettle(const Duration(milliseconds: 200));
 
-    expect(state.preferredLanguageCode, 'es');
+    expect(state.preferredLanguageCode, 'pt-PT');
 
     final prefs = await SharedPreferences.getInstance();
-    expect(prefs.getString('preferred_language_code_v1'), 'es');
+    expect(prefs.getString('preferred_language_code_v1'), 'pt-PT');
   });
 
   testWidgets('Settings exposes profile auto-suggest toggle (off by default)', (

@@ -89,6 +89,14 @@ void main() {
       'Español',
     );
     expect(
+      LocalizationSeed.enUs['dashboard.settings.language.option.fr'],
+      'Français',
+    );
+    expect(
+      LocalizationSeed.enUs['dashboard.settings.language.option.ptPT'],
+      'Português (Portugal)',
+    );
+    expect(
       LocalizationSeed.enUs['dashboard.settings.language.updated'],
       'Language updated',
     );

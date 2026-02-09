@@ -137,6 +137,8 @@ class LocalizationSeed {
     'dashboard.settings.language.option.system': 'System default',
     'dashboard.settings.language.option.en': 'English',
     'dashboard.settings.language.option.es': 'Español',
+    'dashboard.settings.language.option.fr': 'Français',
+    'dashboard.settings.language.option.ptPT': 'Português (Portugal)',
     'dashboard.settings.language.updated': 'Language updated',
     'dashboard.settings.theme.title': 'Theme',
     'dashboard.settings.theme.option.system': 'System',

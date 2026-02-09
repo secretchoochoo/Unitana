@@ -950,47 +950,54 @@ class _DashboardScreenState extends State<DashboardScreen> {
           (id: 'system', label: DashboardCopy.settingsLanguageSystem(context)),
           (id: 'en', label: DashboardCopy.settingsLanguageEnglish(context)),
           (id: 'es', label: DashboardCopy.settingsLanguageSpanish(context)),
+          (id: 'fr', label: DashboardCopy.settingsLanguageFrench(context)),
+          (
+            id: 'pt-PT',
+            label: DashboardCopy.settingsLanguagePortuguesePortugal(context),
+          ),
         ];
         return SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 8, 6),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        DashboardCopy.settingsLanguageTitle(context),
-                        style: Theme.of(sheetContext).textTheme.titleLarge
-                            ?.copyWith(fontWeight: FontWeight.w800),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 8, 6),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          DashboardCopy.settingsLanguageTitle(context),
+                          style: Theme.of(sheetContext).textTheme.titleLarge
+                              ?.copyWith(fontWeight: FontWeight.w800),
+                        ),
                       ),
-                    ),
-                    _sheetCloseButton(sheetContext),
-                  ],
+                      _sheetCloseButton(sheetContext),
+                    ],
+                  ),
                 ),
-              ),
-              RadioGroup<String>(
-                // ignore: deprecated_member_use
-                groupValue: current,
-                // ignore: deprecated_member_use
-                onChanged: (value) {
-                  if (value == null) return;
-                  Navigator.of(sheetContext).pop(value);
-                },
-                child: Column(
-                  children: [
-                    for (final option in options)
-                      RadioListTile<String>(
-                        key: ValueKey('settings_language_${option.id}'),
-                        value: option.id,
-                        title: Text(option.label),
-                      ),
-                  ],
+                RadioGroup<String>(
+                  // ignore: deprecated_member_use
+                  groupValue: current,
+                  // ignore: deprecated_member_use
+                  onChanged: (value) {
+                    if (value == null) return;
+                    Navigator.of(sheetContext).pop(value);
+                  },
+                  child: Column(
+                    children: [
+                      for (final option in options)
+                        RadioListTile<String>(
+                          key: ValueKey('settings_language_${option.id}'),
+                          value: option.id,
+                          title: Text(option.label),
+                        ),
+                    ],
+                  ),
                 ),
-              ),
-              const SizedBox(height: 8),
-            ],
+                const SizedBox(height: 8),
+              ],
+            ),
           ),
         );
       },
@@ -1016,45 +1023,47 @@ class _DashboardScreenState extends State<DashboardScreen> {
           (id: 'light', label: DashboardCopy.settingsThemeLight(context)),
         ];
         return SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 8, 6),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        DashboardCopy.settingsThemeTitle(context),
-                        style: Theme.of(sheetContext).textTheme.titleLarge
-                            ?.copyWith(fontWeight: FontWeight.w800),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 8, 6),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          DashboardCopy.settingsThemeTitle(context),
+                          style: Theme.of(sheetContext).textTheme.titleLarge
+                              ?.copyWith(fontWeight: FontWeight.w800),
+                        ),
                       ),
-                    ),
-                    _sheetCloseButton(sheetContext),
-                  ],
+                      _sheetCloseButton(sheetContext),
+                    ],
+                  ),
                 ),
-              ),
-              RadioGroup<String>(
-                // ignore: deprecated_member_use
-                groupValue: current,
-                // ignore: deprecated_member_use
-                onChanged: (value) {
-                  if (value == null) return;
-                  Navigator.of(sheetContext).pop(value);
-                },
-                child: Column(
-                  children: [
-                    for (final option in options)
-                      RadioListTile<String>(
-                        key: ValueKey('settings_theme_${option.id}'),
-                        value: option.id,
-                        title: Text(option.label),
-                      ),
-                  ],
+                RadioGroup<String>(
+                  // ignore: deprecated_member_use
+                  groupValue: current,
+                  // ignore: deprecated_member_use
+                  onChanged: (value) {
+                    if (value == null) return;
+                    Navigator.of(sheetContext).pop(value);
+                  },
+                  child: Column(
+                    children: [
+                      for (final option in options)
+                        RadioListTile<String>(
+                          key: ValueKey('settings_theme_${option.id}'),
+                          value: option.id,
+                          title: Text(option.label),
+                        ),
+                    ],
+                  ),
                 ),
-              ),
-              const SizedBox(height: 8),
-            ],
+                const SizedBox(height: 8),
+              ],
+            ),
           ),
         );
       },
@@ -1295,6 +1304,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Future<void> _editProfileFromBoard(String profileId) async {
+    if (!mounted) return;
+    final successToast = DashboardCopy.dashboardProfileUpdated(context);
     final prevActive = state.activeProfileId;
     final target = profileId.trim();
     if (target.isEmpty) return;
@@ -1307,7 +1318,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     await _openEditProfileWizard(
       reopenSwitcherOnCancel: false,
-      successToast: DashboardCopy.dashboardProfileUpdated(context),
+      successToast: successToast,
     );
     if (!mounted) return;
 

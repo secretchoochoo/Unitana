@@ -28,6 +28,8 @@ class LocalizationSeedEs {
     'dashboard.settings.language.option.system': 'Predeterminado del sistema',
     'dashboard.settings.language.option.en': 'Inglés',
     'dashboard.settings.language.option.es': 'Español',
+    'dashboard.settings.language.option.fr': 'Francés',
+    'dashboard.settings.language.option.ptPT': 'Portugués (Portugal)',
     'dashboard.settings.language.updated': 'Idioma actualizado',
     'dashboard.settings.about.title': 'Acerca de Unitana',
     'dashboard.settings.about.tagline':

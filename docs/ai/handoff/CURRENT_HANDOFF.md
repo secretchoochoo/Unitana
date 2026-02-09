@@ -2,8 +2,85 @@
 
 ## Snapshot
 - **Date:** 2026-02-09
-- **Status:** Repo is green (`dart format`, `flutter analyze`, `flutter test`) after XL Unit 10 (Pack J/Pack L readability follow-through + Pace goal-planner expansion).
+- **Status:** Repo is green (`dart format`, `flutter analyze`, `flutter test`) after XL-B (Pack Q language expansion + completeness gates).
 - **Operating mode:** Codex is now the primary workflow; apply edits directly in-repo (do not require patch zip workflow unless explicitly requested).
+
+## Latest changes (2026-02-09)
+- XL-B follow-up shipped (post-validation fixes):
+  - localization application sweep:
+    - tool picker and dashboard tool/widget labels now resolve through localization copy hooks instead of raw static labels.
+    - first-run wizard strings (welcome/places/confirm, buttons, labels, hints) now route through localization copy keys/fallbacks.
+    - runtime localization now applies deterministic fallback translation overlays for `pt`/`fr` when explicit locale keys are missing, so locale selection visibly affects high-traffic fallback copy.
+  - profile-edit crash fix:
+    - fixed unmounted-context access in `_editProfileFromBoard` by guarding `mounted` and capturing success toast text before async profile switching.
+  - first-run light-theme fix:
+    - city picker modal no longer hardcodes Dracula background; it now uses theme surface colors so light mode is readable.
+  - regression hardening:
+    - added runtime test coverage for Portuguese fallback translation behavior.
+  - full gates re-run and green:
+    - `dart format .`
+    - `flutter analyze`
+    - `flutter test`
+
+## Latest changes (2026-02-09)
+- XL-B shipped (Pack Q):
+  - locale expansion:
+    - app locale persistence + normalization now supports `fr` and `pt-PT` in `app/unitana/lib/app/app_state.dart`.
+    - `MaterialApp.supportedLocales` now includes `fr` and `pt-PT` in `app/unitana/lib/app/app.dart`.
+    - Settings language picker now includes `French` and `Portuguese (Portugal)` options.
+  - runtime localization expansion:
+    - added `app/unitana/lib/l10n/localization_seed_fr.dart` and `app/unitana/lib/l10n/localization_seed_pt.dart`.
+    - runtime seed resolver now maps `fr` and `pt` locales in `app/unitana/lib/l10n/dashboard_localizations.dart`.
+    - localization keys for new language options added to ARB/seed sources.
+  - regression hardening:
+    - language settings test now validates `pt-PT` persistence.
+    - runtime localization tests now assert FR/PT key resolution and deterministic fallback for unsupported locales.
+    - language/theme settings sheets were made scroll-safe to avoid bottom-sheet overflow with expanded option sets.
+  - full gates re-run and green:
+    - `dart format .`
+    - `flutter analyze`
+    - `flutter test`
+
+## Latest changes (2026-02-09)
+- XL-A phase 1 shipped (Pack R + Pack S):
+  - matrix standards expansion in `app/unitana/lib/features/dashboard/widgets/tool_modal_bottom_sheet.dart`:
+    - Shoes:
+      - expanded range from limited 5-row matrix to broader row coverage (`22.0 cm` through `32.0 cm`).
+      - added regional `AU` column alongside `US Men`, `US Women`, `EU`, `UK`, `JP (cm)`.
+    - Paper:
+      - expanded standards to include `JIS` column and additional rows (`A5`, `B5`, `B4`, `ARCH D`) while preserving existing A4/A3/Letter/Legal anchors.
+    - Mattress:
+      - expanded systems to `US` / `EU` / `UK` / `AU`.
+      - expanded rows to include `Twin XL / Long Single` and `California King`.
+      - replaced ambiguous matrix first-column header wording from `Class` to `Size`.
+  - matrix widget sync contracts:
+    - added persisted per-profile matrix selection state in `DashboardSessionController` (`matrix_widget_selection_by_tool_v1`).
+    - matrix cell copy now records last selected payload (toolId/row/system/value/reference + preview labels).
+    - dashboard tile preview label picker now prefers matrix-selection previews for `shoe_sizes`, `paper_sizes`, `mattress_sizes`.
+  - regression coverage:
+    - added `app/unitana/test/matrix_global_standards_expansion_test.dart`
+    - added `app/unitana/test/dashboard_session_matrix_selection_test.dart`
+  - full gates re-run and green:
+    - `dart format .`
+    - `flutter analyze`
+    - `flutter test`
+
+## Latest changes (2026-02-09)
+- Backlog planning update (XL normalization + new packs):
+  - normalized backlog sizing so all pack entries explicitly carry `size: XL`.
+  - added new backlog packs:
+    - `Pack P`: licenses information architecture/readability
+    - `Pack Q`: language expansion + translation completion (`fr`, `pt-PT`, Spanish gap closure)
+    - `Pack R`: global matrix standards expansion (shoes/paper/mattress)
+    - `Pack S`: matrix widget last-selected value synchronization
+    - `Pack T`: World Time Map widget reimagination
+    - `Pack U`: theme readability finalization + simple `Light`/`Dark` naming
+    - `Pack V`: emergency weather system + marquee alert states
+    - `Pack W`: royalty-free lo-fi audio (opt-in, off by default)
+    - `Pack X`: full-app UX/UI/interactivity/performance retro
+    - `Pack Y`: wearables/platform add-ons (final-phase)
+  - moved radio/audio scope out of icebox into planned `Pack W`.
+  - execution target switched to `XL-A` (Pack R + Pack S).
 
 ## Latest changes (2026-02-09)
 - XL Unit 10 shipped (Pack J + Pack L + Pace utility expansion):

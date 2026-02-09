@@ -49,6 +49,10 @@ class UnitanaAppState extends ChangeNotifier {
         return const Locale('en');
       case 'es':
         return const Locale('es');
+      case 'fr':
+        return const Locale('fr');
+      case 'pt-PT':
+        return const Locale('pt', 'PT');
       default:
         return null;
     }
@@ -421,8 +425,11 @@ class UnitanaAppState extends ChangeNotifier {
   }
 
   static String _normalizeLanguageCode(String? raw) {
-    final code = (raw ?? '').trim().toLowerCase();
-    if (code == 'en' || code == 'es') return code;
+    final rawCode = (raw ?? '').trim();
+    if (rawCode.isEmpty) return 'system';
+    final code = rawCode.toLowerCase();
+    if (code == 'en' || code == 'es' || code == 'fr') return code;
+    if (code == 'pt' || code == 'pt-pt') return 'pt-PT';
     return 'system';
   }
 

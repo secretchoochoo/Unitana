@@ -12,6 +12,7 @@
         "Document schema contract in docs/ai/design_lock and docs/ai/reference."
       ],
       "priority": "P0",
+      "size": "XL",
       "status": "done",
       "status_updated": "2026-02-08",
       "status_note": "Canonical city schema, strict validation, parse safety, and dataset tooling are shipped and covered by regression tests."
@@ -28,6 +29,7 @@
         "Keep mock mode deterministic and aligned with contracts."
       ],
       "priority": "P0",
+      "size": "XL",
       "status": "done",
       "status_updated": "2026-02-08",
       "status_note": "Closure-proof contracts now cover representative global weather/time/AQI/pollen success and fallback paths with deterministic tests."
@@ -43,6 +45,7 @@
         "Add tests for high-variance currency pairs and provider outages."
       ],
       "priority": "P0",
+      "size": "XL",
       "status": "done",
       "status_updated": "2026-02-08",
       "status_note": "Closure-proof contracts now cover global mapping plus outage/retry/cache preservation across representative multi-currency pairs."
@@ -59,6 +62,7 @@
         "Update contributor workflow docs for Codex-first operation."
       ],
       "priority": "P1",
+      "size": "XL",
       "status": "in_progress",
       "status_updated": "2026-02-08",
       "status_note": "XL Unit 2 started docs consolidation and backlog/prompt alignment; full repo-wide audit closure remains open."
@@ -75,6 +79,7 @@
         "After V2 facelift, run discovery for location-based variants (city/rural/beach/region)."
       ],
       "priority": "P1",
+      "size": "XL",
       "status": "in_progress",
       "status_updated": "2026-02-08",
       "status_note": "Multiple readability/layout phases shipped; full V2 facelift and follow-up variants are not fully closed."
@@ -90,6 +95,7 @@
         "For table-like standards tools (paper/shoe/mattress), use dedicated lookup-table UX instead of forcing generic Convert flows."
       ],
       "priority": "P1",
+      "size": "XL",
       "status": "closed_with_defer",
       "status_updated": "2026-02-08",
       "status_note": "Activated tools shipped; `clothing_sizes` remains intentionally deferred behind explicit acceptance criteria."
@@ -104,6 +110,7 @@
         "Release checklist and QA signoff artifacts."
       ],
       "priority": "P2",
+      "size": "XL",
       "status": "done",
       "status_updated": "2026-02-08",
       "status_note": "Compliance surfaces, accessibility follow-through, and Pack G release checklist artifacts are now shipped and test-covered."
@@ -120,6 +127,7 @@
         "Add regression tests for locale switching and key critical paths (hero, currency, tool modal, first-run)."
       ],
       "priority": "P1",
+      "size": "XL",
       "status": "done",
       "status_updated": "2026-02-08",
       "status_note": "Language settings, locale persistence, runtime fallback, and ARB/seed coverage are shipped."
@@ -136,6 +144,7 @@
         "Visual direction: playful highlighted callouts/circles using Dracula palette; Cabin Sketch-style heading treatment is an optional design exploration."
       ],
       "priority": "P2",
+      "size": "XL",
       "status": "planned",
       "status_updated": "2026-02-08",
       "status_note": "Tutorial overlays are intentionally deferred until finalization/readiness."
@@ -152,6 +161,7 @@
         "Include implementation sequencing, acceptance criteria, and regression test strategy before coding starts."
       ],
       "priority": "P1",
+      "size": "XL",
       "status": "in_progress",
       "status_updated": "2026-02-08",
       "status_note": "Weather cockpit redesign is substantially shipped; final product-positioning closure and checklist remain open."
@@ -169,6 +179,7 @@
         "Add test matrix for permission denied, stale location, near-border ambiguity, and travel-day churn."
       ],
       "priority": "P1",
+      "size": "XL",
       "status": "in_progress",
       "status_updated": "2026-02-09",
       "status_note": "Phase-1 shipped: opt-in setting + deterministic suggestion engine + persistence contracts; no silent auto-switch behavior remains enforced."
@@ -185,6 +196,7 @@
         "Document token map and accessibility constraints in a dedicated reference spec before implementation."
       ],
       "priority": "P1",
+      "size": "XL",
       "status": "in_progress",
       "status_updated": "2026-02-09",
       "status_note": "Theme mode scaffold is shipped (`System`/`Dracula Dark`/`Solarized Light`) with ongoing readability parity sweeps across dashboard/tool surfaces."
@@ -203,6 +215,7 @@
         "Requires global timezone handling expansion beyond the current limited helper to avoid false `0h` outcomes."
       ],
       "priority": "P1",
+      "size": "XL",
       "status": "done",
       "status_updated": "2026-02-08",
       "status_note": "Jet Lag redesign phases (shared planner, facts/plan, schedule support, flight estimate) are shipped with tests."
@@ -220,6 +233,7 @@
         "Document fallback behavior when timezone metadata is missing or ambiguous."
       ],
       "priority": "P1",
+      "size": "XL",
       "status": "done",
       "status_updated": "2026-02-08",
       "status_note": "Global timezone support and deterministic DST/date-line behavior are shipped with regression coverage."
@@ -237,26 +251,192 @@
         "Scope should remain lightweight: hints and interaction framing, not long-form onboarding."
       ],
       "priority": "P2",
+      "size": "XL",
       "status": "planned",
       "status_updated": "2026-02-08",
       "status_note": "Contextual tutorial overlays remain unscheduled until post-core readiness."
     },
     {
-      "id": "ICEBOX_radio_feature",
-      "title": "Icebox: Optional radio feature",
-      "summary": "Keep radio playback concept parked until core platform/data and product-critical slices are complete.",
+      "id": "PACK_P_licenses_information_architecture",
+      "title": "Pack P (P2): Licenses information architecture and readability",
+      "summary": "Refactor licenses presentation from raw long-form text into a user-readable legal surface with concise summaries, grouped sections, and source links while preserving required notices.",
       "notes": [
-        "Do not schedule before Packs A-G unless explicitly reprioritized."
+        "Split legal-required copy from explanatory UX copy so mandatory text remains intact.",
+        "Support collapsible sections by package/source family.",
+        "Provide links to upstream license pages where allowed.",
+        "Preserve deterministic About/Licenses test contracts.",
+        "Keep full legal payload exportable for compliance."
       ],
-      "priority": "ICEBOX",
-      "status": "icebox",
-      "status_updated": "2026-02-08",
-      "status_note": "Kept parked until explicitly reprioritized."
+      "priority": "P2",
+      "size": "XL",
+      "status": "planned",
+      "status_updated": "2026-02-09",
+      "status_note": "Queued from backlog expansion; implementation pending."
+    },
+    {
+      "id": "PACK_Q_language_expansion_completion",
+      "title": "Pack Q (P1): Language expansion and localization completion",
+      "summary": "Extend localization beyond English/Spanish by adding French and European Portuguese, closing untranslated-key gaps, and hardening language QA gates.",
+      "notes": [
+        "Add locale options for `English`, `Spanish`, `French`, and `Portuguese (Portugal)`.",
+        "Complete missing Spanish coverage and enforce no-silent-fallback policy in critical surfaces.",
+        "Add ARB/seed/runtime contract tests for the new locales.",
+        "Optionally show locale badges/icons in picker without conflating language and country semantics.",
+        "Preserve deterministic runtime fallback behavior."
+      ],
+      "priority": "P1",
+      "size": "XL",
+      "status": "done",
+      "status_updated": "2026-02-09",
+      "status_note": "XL-B shipped: locale picker/app wiring now supports EN/ES/FR/PT-PT with persistence, runtime seed coverage, and deterministic localization regression gates."
+    },
+    {
+      "id": "PACK_R_matrix_global_standards_expansion",
+      "title": "Pack R (P1): Matrix tools global standards expansion",
+      "summary": "Expand Shoes, Paper, and Mattress datasets and semantics for broader global standards coverage with a coherent matrix model.",
+      "notes": [
+        "Extend shoes beyond current rows and add additional region standards where reliable mappings exist.",
+        "Expand mattress standards beyond current subsets and clarify taxonomy semantics.",
+        "Add paper standards beyond ISO/US (for example JIS and ANSI/ARCH families).",
+        "Replace ambiguous column semantics (for example `Class`) with explicit canonical labels.",
+        "Preserve matrix copy/tap and highlight behavior contracts."
+      ],
+      "priority": "P1",
+      "size": "XL",
+      "status": "in_progress",
+      "status_updated": "2026-02-09",
+      "status_note": "XL-A phase 1 shipped: expanded Shoes/Paper/Mattress matrix datasets and regional columns with clearer first-column semantics."
+    },
+    {
+      "id": "PACK_S_matrix_widget_last_selection_sync",
+      "title": "Pack S (P1): Matrix widget last-selection sync",
+      "summary": "Make Shoes, Paper, and Mattress widgets reflect the last matrix value row tapped/copied by the user.",
+      "notes": [
+        "Persist last copied row/key per matrix tool.",
+        "Update widget previews and cards to show current selection deterministically.",
+        "Handle no-selection defaults and migration from existing state safely.",
+        "Add regression tests for tap-copy -> widget sync behavior."
+      ],
+      "priority": "P1",
+      "size": "XL",
+      "status": "in_progress",
+      "status_updated": "2026-02-09",
+      "status_note": "XL-A phase 1 shipped: matrix cell copy now persists last selection payload and dashboard widgets can render matrix-driven preview labels."
+    },
+    {
+      "id": "PACK_T_world_time_map_widget_reimagination",
+      "title": "Pack T (P1): World Time Map widget reimagination",
+      "summary": "Redesign World Time Map widget naming and readout density so the widget title fits and glance-value is materially useful.",
+      "notes": [
+        "Shorten/rename widget title to prevent truncation across sizes.",
+        "Surface actionable timezone delta/readout values from map panel context.",
+        "Keep map lane semantics consistent with modal behavior.",
+        "Add small-size widget readability and overflow tests."
+      ],
+      "priority": "P1",
+      "size": "XL",
+      "status": "planned",
+      "status_updated": "2026-02-09",
+      "status_note": "Queued from backlog expansion; implementation pending."
+    },
+    {
+      "id": "PACK_U_theme_readability_finalization",
+      "title": "Pack U (P1): Theme readability finalization and naming simplification",
+      "summary": "Finish light/dark readability parity across tools/widgets and simplify theme naming in user-facing UI.",
+      "notes": [
+        "Rename Settings theme labels to `Light` and `Dark` while preserving internal token mapping docs.",
+        "Adjust light-mode Convert CTA away from oversaturated pink to a contrast-safe accent.",
+        "Sweep modal/header/input/readout contrast in both themes.",
+        "Add regression checks for critical high-traffic tool surfaces."
+      ],
+      "priority": "P1",
+      "size": "XL",
+      "status": "planned",
+      "status_updated": "2026-02-09",
+      "status_note": "Queued from backlog expansion; implementation pending."
+    },
+    {
+      "id": "PACK_V_emergency_weather_system_and_marquee_states",
+      "title": "Pack V (P1): Emergency weather system and marquee alert states",
+      "summary": "Add emergency weather classification and dedicated marquee/UX responses for severe conditions.",
+      "notes": [
+        "Define deterministic emergency weather taxonomy and source mapping.",
+        "Add alert-specific marquee scene variants with high-visibility but non-alarmist behavior.",
+        "Add fallback behavior when provider alert metadata is missing.",
+        "Gate with deterministic tests for alert priority and scene selection."
+      ],
+      "priority": "P1",
+      "size": "XL",
+      "status": "planned",
+      "status_updated": "2026-02-09",
+      "status_note": "Queued from backlog expansion; implementation pending."
+    },
+    {
+      "id": "PACK_W_lofi_audio_opt_in",
+      "title": "Pack W (P2): Royalty-free lo-fi audio feature (opt-in)",
+      "summary": "Introduce an optional royalty-free lo-fi audio feature, disabled by default, with simple controls and strict non-intrusive behavior.",
+      "notes": [
+        "Ship off by default with explicit user opt-in.",
+        "Use only royalty-free/compliance-safe sources.",
+        "Provide play/pause and volume controls with persisted preference.",
+        "Avoid interfering with app performance or critical interactions."
+      ],
+      "priority": "P2",
+      "size": "XL",
+      "status": "planned",
+      "status_updated": "2026-02-09",
+      "status_note": "Moved out of icebox per reprioritization; implementation pending."
+    },
+    {
+      "id": "PACK_X_full_app_retro_ux_ui_performance",
+      "title": "Pack X (P1): Full-app UX/UI/interactivity/performance retro",
+      "summary": "Run a structured retrospective across all app surfaces to evaluate tool usefulness, interaction consistency, visual uniformity, and performance opportunities.",
+      "notes": [
+        "Score each tool for usefulness, clarity, and completeness.",
+        "Audit consistency of haptics, visual indicators, and micro-interactions.",
+        "Audit light/dark uniformity and readability debt.",
+        "Capture concrete performance hotspots and optimization candidates.",
+        "Produce prioritized action list with effort/risk estimates."
+      ],
+      "priority": "P1",
+      "size": "XL",
+      "status": "planned",
+      "status_updated": "2026-02-09",
+      "status_note": "Queued from backlog expansion; implementation pending."
+    },
+    {
+      "id": "PACK_Y_wearables_and_platform_addons",
+      "title": "Pack Y (P3): Wearables and platform add-ons (final phase)",
+      "summary": "Plan and later implement Apple Watch, Wear OS, and Android home-screen widget add-ons as post-core expansion work.",
+      "notes": [
+        "Keep this pack after core product readiness and audio feature stabilization.",
+        "Define minimum viable glance surfaces per platform.",
+        "Document sync/data contracts with mobile app state.",
+        "Treat as end-of-roadmap expansion pack."
+      ],
+      "priority": "P3",
+      "size": "XL",
+      "status": "planned",
+      "status_updated": "2026-02-09",
+      "status_note": "Queued from backlog expansion; intentionally scheduled last."
     }
   ],
   "current_state": {
-    "current_slice": "XL Unit 10 shipped: Pack J/Pack L readability follow-through + Pace planner expansion; next is XL Unit 11 (Pack D docs consolidation + remaining Pack J mini-hero polish signoff).",
+    "current_slice": "XL-B shipped: Pack Q language expansion + completeness gates (EN/ES/FR/PT-PT locale wiring and runtime localization contract hardening). Next is XL-C (Pack U + Pack L readability finalization).",
     "notes": [
+      "XL-B follow-up shipped on 2026-02-09: localization application was extended across tool-picker labels, tool/widget display labels, and first-run wizard copy surfaces so locale changes affect menu/tools/widgets/wizard text consistently.",
+      "XL-B follow-up shipped on 2026-02-09: fixed dashboard profile-edit crash from unmounted context access in `_editProfileFromBoard` by guarding `mounted` and capturing toast copy before async state transitions.",
+      "XL-B follow-up shipped on 2026-02-09: first-run city picker modal background now uses active theme surfaces (light-mode readability fix).",
+      "XL-B shipped on 2026-02-09: language settings now include `system`, `en`, `es`, `fr`, and `pt-PT`, with persistence normalization in `UnitanaAppState` and MaterialApp support for `fr` and `pt-PT`.",
+      "XL-B shipped on 2026-02-09: runtime localization seed maps now include French and Portuguese (Portugal) coverage (`localization_seed_fr.dart`, `localization_seed_pt.dart`) with deterministic locale->seed resolution in `DashboardLocalizations`.",
+      "XL-B shipped on 2026-02-09: localization contract tests updated for FR/PT coverage and locale fallback semantics; language/theme settings sheets were made scroll-safe to prevent option overflow regressions.",
+      "XL-A shipped on 2026-02-09: Shoes matrix expanded with broader size range and AU mapping column; Paper matrix now includes JIS and ARCH/engineering coverage rows; Mattress matrix now includes US/EU/UK/AU families and expanded size rows.",
+      "XL-A shipped on 2026-02-09: matrix first-column semantics retained as explicit neutral references (`Foot (cm)`, `Size`) with mattress `Class` wording removed.",
+      "XL-A shipped on 2026-02-09: added persisted per-profile matrix selection state (`matrix_widget_selection_by_tool_v1`) in `DashboardSessionController`; dashboard tile previews can now render last-copied matrix values for Shoes/Paper/Mattress.",
+      "XL-A shipped on 2026-02-09: added regression coverage for matrix standards expansion and matrix-selection persistence (`matrix_global_standards_expansion_test.dart`, `dashboard_session_matrix_selection_test.dart`).",
+      "Backlog expanded on 2026-02-09 with Packs P/Q/R/S/T/U/V/W/X/Y and normalized so all backlog items explicitly carry `size: XL`.",
+      "Music feature moved out of icebox into planned Pack W (`Royalty-free lo-fi audio feature (opt-in)`).",
+      "XL-A selected on 2026-02-09: matrix global standards expansion (shoes/paper/mattress) plus matrix widget last-selection synchronization.",
       "XL Unit 10 shipped on 2026-02-09: World Time Map legend labels were simplified (city + UTC only; removed explicit Home/Destination tags) while preserving lane highlighting and Earth basemap.",
       "XL Unit 10 shipped on 2026-02-09: Pace gained Goal Planner controls (5K/10K/Half/Marathon chips, goal-time parsing, required pace output, split checkpoints, compact bar chart).",
       "XL Unit 10 shipped on 2026-02-09: pinned mini-hero was redesigned to a compact non-terminal 3-line composition (date folded into row 1, denser rows 2/3 with grouped weather+air+temp+FX data).",

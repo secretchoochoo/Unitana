@@ -153,6 +153,8 @@
   "dashboard.profiles.updated": "",
   "dashboard.settings.language.option.en": "Inglés",
   "dashboard.settings.language.option.es": "Español",
+  "dashboard.settings.language.option.fr": "Francés",
+  "dashboard.settings.language.option.ptPT": "Portugués (Portugal)",
   "dashboard.settings.language.option.system": "Predeterminado del sistema",
   "dashboard.settings.language.title": "Idioma",
   "dashboard.settings.language.updated": "Idioma actualizado",
