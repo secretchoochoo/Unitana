@@ -82,6 +82,10 @@ void main() {
         const ValueKey('dashboard_item_world_time_map_test'),
       );
       expect(tile, findsOneWidget);
+      expect(
+        find.descendant(of: tile, matching: find.text('Time Map')),
+        findsOneWidget,
+      );
 
       final deltaBefore = tileLineForPrefix(tester, tile, 'Δ ');
       expect(deltaBefore, isNotEmpty);

@@ -538,6 +538,36 @@ class DashboardCopy {
         'dashboard.settings.licenses.title',
         fallback: 'Open-source licenses',
       );
+  static String settingsLicensesReadableTitle(BuildContext context) =>
+      DashboardLocalizations.of(context).text(
+        'dashboard.settings.licenses.readable.title',
+        fallback: 'Readable license index',
+      );
+  static String settingsLicensesReadableBody(
+    BuildContext context,
+  ) => DashboardLocalizations.of(context).text(
+    'dashboard.settings.licenses.readable.body',
+    fallback:
+        'Browse dependencies by package. Expand a package to view full license text, or open the raw legal page.',
+  );
+  static String settingsLicensesPackages(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.settings.licenses.packages', fallback: 'Packages');
+  static String settingsLicensesEntries(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.settings.licenses.entries', fallback: 'entries');
+  static String settingsLicensesOpenRaw(BuildContext context) =>
+      DashboardLocalizations.of(context).text(
+        'dashboard.settings.licenses.openRaw',
+        fallback: 'Open raw legal text',
+      );
+  static String settingsLicensesViewDetails(BuildContext context) =>
+      DashboardLocalizations.of(context).text(
+        'dashboard.settings.licenses.viewDetails',
+        fallback: 'View full text',
+      );
   static String dashboardMenuEditWidgets(BuildContext context) =>
       DashboardLocalizations.of(
         context,

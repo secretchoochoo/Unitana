@@ -324,8 +324,8 @@ class ToolDefinitions {
     lensId: ActivityLensId.weatherTime,
     title: 'World Time Map',
     icon: Icons.public_rounded,
-    defaultPrimary: 'UTC map',
-    defaultSecondary: 'Home vs Destination',
+    defaultPrimary: 'Δ --',
+    defaultSecondary: 'Set both cities',
   );
 
   static const tipHelper = ToolDefinition(

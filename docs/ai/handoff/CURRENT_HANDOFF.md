@@ -2,8 +2,34 @@
 
 ## Snapshot
 - **Date:** 2026-02-09
-- **Status:** Repo is green (`dart format`, `flutter analyze`, `flutter test`) after XL-D phase work (Pack V emergency taxonomy + hero/weather alert integration + light-mode tool-picker accent follow-up).
+- **Status:** Repo is green (`dart format`, `flutter analyze`, `flutter test`) after XL-E (Pack T) + XL-F phase 1 (Pack P).
 - **Operating mode:** Codex is now the primary workflow; apply edits directly in-repo (do not require patch zip workflow unless explicitly requested).
+
+## Latest changes (2026-02-09)
+- XL-F phase 1 shipped (Pack P licenses IA/readability modernization):
+  - replaced direct Settings -> Flutter `LicensePage` route with a dedicated readable index page:
+    - `app/unitana/lib/features/dashboard/widgets/settings_licenses_page.dart`
+  - new licenses IA behavior:
+    - groups entries by package name
+    - collapsible sections with concise summary chips/metadata
+    - package-level “View full text” modal for selectable legal text
+    - explicit “Open raw legal text” button to preserve direct full-payload compliance access via Flutter `LicensePage`
+  - Settings wiring updated:
+    - `app/unitana/lib/features/dashboard/dashboard_screen.dart`
+  - regression coverage updates:
+    - `app/unitana/test/dashboard_settings_about_licenses_test.dart` now verifies readable licenses page + raw legal route.
+
+## Latest changes (2026-02-09)
+- XL-E shipped (Pack T world time map widget reimagination):
+  - widget title/readout density:
+    - world time map tile short title is now `Time Map`.
+    - widget glance readout now shows compact delta first (`Δ ±xh`) and city UTC-lane context second (`City UTC±x • City UTC±y`).
+  - reality alignment:
+    - readout now follows active hero reality direction (`active` -> `secondary`) rather than static home/destination ordering.
+  - fallback copy cleanup:
+    - fallback labels no longer rely on `Home vs Destination`; now use concise defaults (`Δ --` / `Set both cities`).
+  - regression coverage:
+    - added `app/unitana/test/world_time_map_widget_preview_test.dart`.
 
 ## Latest changes (2026-02-09)
 - XL-D phase shipped (Pack V emergency weather system + marquee alert states):

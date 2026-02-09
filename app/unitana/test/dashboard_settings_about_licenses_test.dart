@@ -98,5 +98,16 @@ void main() {
       find.byKey(const ValueKey('settings_licenses_page')),
       findsOneWidget,
     );
+    expect(
+      find.byKey(const ValueKey('settings_licenses_open_raw')),
+      findsOneWidget,
+    );
+
+    await tester.tap(find.byKey(const ValueKey('settings_licenses_open_raw')));
+    await tester.pumpAndSettle(const Duration(milliseconds: 250));
+    expect(
+      find.byKey(const ValueKey('settings_licenses_raw_page')),
+      findsOneWidget,
+    );
   });
 }

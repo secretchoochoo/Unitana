@@ -16,6 +16,7 @@ import 'widgets/dashboard_board.dart';
 import 'widgets/data_refresh_status_label.dart';
 import 'widgets/places_hero_collapsing_header.dart';
 import 'widgets/profiles_board_screen.dart';
+import 'widgets/settings_licenses_page.dart';
 import 'widgets/tool_modal_bottom_sheet.dart';
 import 'widgets/destructive_confirmation_sheet.dart';
 import 'widgets/weather_summary_bottom_sheet.dart';
@@ -1250,7 +1251,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     if (!mounted) return;
     await Navigator.of(context).push<void>(
       MaterialPageRoute(
-        builder: (_) => LicensePage(
+        builder: (_) => SettingsLicensesPage(
           key: const ValueKey('settings_licenses_page'),
           applicationName: 'Unitana',
           applicationLegalese: DashboardCopy.settingsAboutLegalese(context),
