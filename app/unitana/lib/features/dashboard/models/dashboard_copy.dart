@@ -1205,6 +1205,48 @@ class DashboardCopy {
       DashboardLocalizations.of(
         context,
       ).text('dashboard.weather.banner.highLow', fallback: 'High • Low');
+  static String weatherEmergencyLabel(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.weather.emergency.label', fallback: 'Weather alert');
+  static String weatherEmergencyReason(
+    BuildContext context, {
+    required String reasonKey,
+  }) => DashboardLocalizations.of(context).text(
+    'dashboard.weather.emergency.reason.$reasonKey',
+    fallback: switch (reasonKey) {
+      'tornado' => 'Tornado risk',
+      'thunder_snow' => 'Thundersnow risk',
+      'thunderstorm' => 'Thunderstorm risk',
+      'blizzard' => 'Blizzard conditions',
+      'squall' => 'Squall conditions',
+      'ice' => 'Icy conditions',
+      'high_wind' => 'Strong winds',
+      'wildfire_smoke' => 'Wildfire smoke',
+      'ashfall' => 'Ash in air',
+      'air_hazardous' => 'Hazardous air quality',
+      'air_unhealthy' => 'Unhealthy air quality',
+      'air_sensitive' => 'Air quality concern',
+      'pollen_very_high' => 'Very high pollen',
+      'provider_warning' => 'Provider warning',
+      'provider_watch' => 'Provider watch',
+      'provider_advisory' => 'Provider advisory',
+      _ => 'Monitor conditions',
+    },
+  );
+  static String weatherEmergencyShortLabel(
+    BuildContext context, {
+    required WeatherEmergencySeverity severity,
+  }) => DashboardLocalizations.of(context).text(
+    'dashboard.weather.emergency.short.${severity.name}',
+    fallback: switch (severity) {
+      WeatherEmergencySeverity.none => 'Normal',
+      WeatherEmergencySeverity.advisory => 'Advisory',
+      WeatherEmergencySeverity.watch => 'Watch',
+      WeatherEmergencySeverity.warning => 'Warning',
+      WeatherEmergencySeverity.emergency => 'Emergency',
+    },
+  );
   static String weatherForecastModeLabel(
     BuildContext context, {
     required bool daily,

@@ -13,6 +13,11 @@ class LensAccents {
   static const Map<String, Color> _toolOverrides = <String, Color>{
     'shoe_sizes': DraculaPalette.red,
   };
+  static const Map<String, Color> _toolLightOverrides = <String, Color>{
+    // Keep shoes in the same family as its dark-mode red accent, but use a
+    // softer Solarized-compatible tone to avoid over-saturation in light mode.
+    'shoe_sizes': Color(0xFFB95A5A),
+  };
 
   static Color colorFor(String lensId) {
     switch (lensId) {
@@ -90,7 +95,9 @@ class LensAccents {
     String? lensId,
     required Brightness brightness,
   }) {
-    final override = _toolOverrides[toolId];
+    final override = brightness == Brightness.light
+        ? (_toolLightOverrides[toolId] ?? _toolOverrides[toolId])
+        : _toolOverrides[toolId];
     if (override != null) {
       final alpha = brightness == Brightness.light ? 0.88 : 0.92;
       return override.withValues(alpha: alpha);

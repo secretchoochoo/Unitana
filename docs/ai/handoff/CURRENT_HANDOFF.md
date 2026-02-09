@@ -2,8 +2,31 @@
 
 ## Snapshot
 - **Date:** 2026-02-09
-- **Status:** Repo is green (`dart format`, `flutter analyze`, `flutter test`) after XL-C (Pack U readability + naming finalization).
+- **Status:** Repo is green (`dart format`, `flutter analyze`, `flutter test`) after XL-D phase work (Pack V emergency taxonomy + hero/weather alert integration + light-mode tool-picker accent follow-up).
 - **Operating mode:** Codex is now the primary workflow; apply edits directly in-repo (do not require patch zip workflow unless explicitly requested).
+
+## Latest changes (2026-02-09)
+- XL-D phase shipped (Pack V emergency weather system + marquee alert states):
+  - deterministic emergency taxonomy in `app/unitana/lib/features/dashboard/models/dashboard_live_data.dart`:
+    - added explicit severity bands (`none`, `advisory`, `watch`, `warning`, `emergency`)
+    - added deterministic precedence across scene severity, wind/gust thresholds, air-quality/pollen, and provider condition-text alert hints.
+    - fallback contract is explicit (`none`) when alert metadata is absent.
+  - hero/marquee alert integration in `app/unitana/lib/features/dashboard/widgets/places_hero_v2.dart`:
+    - marquee slot now applies subtle severity tint and compact alert-severity chip for active emergencies.
+    - behavior stays urgency-forward without chaotic animation changes.
+  - weather-sheet integration in `app/unitana/lib/features/dashboard/widgets/weather_summary_bottom_sheet.dart`:
+    - place cards now show compact alert banners (`Weather alert: severity • reason`) when emergency state is active.
+    - narrow-layout stability preserved.
+  - light-mode top-level tools menu accent follow-up:
+    - tool-picker lens headers now use brightness-aware accent mapping in `app/unitana/lib/features/dashboard/widgets/dashboard_board.dart`.
+    - `shoe_sizes` light-mode icon tint now uses muted dedicated override in `app/unitana/lib/features/dashboard/models/lens_accents.dart`.
+  - regression coverage:
+    - added `app/unitana/test/weather_emergency_taxonomy_test.dart`.
+    - updated `app/unitana/test/lens_accents_contract_test.dart` for light-mode shoes override.
+  - full gates re-run and green:
+    - `dart format .`
+    - `flutter analyze`
+    - `flutter test`
 
 ## Latest changes (2026-02-09)
 - XL-C shipped (Pack U readability + naming finalization):

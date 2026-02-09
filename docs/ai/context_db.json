@@ -335,9 +335,9 @@
       ],
       "priority": "P1",
       "size": "XL",
-      "status": "planned",
+      "status": "in_progress",
       "status_updated": "2026-02-09",
-      "status_note": "Queued from backlog expansion; implementation pending."
+      "status_note": "XL-E started: widget naming/readout-density redesign is in active implementation."
     },
     {
       "id": "PACK_U_theme_readability_finalization",
@@ -367,9 +367,9 @@
       ],
       "priority": "P1",
       "size": "XL",
-      "status": "planned",
+      "status": "in_progress",
       "status_updated": "2026-02-09",
-      "status_note": "Queued from backlog expansion; implementation pending."
+      "status_note": "XL-D phase shipped: deterministic emergency taxonomy with precedence/fallback, hero alert cues, weather-sheet alert readouts, and regression coverage."
     },
     {
       "id": "PACK_W_lofi_audio_opt_in",
@@ -422,8 +422,14 @@
     }
   ],
   "current_state": {
-    "current_slice": "XL-C shipped: Pack U readability + naming finalization (System/Dark/Light labels + light-mode contrast sweep). Next is XL-D (Pack V emergency weather system + marquee alert states).",
+    "current_slice": "XL-D shipped phase: Pack V emergency taxonomy + hero/weather alert integration. Next is XL-E (Pack T world time map widget reimagination).",
     "notes": [
+      "XL-D shipped on 2026-02-09: added deterministic emergency-weather taxonomy (`WeatherEmergencyTaxonomy`) with explicit severity bands (`none/advisory/watch/warning/emergency`) and deterministic precedence across scene, wind/gust thresholds, air-quality/pollen, and provider alert text hints.",
+      "XL-D shipped on 2026-02-09: hero marquee now consumes emergency assessment state and renders high-visibility but non-chaotic alert affordances (subtle severity tint + compact severity chip) without breaking existing scene taxonomy.",
+      "XL-D shipped on 2026-02-09: weather summary cards now surface emergency state via compact alert banner rows with severity/reason copy and stable narrow-layout behavior.",
+      "XL-D shipped on 2026-02-09: fallback behavior is explicit and deterministic (`severity=none`) when provider alert metadata is missing.",
+      "XL-D shipped on 2026-02-09: added dedicated taxonomy regression coverage in `weather_emergency_taxonomy_test.dart` for fallback, precedence, provider warning text mapping, and wind-band thresholds.",
+      "XL-D follow-up on 2026-02-09: light-mode tool-picker family headers now use brightness-aware accent mapping and `shoe_sizes` icon tint has a dedicated muted light-mode override for consistency.",
       "XL-C shipped on 2026-02-09: user-facing theme names were simplified to `System`, `Dark`, and `Light` across dashboard settings copy/seed/ARB contracts.",
       "XL-C shipped on 2026-02-09: light-mode primary CTA token was shifted from saturated pink to a calmer contrast-safe blue action tone, reducing visual clash across tool modals and wizard CTAs.",
       "XL-C shipped on 2026-02-09: light-theme lens accent mapping was tuned to muted Solarized-adjacent tones for travel/health/weather/money categories and contract tests were updated accordingly.",

@@ -1920,7 +1920,10 @@ class _ToolPickerSheetState extends State<ToolPickerSheet> {
       key: _focusKeyForLens(lens.id),
       child: ListTile(
         key: ValueKey('toolpicker_lens_${lens.id}'),
-        leading: Icon(lens.icon, color: LensAccents.iconTintFor(lens.id)),
+        leading: Icon(
+          lens.icon,
+          color: LensAccents.iconTintForBrightness(lens.id, theme.brightness),
+        ),
         title: Text(_localizedLensName(context, lens)),
         subtitle: Text(_localizedLensDescriptor(context, lens)),
         trailing: Icon(

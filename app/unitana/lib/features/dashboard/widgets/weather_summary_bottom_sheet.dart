@@ -42,6 +42,30 @@ class _WeatherSheetThemePolicy {
   static Color purpleTone(BuildContext context) => isLight(context)
       ? Theme.of(context).colorScheme.secondary
       : DraculaPalette.purple;
+
+  static Color emergencyTone(
+    BuildContext context,
+    WeatherEmergencySeverity severity,
+  ) {
+    switch (severity) {
+      case WeatherEmergencySeverity.emergency:
+        return isLight(context)
+            ? const Color(0xFFB00020)
+            : const Color(0xFFFF6B6B);
+      case WeatherEmergencySeverity.warning:
+        return isLight(context)
+            ? const Color(0xFFB45F06)
+            : DraculaPalette.orange;
+      case WeatherEmergencySeverity.watch:
+        return isLight(context)
+            ? const Color(0xFF6A50A7)
+            : DraculaPalette.purple;
+      case WeatherEmergencySeverity.advisory:
+        return coolTone(context);
+      case WeatherEmergencySeverity.none:
+        return Theme.of(context).colorScheme.outlineVariant;
+    }
+  }
 }
 
 class WeatherSummaryBottomSheet extends StatelessWidget {
@@ -291,6 +315,7 @@ class WeatherSummaryBottomSheet extends StatelessWidget {
     final weather = liveData.weatherFor(place);
     final sun = liveData.sunFor(place);
     final env = liveData.envFor(place);
+    final emergency = liveData.emergencyFor(place);
 
     final preferMetric = (place.unitSystem == 'metric');
     final tempC = weather?.temperatureC;
@@ -594,6 +619,57 @@ class WeatherSummaryBottomSheet extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 5),
+            if (emergency.isActive) ...[
+              DecoratedBox(
+                key: ValueKey('weather_summary_alert_${place.id}'),
+                decoration: BoxDecoration(
+                  color: _WeatherSheetThemePolicy.emergencyTone(
+                    context,
+                    emergency.severity,
+                  ).withAlpha(28),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: _WeatherSheetThemePolicy.emergencyTone(
+                      context,
+                      emergency.severity,
+                    ).withAlpha(165),
+                  ),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 5,
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.warning_amber_rounded,
+                        size: 16,
+                        color: _WeatherSheetThemePolicy.emergencyTone(
+                          context,
+                          emergency.severity,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          '${DashboardCopy.weatherEmergencyLabel(context)}: ${DashboardCopy.weatherEmergencyShortLabel(context, severity: emergency.severity)} • ${DashboardCopy.weatherEmergencyReason(context, reasonKey: emergency.reasonKey)}',
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: _WeatherSheetThemePolicy.textPrimary(
+                              context,
+                            ),
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 5),
+            ],
             _iconTable(
               context,
               headers: <String>[

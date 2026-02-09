@@ -91,6 +91,374 @@ enum SceneKey {
   squall,
 }
 
+/// Deterministic emergency severity used by hero + weather surfaces.
+///
+/// Order matters: higher index = higher urgency.
+enum WeatherEmergencySeverity { none, advisory, watch, warning, emergency }
+
+@immutable
+class WeatherEmergencyAssessment {
+  final WeatherEmergencySeverity severity;
+
+  /// Stable machine key for diagnostics/tests and localized copy lookup.
+  final String reasonKey;
+
+  /// Stable source domain for explainability ("scene", "wind", "air", etc).
+  final String source;
+
+  const WeatherEmergencyAssessment({
+    required this.severity,
+    required this.reasonKey,
+    required this.source,
+  });
+
+  bool get isActive => severity != WeatherEmergencySeverity.none;
+}
+
+/// Classifies emergency weather from available signals.
+///
+/// Precedence contract:
+/// 1) Severe explicit weather scenes (tornado/squall/blizzard/etc.)
+/// 2) Wind/gust thresholds
+/// 3) Air quality/pollen stress
+/// 4) Condition-text metadata hints ("warning", "watch", "advisory")
+///
+/// Missing metadata is safe: if no signal is present, severity is `none`.
+class WeatherEmergencyTaxonomy {
+  const WeatherEmergencyTaxonomy._();
+
+  static const WeatherEmergencyAssessment _none = WeatherEmergencyAssessment(
+    severity: WeatherEmergencySeverity.none,
+    reasonKey: 'none',
+    source: 'fallback',
+  );
+
+  static WeatherEmergencyAssessment assess({
+    required WeatherSnapshot? weather,
+    required EnvSnapshot? env,
+  }) {
+    final candidates = <WeatherEmergencyAssessment>[];
+
+    if (weather != null) {
+      _appendSceneCandidates(candidates, weather.sceneKey);
+      _appendWindCandidates(candidates, weather.windKmh, weather.gustKmh);
+      _appendConditionTextCandidates(candidates, weather.conditionText);
+    }
+
+    _appendAirCandidates(candidates, env);
+
+    if (candidates.isEmpty) return _none;
+    candidates.sort(_compareAssessment);
+    return candidates.first;
+  }
+
+  static int _severityRank(WeatherEmergencySeverity s) {
+    switch (s) {
+      case WeatherEmergencySeverity.emergency:
+        return 5;
+      case WeatherEmergencySeverity.warning:
+        return 4;
+      case WeatherEmergencySeverity.watch:
+        return 3;
+      case WeatherEmergencySeverity.advisory:
+        return 2;
+      case WeatherEmergencySeverity.none:
+        return 1;
+    }
+  }
+
+  // Lower number = higher deterministic precedence for ties.
+  static int _reasonPriority(String key) {
+    switch (key) {
+      case 'tornado':
+        return 0;
+      case 'thunder_snow':
+        return 1;
+      case 'thunderstorm':
+        return 2;
+      case 'blizzard':
+        return 3;
+      case 'squall':
+        return 4;
+      case 'ice':
+        return 5;
+      case 'high_wind':
+        return 6;
+      case 'wildfire_smoke':
+        return 7;
+      case 'ashfall':
+        return 8;
+      case 'air_hazardous':
+        return 9;
+      case 'air_unhealthy':
+        return 10;
+      case 'air_sensitive':
+        return 11;
+      case 'pollen_very_high':
+        return 12;
+      case 'provider_warning':
+        return 13;
+      case 'provider_watch':
+        return 14;
+      case 'provider_advisory':
+        return 15;
+      default:
+        return 999;
+    }
+  }
+
+  static int _compareAssessment(
+    WeatherEmergencyAssessment a,
+    WeatherEmergencyAssessment b,
+  ) {
+    final severity = _severityRank(
+      b.severity,
+    ).compareTo(_severityRank(a.severity));
+    if (severity != 0) return severity;
+    final reason = _reasonPriority(
+      a.reasonKey,
+    ).compareTo(_reasonPriority(b.reasonKey));
+    if (reason != 0) return reason;
+    return a.source.compareTo(b.source);
+  }
+
+  static void _appendSceneCandidates(
+    List<WeatherEmergencyAssessment> out,
+    SceneKey scene,
+  ) {
+    switch (scene) {
+      case SceneKey.tornado:
+        out.add(
+          const WeatherEmergencyAssessment(
+            severity: WeatherEmergencySeverity.emergency,
+            reasonKey: 'tornado',
+            source: 'scene',
+          ),
+        );
+        return;
+      case SceneKey.thunderSnow:
+        out.add(
+          const WeatherEmergencyAssessment(
+            severity: WeatherEmergencySeverity.warning,
+            reasonKey: 'thunder_snow',
+            source: 'scene',
+          ),
+        );
+        return;
+      case SceneKey.thunderRain:
+        out.add(
+          const WeatherEmergencyAssessment(
+            severity: WeatherEmergencySeverity.warning,
+            reasonKey: 'thunderstorm',
+            source: 'scene',
+          ),
+        );
+        return;
+      case SceneKey.blizzard:
+        out.add(
+          const WeatherEmergencyAssessment(
+            severity: WeatherEmergencySeverity.warning,
+            reasonKey: 'blizzard',
+            source: 'scene',
+          ),
+        );
+        return;
+      case SceneKey.squall:
+        out.add(
+          const WeatherEmergencyAssessment(
+            severity: WeatherEmergencySeverity.warning,
+            reasonKey: 'squall',
+            source: 'scene',
+          ),
+        );
+        return;
+      case SceneKey.icePellets:
+      case SceneKey.freezingRain:
+      case SceneKey.freezingDrizzle:
+        out.add(
+          const WeatherEmergencyAssessment(
+            severity: WeatherEmergencySeverity.watch,
+            reasonKey: 'ice',
+            source: 'scene',
+          ),
+        );
+        return;
+      case SceneKey.smokeWildfire:
+        out.add(
+          const WeatherEmergencyAssessment(
+            severity: WeatherEmergencySeverity.watch,
+            reasonKey: 'wildfire_smoke',
+            source: 'scene',
+          ),
+        );
+        return;
+      case SceneKey.ashfall:
+        out.add(
+          const WeatherEmergencyAssessment(
+            severity: WeatherEmergencySeverity.watch,
+            reasonKey: 'ashfall',
+            source: 'scene',
+          ),
+        );
+        return;
+      case SceneKey.rainHeavy:
+      case SceneKey.snowHeavy:
+      case SceneKey.blowingSnow:
+        out.add(
+          const WeatherEmergencyAssessment(
+            severity: WeatherEmergencySeverity.advisory,
+            reasonKey: 'provider_advisory',
+            source: 'scene',
+          ),
+        );
+        return;
+      case SceneKey.clear:
+      case SceneKey.partlyCloudy:
+      case SceneKey.cloudy:
+      case SceneKey.overcast:
+      case SceneKey.mist:
+      case SceneKey.fog:
+      case SceneKey.drizzle:
+      case SceneKey.rainLight:
+      case SceneKey.rainModerate:
+      case SceneKey.sleet:
+      case SceneKey.snowLight:
+      case SceneKey.snowModerate:
+      case SceneKey.hazeDust:
+      case SceneKey.windy:
+        return;
+    }
+  }
+
+  static void _appendWindCandidates(
+    List<WeatherEmergencyAssessment> out,
+    double windKmh,
+    double gustKmh,
+  ) {
+    final peak = math.max(windKmh, gustKmh);
+    if (peak >= 100) {
+      out.add(
+        const WeatherEmergencyAssessment(
+          severity: WeatherEmergencySeverity.warning,
+          reasonKey: 'high_wind',
+          source: 'wind',
+        ),
+      );
+      return;
+    }
+    if (peak >= 70) {
+      out.add(
+        const WeatherEmergencyAssessment(
+          severity: WeatherEmergencySeverity.watch,
+          reasonKey: 'high_wind',
+          source: 'wind',
+        ),
+      );
+      return;
+    }
+    if (peak >= 45) {
+      out.add(
+        const WeatherEmergencyAssessment(
+          severity: WeatherEmergencySeverity.advisory,
+          reasonKey: 'high_wind',
+          source: 'wind',
+        ),
+      );
+    }
+  }
+
+  static void _appendAirCandidates(
+    List<WeatherEmergencyAssessment> out,
+    EnvSnapshot? env,
+  ) {
+    final aqi = env?.usAqi;
+    if (aqi != null) {
+      if (aqi >= 300) {
+        out.add(
+          const WeatherEmergencyAssessment(
+            severity: WeatherEmergencySeverity.warning,
+            reasonKey: 'air_hazardous',
+            source: 'air',
+          ),
+        );
+      } else if (aqi >= 200) {
+        out.add(
+          const WeatherEmergencyAssessment(
+            severity: WeatherEmergencySeverity.watch,
+            reasonKey: 'air_unhealthy',
+            source: 'air',
+          ),
+        );
+      } else if (aqi >= 150) {
+        out.add(
+          const WeatherEmergencyAssessment(
+            severity: WeatherEmergencySeverity.advisory,
+            reasonKey: 'air_sensitive',
+            source: 'air',
+          ),
+        );
+      }
+    }
+
+    final pollen = env?.pollenIndex;
+    if (pollen != null && pollen >= 4.0) {
+      out.add(
+        const WeatherEmergencyAssessment(
+          severity: WeatherEmergencySeverity.advisory,
+          reasonKey: 'pollen_very_high',
+          source: 'air',
+        ),
+      );
+    }
+  }
+
+  static void _appendConditionTextCandidates(
+    List<WeatherEmergencyAssessment> out,
+    String conditionText,
+  ) {
+    final text = conditionText.toLowerCase();
+    if (text.contains('tornado emergency')) {
+      out.add(
+        const WeatherEmergencyAssessment(
+          severity: WeatherEmergencySeverity.emergency,
+          reasonKey: 'tornado',
+          source: 'provider_text',
+        ),
+      );
+      return;
+    }
+    if (text.contains('warning')) {
+      out.add(
+        const WeatherEmergencyAssessment(
+          severity: WeatherEmergencySeverity.warning,
+          reasonKey: 'provider_warning',
+          source: 'provider_text',
+        ),
+      );
+      return;
+    }
+    if (text.contains('watch')) {
+      out.add(
+        const WeatherEmergencyAssessment(
+          severity: WeatherEmergencySeverity.watch,
+          reasonKey: 'provider_watch',
+          source: 'provider_text',
+        ),
+      );
+      return;
+    }
+    if (text.contains('advisory')) {
+      out.add(
+        const WeatherEmergencyAssessment(
+          severity: WeatherEmergencySeverity.advisory,
+          reasonKey: 'provider_advisory',
+          source: 'provider_text',
+        ),
+      );
+    }
+  }
+}
+
 /// Maps WeatherAPI `condition.code` values into Unitana's stable [SceneKey] catalog.
 ///
 /// Derived from docs/ai/reference/SCENEKEY_CATALOG.md (WeatherAPI MVP section).
@@ -1070,6 +1438,20 @@ class DashboardLiveDataController extends ChangeNotifier {
       return null;
     }
     return _forecastByPlaceId[place.id];
+  }
+
+  WeatherEmergencyAssessment emergencyFor(Place? place) {
+    if (place == null) {
+      return const WeatherEmergencyAssessment(
+        severity: WeatherEmergencySeverity.none,
+        reasonKey: 'none',
+        source: 'fallback',
+      );
+    }
+    return WeatherEmergencyTaxonomy.assess(
+      weather: weatherFor(place),
+      env: envFor(place),
+    );
   }
 
   void ensureSeeded(List<Place> places) {

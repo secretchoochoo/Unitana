@@ -23,4 +23,13 @@ void main() {
     expect(travel, const Color(0xFF3D7194));
     expect(health, const Color(0xFF627228));
   });
+
+  test('Shoes tool icon uses muted red override in light mode', () {
+    final shoes = LensAccents.toolIconTintForBrightness(
+      toolId: 'shoe_sizes',
+      lensId: ActivityLensId.quickTools,
+      brightness: Brightness.light,
+    );
+    expect(shoes, const Color(0xFFB95A5A).withValues(alpha: 0.88));
+  });
 }

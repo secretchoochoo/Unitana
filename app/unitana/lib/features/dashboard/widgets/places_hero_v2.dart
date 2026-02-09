@@ -68,6 +68,13 @@ class PlacesHeroV2 extends StatelessWidget {
         final primaryWeather = primary == null
             ? null
             : liveData.weatherFor(primary);
+        final primaryEmergency = primary == null
+            ? const WeatherEmergencyAssessment(
+                severity: WeatherEmergencySeverity.none,
+                reasonKey: 'none',
+                source: 'fallback',
+              )
+            : liveData.emergencyFor(primary);
         final primarySun = primary == null ? null : liveData.sunFor(primary);
 
         // Night heuristic: allow dev override first, else prefer sun info, else fallback to hour-based.
@@ -172,6 +179,7 @@ class PlacesHeroV2 extends StatelessWidget {
                             sun: primarySun,
                             sceneKey: primaryWeather?.sceneKey,
                             conditionLabel: primaryWeather?.conditionText,
+                            emergency: primaryEmergency,
                             isNight: isNight,
                             primaryTzId: primary?.timeZoneId,
                             secondaryTzId: secondary?.timeZoneId,
@@ -517,6 +525,7 @@ class _HeroBandsBody extends StatelessWidget {
   final SunTimesSnapshot? sun;
   final SceneKey? sceneKey;
   final String? conditionLabel;
+  final WeatherEmergencyAssessment emergency;
   final bool isNight;
   final String? primaryTzId;
   final String? secondaryTzId;
@@ -540,6 +549,7 @@ class _HeroBandsBody extends StatelessWidget {
     required this.sun,
     required this.sceneKey,
     required this.conditionLabel,
+    required this.emergency,
     required this.isNight,
     required this.primaryTzId,
     required this.secondaryTzId,
@@ -616,6 +626,7 @@ class _HeroBandsBody extends StatelessWidget {
                   isNight: isNight,
                   sceneKey: sceneKey,
                   conditionLabel: conditionLabel,
+                  emergency: emergency,
                   includeTestKeys: includeTestKeys,
                   renderConditionLabel: false,
                 ),
@@ -1582,6 +1593,7 @@ class _RightMarqueeSlot extends StatelessWidget {
   final bool isNight;
   final SceneKey? sceneKey;
   final String? conditionLabel;
+  final WeatherEmergencyAssessment emergency;
   final bool includeTestKeys;
 
   final bool renderConditionLabel;
@@ -1591,9 +1603,26 @@ class _RightMarqueeSlot extends StatelessWidget {
     required this.isNight,
     required this.sceneKey,
     required this.conditionLabel,
+    required this.emergency,
     this.includeTestKeys = true,
     this.renderConditionLabel = true,
   });
+
+  Color _alertTone(BuildContext context, WeatherEmergencySeverity severity) {
+    final cs = Theme.of(context).colorScheme;
+    switch (severity) {
+      case WeatherEmergencySeverity.emergency:
+        return Colors.redAccent.shade700;
+      case WeatherEmergencySeverity.warning:
+        return Colors.deepOrangeAccent.shade400;
+      case WeatherEmergencySeverity.watch:
+        return cs.secondary;
+      case WeatherEmergencySeverity.advisory:
+        return cs.primary;
+      case WeatherEmergencySeverity.none:
+        return cs.outlineVariant;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1639,6 +1668,15 @@ class _RightMarqueeSlot extends StatelessWidget {
               child: Stack(
                 fit: StackFit.expand,
                 children: [
+                  if (emergency.isActive)
+                    IgnorePointer(
+                      child: Container(
+                        color: _alertTone(
+                          context,
+                          emergency.severity,
+                        ).withAlpha(20),
+                      ),
+                    ),
                   HeroAliveMarquee(
                     includeTestKeys: includeTestKeys,
                     compact: compact,
@@ -1697,6 +1735,38 @@ class _RightMarqueeSlot extends StatelessWidget {
                               fontSize: compact ? 10 : 11,
                               fontWeight: FontWeight.w800,
                               color: cs.onSurface,
+                              height: 1.0,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  if (emergency.isActive)
+                    Positioned(
+                      top: compact ? 4 : 6,
+                      right: compact ? 4 : 6,
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          color: _alertTone(
+                            context,
+                            emergency.severity,
+                          ).withAlpha(210),
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                        child: Padding(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: compact ? 6 : 8,
+                            vertical: compact ? 2 : 3,
+                          ),
+                          child: Text(
+                            DashboardCopy.weatherEmergencyShortLabel(
+                              context,
+                              severity: emergency.severity,
+                            ),
+                            style: GoogleFonts.inconsolata(
+                              fontSize: compact ? 8 : 9,
+                              fontWeight: FontWeight.w900,
+                              color: Colors.white,
                               height: 1.0,
                             ),
                           ),

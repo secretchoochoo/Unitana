@@ -1,4 +1,4 @@
-NEXT CHAT PROMPT — XL-D: Pack V Emergency Weather System + Marquee Alert States
+NEXT CHAT PROMPT — XL-E: Pack T World Time Map Widget Reimagination
 
 You are taking over Unitana (Flutter) in a fresh, high-context window.
 
@@ -6,15 +6,15 @@ Read these files first:
 1) `docs/ai/handoff/CURRENT_HANDOFF.md`
 2) `docs/ai/context_db.json`
 3) `docs/ai/prompts/NEXT_CHAT_PROMPT.md`
-4) `app/unitana/lib/features/dashboard/models/dashboard_live_data.dart`
-5) `app/unitana/lib/features/dashboard/models/weather_backend.dart`
-6) `app/unitana/lib/features/dashboard/widgets/hero_alive_marquee.dart`
-7) `app/unitana/lib/features/dashboard/widgets/places_hero_v2.dart`
-8) `app/unitana/lib/features/dashboard/widgets/weather_summary_bottom_sheet.dart`
-9) `app/unitana/lib/features/dashboard/models/dashboard_copy.dart`
-10) `app/unitana/lib/l10n/localization_seed.dart`
-11) `app/unitana/test/dashboard_places_hero_v2_test.dart`
-12) `app/unitana/test/weather_summary_narrow_layout_smoke_test.dart`
+4) `app/unitana/lib/features/dashboard/models/tool_definitions.dart`
+5) `app/unitana/lib/features/dashboard/widgets/dashboard_board.dart`
+6) `app/unitana/lib/features/dashboard/widgets/tool_modal_bottom_sheet.dart`
+7) `app/unitana/lib/features/dashboard/models/dashboard_copy.dart`
+8) `app/unitana/lib/features/dashboard/models/dashboard_live_data.dart`
+9) `app/unitana/lib/features/dashboard/widgets/places_hero_v2.dart`
+10) `app/unitana/test/toolpicker_activation_bundle_test.dart`
+11) `app/unitana/test/dashboard_tool_insertion_persistence_test.dart`
+12) `app/unitana/test/dashboard_places_hero_v2_test.dart`
 
 ## Core operating rules
 - Keep repo green if any code/docs are touched:
@@ -29,37 +29,34 @@ Read these files first:
   - goldens opt-in only
 
 ## Mission
-Execute XL-D by starting Pack V end-to-end:
-1) define deterministic emergency-weather taxonomy for hero/weather surfaces.
-2) map alert severity to marquee scene behavior and high-visibility UI cues.
-3) keep graceful fallback behavior when alert metadata is missing.
+Execute XL-E by closing Pack T in a user-visible way:
+1) redesign World Time Map widget naming/readout density for small-card legibility.
+2) surface actionable timezone delta/readout data from the map context.
+3) keep modal and widget semantics aligned without regressions.
 
 ## Required outcomes
-1) Emergency taxonomy contract
-- Define explicit severity bands and source mapping for emergency conditions.
-- Keep deterministic precedence when multiple signals exist.
-- Document the mapping contract in code comments and tests.
+1) Widget naming + fit contract
+- Shorten/adjust display naming so the widget title does not truncate on compact cards.
+- Preserve canonical tool ID behavior (`world_clock_delta`) and activation contracts.
 
-2) Marquee + hero behavior
-- Add alert-aware marquee state variants without breaking existing scene taxonomy.
-- Ensure alert states remain readable in both light/dark themes.
-- Avoid alarm-fatigue: urgent but non-chaotic visual behavior.
+2) Glance-value data model
+- Add concise, high-value readout lines in the widget (delta + UTC lane context).
+- Ensure values are deterministic for both home and destination reality modes.
 
-3) Weather sheet/readout integration
-- Surface emergency state in weather summary where relevant.
-- Keep interaction and layout stable on narrow devices.
-- Preserve existing weather/time correctness and chart contracts.
+3) Modal/widget parity
+- Keep lane semantics and city/UTC identity consistent between widget and map modal.
+- Avoid introducing duplicate/conflicting terminology.
 
-4) Fallback behavior
-- If provider alert fields are unavailable, maintain current behavior with no blank/erratic states.
-- Add deterministic fallback tests.
+4) Readability + overflow safety
+- Validate compact card rendering on small widths.
+- Ensure no regressions in light/dark contrast.
 
 5) Preserve existing contracts
 - No regressions to:
-  - Pack Q locale/persistence/runtime fallback
-  - Pack U theme readability and naming
-  - Pack R/S matrix behavior and widget sync
-  - weather forecast interaction and mini-hero layout stability
+  - Pack V emergency taxonomy + hero/weather alert states
+  - Pack U theme readability + naming simplification
+  - Pack Q locale persistence/runtime fallback
+  - matrix tools/widget last-selection sync behavior
 
 6) Docs update
 - Update:
@@ -68,18 +65,17 @@ Execute XL-D by starting Pack V end-to-end:
   - `docs/ai/prompts/NEXT_CHAT_PROMPT.md`
 
 ## Suggested execution order
-1) taxonomy and precedence design in model layer
-2) marquee/hero alert rendering integration
-3) weather-sheet alert readout integration
-4) regression tests for precedence/fallback/readability
-5) full gates + docs refresh
+1) widget contract audit (naming + current data payload)
+2) implementation for compact glance readouts
+3) regression tests for card visibility/overflow + activation parity
+4) full gates
+5) docs/handoff refresh
 
 ## Definition of done
-- Emergency weather taxonomy is deterministic and test-covered.
-- Marquee + weather surfaces react coherently to alert severity.
-- Fallback behavior remains stable when alert data is absent.
+- World Time Map widget presents concise, useful timezone context without truncation.
+- Widget and modal semantics stay coherent and test-covered.
 - Repo green (`format`, `analyze`, `test`).
 
 ## Forward plan after this slice
-- Next slice: XL-E (Pack T world time map widget reimagination).
-- Following slice: XL-F (Pack P licenses IA/readability modernization).
+- Next slice: XL-F (Pack P licenses IA/readability modernization).
+- Following slice: XL-G (Pack R/S matrix standards follow-through: semantics and remaining dataset expansion).
