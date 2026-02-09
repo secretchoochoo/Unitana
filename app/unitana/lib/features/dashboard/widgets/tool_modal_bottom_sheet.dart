@@ -326,7 +326,8 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
       widget.tool.canonicalToolId == CanonicalToolId.pressure ||
       widget.tool.canonicalToolId == CanonicalToolId.weight ||
       widget.tool.canonicalToolId == CanonicalToolId.dataStorage ||
-      widget.tool.canonicalToolId == CanonicalToolId.energy;
+      widget.tool.canonicalToolId == CanonicalToolId.energy ||
+      widget.tool.id == 'baking';
   bool get _isLookupTool =>
       widget.tool.canonicalToolId == CanonicalToolId.shoeSizes ||
       widget.tool.canonicalToolId == CanonicalToolId.paperSizes ||
@@ -349,6 +350,9 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
   bool get _supportsUnitPicker => _isMultiUnitTool || _isCurrencyTool;
 
   List<String> get _multiUnitChoices {
+    if (widget.tool.id == 'baking') {
+      return const <String>['tsp', 'tbsp', 'cup', 'ml', 'L'];
+    }
     switch (widget.tool.canonicalToolId) {
       case CanonicalToolId.volume:
         return const <String>['mL', 'L', 'pt', 'qt', 'gal'];
@@ -601,6 +605,11 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
   }
 
   void _seedMultiUnitOverrides() {
+    if (widget.tool.id == 'baking') {
+      _fromUnitOverride = _forward ? 'cup' : 'ml';
+      _toUnitOverride = _forward ? 'ml' : 'cup';
+      return;
+    }
     switch (widget.tool.canonicalToolId) {
       case CanonicalToolId.volume:
         _fromUnitOverride = _forward ? 'L' : 'gal';
@@ -1070,7 +1079,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
             keyId: 'cupsgrams_flour',
             label: 'Flour (all-purpose)',
             valuesBySystem: <String, String>{
-              'Volume': '1 cup',
+              'Volume': '1 cup (16 tbsp / 48 tsp)',
               'Weight': '120 g',
             },
             note: 'Approximate scoop-and-level reference.',
@@ -1080,7 +1089,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
             keyId: 'cupsgrams_sugar',
             label: 'Sugar (granulated)',
             valuesBySystem: <String, String>{
-              'Volume': '1 cup',
+              'Volume': '1 cup (16 tbsp / 48 tsp)',
               'Weight': '200 g',
             },
             note: 'Pack density varies by crystal size and humidity.',
@@ -1090,7 +1099,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
             keyId: 'cupsgrams_brown_sugar',
             label: 'Brown sugar (packed)',
             valuesBySystem: <String, String>{
-              'Volume': '1 cup (packed)',
+              'Volume': '1 cup packed (16 tbsp)',
               'Weight': '220 g',
             },
             note: 'Assumes packed cup measurement.',
@@ -1100,7 +1109,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
             keyId: 'cupsgrams_butter',
             label: 'Butter',
             valuesBySystem: <String, String>{
-              'Volume': '1 cup',
+              'Volume': '1 cup / 2 sticks',
               'Weight': '227 g',
             },
             note: 'Equivalent to 2 US sticks.',
@@ -1110,10 +1119,30 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
             keyId: 'cupsgrams_rice',
             label: 'Rice (uncooked white)',
             valuesBySystem: <String, String>{
-              'Volume': '1 cup',
+              'Volume': '1 cup (16 tbsp / 48 tsp)',
               'Weight': '185 g',
             },
             note: 'Estimate before cooking.',
+            approximate: true,
+          ),
+          _LookupEntry(
+            keyId: 'cupsgrams_oats',
+            label: 'Oats (rolled)',
+            valuesBySystem: <String, String>{
+              'Volume': '1 cup (16 tbsp / 48 tsp)',
+              'Weight': '90 g',
+            },
+            note: 'Rolled oats are lighter by volume than flour.',
+            approximate: true,
+          ),
+          _LookupEntry(
+            keyId: 'cupsgrams_honey',
+            label: 'Honey',
+            valuesBySystem: <String, String>{
+              'Volume': '1 cup (16 tbsp / 48 tsp)',
+              'Weight': '340 g',
+            },
+            note: 'Dense liquid; weight is significantly higher per cup.',
             approximate: true,
           ),
         ];
@@ -1340,6 +1369,56 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
     if (massFactor != null) return quantity * massFactor;
     final volumeFactor = _unitPriceVolumeToMl[unit];
     if (volumeFactor != null) return quantity * volumeFactor;
+    return null;
+  }
+
+  String _unitPricePrimaryCurrencyCode() {
+    final preferDestination =
+        widget.session.reality == DashboardReality.destination;
+    final preferred = preferDestination ? widget.destination : widget.home;
+    final fallback = preferDestination ? widget.home : widget.destination;
+    final code = currencyCodeForCountryCode(
+      preferred?.countryCode ?? fallback?.countryCode,
+    );
+    return code;
+  }
+
+  String? _unitPriceSecondaryCurrencyCode() {
+    final primary = _unitPricePrimaryCurrencyCode();
+    final preferDestination =
+        widget.session.reality == DashboardReality.destination;
+    final secondaryPlace = preferDestination ? widget.home : widget.destination;
+    final code = currencyCodeForCountryCode(secondaryPlace?.countryCode);
+    if (code.trim().toUpperCase() == primary.trim().toUpperCase()) {
+      return null;
+    }
+    return code;
+  }
+
+  String _moneyWithCurrency(double amount, String code) {
+    final symbol = _currencySymbol(code);
+    return '$symbol${amount.toStringAsFixed(2)}';
+  }
+
+  double? _convertCurrencyAmount({
+    required double amount,
+    required String fromCode,
+    required String toCode,
+  }) {
+    final from = fromCode.trim().toUpperCase();
+    final to = toCode.trim().toUpperCase();
+    if (from == to) return amount;
+
+    final pairRate = widget.currencyRateForPair?.call(from, to);
+    if (pairRate != null && pairRate > 0) {
+      return amount * pairRate;
+    }
+
+    final rate = (widget.eurToUsd == null || widget.eurToUsd! <= 0)
+        ? 1.10
+        : widget.eurToUsd!;
+    if (from == 'EUR' && to == 'USD') return amount * rate;
+    if (from == 'USD' && to == 'EUR') return amount / rate;
     return null;
   }
 
@@ -1845,6 +1924,18 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
     final panelBgSoft = _ToolModalThemePolicy.panelBgSoft(context);
     final panelBorder = _ToolModalThemePolicy.panelBorder(context);
     final textMuted = _ToolModalThemePolicy.textMuted(context);
+    final primaryCurrencyCode = _unitPricePrimaryCurrencyCode();
+    final secondaryCurrencyCode = _unitPriceSecondaryCurrencyCode();
+    final activePlaceName =
+        (widget.session.reality == DashboardReality.destination
+            ? widget.destination?.cityName
+            : widget.home?.cityName) ??
+        DashboardCopy.weatherCityNotSet(context);
+    final oppositePlaceName =
+        (widget.session.reality == DashboardReality.destination
+            ? widget.home?.cityName
+            : widget.destination?.cityName) ??
+        DashboardCopy.weatherCityNotSet(context);
     final priceA = _parsePositiveText(_unitPriceAController.text);
     final qtyA = _parsePositiveText(_unitQtyAController.text);
     final baseA = (priceA == null || qtyA == null)
@@ -1868,6 +1959,20 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
         ? perBaseA * 1000.0
         : aVolume
         ? perBaseA * 1000.0
+        : null;
+    final per100ASecondary = (per100A != null && secondaryCurrencyCode != null)
+        ? _convertCurrencyAmount(
+            amount: per100A,
+            fromCode: primaryCurrencyCode,
+            toCode: secondaryCurrencyCode,
+          )
+        : null;
+    final per1kASecondary = (per1kA != null && secondaryCurrencyCode != null)
+        ? _convertCurrencyAmount(
+            amount: per1kA,
+            fromCode: primaryCurrencyCode,
+            toCode: secondaryCurrencyCode,
+          )
         : null;
 
     final priceB = _parsePositiveText(_unitPriceBController.text);
@@ -1942,7 +2047,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
               decoration: InputDecoration(
                 labelText: DashboardCopy.unitPriceLabelPrice(
                   context,
-                  _tipCurrencyCode(),
+                  primaryCurrencyCode,
                 ),
                 hintText: DashboardCopy.unitPricePriceHint(context),
               ),
@@ -2000,6 +2105,12 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
       );
     }
 
+    final normalizedTarget = aMass
+        ? '1 kg'
+        : aVolume
+        ? '1 L'
+        : '1 base';
+
     return ListView(
       key: ValueKey('tool_unit_price_scroll_${widget.tool.id}'),
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
@@ -2012,13 +2123,35 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
             border: Border.all(color: panelBorder),
           ),
           child: Text(
-            DashboardCopy.unitPriceCoach(context),
+            DashboardCopy.unitPriceCoach(
+              context,
+              primaryCurrency: primaryCurrencyCode,
+              secondaryCurrency: secondaryCurrencyCode,
+            ),
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
               color: textMuted,
               fontWeight: FontWeight.w700,
             ),
           ),
         ),
+        if (secondaryCurrencyCode != null) ...[
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+            decoration: BoxDecoration(
+              color: panelBgSoft,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: panelBorder),
+            ),
+            child: Text(
+              '$activePlaceName ($primaryCurrencyCode) • $oppositePlaceName ($secondaryCurrencyCode)',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: textMuted,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ],
         const SizedBox(height: 8),
         productCard(
           title: DashboardCopy.unitPriceProductTitle(context, isA: true),
@@ -2075,7 +2208,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                       prompt: '>',
                       input: 'Product A',
                       output:
-                          '${_moneyWithCode(per100A!)} per ${aMass ? '100g' : '100mL'}',
+                          '${_moneyWithCurrency(per100A!, primaryCurrencyCode)} per ${aMass ? '100g' : '100mL'}',
                       emphasize: true,
                       arrowColor: accent,
                     ),
@@ -2084,10 +2217,32 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                       prompt: '>',
                       input: 'Product A',
                       output:
-                          '${_moneyWithCode(per1kA!)} per ${aMass ? 'kg' : 'L'}',
+                          '${_moneyWithCurrency(per1kA!, primaryCurrencyCode)} per ${aMass ? 'kg' : 'L'}',
                       emphasize: false,
                       arrowColor: accent,
                     ),
+                    if (secondaryCurrencyCode != null &&
+                        per100ASecondary != null &&
+                        per1kASecondary != null) ...[
+                      const SizedBox(height: 8),
+                      _TerminalLine(
+                        prompt: '>',
+                        input: oppositePlaceName,
+                        output:
+                            '${_moneyWithCurrency(per100ASecondary, secondaryCurrencyCode)} per ${aMass ? '100g' : '100mL'}',
+                        emphasize: false,
+                        arrowColor: accent,
+                      ),
+                      const SizedBox(height: 6),
+                      _TerminalLine(
+                        prompt: '>',
+                        input: oppositePlaceName,
+                        output:
+                            '${_moneyWithCurrency(per1kASecondary, secondaryCurrencyCode)} per ${aMass ? 'kg' : 'L'}',
+                        emphasize: false,
+                        arrowColor: accent,
+                      ),
+                    ],
                     if (_unitPriceCompareEnabled && compareText != null) ...[
                       const SizedBox(height: 8),
                       Text(
@@ -2095,6 +2250,18 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                         key: ValueKey(
                           'tool_unit_price_compare_result_${widget.tool.id}',
                         ),
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: textMuted,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                    if (comparable) ...[
+                      const SizedBox(height: 6),
+                      Text(
+                        'Normalized basket ($normalizedTarget): '
+                        '${_moneyWithCurrency(perBaseA * 1000, primaryCurrencyCode)} vs '
+                        '${_moneyWithCurrency(perBaseB * 1000, primaryCurrencyCode)}',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: textMuted,
                           fontWeight: FontWeight.w700,
@@ -2551,7 +2718,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
       case 'height':
         return _forward ? 'cm' : 'ft/in';
       case 'baking':
-        return _forward ? 'cup' : 'ml';
+        return _fromUnitOverride ?? (_forward ? 'cup' : 'ml');
       case 'liquids':
         return _forward ? 'oz' : 'ml';
       case 'area':
@@ -2590,7 +2757,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
       case 'height':
         return _forward ? 'ft/in' : 'cm';
       case 'baking':
-        return _forward ? 'ml' : 'cup';
+        return _toUnitOverride ?? (_forward ? 'ml' : 'cup');
       case 'liquids':
         return _forward ? 'ml' : 'oz';
       case 'area':
@@ -2669,18 +2836,29 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
       return;
     }
 
+    final normalizedInput = (widget.tool.id == 'baking')
+        ? _normalizeBakingInput(input)
+        : input;
+    if (normalizedInput == null) {
+      _showNotice(
+        'Invalid input, please enter a number',
+        UnitanaNoticeKind.error,
+      );
+      return;
+    }
+
     final result = _isMultiUnitTool
         ? ToolConverters.convertWithUnits(
             toolId: widget.tool.canonicalToolId,
             fromUnit: _fromUnit,
             toUnit: _toUnit,
-            input: input,
+            input: normalizedInput,
           )
         : ToolConverters.convert(
             toolId: widget.tool.canonicalToolId,
             lensId: widget.tool.lensId,
             forward: _forward,
-            input: input,
+            input: normalizedInput,
           );
 
     if (result == null) {
@@ -2713,7 +2891,8 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
     // Height in the imperial direction accepts inputs like 5'10".
     return (widget.tool.id == 'height' && !_forward) ||
         widget.tool.id == 'pace' ||
-        widget.tool.id == 'time';
+        widget.tool.id == 'time' ||
+        widget.tool.id == 'baking';
   }
 
   String _toolInputHint(BuildContext context) {
@@ -2726,6 +2905,46 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
   String? _toolInputCoachCopy(BuildContext context) {
     if (widget.tool.id == 'pace') {
       return DashboardCopy.paceInputCoach(context, fromUnit: _fromUnit);
+    }
+    if (widget.tool.id == 'baking') {
+      return DashboardCopy.bakingInputCoach(context);
+    }
+    return null;
+  }
+
+  String? _normalizeBakingInput(String raw) {
+    final cleaned = raw.trim();
+    if (cleaned.isEmpty) return null;
+    final direct = double.tryParse(cleaned);
+    if (direct != null && direct.isFinite) {
+      return direct.toString();
+    }
+
+    final mixedFraction = RegExp(
+      r'^([+-]?\d+)\s+(\d+)\s*/\s*(\d+)$',
+    ).firstMatch(cleaned);
+    if (mixedFraction != null) {
+      final whole = int.tryParse(mixedFraction.group(1)!);
+      final numer = int.tryParse(mixedFraction.group(2)!);
+      final denom = int.tryParse(mixedFraction.group(3)!);
+      if (whole == null || numer == null || denom == null || denom == 0) {
+        return null;
+      }
+      final sign = whole < 0 ? -1.0 : 1.0;
+      final absWhole = whole.abs().toDouble();
+      final value = sign * (absWhole + (numer / denom));
+      return value.toString();
+    }
+
+    final simpleFraction = RegExp(
+      r'^([+-]?\d+)\s*/\s*(\d+)$',
+    ).firstMatch(cleaned);
+    if (simpleFraction != null) {
+      final numer = int.tryParse(simpleFraction.group(1)!);
+      final denom = int.tryParse(simpleFraction.group(2)!);
+      if (numer == null || denom == null || denom == 0) return null;
+      final value = numer / denom;
+      return value.toString();
     }
     return null;
   }
@@ -5795,145 +6014,189 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                                           Widget buildUnitsAndSwap() {
                                             final Widget unitsWidget =
                                                 _supportsUnitPicker
-                                                ? Row(
+                                                ? Column(
                                                     key: ValueKey(
                                                       'tool_units_${widget.tool.id}',
                                                     ),
+                                                    crossAxisAlignment:
+                                                        CrossAxisAlignment
+                                                            .start,
                                                     mainAxisSize:
                                                         MainAxisSize.min,
                                                     children: [
-                                                      OutlinedButton(
-                                                        key: ValueKey(
-                                                          'tool_unit_from_${widget.tool.id}',
-                                                        ),
-                                                        style: OutlinedButton.styleFrom(
-                                                          minimumSize:
-                                                              const Size(0, 34),
-                                                          padding:
-                                                              const EdgeInsets.symmetric(
-                                                                horizontal: 10,
-                                                                vertical: 0,
-                                                              ),
-                                                          visualDensity:
-                                                              VisualDensity
-                                                                  .compact,
-                                                          side: BorderSide(
-                                                            color: panelBorder,
-                                                          ),
-                                                          shape: RoundedRectangleBorder(
-                                                            borderRadius:
-                                                                BorderRadius.circular(
-                                                                  999,
-                                                                ),
-                                                          ),
-                                                        ),
-                                                        onPressed: () =>
-                                                            _pickUnit(
-                                                              isFrom: true,
+                                                      Row(
+                                                        mainAxisSize:
+                                                            MainAxisSize.min,
+                                                        children: [
+                                                          OutlinedButton(
+                                                            key: ValueKey(
+                                                              'tool_unit_from_${widget.tool.id}',
                                                             ),
-                                                        child: Row(
-                                                          mainAxisSize:
-                                                              MainAxisSize.min,
-                                                          children: [
-                                                            Text(
-                                                              _fromUnit,
+                                                            style: OutlinedButton.styleFrom(
+                                                              minimumSize:
+                                                                  const Size(
+                                                                    0,
+                                                                    34,
+                                                                  ),
+                                                              padding:
+                                                                  const EdgeInsets.symmetric(
+                                                                    horizontal:
+                                                                        10,
+                                                                    vertical: 0,
+                                                                  ),
+                                                              visualDensity:
+                                                                  VisualDensity
+                                                                      .compact,
+                                                              side: BorderSide(
+                                                                color:
+                                                                    panelBorder,
+                                                              ),
+                                                              shape: RoundedRectangleBorder(
+                                                                borderRadius:
+                                                                    BorderRadius.circular(
+                                                                      999,
+                                                                    ),
+                                                              ),
+                                                            ),
+                                                            onPressed: () =>
+                                                                _pickUnit(
+                                                                  isFrom: true,
+                                                                ),
+                                                            child: Row(
+                                                              mainAxisSize:
+                                                                  MainAxisSize
+                                                                      .min,
+                                                              children: [
+                                                                Text(
+                                                                  _fromUnit,
+                                                                  style: Theme.of(context)
+                                                                      .textTheme
+                                                                      .titleMedium
+                                                                      ?.copyWith(
+                                                                        fontWeight:
+                                                                            FontWeight.w800,
+                                                                        color:
+                                                                            accent,
+                                                                      ),
+                                                                ),
+                                                                Icon(
+                                                                  Icons
+                                                                      .arrow_drop_down_rounded,
+                                                                  color: accent
+                                                                      .withAlpha(
+                                                                        220,
+                                                                      ),
+                                                                ),
+                                                              ],
+                                                            ),
+                                                          ),
+                                                          Padding(
+                                                            padding:
+                                                                const EdgeInsets.symmetric(
+                                                                  horizontal: 8,
+                                                                ),
+                                                            child: Text(
+                                                              '→',
                                                               style: Theme.of(context)
                                                                   .textTheme
-                                                                  .titleMedium
+                                                                  .titleLarge
                                                                   ?.copyWith(
                                                                     fontWeight:
                                                                         FontWeight
-                                                                            .w800,
+                                                                            .w900,
                                                                     color:
                                                                         accent,
                                                                   ),
                                                             ),
-                                                            Icon(
-                                                              Icons
-                                                                  .arrow_drop_down_rounded,
-                                                              color: accent
-                                                                  .withAlpha(
-                                                                    220,
-                                                                  ),
-                                                            ),
-                                                          ],
-                                                        ),
-                                                      ),
-                                                      Padding(
-                                                        padding:
-                                                            const EdgeInsets.symmetric(
-                                                              horizontal: 8,
-                                                            ),
-                                                        child: Text(
-                                                          '→',
-                                                          style: Theme.of(context)
-                                                              .textTheme
-                                                              .titleLarge
-                                                              ?.copyWith(
-                                                                fontWeight:
-                                                                    FontWeight
-                                                                        .w900,
-                                                                color: accent,
-                                                              ),
-                                                        ),
-                                                      ),
-                                                      OutlinedButton(
-                                                        key: ValueKey(
-                                                          'tool_unit_to_${widget.tool.id}',
-                                                        ),
-                                                        style: OutlinedButton.styleFrom(
-                                                          minimumSize:
-                                                              const Size(0, 34),
-                                                          padding:
-                                                              const EdgeInsets.symmetric(
-                                                                horizontal: 10,
-                                                                vertical: 0,
-                                                              ),
-                                                          visualDensity:
-                                                              VisualDensity
-                                                                  .compact,
-                                                          side: BorderSide(
-                                                            color: panelBorder,
                                                           ),
-                                                          shape: RoundedRectangleBorder(
-                                                            borderRadius:
-                                                                BorderRadius.circular(
-                                                                  999,
+                                                          OutlinedButton(
+                                                            key: ValueKey(
+                                                              'tool_unit_to_${widget.tool.id}',
+                                                            ),
+                                                            style: OutlinedButton.styleFrom(
+                                                              minimumSize:
+                                                                  const Size(
+                                                                    0,
+                                                                    34,
+                                                                  ),
+                                                              padding:
+                                                                  const EdgeInsets.symmetric(
+                                                                    horizontal:
+                                                                        10,
+                                                                    vertical: 0,
+                                                                  ),
+                                                              visualDensity:
+                                                                  VisualDensity
+                                                                      .compact,
+                                                              side: BorderSide(
+                                                                color:
+                                                                    panelBorder,
+                                                              ),
+                                                              shape: RoundedRectangleBorder(
+                                                                borderRadius:
+                                                                    BorderRadius.circular(
+                                                                      999,
+                                                                    ),
+                                                              ),
+                                                            ),
+                                                            onPressed: () =>
+                                                                _pickUnit(
+                                                                  isFrom: false,
+                                                                ),
+                                                            child: Row(
+                                                              mainAxisSize:
+                                                                  MainAxisSize
+                                                                      .min,
+                                                              children: [
+                                                                Text(
+                                                                  _toUnit,
+                                                                  style: Theme.of(context)
+                                                                      .textTheme
+                                                                      .titleMedium
+                                                                      ?.copyWith(
+                                                                        fontWeight:
+                                                                            FontWeight.w800,
+                                                                        color:
+                                                                            accent,
+                                                                      ),
+                                                                ),
+                                                                Icon(
+                                                                  Icons
+                                                                      .arrow_drop_down_rounded,
+                                                                  color: accent
+                                                                      .withAlpha(
+                                                                        220,
+                                                                      ),
+                                                                ),
+                                                              ],
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                      if (widget.tool.id ==
+                                                          'baking')
+                                                        Padding(
+                                                          padding:
+                                                              const EdgeInsets.only(
+                                                                top: 4,
+                                                                left: 4,
+                                                              ),
+                                                          child: Text(
+                                                            '$_fromUnit → $_toUnit',
+                                                            style: Theme.of(context)
+                                                                .textTheme
+                                                                .bodySmall
+                                                                ?.copyWith(
+                                                                  color: accent
+                                                                      .withAlpha(
+                                                                        230,
+                                                                      ),
+                                                                  fontWeight:
+                                                                      FontWeight
+                                                                          .w700,
                                                                 ),
                                                           ),
                                                         ),
-                                                        onPressed: () =>
-                                                            _pickUnit(
-                                                              isFrom: false,
-                                                            ),
-                                                        child: Row(
-                                                          mainAxisSize:
-                                                              MainAxisSize.min,
-                                                          children: [
-                                                            Text(
-                                                              _toUnit,
-                                                              style: Theme.of(context)
-                                                                  .textTheme
-                                                                  .titleMedium
-                                                                  ?.copyWith(
-                                                                    fontWeight:
-                                                                        FontWeight
-                                                                            .w800,
-                                                                    color:
-                                                                        accent,
-                                                                  ),
-                                                            ),
-                                                            Icon(
-                                                              Icons
-                                                                  .arrow_drop_down_rounded,
-                                                              color: accent
-                                                                  .withAlpha(
-                                                                    220,
-                                                                  ),
-                                                            ),
-                                                          ],
-                                                        ),
-                                                      ),
                                                     ],
                                                   )
                                                 : Text(

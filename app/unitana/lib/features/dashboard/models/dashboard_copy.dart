@@ -1048,11 +1048,21 @@ class DashboardCopy {
         fallback: 'Enter valid price and quantity for Product A.',
       );
   static String unitPriceCoach(
-    BuildContext context,
-  ) => DashboardLocalizations.of(context).text(
+    BuildContext context, {
+    String? primaryCurrency,
+    String? secondaryCurrency,
+  }) => DashboardLocalizations.of(context).text(
     'dashboard.unitPrice.coach',
     fallback:
         'How to use: enter shelf price and package size for Product A. Turn on comparison to add Product B in the same unit family (mass or volume).',
+  );
+
+  static String bakingInputCoach(
+    BuildContext context,
+  ) => DashboardLocalizations.of(context).text(
+    'dashboard.baking.input.coach',
+    fallback:
+        'Supports decimals and fractions (for example 1/2 or 1 1/2). Use unit pills for tsp, tbsp, cup, mL, and L.',
   );
   static String toolPickerTitle(BuildContext context) =>
       DashboardLocalizations.of(

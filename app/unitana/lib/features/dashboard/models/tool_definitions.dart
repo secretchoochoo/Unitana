@@ -523,6 +523,12 @@ class ToolConverters {
           toUnit: toUnit,
           input: input,
         );
+      case CanonicalToolId.liquids:
+        return _convertLiquidsWithUnits(
+          fromUnit: fromUnit,
+          toUnit: toUnit,
+          input: input,
+        );
       case CanonicalToolId.volume:
         return _convertVolumeWithUnits(
           fromUnit: fromUnit,
@@ -609,6 +615,35 @@ class ToolConverters {
 
     final liters = value * fromFactor;
     final out = liters / toFactor;
+    return '${_fmt(out)} $toUnit';
+  }
+
+  static String? _convertLiquidsWithUnits({
+    required String fromUnit,
+    required String toUnit,
+    required String input,
+  }) {
+    final value = double.tryParse(input.trim());
+    if (value == null) return null;
+
+    // Normalize into mL as a shared volume base.
+    const mlPer = <String, double>{
+      'ml': 1.0,
+      'mL': 1.0,
+      'L': 1000.0,
+      'cup': 236.5882365,
+      'tbsp': 14.78676478125,
+      'tsp': 4.92892159375,
+      'oz': 29.5735295625,
+      'fl oz': 29.5735295625,
+    };
+
+    final fromFactor = mlPer[fromUnit];
+    final toFactor = mlPer[toUnit];
+    if (fromFactor == null || toFactor == null) return null;
+
+    final ml = value * fromFactor;
+    final out = ml / toFactor;
     return '${_fmt(out)} $toUnit';
   }
 

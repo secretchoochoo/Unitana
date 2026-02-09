@@ -2,8 +2,24 @@
 
 ## Snapshot
 - **Date:** 2026-02-09
-- **Status:** Repo is green (`dart format`, `flutter analyze`, `flutter test`) after XL-F (Pack P) + XL-G (Pack R/S).
+- **Status:** Repo is green (`dart format`, `flutter analyze`, `flutter test`) after XL-H phase 1 (profiles + price/baking utility uplift).
 - **Operating mode:** Codex is now the primary workflow; apply edits directly in-repo (do not require patch zip workflow unless explicitly requested).
+
+## Latest changes (2026-02-09)
+- XL-H phase 1 shipped (Pack X kickoff + profiles/tool utility polish):
+  - profiles board visual redesign in `app/unitana/lib/features/dashboard/widgets/profiles_board_screen.dart`:
+    - removed hardcoded Dracula palette dependency in favor of semantic theme tokens.
+    - improved light-mode readability/contrast and tightened tile density (`childAspectRatio` and spacing).
+    - active badge, row panels, and add-tile visuals now follow current light/dark dashboard polish language.
+  - price compare utility expansion in `app/unitana/lib/features/dashboard/widgets/tool_modal_bottom_sheet.dart`:
+    - added dual-reality currency context readout (active city currency + counterpart city currency).
+    - added counterpart-currency normalized price equivalents and normalized basket comparison line.
+  - baking + cups utility uplift:
+    - baking now supports fraction parsing (`1/2`, `1 1/2`) and unit picker coverage (`tsp`, `tbsp`, `cup`, `ml`, `L`) with compatibility label contract retained (`ml → cup`).
+    - cups↔grams matrix entries now include richer practical references (tbsp/tsp cues) and additional ingredients (`oats`, `honey`).
+    - converter support expanded via liquids multi-unit conversion path in `app/unitana/lib/features/dashboard/models/tool_definitions.dart`.
+  - regression coverage:
+    - added `app/unitana/test/baking_tool_modal_fraction_units_test.dart`.
 
 ## Latest changes (2026-02-09)
 - XL-F completed (Pack P licenses IA/readability closure):

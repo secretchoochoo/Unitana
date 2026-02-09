@@ -7,7 +7,6 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../app/app_state.dart';
 import '../../../common/feedback/unitana_toast.dart';
 import '../../../models/place.dart';
-import '../../../theme/dracula_palette.dart';
 import '../models/dashboard_copy.dart';
 import 'destructive_confirmation_sheet.dart';
 
@@ -367,9 +366,9 @@ class _ProfilesBoardScreenState extends State<ProfilesBoardScreen>
                     gridDelegate:
                         const SliverGridDelegateWithFixedCrossAxisCount(
                           crossAxisCount: 2,
-                          mainAxisSpacing: 12,
-                          crossAxisSpacing: 12,
-                          childAspectRatio: 0.9,
+                          mainAxisSpacing: 10,
+                          crossAxisSpacing: 10,
+                          childAspectRatio: 1.0,
                         ),
                     itemCount: _editMode
                         ? _editSlots.length
@@ -610,6 +609,14 @@ class _AddProfileTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final tileBg = Color.lerp(
+      scheme.surfaceContainerHighest,
+      scheme.surface,
+      0.35,
+    )!;
+    final tileBorder = scheme.outline.withAlpha(150);
+    final iconTone = scheme.onSurface.withAlpha(190);
     return InkWell(
       key: slotIndex == 0
           ? const Key('profiles_board_add_profile')
@@ -618,16 +625,12 @@ class _AddProfileTile extends StatelessWidget {
       onTap: onTap,
       child: Ink(
         decoration: BoxDecoration(
-          color: DraculaPalette.currentLine.withAlpha(140),
+          color: tileBg,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: DraculaPalette.comment.withAlpha(120)),
+          border: Border.all(color: tileBorder),
         ),
         child: Center(
-          child: Icon(
-            Icons.add_rounded,
-            size: 54,
-            color: DraculaPalette.foreground.withAlpha(230),
-          ),
+          child: Icon(Icons.add_rounded, size: 52, color: iconTone),
         ),
       ),
     );
@@ -642,11 +645,14 @@ class _ProfileEditIconButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     final onSurface = Theme.of(context).colorScheme.onSurface;
     return Icon(
       icon,
       size: 18,
-      color: isDragging ? onSurface.withAlpha(90) : onSurface.withAlpha(215),
+      color: isDragging
+          ? onSurface.withAlpha(90)
+          : scheme.onSurfaceVariant.withAlpha(220),
     );
   }
 }
@@ -676,6 +682,32 @@ class _ProfileTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final textPrimary = scheme.onSurface;
+    final baseTile = Color.lerp(
+      scheme.surfaceContainerHighest,
+      scheme.surface,
+      0.18,
+    )!;
+    final activeTile = Color.lerp(
+      baseTile,
+      scheme.primary.withAlpha(24),
+      0.35,
+    )!;
+    final tileBorder = isActive
+        ? scheme.primary.withAlpha(210)
+        : scheme.outline.withAlpha(145);
+    final rowPanel = Color.lerp(baseTile, scheme.surface, 0.42)!;
+    final rowDivider = scheme.outline.withAlpha(120);
+    final badgeBg = Color.lerp(
+      scheme.primary.withAlpha(64),
+      scheme.secondary.withAlpha(56),
+      0.25,
+    )!;
+    final badgeFg = scheme.onSurface;
+    final homeIcon = Color.lerp(scheme.tertiary, scheme.secondary, 0.2)!;
+    final destinationIcon = Color.lerp(scheme.error, scheme.tertiary, 0.35)!;
+
     final (home, destination) = homeAndDestination(profile);
     final homeFlag = flagEmojiForCountry(home?.countryCode);
     final destFlag = flagEmojiForCountry(destination?.countryCode);
@@ -691,21 +723,16 @@ class _ProfileTile extends StatelessWidget {
       onTap: onTap,
       child: Ink(
         decoration: BoxDecoration(
-          color: DraculaPalette.currentLine.withAlpha(180),
+          color: isActive ? activeTile : baseTile,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: isActive
-                ? DraculaPalette.purple.withAlpha(210)
-                : DraculaPalette.comment.withAlpha(120),
-            width: isActive ? 1.6 : 1,
-          ),
+          border: Border.all(color: tileBorder, width: isActive ? 1.6 : 1),
         ),
         child: LayoutBuilder(
           builder: (context, constraints) {
             final tight = constraints.maxHeight < 190;
             final cellPad = tight ? 10.0 : 12.0;
             final cityFont = tight ? 12.0 : 13.0;
-            final titleFont = tight ? 15.0 : 16.0;
+            final titleFont = tight ? 14.0 : 15.0;
             final iconBox = tight ? 28.0 : 32.0;
             final iconSize = tight ? 16.0 : 18.0;
 
@@ -724,6 +751,7 @@ class _ProfileTile extends StatelessWidget {
                           style: GoogleFonts.robotoSlab(
                             fontWeight: FontWeight.w800,
                             fontSize: titleFont,
+                            color: textPrimary,
                           ),
                         ),
                       ),
@@ -734,12 +762,16 @@ class _ProfileTile extends StatelessWidget {
                             vertical: 3,
                           ),
                           decoration: BoxDecoration(
-                            color: DraculaPalette.purple.withAlpha(70),
+                            color: badgeBg,
                             borderRadius: BorderRadius.circular(999),
                           ),
                           child: Text(
                             DashboardCopy.profilesBoardActiveBadge(context),
-                            style: const TextStyle(fontSize: 11),
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: badgeFg,
+                              fontWeight: FontWeight.w700,
+                            ),
                           ),
                         ),
                     ],
@@ -803,9 +835,8 @@ class _ProfileTile extends StatelessWidget {
                     child: Container(
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: DraculaPalette.comment.withAlpha(100),
-                        ),
+                        color: rowPanel,
+                        border: Border.all(color: rowDivider),
                       ),
                       child: Column(
                         children: [
@@ -816,12 +847,12 @@ class _ProfileTile extends StatelessWidget {
                               ),
                               child: Row(
                                 children: [
-                                  const SizedBox(
+                                  SizedBox(
                                     width: 22,
                                     child: Icon(
                                       Icons.home_rounded,
                                       size: 14,
-                                      color: DraculaPalette.green,
+                                      color: homeIcon,
                                     ),
                                   ),
                                   const SizedBox(width: 6),
@@ -833,6 +864,7 @@ class _ProfileTile extends StatelessWidget {
                                       style: TextStyle(
                                         fontWeight: FontWeight.w700,
                                         fontSize: cityFont,
+                                        color: textPrimary,
                                       ),
                                     ),
                                   ),
@@ -840,10 +872,7 @@ class _ProfileTile extends StatelessWidget {
                               ),
                             ),
                           ),
-                          Container(
-                            height: 1,
-                            color: DraculaPalette.comment.withAlpha(100),
-                          ),
+                          Container(height: 1, color: rowDivider),
                           Expanded(
                             child: Padding(
                               padding: const EdgeInsets.symmetric(
@@ -851,12 +880,12 @@ class _ProfileTile extends StatelessWidget {
                               ),
                               child: Row(
                                 children: [
-                                  const SizedBox(
+                                  SizedBox(
                                     width: 22,
                                     child: Icon(
                                       Icons.flight_takeoff_rounded,
                                       size: 14,
-                                      color: DraculaPalette.orange,
+                                      color: destinationIcon,
                                     ),
                                   ),
                                   const SizedBox(width: 6),
@@ -868,6 +897,7 @@ class _ProfileTile extends StatelessWidget {
                                       style: TextStyle(
                                         fontWeight: FontWeight.w700,
                                         fontSize: cityFont,
+                                        color: textPrimary,
                                       ),
                                     ),
                                   ),

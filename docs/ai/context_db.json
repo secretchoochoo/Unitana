@@ -400,9 +400,9 @@
       ],
       "priority": "P1",
       "size": "XL",
-      "status": "planned",
+      "status": "in_progress",
       "status_updated": "2026-02-09",
-      "status_note": "Queued from backlog expansion; implementation pending."
+      "status_note": "XL-H phase 1 started with profiles readability redesign and cross-tool utility polish; retro baseline artifact and prioritized follow-through remain open."
     },
     {
       "id": "PACK_Y_wearables_and_platform_addons",
@@ -422,8 +422,12 @@
     }
   ],
   "current_state": {
-    "current_slice": "XL-F and XL-G shipped (Pack P + Pack R/S closure). Next is XL-H (Pack X retro baseline + profile surface redesign pass).",
+    "current_slice": "XL-H phase 1 shipped (profiles redesign + price/baking utility uplift). Next is XL-H phase 2 (Pack X retro baseline artifact + continuation polish).",
     "notes": [
+      "XL-H phase 1 shipped on 2026-02-09: Profiles board moved from hardcoded Dracula tile styling to semantic theme-token styling with better light-mode readability and denser dashboard-consistent card proportions.",
+      "XL-H phase 1 shipped on 2026-02-09: Price Compare now surfaces dual-reality currency context and counterpart-currency normalized readouts to better align with Unitana's home/destination model.",
+      "XL-H phase 1 shipped on 2026-02-09: Baking now supports fraction input parsing (e.g. 1/2, 1 1/2) and practical cooking unit coverage (tsp/tbsp/cup/ml/L) with regression coverage in baking_tool_modal_fraction_units_test.dart.",
+      "XL-H phase 1 shipped on 2026-02-09: Cups↔Grams estimates entries were enriched with tbsp/tsp context and additional ingredient rows for practical kitchen use.",
       "XL-G shipped on 2026-02-09: matrix standards follow-through added paper `ANSI/ARCH` and mattress `JP` system coverage with expanded shoes range anchors at both low/high ends and updated matrix regression contracts.",
       "XL-F shipped on 2026-02-09: licenses IA now includes deterministic search/filter UX with clear-search and no-match fallback behavior on top of grouped/collapsible package sections and raw legal route.",
       "XL-F phase 1 shipped on 2026-02-09: replaced direct raw `LicensePage` entry with a readable licenses index (`SettingsLicensesPage`) grouped by package, collapsible sections, summary tags, and explicit full-text drill-down.",
