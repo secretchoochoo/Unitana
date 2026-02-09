@@ -805,30 +805,36 @@ class _DashboardBoardState extends State<DashboardBoard>
     }
 
     (String, String) worldTimeMapPreviewLabels({
-      required Place? homePlace,
-      required Place? destinationPlace,
+      required Place? fromPlace,
+      required Place? toPlace,
     }) {
-      if (homePlace == null || destinationPlace == null) {
+      if (fromPlace == null || toPlace == null) {
         return (tool.defaultPrimary, tool.defaultSecondary);
       }
       final nowUtc = DateTime.now().toUtc();
-      final homeNow = TimezoneUtils.nowInZone(
-        homePlace.timeZoneId,
+      final fromNow = TimezoneUtils.nowInZone(
+        fromPlace.timeZoneId,
         nowUtc: nowUtc,
       );
-      final destinationNow = TimezoneUtils.nowInZone(
-        destinationPlace.timeZoneId,
-        nowUtc: nowUtc,
-      );
-      final homeOffset = homeNow.offsetMinutes / 60.0;
-      final destinationOffset = destinationNow.offsetMinutes / 60.0;
-      final delta = (destinationNow.offsetMinutes - homeNow.offsetMinutes) / 60;
-      String offsetLabel(double hours) =>
-          'UTC${hours >= 0 ? '+' : ''}${hours.toStringAsFixed(1)}';
-      final primary =
-          '${offsetLabel(homeOffset)} • ${offsetLabel(destinationOffset)}';
-      final sign = delta >= 0 ? '+' : '';
-      final secondary = '$sign${delta.toStringAsFixed(1)}h home→destination';
+      final toNow = TimezoneUtils.nowInZone(toPlace.timeZoneId, nowUtc: nowUtc);
+      final fromOffsetHours = fromNow.offsetMinutes / 60.0;
+      final toOffsetHours = toNow.offsetMinutes / 60.0;
+      final deltaHours = toOffsetHours - fromOffsetHours;
+
+      String compactHoursLabel(double value) {
+        final rounded = value.roundToDouble();
+        final sign = value >= 0 ? '+' : '';
+        if ((value - rounded).abs() < 0.01) {
+          return '$sign${rounded.toInt()}';
+        }
+        return '$sign${value.toStringAsFixed(1)}';
+      }
+
+      String offsetLabel(double hours) => 'UTC${compactHoursLabel(hours)}';
+
+      final primary = 'Δ ${compactHoursLabel(deltaHours)}h';
+      final secondary =
+          '${fromPlace.cityName} ${offsetLabel(fromOffsetHours)} • ${toPlace.cityName} ${offsetLabel(toOffsetHours)}';
       return (primary, secondary);
     }
 
@@ -854,8 +860,8 @@ class _DashboardBoardState extends State<DashboardBoard>
         ? jetLagPreviewLabels(homePlace: home, destinationPlace: destination)
         : tool.id == 'world_clock_delta'
         ? worldTimeMapPreviewLabels(
-            homePlace: home,
-            destinationPlace: destination,
+            fromPlace: activePlace,
+            toPlace: secondaryPlace,
           )
         : (isCurrency &&
               (latest == null ||

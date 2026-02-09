@@ -56,7 +56,7 @@ class ToolDefinitions {
     'paper_sizes': 'Paper',
     'mattress_sizes': 'Mattress',
     'shoe_sizes': 'Shoes',
-    'world_clock_delta': 'World Map',
+    'world_clock_delta': 'Time Map',
   };
 
   static String widgetTitleFor(ToolDefinition tool) {
