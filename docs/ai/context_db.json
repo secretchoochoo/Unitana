@@ -269,9 +269,9 @@
       ],
       "priority": "P2",
       "size": "XL",
-      "status": "in_progress",
+      "status": "done",
       "status_updated": "2026-02-09",
-      "status_note": "XL-F phase 1 shipped: new readable licenses IA page with grouped/collapsible package sections and raw legal-text route."
+      "status_note": "XL-F shipped: readable licenses IA is complete with grouped/collapsible packages, raw legal-text route, and deterministic search/filter UX contracts."
     },
     {
       "id": "PACK_Q_language_expansion_completion",
@@ -303,9 +303,9 @@
       ],
       "priority": "P1",
       "size": "XL",
-      "status": "in_progress",
+      "status": "done",
       "status_updated": "2026-02-09",
-      "status_note": "XL-A phase 1 shipped: expanded Shoes/Paper/Mattress matrix datasets and regional columns with clearer first-column semantics."
+      "status_note": "XL-G closure shipped: matrix standards now include expanded shoes range plus paper ANSI/ARCH and mattress JP mappings with updated regression coverage."
     },
     {
       "id": "PACK_S_matrix_widget_last_selection_sync",
@@ -319,9 +319,9 @@
       ],
       "priority": "P1",
       "size": "XL",
-      "status": "in_progress",
+      "status": "done",
       "status_updated": "2026-02-09",
-      "status_note": "XL-A phase 1 shipped: matrix cell copy now persists last selection payload and dashboard widgets can render matrix-driven preview labels."
+      "status_note": "XL-G closure confirms deterministic matrix-widget sync contracts remain intact while matrix standards expansion landed."
     },
     {
       "id": "PACK_T_world_time_map_widget_reimagination",
@@ -422,8 +422,10 @@
     }
   ],
   "current_state": {
-    "current_slice": "XL-E shipped (Pack T). XL-F phase 1 shipped (Pack P licenses IA/readability). Next is XL-G (matrix standards follow-through).",
+    "current_slice": "XL-F and XL-G shipped (Pack P + Pack R/S closure). Next is XL-H (Pack X retro baseline + profile surface redesign pass).",
     "notes": [
+      "XL-G shipped on 2026-02-09: matrix standards follow-through added paper `ANSI/ARCH` and mattress `JP` system coverage with expanded shoes range anchors at both low/high ends and updated matrix regression contracts.",
+      "XL-F shipped on 2026-02-09: licenses IA now includes deterministic search/filter UX with clear-search and no-match fallback behavior on top of grouped/collapsible package sections and raw legal route.",
       "XL-F phase 1 shipped on 2026-02-09: replaced direct raw `LicensePage` entry with a readable licenses index (`SettingsLicensesPage`) grouped by package, collapsible sections, summary tags, and explicit full-text drill-down.",
       "XL-F phase 1 shipped on 2026-02-09: added an explicit `Open raw legal text` route to preserve compliance access to full Flutter license payload.",
       "XL-E shipped on 2026-02-09: World Time Map widget now uses compact `Time Map` title and reality-aware glance readouts (`Δ ±xh` + from/to city UTC lane labels).",

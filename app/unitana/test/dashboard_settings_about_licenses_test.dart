@@ -102,6 +102,10 @@ void main() {
       find.byKey(const ValueKey('settings_licenses_open_raw')),
       findsOneWidget,
     );
+    expect(
+      find.byKey(const ValueKey('settings_licenses_search')),
+      findsOneWidget,
+    );
 
     await tester.tap(find.byKey(const ValueKey('settings_licenses_open_raw')));
     await tester.pumpAndSettle(const Duration(milliseconds: 250));

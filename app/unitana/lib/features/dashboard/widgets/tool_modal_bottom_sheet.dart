@@ -641,9 +641,9 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
           'JP (cm)',
         ];
       case CanonicalToolId.paperSizes:
-        return const <String>['ISO', 'US', 'JIS'];
+        return const <String>['ISO', 'US', 'JIS', 'ANSI/ARCH'];
       case CanonicalToolId.mattressSizes:
-        return const <String>['US', 'EU', 'UK', 'AU'];
+        return const <String>['US', 'EU', 'UK', 'AU', 'JP'];
       case CanonicalToolId.cupsGramsEstimates:
         return const <String>['Volume', 'Weight'];
       default:
@@ -656,6 +656,30 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
       case CanonicalToolId.shoeSizes:
         return const <_LookupEntry>[
           _LookupEntry(
+            keyId: 'shoe_2',
+            label: '20.0',
+            valuesBySystem: <String, String>{
+              'US Men': '2',
+              'US Women': '3.5',
+              'EU': '34',
+              'UK': '1',
+              'AU': '1',
+              'JP (cm)': '20.0 cm',
+            },
+          ),
+          _LookupEntry(
+            keyId: 'shoe_3',
+            label: '21.0',
+            valuesBySystem: <String, String>{
+              'US Men': '3',
+              'US Women': '4.5',
+              'EU': '35',
+              'UK': '2',
+              'AU': '2',
+              'JP (cm)': '21.0 cm',
+            },
+          ),
+          _LookupEntry(
             keyId: 'shoe_4',
             label: '22.0',
             valuesBySystem: <String, String>{
@@ -665,6 +689,18 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
               'UK': '3.5',
               'AU': '3.5',
               'JP (cm)': '22.0 cm',
+            },
+          ),
+          _LookupEntry(
+            keyId: 'shoe_4_5',
+            label: '22.5',
+            valuesBySystem: <String, String>{
+              'US Men': '4.5',
+              'US Women': '6',
+              'EU': '36.5',
+              'UK': '4',
+              'AU': '4',
+              'JP (cm)': '22.5 cm',
             },
           ),
           _LookupEntry(
@@ -680,6 +716,18 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
             },
           ),
           _LookupEntry(
+            keyId: 'shoe_5_5',
+            label: '23.5',
+            valuesBySystem: <String, String>{
+              'US Men': '5.5',
+              'US Women': '7',
+              'EU': '37.5',
+              'UK': '5',
+              'AU': '5',
+              'JP (cm)': '23.5 cm',
+            },
+          ),
+          _LookupEntry(
             keyId: 'shoe_6',
             label: '24.0',
             valuesBySystem: <String, String>{
@@ -689,6 +737,18 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
               'UK': '5.5',
               'AU': '5.5',
               'JP (cm)': '24.0 cm',
+            },
+          ),
+          _LookupEntry(
+            keyId: 'shoe_6_5',
+            label: '24.5',
+            valuesBySystem: <String, String>{
+              'US Men': '6.5',
+              'US Women': '8',
+              'EU': '39',
+              'UK': '5.5',
+              'AU': '5.5',
+              'JP (cm)': '24.5 cm',
             },
           ),
           _LookupEntry(
@@ -787,6 +847,42 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
               'JP (cm)': '32.0 cm',
             },
           ),
+          _LookupEntry(
+            keyId: 'shoe_14_5',
+            label: '32.5',
+            valuesBySystem: <String, String>{
+              'US Men': '14.5',
+              'US Women': '16',
+              'EU': '49',
+              'UK': '13.5',
+              'AU': '13.5',
+              'JP (cm)': '32.5 cm',
+            },
+          ),
+          _LookupEntry(
+            keyId: 'shoe_15',
+            label: '33.0',
+            valuesBySystem: <String, String>{
+              'US Men': '15',
+              'US Women': '16.5',
+              'EU': '50',
+              'UK': '14',
+              'AU': '14',
+              'JP (cm)': '33.0 cm',
+            },
+          ),
+          _LookupEntry(
+            keyId: 'shoe_16',
+            label: '34.0',
+            valuesBySystem: <String, String>{
+              'US Men': '16',
+              'US Women': '17.5',
+              'EU': '51',
+              'UK': '15',
+              'AU': '15',
+              'JP (cm)': '34.0 cm',
+            },
+          ),
         ];
       case CanonicalToolId.paperSizes:
         return const <_LookupEntry>[
@@ -797,6 +893,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
               'ISO': 'A5 (148 x 210 mm)',
               'US': 'Half Letter (5.5 x 8.5 in)',
               'JIS': 'B6 (128 x 182 mm)',
+              'ANSI/ARCH': 'ANSI A (8.5 x 11 in)',
             },
             note: 'Closest common equivalents by region.',
             approximate: true,
@@ -808,6 +905,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
               'ISO': 'A4 (210 x 297 mm)',
               'US': 'Letter (8.5 x 11 in)',
               'JIS': 'B5 (182 x 257 mm)',
+              'ANSI/ARCH': 'ANSI A (8.5 x 11 in)',
             },
             note: 'Closest common equivalents by region.',
             approximate: true,
@@ -819,6 +917,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
               'ISO': 'A3 (297 x 420 mm)',
               'US': 'Tabloid (11 x 17 in)',
               'JIS': 'B4 (257 x 364 mm)',
+              'ANSI/ARCH': 'ANSI B (11 x 17 in)',
             },
             note: 'Closest common equivalents by region.',
             approximate: true,
@@ -830,6 +929,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
               'ISO': 'B5 (176 x 250 mm)',
               'US': 'Statement (5.5 x 8.5 in)',
               'JIS': 'B5 (182 x 257 mm)',
+              'ANSI/ARCH': 'ANSI A (8.5 x 11 in)',
             },
             note: 'ISO B-series and JIS B-series are different dimensions.',
             approximate: true,
@@ -841,6 +941,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
               'ISO': 'B4 (250 x 353 mm)',
               'US': 'Legal (8.5 x 14 in)',
               'JIS': 'B4 (257 x 364 mm)',
+              'ANSI/ARCH': 'ANSI B (11 x 17 in)',
             },
             note: 'ISO B-series and JIS B-series are different dimensions.',
             approximate: true,
@@ -852,6 +953,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
               'ISO': 'A4 (210 x 297 mm)',
               'US': '216 x 279 mm (8.5 x 11 in)',
               'JIS': 'B5 (182 x 257 mm)',
+              'ANSI/ARCH': 'ANSI A (8.5 x 11 in)',
             },
             note: 'Closest common equivalents by region.',
             approximate: true,
@@ -863,6 +965,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
               'ISO': 'B4 (250 x 353 mm)',
               'US': '216 x 356 mm (8.5 x 14 in)',
               'JIS': 'B4 (257 x 364 mm)',
+              'ANSI/ARCH': 'ANSI B (11 x 17 in)',
             },
             note: 'Closest common equivalents by region.',
             approximate: true,
@@ -874,6 +977,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
               'ISO': 'A1 (594 x 841 mm)',
               'US': 'ARCH D (24 x 36 in)',
               'JIS': 'B2 (515 x 728 mm)',
+              'ANSI/ARCH': 'ARCH D (24 x 36 in)',
             },
             note: 'Architecture/engineering sheet equivalents.',
             approximate: true,
@@ -889,6 +993,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
               'EU': 'Single (90 x 200 cm)',
               'UK': 'Single (90 x 190 cm)',
               'AU': 'Single (92 x 188 cm)',
+              'JP': 'Single (97 x 195 cm)',
             },
             note: 'Regional naming varies by vendor.',
             approximate: true,
@@ -901,6 +1006,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
               'EU': 'Single XL (90 x 210 cm)',
               'UK': 'Long Single (90 x 200 cm)',
               'AU': 'Long Single (92 x 203 cm)',
+              'JP': 'Semi-double (120 x 195 cm)',
             },
             note: 'Useful for dorm and split-king setups.',
             approximate: true,
@@ -913,6 +1019,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
               'EU': 'Double (140 x 200 cm)',
               'UK': 'Double (135 x 190 cm)',
               'AU': 'Double (138 x 188 cm)',
+              'JP': 'Double (140 x 195 cm)',
             },
             note: 'Regional naming varies by vendor.',
             approximate: true,
@@ -925,6 +1032,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
               'EU': 'King (160 x 200 cm)',
               'UK': 'King (150 x 200 cm)',
               'AU': 'Queen (153 x 203 cm)',
+              'JP': 'Queen (160 x 195 cm)',
             },
             note: 'Approximate cross-region equivalent.',
             approximate: true,
@@ -937,6 +1045,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
               'EU': 'Super King (180 x 200 cm)',
               'UK': 'Super King (180 x 200 cm)',
               'AU': 'King (183 x 203 cm)',
+              'JP': 'King (180 x 195 cm)',
             },
             note: 'Approximate cross-region equivalent.',
             approximate: true,
@@ -949,6 +1058,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
               'EU': 'Super King (180 x 210 cm)',
               'UK': 'Super King (180 x 200 cm)',
               'AU': 'Super King (203 x 203 cm)',
+              'JP': 'Wide King (200 x 200 cm)',
             },
             note: 'Cross-region equivalence is approximate by shape and area.',
             approximate: true,

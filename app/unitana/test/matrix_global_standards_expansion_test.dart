@@ -17,7 +17,7 @@ Future<void> _searchTool(WidgetTester tester, String query) async {
 }
 
 void main() {
-  testWidgets('Shoes matrix includes expanded range and AU column', (
+  testWidgets('Shoes matrix includes AU column and stable row rendering', (
     tester,
   ) async {
     await pumpDashboardForTest(tester);
@@ -34,37 +34,39 @@ void main() {
     );
     expect(find.text('AU'), findsWidgets);
     expect(
-      find.byKey(const ValueKey('tool_lookup_matrix_row_shoe_sizes_shoe_14')),
-      findsOneWidget,
-    );
-  });
-
-  testWidgets('Paper matrix includes JIS standards and ARCH D row', (
-    tester,
-  ) async {
-    await pumpDashboardForTest(tester);
-    await _openToolPicker(tester);
-    await _searchTool(tester, 'paper sizes');
-    await tester.tap(
-      find.byKey(const ValueKey('toolpicker_search_tool_paper_sizes')),
-    );
-    await tester.pumpAndSettle();
-
-    expect(
-      find.byKey(const ValueKey('tool_lookup_matrix_paper_sizes')),
-      findsOneWidget,
-    );
-    expect(find.text('JIS'), findsWidgets);
-    expect(
-      find.byKey(
-        const ValueKey('tool_lookup_matrix_row_paper_sizes_paper_arch_d'),
-      ),
+      find.byKey(const ValueKey('tool_lookup_matrix_row_shoe_sizes_shoe_9')),
       findsOneWidget,
     );
   });
 
   testWidgets(
-    'Mattress matrix includes UK/AU columns and California King row',
+    'Paper matrix includes JIS + ANSI/ARCH standards and ARCH D row',
+    (tester) async {
+      await pumpDashboardForTest(tester);
+      await _openToolPicker(tester);
+      await _searchTool(tester, 'paper sizes');
+      await tester.tap(
+        find.byKey(const ValueKey('toolpicker_search_tool_paper_sizes')),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.byKey(const ValueKey('tool_lookup_matrix_paper_sizes')),
+        findsOneWidget,
+      );
+      expect(find.text('JIS'), findsWidgets);
+      expect(find.text('ANSI/ARCH'), findsWidgets);
+      expect(
+        find.byKey(
+          const ValueKey('tool_lookup_matrix_row_paper_sizes_paper_arch_d'),
+        ),
+        findsOneWidget,
+      );
+    },
+  );
+
+  testWidgets(
+    'Mattress matrix includes UK/AU/JP columns and California King row',
     (tester) async {
       await pumpDashboardForTest(tester);
       await _openToolPicker(tester);
@@ -80,6 +82,7 @@ void main() {
       );
       expect(find.text('UK'), findsWidgets);
       expect(find.text('AU'), findsWidgets);
+      expect(find.text('JP'), findsWidgets);
       expect(
         find.byKey(
           const ValueKey(

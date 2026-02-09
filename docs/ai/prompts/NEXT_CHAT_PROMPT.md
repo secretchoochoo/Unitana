@@ -1,4 +1,4 @@
-NEXT CHAT PROMPT — XL-G: Pack R/S Matrix Standards Follow-through
+NEXT CHAT PROMPT — XL-H: Pack X Retro Baseline + Profiles Surface Redesign
 
 You are taking over Unitana (Flutter) in a fresh, high-context window.
 
@@ -6,15 +6,14 @@ Read these files first:
 1) `docs/ai/handoff/CURRENT_HANDOFF.md`
 2) `docs/ai/context_db.json`
 3) `docs/ai/prompts/NEXT_CHAT_PROMPT.md`
-4) `app/unitana/lib/features/dashboard/widgets/tool_modal_bottom_sheet.dart`
-5) `app/unitana/lib/features/dashboard/models/tool_definitions.dart`
-6) `app/unitana/lib/features/dashboard/models/dashboard_session_controller.dart`
-7) `app/unitana/lib/features/dashboard/widgets/dashboard_board.dart`
-8) `app/unitana/lib/features/dashboard/models/dashboard_copy.dart`
-9) `app/unitana/test/matrix_global_standards_expansion_test.dart`
-10) `app/unitana/test/dashboard_session_matrix_selection_test.dart`
-11) `app/unitana/test/shoe_sizes_tool_modal_interaction_test.dart`
-12) `app/unitana/test/mattress_sizes_matrix_interaction_test.dart`
+4) `app/unitana/lib/features/dashboard/widgets/profiles_board_screen.dart`
+5) `app/unitana/lib/features/dashboard/dashboard_screen.dart`
+6) `app/unitana/lib/features/dashboard/models/lens_accents.dart`
+7) `app/unitana/lib/theme/app_theme.dart`
+8) `app/unitana/lib/features/dashboard/widgets/dashboard_board.dart`
+9) `app/unitana/test/profile_switcher_switch_profile_flow_test.dart`
+10) `app/unitana/test/profile_feedback_toast_test.dart`
+11) `app/unitana/test/dashboard_light_theme_readability_smoke_test.dart`
 
 ## Core operating rules
 - Keep repo green if any code/docs are touched:
@@ -29,30 +28,34 @@ Read these files first:
   - goldens opt-in only
 
 ## Mission
-Execute XL-G by closing outstanding matrix-tool direction debt for Shoes/Paper/Mattress:
-1) finalize table semantics (no duplicate/ambiguous reference columns).
-2) expand global standards coverage where reliable mappings exist.
-3) lock matrix-to-widget sync behavior and readability on compact surfaces.
+Execute XL-H by combining:
+1) Pack X retro baseline capture (UX/UI/interactivity/perf findings with concrete actions).
+2) Profiles page redesign for readability and tighter dashboard-family visual parity in both Light and Dark modes.
 
 ## Required outcomes
-1) Semantics and direction
-- Remove or refactor confusing matrix column semantics (`reference`-style duplication, ambiguous taxonomy labels).
-- Ensure each matrix has one canonical anchor + mapped system columns.
+1) Profiles redesign (implementation)
+- Improve information density/legibility with smaller, cleaner tiles and balanced spacing.
+- Preserve existing behavior contracts (activate, edit, reorder, add, toast feedback).
+- Ensure Light theme contrast/readability is materially improved.
 
-2) Dataset follow-through
-- Expand remaining practical size ranges for Shoes/Paper/Mattress where gaps remain.
-- Keep mappings deterministic and documented in code comments.
+2) Retro baseline artifact
+- Produce a concise, actionable Pack X baseline document with:
+  - top UX/UI strengths
+  - top debt/issues (prioritized)
+  - consistency/interactivity gaps
+  - performance risk shortlist
+  - recommended next-pack sequencing
 
-3) Widget sync + compact readability
-- Ensure matrix widgets consistently reflect last selected/copied value.
-- Validate no truncation/overflow regressions on compact tiles.
-
-4) Preserve existing contracts
+3) Preserve existing contracts
 - No regressions to:
-  - Pack V emergency weather taxonomy and alert surfaces
-  - Pack T world time map widget readout contracts
-  - Pack U theme readability and naming
-  - Pack Q localization/runtime fallback behavior
+  - matrix tools and matrix widget sync
+  - world time map widget readout contracts
+  - localization switching behavior
+  - emergency weather taxonomy/marquee state behavior
+
+4) Tests and guardrails
+- Add/adjust tests only where they lock correctness/readability-critical behavior.
+- Keep full-gate green status.
 
 5) Docs update
 - Update:
@@ -61,17 +64,17 @@ Execute XL-G by closing outstanding matrix-tool direction debt for Shoes/Paper/M
   - `docs/ai/prompts/NEXT_CHAT_PROMPT.md`
 
 ## Suggested execution order
-1) matrix semantic audit
-2) dataset/model updates
-3) matrix widget sync/readability pass
-4) regression tests
-5) full gates + docs refresh
+1) profile surface audit + redesign implementation
+2) targeted tests for profile/light-theme readability contracts
+3) full gates
+4) Pack X retro baseline artifact
+5) docs/handoff refresh
 
 ## Definition of done
-- Matrix tools present clear canonical mappings with no duplicate-semantics confusion.
-- Widget sync behavior is deterministic and test-covered.
+- Profiles screen is materially more readable and visually aligned across Light/Dark.
+- Pack X retro baseline exists with prioritized, executable follow-ups.
 - Repo green (`format`, `analyze`, `test`).
 
 ## Forward plan after this slice
-- Next slice: XL-H (Pack Q localization completion sweep for remaining unlocalized strings).
-- Following slice: XL-I (Pack X full-app UX/UI/performance retro baseline).
+- Next slice: XL-I (Pack E marquee V2 continuation + Weather/Time visual harmonization).
+- Following slice: XL-J (Pack W opt-in lofi audio foundation, off by default).

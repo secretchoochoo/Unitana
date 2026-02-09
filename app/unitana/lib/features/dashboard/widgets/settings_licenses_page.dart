@@ -21,6 +21,9 @@ class SettingsLicensesPage extends StatefulWidget {
 }
 
 class _SettingsLicensesPageState extends State<SettingsLicensesPage> {
+  final TextEditingController _queryController = TextEditingController();
+  String _query = '';
+
   late final Future<List<_LicensePackageGroup>> _packagesFuture =
       _loadLicensePackages();
 
@@ -58,6 +61,12 @@ class _SettingsLicensesPageState extends State<SettingsLicensesPage> {
             .toList(growable: false)
           ..sort((a, b) => a.package.compareTo(b.package));
     return groups;
+  }
+
+  @override
+  void dispose() {
+    _queryController.dispose();
+    super.dispose();
   }
 
   static String _deriveSummary(List<String> entries) {
@@ -164,6 +173,12 @@ class _SettingsLicensesPageState extends State<SettingsLicensesPage> {
           }
 
           final packages = snapshot.data ?? const <_LicensePackageGroup>[];
+          final q = _query.trim().toLowerCase();
+          final visible = q.isEmpty
+              ? packages
+              : packages
+                    .where((p) => p.package.toLowerCase().contains(q))
+                    .toList(growable: false);
           return ListView(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
             children: [
@@ -203,6 +218,12 @@ class _SettingsLicensesPageState extends State<SettingsLicensesPage> {
                               '${DashboardCopy.settingsLicensesPackages(context)}: ${packages.length}',
                             ),
                           ),
+                          if (visible.length != packages.length)
+                            Chip(
+                              label: Text(
+                                '${DashboardCopy.settingsLicensesViewDetails(context)}: ${visible.length}',
+                              ),
+                            ),
                           OutlinedButton.icon(
                             key: const ValueKey('settings_licenses_open_raw'),
                             onPressed: _openRawLicensePage,
@@ -217,8 +238,41 @@ class _SettingsLicensesPageState extends State<SettingsLicensesPage> {
                   ),
                 ),
               ),
+              const SizedBox(height: 10),
+              TextField(
+                key: const ValueKey('settings_licenses_search'),
+                controller: _queryController,
+                textInputAction: TextInputAction.search,
+                decoration: InputDecoration(
+                  isDense: true,
+                  prefixIcon: const Icon(Icons.search_rounded),
+                  hintText: 'Search package',
+                  suffixIcon: _query.trim().isEmpty
+                      ? null
+                      : IconButton(
+                          tooltip: 'Clear search',
+                          icon: const Icon(Icons.close_rounded, size: 18),
+                          onPressed: () {
+                            _queryController.clear();
+                            setState(() => _query = '');
+                          },
+                        ),
+                ),
+                onChanged: (value) => setState(() => _query = value),
+              ),
               const SizedBox(height: 12),
-              for (final package in packages)
+              if (visible.isEmpty)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 20),
+                  child: Text(
+                    'No matching package',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              for (final package in visible)
                 Padding(
                   padding: const EdgeInsets.only(bottom: 8),
                   child: ExpansionTile(

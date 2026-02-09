@@ -2,8 +2,34 @@
 
 ## Snapshot
 - **Date:** 2026-02-09
-- **Status:** Repo is green (`dart format`, `flutter analyze`, `flutter test`) after XL-E (Pack T) + XL-F phase 1 (Pack P).
+- **Status:** Repo is green (`dart format`, `flutter analyze`, `flutter test`) after XL-F (Pack P) + XL-G (Pack R/S).
 - **Operating mode:** Codex is now the primary workflow; apply edits directly in-repo (do not require patch zip workflow unless explicitly requested).
+
+## Latest changes (2026-02-09)
+- XL-F completed (Pack P licenses IA/readability closure):
+  - licenses index now supports in-page filtering/search and clear-reset behavior:
+    - `app/unitana/lib/features/dashboard/widgets/settings_licenses_page.dart`
+  - filtered-state UX contracts:
+    - deterministic `no matches` empty state
+    - visible count chip for filtered package subsets
+  - regression coverage:
+    - `app/unitana/test/dashboard_settings_about_licenses_test.dart`
+
+## Latest changes (2026-02-09)
+- XL-G completed (Pack R/S matrix standards follow-through):
+  - matrix standards dataset expansion in `app/unitana/lib/features/dashboard/widgets/tool_modal_bottom_sheet.dart`:
+    - Shoes:
+      - extended row coverage at lower and upper ends with additional half-step anchors (`shoe_2`, `shoe_3`, `shoe_4_5`, `shoe_5_5`, `shoe_6_5`, `shoe_14_5`, `shoe_15`, `shoe_16`).
+    - Paper:
+      - added `ANSI/ARCH` system column and populated row mappings across the paper matrix set.
+    - Mattress:
+      - added `JP` system column and populated row mappings across mattress entries.
+  - regression coverage updates:
+    - `app/unitana/test/matrix_global_standards_expansion_test.dart`
+  - full gates re-run and green:
+    - `dart format .`
+    - `flutter analyze`
+    - `flutter test`
 
 ## Latest changes (2026-02-09)
 - XL-F phase 1 shipped (Pack P licenses IA/readability modernization):
