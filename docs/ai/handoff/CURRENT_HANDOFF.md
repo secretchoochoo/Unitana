@@ -2,8 +2,23 @@
 
 ## Snapshot
 - **Date:** 2026-02-10
-- **Status:** Repo is green (`dart format`, `flutter analyze`, `flutter test`) after XL-L docs architecture consolidation.
+- **Status:** Repo is green (`dart format`, `flutter analyze`, `flutter test`) after XL-M Pack W lofi-audio spike scaffold.
 - **Operating mode:** Codex is now the primary workflow; apply edits directly in-repo (do not require patch zip workflow unless explicitly requested).
+
+## Latest changes (2026-02-10)
+- XL-M shipped (Pack W optional lo-fi audio spike):
+  - added Pack W spike artifact:
+    - `docs/ai/reference/PACK_W_LOFI_AUDIO_SPIKE_XL_M.md`
+  - storage/app-state scaffold:
+    - persisted `lofi_audio_enabled_v1` (default off)
+    - persisted `lofi_audio_volume_v1` (default 0.35, clamped)
+  - Settings integration in `app/unitana/lib/features/dashboard/dashboard_screen.dart`:
+    - `settings_option_lofi_audio` toggle
+    - `settings_lofi_volume_slider` control (disabled until enabled)
+  - runtime seam:
+    - added no-op `LofiAudioController` for future backend integration.
+  - regression coverage:
+    - `app/unitana/test/dashboard_language_settings_test.dart` now locks off-by-default + persistence/reload contracts.
 
 ## Latest changes (2026-02-10)
 - XL-L shipped (Pack D docs architecture consolidation):

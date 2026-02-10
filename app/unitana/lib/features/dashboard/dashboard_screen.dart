@@ -11,6 +11,7 @@ import 'models/dashboard_session_controller.dart';
 import 'models/dashboard_exceptions.dart';
 import 'models/dashboard_copy.dart';
 import 'models/freshness_copy.dart';
+import 'models/lofi_audio_controller.dart';
 import 'models/tool_definitions.dart';
 import 'widgets/dashboard_board.dart';
 import 'widgets/data_refresh_status_label.dart';
@@ -50,6 +51,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   late DashboardLayoutController _layout;
 
   late final ScrollController _scrollController;
+  late final LofiAudioController _lofiAudioController;
 
   DateTime? _lastAutoWeatherRefreshAttemptAt;
 
@@ -132,6 +134,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
     _bindProfileScopedControllers();
 
     _scrollController = ScrollController();
+    _lofiAudioController = LofiAudioController();
+    state.addListener(_onAppStateChanged);
+    _syncLofiAudioFromState();
 
     // Kick off an initial refresh so the hero is never stuck showing placeholders.
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -144,11 +149,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   @override
   void dispose() {
+    state.removeListener(_onAppStateChanged);
     _scrollController.dispose();
     _session.dispose();
     _liveData.dispose();
     _layout.dispose();
+    _lofiAudioController.dispose();
     super.dispose();
+  }
+
+  void _onAppStateChanged() {
+    _syncLofiAudioFromState();
+  }
+
+  void _syncLofiAudioFromState() {
+    _lofiAudioController.apply(
+      enabled: state.lofiAudioEnabled,
+      volume: state.lofiAudioVolume,
+    );
   }
 
   void _bindProfileScopedControllers() {
@@ -1102,87 +1120,144 @@ class _DashboardScreenState extends State<DashboardScreen> {
             state.autoProfileSuggestionReason?.trim().isNotEmpty == true
             ? state.autoProfileSuggestionReason!.trim()
             : fallbackSuggestion;
-        return SafeArea(
-          child: SingleChildScrollView(
-            child: Column(
-              key: const ValueKey('settings_sheet'),
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 8, 6),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          DashboardCopy.settingsTitle(context),
-                          style: Theme.of(sheetContext).textTheme.titleLarge
-                              ?.copyWith(fontWeight: FontWeight.w800),
-                        ),
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            return SafeArea(
+              child: SingleChildScrollView(
+                child: Column(
+                  key: const ValueKey('settings_sheet'),
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 8, 8, 6),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              DashboardCopy.settingsTitle(context),
+                              style: Theme.of(sheetContext).textTheme.titleLarge
+                                  ?.copyWith(fontWeight: FontWeight.w800),
+                            ),
+                          ),
+                          _sheetCloseButton(sheetContext),
+                        ],
                       ),
-                      _sheetCloseButton(sheetContext),
-                    ],
-                  ),
+                    ),
+                    ListTile(
+                      key: const ValueKey('settings_option_theme'),
+                      leading: const Icon(Icons.palette_outlined),
+                      title: Text(DashboardCopy.settingsThemeTitle(context)),
+                      onTap: () {
+                        Navigator.of(sheetContext).pop();
+                        Future.microtask(_openThemeSettingsSheet);
+                      },
+                    ),
+                    ListTile(
+                      key: const ValueKey('settings_option_language'),
+                      leading: const Icon(Icons.language_rounded),
+                      title: Text(DashboardCopy.settingsLanguageTitle(context)),
+                      onTap: () {
+                        Navigator.of(sheetContext).pop();
+                        Future.microtask(_openLanguageSettingsSheet);
+                      },
+                    ),
+                    SwitchListTile(
+                      key: const ValueKey('settings_option_profile_suggest'),
+                      secondary: const Icon(Icons.my_location_rounded),
+                      value: state.autoProfileSuggestEnabled,
+                      title: Text(
+                        DashboardCopy.settingsProfileSuggestTitle(context),
+                      ),
+                      subtitle: Text(
+                        '${state.autoProfileSuggestEnabled ? DashboardCopy.settingsProfileSuggestEnabled(context) : DashboardCopy.settingsProfileSuggestDisabled(context)} · $explainability',
+                      ),
+                      onChanged: (enabled) async {
+                        final updatedMessage =
+                            DashboardCopy.settingsProfileSuggestUpdated(
+                              context,
+                            );
+                        await state.setAutoProfileSuggestEnabled(enabled);
+                        await state.evaluateAutoProfileSuggestion(signal: null);
+                        setSheetState(() {});
+                        if (!sheetContext.mounted) return;
+                        UnitanaToast.showSuccess(sheetContext, updatedMessage);
+                      },
+                    ),
+                    SwitchListTile(
+                      key: const ValueKey('settings_option_lofi_audio'),
+                      secondary: const Icon(Icons.music_note_rounded),
+                      value: state.lofiAudioEnabled,
+                      title: Text(
+                        DashboardCopy.settingsLofiAudioTitle(context),
+                      ),
+                      subtitle: Text(
+                        '${state.lofiAudioEnabled ? DashboardCopy.settingsLofiAudioOn(context) : DashboardCopy.settingsLofiAudioOff(context)} · ${DashboardCopy.settingsLofiAudioVolume(context, percent: (state.lofiAudioVolume * 100).round())}',
+                      ),
+                      onChanged: (enabled) async {
+                        final updatedMessage =
+                            DashboardCopy.settingsLofiAudioUpdated(context);
+                        await state.setLofiAudioEnabled(enabled);
+                        setSheetState(() {});
+                        if (!sheetContext.mounted) return;
+                        UnitanaToast.showSuccess(sheetContext, updatedMessage);
+                      },
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.volume_up_rounded, size: 18),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Slider(
+                              key: const ValueKey(
+                                'settings_lofi_volume_slider',
+                              ),
+                              value: state.lofiAudioVolume,
+                              min: 0.0,
+                              max: 1.0,
+                              divisions: 20,
+                              label: DashboardCopy.settingsLofiAudioVolume(
+                                context,
+                                percent: (state.lofiAudioVolume * 100).round(),
+                              ),
+                              onChanged: state.lofiAudioEnabled
+                                  ? (value) async {
+                                      await state.setLofiAudioVolume(value);
+                                      setSheetState(() {});
+                                    }
+                                  : null,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    ListTile(
+                      key: const ValueKey('settings_option_about'),
+                      leading: const Icon(Icons.info_outline_rounded),
+                      title: Text(DashboardCopy.settingsOptionAbout(context)),
+                      onTap: () {
+                        Navigator.of(sheetContext).pop();
+                        Future.microtask(_openAboutSheet);
+                      },
+                    ),
+                    ListTile(
+                      key: const ValueKey('settings_option_licenses'),
+                      leading: const Icon(Icons.gavel_rounded),
+                      title: Text(
+                        DashboardCopy.settingsOptionLicenses(context),
+                      ),
+                      onTap: () {
+                        Navigator.of(sheetContext).pop();
+                        Future.microtask(_openLicensesPage);
+                      },
+                    ),
+                    const SizedBox(height: 8),
+                  ],
                 ),
-                ListTile(
-                  key: const ValueKey('settings_option_theme'),
-                  leading: const Icon(Icons.palette_outlined),
-                  title: Text(DashboardCopy.settingsThemeTitle(context)),
-                  onTap: () {
-                    Navigator.of(sheetContext).pop();
-                    Future.microtask(_openThemeSettingsSheet);
-                  },
-                ),
-                ListTile(
-                  key: const ValueKey('settings_option_language'),
-                  leading: const Icon(Icons.language_rounded),
-                  title: Text(DashboardCopy.settingsLanguageTitle(context)),
-                  onTap: () {
-                    Navigator.of(sheetContext).pop();
-                    Future.microtask(_openLanguageSettingsSheet);
-                  },
-                ),
-                SwitchListTile(
-                  key: const ValueKey('settings_option_profile_suggest'),
-                  secondary: const Icon(Icons.my_location_rounded),
-                  value: state.autoProfileSuggestEnabled,
-                  title: Text(
-                    DashboardCopy.settingsProfileSuggestTitle(context),
-                  ),
-                  subtitle: Text(
-                    '${state.autoProfileSuggestEnabled ? DashboardCopy.settingsProfileSuggestEnabled(context) : DashboardCopy.settingsProfileSuggestDisabled(context)} · $explainability',
-                  ),
-                  onChanged: (enabled) async {
-                    await state.setAutoProfileSuggestEnabled(enabled);
-                    await state.evaluateAutoProfileSuggestion(signal: null);
-                    if (!mounted) return;
-                    UnitanaToast.showSuccess(
-                      context,
-                      DashboardCopy.settingsProfileSuggestUpdated(context),
-                    );
-                  },
-                ),
-                ListTile(
-                  key: const ValueKey('settings_option_about'),
-                  leading: const Icon(Icons.info_outline_rounded),
-                  title: Text(DashboardCopy.settingsOptionAbout(context)),
-                  onTap: () {
-                    Navigator.of(sheetContext).pop();
-                    Future.microtask(_openAboutSheet);
-                  },
-                ),
-                ListTile(
-                  key: const ValueKey('settings_option_licenses'),
-                  leading: const Icon(Icons.gavel_rounded),
-                  title: Text(DashboardCopy.settingsOptionLicenses(context)),
-                  onTap: () {
-                    Navigator.of(sheetContext).pop();
-                    Future.microtask(_openLicensesPage);
-                  },
-                ),
-                const SizedBox(height: 8),
-              ],
-            ),
-          ),
+              ),
+            );
+          },
         );
       },
     );

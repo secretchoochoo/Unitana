@@ -20,6 +20,8 @@ class UnitanaStorage {
       'auto_profile_suggest_profile_id_v1';
   static const String _kProfileLastActivatedAtById =
       'profile_last_activated_at_by_id_v1';
+  static const String _kLofiAudioEnabled = 'lofi_audio_enabled_v1';
+  static const String _kLofiAudioVolume = 'lofi_audio_volume_v1';
 
   Future<List<Place>> loadPlaces() async {
     final prefs = await SharedPreferences.getInstance();
@@ -184,6 +186,32 @@ class UnitanaStorage {
     await prefs.setString(_kProfileLastActivatedAtById, jsonEncode(values));
   }
 
+  Future<bool> loadLofiAudioEnabled() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(_kLofiAudioEnabled) ?? false;
+  }
+
+  Future<void> saveLofiAudioEnabled(bool enabled) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_kLofiAudioEnabled, enabled);
+  }
+
+  Future<double> loadLofiAudioVolume() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getDouble(_kLofiAudioVolume);
+    if (raw == null) return 0.35;
+    if (raw.isNaN || raw.isInfinite) return 0.35;
+    return raw.clamp(0.0, 1.0).toDouble();
+  }
+
+  Future<void> saveLofiAudioVolume(double volume) async {
+    final prefs = await SharedPreferences.getInstance();
+    final normalized = volume.isNaN || volume.isInfinite
+        ? 0.35
+        : volume.clamp(0.0, 1.0).toDouble();
+    await prefs.setDouble(_kLofiAudioVolume, normalized);
+  }
+
   Future<void> clearAll() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_kPlaces);
@@ -197,5 +225,7 @@ class UnitanaStorage {
     await prefs.remove(_kAutoProfileSuggestReason);
     await prefs.remove(_kAutoProfileSuggestProfileId);
     await prefs.remove(_kProfileLastActivatedAtById);
+    await prefs.remove(_kLofiAudioEnabled);
+    await prefs.remove(_kLofiAudioVolume);
   }
 }

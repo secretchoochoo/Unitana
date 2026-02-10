@@ -383,9 +383,9 @@
       ],
       "priority": "P2",
       "size": "XL",
-      "status": "planned",
-      "status_updated": "2026-02-09",
-      "status_note": "Moved out of icebox per reprioritization; implementation pending."
+      "status": "in_progress",
+      "status_updated": "2026-02-10",
+      "status_note": "XL-M spike scaffold shipped: persisted OFF-by-default toggle + volume baseline + settings controls + no-op runtime seam; backend playback integration remains."
     },
     {
       "id": "PACK_X_full_app_retro_ux_ui_performance",
@@ -422,8 +422,11 @@
     }
   ],
   "current_state": {
-    "current_slice": "XL-L shipped (Pack D docs architecture consolidation). Next is XL-M (Pack W optional lofi audio spike).",
+    "current_slice": "XL-M shipped (Pack W lo-fi audio spike scaffold). Next is XL-N (Pack I tutorial overlay pass).",
     "notes": [
+      "XL-M shipped on 2026-02-10: Pack W spike added persisted lo-fi settings (`lofi_audio_enabled_v1`, `lofi_audio_volume_v1`) with default OFF behavior and clamped volume baseline.",
+      "XL-M shipped on 2026-02-10: Settings now exposes lo-fi controls (`settings_option_lofi_audio`, `settings_lofi_volume_slider`) and runtime no-op seam via `LofiAudioController`.",
+      "XL-M shipped on 2026-02-10: dashboard language/settings regression now locks lo-fi OFF-by-default and persistence/reload contracts.",
       "XL-L shipped on 2026-02-10: added canonical reference ownership map `docs/ai/reference/REFERENCE_INDEX.md` to define source-of-truth vs supporting vs archival docs.",
       "XL-L shipped on 2026-02-10: marked legacy planning docs as superseded/archival to reduce contract ambiguity across handoff/context/prompt workflows.",
       "XL-L shipped on 2026-02-10: Pack D is now closed with docs IA consolidation and state alignment.",
@@ -661,10 +664,10 @@
     "overall_health": "Stable with full gates passing; canonical city data coverage is now enforced for all in-scope records.",
     "status": "GREEN",
     "focus": {
-      "now": "Execute XL-M: Pack W optional lofi audio spike (off by default).",
-      "next": "XL-N: Pack I tutorial overlay near-finalization pass.",
+      "now": "Execute XL-N: Pack I tutorial overlay near-finalization pass.",
+      "next": "XL-O: Pack Y wearables/platform add-ons planning (deferred final-phase).",
       "later": [
-        "XL-O: Pack Y wearables/platform add-ons planning (deferred final-phase)."
+        "XL-P: Pack W playback backend integration if prioritized."
       ]
     }
   },

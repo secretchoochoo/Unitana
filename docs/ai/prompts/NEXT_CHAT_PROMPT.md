@@ -1,4 +1,4 @@
-NEXT CHAT PROMPT — XL-M: Pack W Optional Lo-Fi Audio Spike (Off By Default)
+NEXT CHAT PROMPT — XL-N: Pack I Tutorial Overlay Near-Finalization Pass
 
 You are taking over Unitana (Flutter) in a fresh, high-context window.
 
@@ -6,11 +6,12 @@ Read these files first:
 1) `docs/ai/handoff/CURRENT_HANDOFF.md`
 2) `docs/ai/context_db.json`
 3) `docs/ai/reference/REFERENCE_INDEX.md`
-4) `docs/ai/prompts/NEXT_CHAT_PROMPT.md`
-5) `app/unitana/lib/features/dashboard/dashboard_screen.dart`
-6) `app/unitana/lib/features/dashboard/widgets/settings_licenses_page.dart`
-7) `app/unitana/lib/features/dashboard/models/dashboard_copy.dart`
-8) `app/unitana/lib/app/app_state.dart`
+4) `docs/ai/reference/PACK_W_LOFI_AUDIO_SPIKE_XL_M.md`
+5) `docs/ai/prompts/NEXT_CHAT_PROMPT.md`
+6) `app/unitana/lib/features/dashboard/dashboard_screen.dart`
+7) `app/unitana/lib/features/dashboard/widgets/places_hero_v2.dart`
+8) `app/unitana/lib/features/dashboard/widgets/tool_modal_bottom_sheet.dart`
+9) `app/unitana/lib/features/first_run/first_run_screen.dart`
 
 ## Core operating rules
 - Keep repo green if any code/docs are touched:
@@ -25,41 +26,41 @@ Read these files first:
   - goldens opt-in only
 
 ## Mission
-Execute a safe Pack W spike for an optional lo-fi audio feature that is disabled by default and does not degrade app reliability.
+Start Pack I by implementing a minimal, skippable tutorial overlay foundation that is safe against current UI churn.
 
 ## Required outcomes
-1) Feature scaffold
-- Add a minimal audio-control architecture (state + settings toggle + volume baseline), default OFF.
-- Ensure startup behavior does not auto-play audio.
+1) Overlay foundation
+- Add opt-in/first-run gating state for tutorial visibility.
+- Implement lightweight overlay primitives for key dashboard targets.
+- Support skip/dismiss and replay-from-settings behavior contract scaffolding.
 
-2) UX contract
-- Add clear settings controls and copy for enabling/disabling background lo-fi.
-- Keep behavior deterministic across app restarts.
+2) Near-finalization scope only
+- Cover highest-value targets first:
+  - wizard place selection/save action hints
+  - dashboard hero pills/tools entry/settings entry hints
+- Keep implementation modular to avoid broad UI coupling.
 
-3) Safety/guardrails
-- Keep feature fully optional and non-blocking.
-- Ensure no regressions to existing dashboard/tool flows.
+3) Regression guardrails
+- Add deterministic tests for gating and dismissal persistence.
 
-4) Tests
-- Add deterministic tests for persisted OFF default and toggle persistence.
-
-5) Docs update
+4) Docs update
 - Update:
   - `docs/ai/context_db.json`
   - `docs/ai/handoff/CURRENT_HANDOFF.md`
   - `docs/ai/prompts/NEXT_CHAT_PROMPT.md`
 
 ## Suggested execution order
-1) state/storage scaffold
-2) settings wiring
-3) minimal playback seam (optional/no-op-safe)
+1) persistence + settings replay scaffold
+2) minimal overlay renderer
+3) targeted hook points (wizard/dashboard)
 4) tests
 5) full gates + docs refresh
 
 ## Definition of done
-- Pack W spike exists, defaults OFF, and is persistence-safe.
+- Pack I foundation exists with skip/replay persistence contracts.
+- No regressions to dashboard/wizard behavior.
 - Repo green (`format`, `analyze`, `test`).
 
 ## Forward plan after this slice
-- Next slice: XL-N (Pack I tutorial overlay near-finalization pass).
-- Following slice: XL-O (Pack Y wearables/platform add-ons planning only).
+- Next slice: XL-O (Pack Y wearables/platform add-ons planning only).
+- Following slice: XL-P (Pack W playback backend integration, if prioritized).

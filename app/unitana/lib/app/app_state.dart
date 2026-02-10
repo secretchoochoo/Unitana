@@ -20,6 +20,8 @@ class UnitanaAppState extends ChangeNotifier {
   String? _autoProfileSuggestionReason;
   String? _autoSuggestedProfileId;
   Map<String, int> _profileLastActivatedEpochById = const <String, int>{};
+  bool _lofiAudioEnabled = false;
+  double _lofiAudioVolume = 0.35;
 
   UnitanaAppState(this.storage);
 
@@ -43,6 +45,8 @@ class UnitanaAppState extends ChangeNotifier {
   bool get autoProfileSuggestEnabled => _autoProfileSuggestEnabled;
   String? get autoProfileSuggestionReason => _autoProfileSuggestionReason;
   String? get autoSuggestedProfileId => _autoSuggestedProfileId;
+  bool get lofiAudioEnabled => _lofiAudioEnabled;
+  double get lofiAudioVolume => _lofiAudioVolume;
   Locale? get appLocale {
     switch (_preferredLanguageCode) {
       case 'en':
@@ -127,6 +131,8 @@ class UnitanaAppState extends ChangeNotifier {
     _autoSuggestedProfileId = await storage.loadAutoProfileSuggestProfileId();
     _profileLastActivatedEpochById = await storage
         .loadProfileLastActivatedAtById();
+    _lofiAudioEnabled = await storage.loadLofiAudioEnabled();
+    _lofiAudioVolume = await storage.loadLofiAudioVolume();
 
     final loadedProfiles = await storage.loadProfiles();
     final loadedActiveId = await storage.loadActiveProfileId();
@@ -220,6 +226,11 @@ class UnitanaAppState extends ChangeNotifier {
     await storage.saveAutoProfileSuggestEnabled(_autoProfileSuggestEnabled);
     await storage.saveAutoProfileSuggestReason(_autoProfileSuggestionReason);
     await storage.saveAutoProfileSuggestProfileId(_autoSuggestedProfileId);
+  }
+
+  Future<void> _persistAudioState() async {
+    await storage.saveLofiAudioEnabled(_lofiAudioEnabled);
+    await storage.saveLofiAudioVolume(_lofiAudioVolume);
   }
 
   Future<void> setPreferredLanguageCode(String code) async {
@@ -374,6 +385,25 @@ class UnitanaAppState extends ChangeNotifier {
     _autoProfileSuggestionReason = null;
     _autoSuggestedProfileId = null;
     _profileLastActivatedEpochById = const <String, int>{};
+    _lofiAudioEnabled = false;
+    _lofiAudioVolume = 0.35;
+    notifyListeners();
+  }
+
+  Future<void> setLofiAudioEnabled(bool enabled) async {
+    if (_lofiAudioEnabled == enabled) return;
+    _lofiAudioEnabled = enabled;
+    await _persistAudioState();
+    notifyListeners();
+  }
+
+  Future<void> setLofiAudioVolume(double volume) async {
+    final normalized = volume.isNaN || volume.isInfinite
+        ? 0.35
+        : volume.clamp(0.0, 1.0).toDouble();
+    if ((_lofiAudioVolume - normalized).abs() < 0.0001) return;
+    _lofiAudioVolume = normalized;
+    await _persistAudioState();
     notifyListeners();
   }
 

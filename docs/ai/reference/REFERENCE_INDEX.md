@@ -12,6 +12,7 @@ Canonical map for `docs/ai/reference` ownership so handoff/context/prompt flows 
 - `PACK_J_WEATHER_POSITIONING_CLOSURE_XL_J.md`
 - `PACK_K_PROFILE_AUTOSUGGEST_CLOSURE_SPEC_XL_K.md`
 - `PACK_L_THEME_PARITY_CLOSURE_SPEC_XL_K.md`
+- `PACK_W_LOFI_AUDIO_SPIKE_XL_M.md`
 - `PACK_X_RETRO_BASELINE_XL_H2.md`
 - `TOOL_ACTION_ROW_ALIGNMENT_POLICY.md`
 - `WORKFLOW.md`

@@ -153,4 +153,61 @@ void main() {
     final prefs = await SharedPreferences.getInstance();
     expect(prefs.getString('preferred_theme_mode_v1'), 'light');
   });
+
+  testWidgets('Settings persists lo-fi audio toggle and volume', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues(<String, Object>{});
+    final state = buildSeededState();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: UnitanaTheme.dark(),
+        home: DashboardScreen(state: state),
+      ),
+    );
+    await tester.pumpAndSettle(const Duration(milliseconds: 200));
+
+    await tester.tap(find.byKey(const Key('dashboard_menu_button')));
+    await tester.pumpAndSettle(const Duration(milliseconds: 200));
+    await tester.tap(find.byKey(const ValueKey('dashboard_menu_settings')));
+    await tester.pumpAndSettle(const Duration(milliseconds: 200));
+
+    final audioToggle = find.byKey(
+      const ValueKey('settings_option_lofi_audio'),
+    );
+    expect(audioToggle, findsOneWidget);
+    expect(state.lofiAudioEnabled, isFalse);
+    final initialSlider = find.byKey(
+      const ValueKey('settings_lofi_volume_slider'),
+    );
+    expect(initialSlider, findsOneWidget);
+    expect(tester.widget<Slider>(initialSlider).onChanged, isNull);
+
+    await tester.ensureVisible(audioToggle);
+    await tester.pumpAndSettle(const Duration(milliseconds: 200));
+    await tester.tap(audioToggle);
+    await tester.pumpAndSettle(const Duration(milliseconds: 200));
+    expect(state.lofiAudioEnabled, isTrue);
+    final enabledSlider = find.byKey(
+      const ValueKey('settings_lofi_volume_slider'),
+    );
+    expect(enabledSlider, findsOneWidget);
+    expect(tester.widget<Slider>(enabledSlider).onChanged, isNotNull);
+
+    final slider = enabledSlider;
+    await tester.ensureVisible(slider);
+    await tester.pumpAndSettle(const Duration(milliseconds: 200));
+    await tester.drag(slider, const Offset(200, 0));
+    await tester.pumpAndSettle(const Duration(milliseconds: 200));
+
+    final prefs = await SharedPreferences.getInstance();
+    expect(prefs.getBool('lofi_audio_enabled_v1'), isTrue);
+    expect((prefs.getDouble('lofi_audio_volume_v1') ?? 0) > 0.35, isTrue);
+
+    final reloaded = UnitanaAppState(UnitanaStorage());
+    await reloaded.load();
+    expect(reloaded.lofiAudioEnabled, isTrue);
+    expect(reloaded.lofiAudioVolume > 0.35, isTrue);
+  });
 }

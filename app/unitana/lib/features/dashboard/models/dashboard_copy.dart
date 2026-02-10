@@ -499,6 +499,32 @@ class DashboardCopy {
         'dashboard.settings.profileSuggest.updated',
         fallback: 'Profile suggestion setting updated',
       );
+  static String settingsLofiAudioTitle(BuildContext context) =>
+      DashboardLocalizations.of(context).text(
+        'dashboard.settings.lofi.title',
+        fallback: 'Lo-fi background audio',
+      );
+  static String settingsLofiAudioOn(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.settings.lofi.on', fallback: 'On');
+  static String settingsLofiAudioOff(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.settings.lofi.off', fallback: 'Off');
+  static String settingsLofiAudioVolume(
+    BuildContext context, {
+    required int percent,
+  }) => DashboardLocalizations.of(context).text(
+    'dashboard.settings.lofi.volume',
+    params: <String, String>{'percent': '$percent'},
+    fallback: 'Volume $percent%',
+  );
+  static String settingsLofiAudioUpdated(BuildContext context) =>
+      DashboardLocalizations.of(context).text(
+        'dashboard.settings.lofi.updated',
+        fallback: 'Lo-fi audio setting updated',
+      );
   static String settingsProfileSuggestReasonUnavailable(BuildContext context) =>
       DashboardLocalizations.of(context).text(
         'dashboard.settings.profileSuggest.reason.unavailable',
