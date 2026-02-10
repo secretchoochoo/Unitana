@@ -2,8 +2,19 @@
 
 ## Snapshot
 - **Date:** 2026-02-09
-- **Status:** Repo is green (`dart format`, `flutter analyze`, `flutter test`) after XL-H2 + XL-I continuation slices.
+- **Status:** Repo is green (`dart format`, `flutter analyze`, `flutter test`) after XL-J closure artifacts slice.
 - **Operating mode:** Codex is now the primary workflow; apply edits directly in-repo (do not require patch zip workflow unless explicitly requested).
+
+## Latest changes (2026-02-09)
+- XL-J shipped (Pack E + Pack J closure artifacts):
+  - added Pack E closure spec artifact:
+    - `docs/ai/reference/PACK_E_MARQUEE_V2_CLOSURE_SPEC_XL_J.md`
+  - added Pack J product-positioning closure artifact:
+    - `docs/ai/reference/PACK_J_WEATHER_POSITIONING_CLOSURE_XL_J.md`
+  - closure docs lock:
+    - marquee readability/spacing/perf/small-screen acceptance contracts,
+    - weather cockpit scope boundaries and follow-up priority ladder.
+  - no runtime behavior changes were required; existing weather/marquee contracts already align with closure decisions.
 
 ## Latest changes (2026-02-09)
 - XL-H phase 2 shipped (Pack X retro baseline + product-direction lock):

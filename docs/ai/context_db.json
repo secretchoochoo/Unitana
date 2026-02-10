@@ -80,9 +80,9 @@
       ],
       "priority": "P1",
       "size": "XL",
-      "status": "in_progress",
-      "status_updated": "2026-02-09",
-      "status_note": "Multiple readability/layout phases shipped; XL-I weather graph readability harmonization landed, but full V2 scene-spec closure remains open."
+      "status": "done",
+      "status_updated": "2026-02-10",
+      "status_note": "Pack E closure artifact is now locked in `PACK_E_MARQUEE_V2_CLOSURE_SPEC_XL_J.md`; runtime contracts already aligned."
     },
     {
       "id": "PACK_F_tools_surface_completion",
@@ -162,9 +162,9 @@
       ],
       "priority": "P1",
       "size": "XL",
-      "status": "in_progress",
-      "status_updated": "2026-02-09",
-      "status_note": "Weather cockpit redesign is substantially shipped; XL-I readability harmonization landed, while final product-positioning closure artifact remains open."
+      "status": "done",
+      "status_updated": "2026-02-10",
+      "status_note": "Weather cockpit positioning closure is now locked in `PACK_J_WEATHER_POSITIONING_CLOSURE_XL_J.md` with in/out scope and guardrail contracts."
     },
     {
       "id": "PACK_K_context_aware_profile_auto_select",
@@ -422,8 +422,10 @@
     }
   ],
   "current_state": {
-    "current_slice": "XL-H2 + XL-I shipped (Pack X retro baseline + weather harmonization continuation). Next is XL-J (Pack E/Pack J closure artifacts).",
+    "current_slice": "XL-J shipped (Pack E + Pack J closure artifacts). Next is XL-K (Pack L + Pack K closure pass).",
     "notes": [
+      "XL-J shipped on 2026-02-10: added Pack E closure artifact `docs/ai/reference/PACK_E_MARQUEE_V2_CLOSURE_SPEC_XL_J.md` locking marquee readability/spacing/perf/small-screen acceptance constraints.",
+      "XL-J shipped on 2026-02-10: added Pack J closure artifact `docs/ai/reference/PACK_J_WEATHER_POSITIONING_CLOSURE_XL_J.md` locking weather cockpit intent, scope boundaries, and follow-up priorities.",
       "XL-I shipped on 2026-02-09: weather forecast chart readability harmonization added adaptive bar-label density and improved compact axis/x-label sizing in weather summary cards.",
       "XL-H2 shipped on 2026-02-09: Pack X retro baseline artifact added at `docs/ai/reference/PACK_X_RETRO_BASELINE_XL_H2.md` with prioritized UX/UI/perf action sequencing.",
       "XL-H2 shipped on 2026-02-09: Price Compare compare-mode guardrails now auto-align Product A/B unit families to prevent mismatch dead ends.",
@@ -654,10 +656,10 @@
     "overall_health": "Stable with full gates passing; canonical city data coverage is now enforced for all in-scope records.",
     "status": "GREEN",
     "focus": {
-      "now": "Complete Pack H full rollout (language settings + ARB generation workflow + locale switching contracts).",
-      "next": "Pack F parity cleanup and Pack J weather redesign decision/execution track.",
+      "now": "Execute XL-K: close Pack L + Pack K readability/reliability contracts.",
+      "next": "XL-L: Pack D docs architecture consolidation.",
       "later": [
-        "Pack F parity cleanup, then Pack J weather redesign decision/execution, then Pack G release-readiness polish."
+        "XL-M: Pack W optional lofi audio spike (off by default)."
       ]
     }
   },
