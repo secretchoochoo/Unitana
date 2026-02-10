@@ -9,7 +9,6 @@ import '../../../data/country_currency_map.dart';
 import '../../../models/place.dart';
 import '../../../common/feedback/unitana_toast.dart';
 import '../../../utils/timezone_utils.dart';
-import '../../../theme/dracula_palette.dart';
 import '../models/dashboard_board_item.dart';
 import '../models/dashboard_copy.dart';
 import '../models/dashboard_live_data.dart';
@@ -363,6 +362,7 @@ class _DashboardBoardState extends State<DashboardBoard>
 
   Widget _wrapToolFocusFrame({required String toolId, required Widget child}) {
     final pulsing = _pulsingToolIds.contains(toolId);
+    final pulseColor = Theme.of(context).colorScheme.primary;
     return AnimatedContainer(
       key: _toolTileKeyFor(toolId),
       duration: const Duration(milliseconds: 180),
@@ -370,15 +370,13 @@ class _DashboardBoardState extends State<DashboardBoard>
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: pulsing
-              ? DraculaPalette.cyan.withAlpha(225)
-              : Colors.transparent,
+          color: pulsing ? pulseColor.withAlpha(225) : Colors.transparent,
           width: pulsing ? 2.6 : 0,
         ),
         boxShadow: pulsing
             ? <BoxShadow>[
                 BoxShadow(
-                  color: DraculaPalette.cyan.withAlpha(80),
+                  color: pulseColor.withAlpha(80),
                   blurRadius: 16,
                   spreadRadius: 1,
                 ),

@@ -20,7 +20,6 @@ import 'widgets/settings_licenses_page.dart';
 import 'widgets/tool_modal_bottom_sheet.dart';
 import 'widgets/destructive_confirmation_sheet.dart';
 import 'widgets/weather_summary_bottom_sheet.dart';
-import '../../theme/dracula_palette.dart';
 
 /// Developer-only time-of-day override for weather scene previews.
 ///
@@ -1761,9 +1760,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                           Icons.refresh_rounded,
                                           size: 16,
                                         ),
-                                        color: DraculaPalette.purple.withAlpha(
-                                          220,
-                                        ),
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.primary.withAlpha(220),
                                         padding: EdgeInsets.zero,
                                         visualDensity: VisualDensity.compact,
                                         constraints: const BoxConstraints(

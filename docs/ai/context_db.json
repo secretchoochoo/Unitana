@@ -180,9 +180,9 @@
       ],
       "priority": "P1",
       "size": "XL",
-      "status": "in_progress",
-      "status_updated": "2026-02-09",
-      "status_note": "Phase-1 shipped: opt-in setting + deterministic suggestion engine + persistence contracts; no silent auto-switch behavior remains enforced."
+      "status": "done",
+      "status_updated": "2026-02-10",
+      "status_note": "Profile auto-suggest closure pass landed with deterministic edge-case tests and closure artifact (`PACK_K_PROFILE_AUTOSUGGEST_CLOSURE_SPEC_XL_K.md`)."
     },
     {
       "id": "PACK_L_dual_theme_system_dark_light",
@@ -197,9 +197,9 @@
       ],
       "priority": "P1",
       "size": "XL",
-      "status": "in_progress",
-      "status_updated": "2026-02-09",
-      "status_note": "Theme mode scaffold is shipped (`System`/`Dracula Dark`/`Solarized Light`) with ongoing readability parity sweeps across dashboard/tool surfaces."
+      "status": "done",
+      "status_updated": "2026-02-10",
+      "status_note": "Theme-token closure pass landed with semantic accent cleanup on dashboard entry surfaces and Pack L closure artifact (`PACK_L_THEME_PARITY_CLOSURE_SPEC_XL_K.md`)."
     },
     {
       "id": "PACK_M_jet_lag_tool_rethink_actionable_planning",
@@ -422,8 +422,10 @@
     }
   ],
   "current_state": {
-    "current_slice": "XL-J shipped (Pack E + Pack J closure artifacts). Next is XL-K (Pack L + Pack K closure pass).",
+    "current_slice": "XL-K shipped (Pack L + Pack K closure pass). Next is XL-L (Pack D docs architecture consolidation).",
     "notes": [
+      "XL-K shipped on 2026-02-10: added Pack L closure artifact `docs/ai/reference/PACK_L_THEME_PARITY_CLOSURE_SPEC_XL_K.md` and aligned dashboard focus/refresh accents to semantic theme primary tokens.",
+      "XL-K shipped on 2026-02-10: added Pack K closure artifact `docs/ai/reference/PACK_K_PROFILE_AUTOSUGGEST_CLOSURE_SPEC_XL_K.md` and expanded deterministic edge-case selector coverage (low-confidence no-suggestion + tie-break by profile id).",
       "XL-J shipped on 2026-02-10: added Pack E closure artifact `docs/ai/reference/PACK_E_MARQUEE_V2_CLOSURE_SPEC_XL_J.md` locking marquee readability/spacing/perf/small-screen acceptance constraints.",
       "XL-J shipped on 2026-02-10: added Pack J closure artifact `docs/ai/reference/PACK_J_WEATHER_POSITIONING_CLOSURE_XL_J.md` locking weather cockpit intent, scope boundaries, and follow-up priorities.",
       "XL-I shipped on 2026-02-09: weather forecast chart readability harmonization added adaptive bar-label density and improved compact axis/x-label sizing in weather summary cards.",
@@ -656,10 +658,10 @@
     "overall_health": "Stable with full gates passing; canonical city data coverage is now enforced for all in-scope records.",
     "status": "GREEN",
     "focus": {
-      "now": "Execute XL-K: close Pack L + Pack K readability/reliability contracts.",
-      "next": "XL-L: Pack D docs architecture consolidation.",
+      "now": "Execute XL-L: Pack D repository docs architecture consolidation.",
+      "next": "XL-M: Pack W optional lofi audio spike (off by default).",
       "later": [
-        "XL-M: Pack W optional lofi audio spike (off by default)."
+        "XL-N: Pack I tutorial overlay near-finalization pass."
       ]
     }
   },

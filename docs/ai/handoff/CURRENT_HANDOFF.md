@@ -2,8 +2,21 @@
 
 ## Snapshot
 - **Date:** 2026-02-09
-- **Status:** Repo is green (`dart format`, `flutter analyze`, `flutter test`) after XL-J closure artifacts slice.
+- **Status:** Repo is green (`dart format`, `flutter analyze`, `flutter test`) after XL-K closure pass.
 - **Operating mode:** Codex is now the primary workflow; apply edits directly in-repo (do not require patch zip workflow unless explicitly requested).
+
+## Latest changes (2026-02-10)
+- XL-K shipped (Pack L + Pack K closure pass):
+  - added Pack L closure artifact:
+    - `docs/ai/reference/PACK_L_THEME_PARITY_CLOSURE_SPEC_XL_K.md`
+  - added Pack K closure artifact:
+    - `docs/ai/reference/PACK_K_PROFILE_AUTOSUGGEST_CLOSURE_SPEC_XL_K.md`
+  - Pack L runtime follow-through:
+    - dashboard focus pulse now uses semantic theme primary accent instead of fixed Dracula cyan.
+    - dashboard refresh icon accent now uses semantic theme primary accent instead of fixed Dracula purple.
+  - Pack K regression hardening:
+    - added low-confidence no-suggestion contract test.
+    - added deterministic tie-break contract test for equal candidates.
 
 ## Latest changes (2026-02-09)
 - XL-J shipped (Pack E + Pack J closure artifacts):
