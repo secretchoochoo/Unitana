@@ -1,5 +1,8 @@
 # Settings Backlog: GPS Auto-Profile + Light Theme
 
+> Status: Superseded backlog sketch.
+> Pack K (profile auto-suggest) and Pack L (theme parity) closure artifacts are now authoritative; see `/Users/codypritchard/unitana/docs/ai/reference/REFERENCE_INDEX.md`.
+
 ## 1) Optional GPS-Assisted Profile Auto-Selection
 
 ### Goal

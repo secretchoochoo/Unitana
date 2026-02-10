@@ -1,5 +1,8 @@
 # Tools Design Sprint Brief (Urgent)
 
+> Status: Superseded planning brief.
+> Use `/Users/codypritchard/unitana/docs/ai/reference/REFERENCE_INDEX.md` and latest `PACK_*_CLOSURE_*` docs for current contracts.
+
 ## Why now
 Recent Pack F execution exposed design drift in tool surfaces (especially Time) despite functional improvements.  
 We need a single visual/interaction direction before adding more tool complexity.

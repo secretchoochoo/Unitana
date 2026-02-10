@@ -1,9 +1,20 @@
 # CURRENT_HANDOFF (Unitana) - Wizard, Collapsing Header, Multi-Profile
 
 ## Snapshot
-- **Date:** 2026-02-09
-- **Status:** Repo is green (`dart format`, `flutter analyze`, `flutter test`) after XL-K closure pass.
+- **Date:** 2026-02-10
+- **Status:** Repo is green (`dart format`, `flutter analyze`, `flutter test`) after XL-L docs architecture consolidation.
 - **Operating mode:** Codex is now the primary workflow; apply edits directly in-repo (do not require patch zip workflow unless explicitly requested).
+
+## Latest changes (2026-02-10)
+- XL-L shipped (Pack D docs architecture consolidation):
+  - added canonical reference ownership map:
+    - `docs/ai/reference/REFERENCE_INDEX.md`
+  - marked legacy planning docs with explicit superseded/archival status banners:
+    - `docs/ai/reference/TOOLS_DESIGN_SPRINT_BRIEF.md`
+    - `docs/ai/reference/TIME_TOOL_REPURPOSE_PLAN.md`
+    - `docs/ai/reference/TOOLS_CATALOG_AUDIT_2026-01-06.md`
+    - `docs/ai/reference/SETTINGS_BACKLOG_GPS_THEME.md`
+  - aligned handoff/context/prompt flow so Pack D is closed and next work is queued to XL-M.
 
 ## Latest changes (2026-02-10)
 - XL-K shipped (Pack L + Pack K closure pass):

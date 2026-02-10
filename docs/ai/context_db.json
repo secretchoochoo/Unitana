@@ -63,9 +63,9 @@
       ],
       "priority": "P1",
       "size": "XL",
-      "status": "in_progress",
-      "status_updated": "2026-02-08",
-      "status_note": "XL Unit 2 started docs consolidation and backlog/prompt alignment; full repo-wide audit closure remains open."
+      "status": "done",
+      "status_updated": "2026-02-10",
+      "status_note": "Pack D closure shipped via docs IA consolidation (`REFERENCE_INDEX.md`), superseded-doc labeling, and aligned handoff/context/prompt ownership flow."
     },
     {
       "id": "PACK_E_marquee_scene_v2_16bit",
@@ -422,8 +422,11 @@
     }
   ],
   "current_state": {
-    "current_slice": "XL-K shipped (Pack L + Pack K closure pass). Next is XL-L (Pack D docs architecture consolidation).",
+    "current_slice": "XL-L shipped (Pack D docs architecture consolidation). Next is XL-M (Pack W optional lofi audio spike).",
     "notes": [
+      "XL-L shipped on 2026-02-10: added canonical reference ownership map `docs/ai/reference/REFERENCE_INDEX.md` to define source-of-truth vs supporting vs archival docs.",
+      "XL-L shipped on 2026-02-10: marked legacy planning docs as superseded/archival to reduce contract ambiguity across handoff/context/prompt workflows.",
+      "XL-L shipped on 2026-02-10: Pack D is now closed with docs IA consolidation and state alignment.",
       "XL-K shipped on 2026-02-10: added Pack L closure artifact `docs/ai/reference/PACK_L_THEME_PARITY_CLOSURE_SPEC_XL_K.md` and aligned dashboard focus/refresh accents to semantic theme primary tokens.",
       "XL-K shipped on 2026-02-10: added Pack K closure artifact `docs/ai/reference/PACK_K_PROFILE_AUTOSUGGEST_CLOSURE_SPEC_XL_K.md` and expanded deterministic edge-case selector coverage (low-confidence no-suggestion + tie-break by profile id).",
       "XL-J shipped on 2026-02-10: added Pack E closure artifact `docs/ai/reference/PACK_E_MARQUEE_V2_CLOSURE_SPEC_XL_J.md` locking marquee readability/spacing/perf/small-screen acceptance constraints.",
@@ -658,10 +661,10 @@
     "overall_health": "Stable with full gates passing; canonical city data coverage is now enforced for all in-scope records.",
     "status": "GREEN",
     "focus": {
-      "now": "Execute XL-L: Pack D repository docs architecture consolidation.",
-      "next": "XL-M: Pack W optional lofi audio spike (off by default).",
+      "now": "Execute XL-M: Pack W optional lofi audio spike (off by default).",
+      "next": "XL-N: Pack I tutorial overlay near-finalization pass.",
       "later": [
-        "XL-N: Pack I tutorial overlay near-finalization pass."
+        "XL-O: Pack Y wearables/platform add-ons planning (deferred final-phase)."
       ]
     }
   },

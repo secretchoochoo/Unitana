@@ -1,5 +1,8 @@
 # Time Tool Repurpose Plan (Timezone/Delta First)
 
+> Status: Superseded plan.
+> Current Time/World Time Map direction is reflected in shipped behavior, `CURRENT_HANDOFF.md`, and closure artifacts listed in `/Users/codypritchard/unitana/docs/ai/reference/REFERENCE_INDEX.md`.
+
 ## Problem
 Current `Time` modal is primarily a `12h ↔ 24h` converter.  
 That is low-value in context of a travel app and overlaps with system formatting preferences.

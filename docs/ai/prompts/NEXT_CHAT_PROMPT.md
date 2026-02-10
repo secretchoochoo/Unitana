@@ -1,13 +1,16 @@
-NEXT CHAT PROMPT — XL-L: Pack D Docs Architecture Consolidation
+NEXT CHAT PROMPT — XL-M: Pack W Optional Lo-Fi Audio Spike (Off By Default)
 
 You are taking over Unitana (Flutter) in a fresh, high-context window.
 
 Read these files first:
 1) `docs/ai/handoff/CURRENT_HANDOFF.md`
 2) `docs/ai/context_db.json`
-3) `docs/ai/reference/PACK_L_THEME_PARITY_CLOSURE_SPEC_XL_K.md`
-4) `docs/ai/reference/PACK_K_PROFILE_AUTOSUGGEST_CLOSURE_SPEC_XL_K.md`
-5) `docs/ai/prompts/NEXT_CHAT_PROMPT.md`
+3) `docs/ai/reference/REFERENCE_INDEX.md`
+4) `docs/ai/prompts/NEXT_CHAT_PROMPT.md`
+5) `app/unitana/lib/features/dashboard/dashboard_screen.dart`
+6) `app/unitana/lib/features/dashboard/widgets/settings_licenses_page.dart`
+7) `app/unitana/lib/features/dashboard/models/dashboard_copy.dart`
+8) `app/unitana/lib/app/app_state.dart`
 
 ## Core operating rules
 - Keep repo green if any code/docs are touched:
@@ -22,23 +25,23 @@ Read these files first:
   - goldens opt-in only
 
 ## Mission
-Complete Pack D by consolidating docs architecture and reducing overlap/staleness across handoff/context/reference prompt artifacts.
+Execute a safe Pack W spike for an optional lo-fi audio feature that is disabled by default and does not degrade app reliability.
 
 ## Required outcomes
-1) Docs IA consolidation
-- Identify overlapping/stale docs under `docs/ai/reference` and related handoff/prompt surfaces.
-- Produce a canonical map of what is source-of-truth vs archival/supporting docs.
-- Prune or mark superseded docs where safe.
+1) Feature scaffold
+- Add a minimal audio-control architecture (state + settings toggle + volume baseline), default OFF.
+- Ensure startup behavior does not auto-play audio.
 
-2) Consistency pass
-- Ensure status language across handoff/context/prompt is aligned.
-- Ensure backlog pack states match shipped artifacts.
+2) UX contract
+- Add clear settings controls and copy for enabling/disabling background lo-fi.
+- Keep behavior deterministic across app restarts.
 
-3) Minimal code changes only if required by documentation accuracy
-- Avoid feature churn.
+3) Safety/guardrails
+- Keep feature fully optional and non-blocking.
+- Ensure no regressions to existing dashboard/tool flows.
 
-4) Preserve existing contracts
-- No regressions to runtime behavior.
+4) Tests
+- Add deterministic tests for persisted OFF default and toggle persistence.
 
 5) Docs update
 - Update:
@@ -47,16 +50,16 @@ Complete Pack D by consolidating docs architecture and reducing overlap/stalenes
   - `docs/ai/prompts/NEXT_CHAT_PROMPT.md`
 
 ## Suggested execution order
-1) inventory and classification
-2) consolidation/pruning updates
-3) context/handoff/prompt sync
-4) full gates
+1) state/storage scaffold
+2) settings wiring
+3) minimal playback seam (optional/no-op-safe)
+4) tests
+5) full gates + docs refresh
 
 ## Definition of done
-- Pack D docs architecture debt materially reduced.
-- Canonical doc ownership is explicit.
+- Pack W spike exists, defaults OFF, and is persistence-safe.
 - Repo green (`format`, `analyze`, `test`).
 
 ## Forward plan after this slice
-- Next slice: XL-M (Pack W optional lofi audio spike, off by default).
-- Following slice: XL-N (Pack I tutorial overlay near-finalization pass).
+- Next slice: XL-N (Pack I tutorial overlay near-finalization pass).
+- Following slice: XL-O (Pack Y wearables/platform add-ons planning only).

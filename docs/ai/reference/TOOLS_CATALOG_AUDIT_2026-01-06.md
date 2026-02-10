@@ -1,5 +1,8 @@
 # Tools Catalog Audit (2026-01-06)
 
+> Status: Historical audit (archival).
+> For current pack state and contracts, use `/Users/codypritchard/unitana/docs/ai/context_db.json`, `/Users/codypritchard/unitana/docs/ai/handoff/CURRENT_HANDOFF.md`, and `/Users/codypritchard/unitana/docs/ai/reference/REFERENCE_INDEX.md`.
+
 ## Purpose
 Unitana is a travel-first decoder ring. Tools should reduce friction in real travel moments (and secondarily in adjacent daily life), while staying consistent with the Tool Modal interaction model (input, swap, convert, history; tap to copy, long-press to edit).
 
