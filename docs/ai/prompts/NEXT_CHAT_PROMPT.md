@@ -1,4 +1,4 @@
-NEXT CHAT PROMPT — XL-P: Pack W Playback Production Hardening + Public-Channel Prep
+NEXT CHAT PROMPT — XL-V: Clothing Sizes Reference-Only Implementation Spike
 
 You are taking over Unitana (Flutter) in a fresh, high-context window.
 
@@ -6,16 +6,16 @@ Read these files first:
 1) `docs/ai/handoff/CURRENT_HANDOFF.md`
 2) `docs/ai/context_db.json`
 3) `docs/ai/reference/REFERENCE_INDEX.md`
-4) `docs/ai/reference/PACK_W_LOFI_AUDIO_SPIKE_XL_M.md`
-5) `docs/ai/reference/PUBLIC_RELEASE_BRANCHING_STRATEGY_XL_O.md`
+4) `docs/ai/reference/CLOTHING_SIZES_DECISION_PACK_XL_U.md`
+5) `docs/ai/reference/LOOKUP_TABLE_TOOLS_UX_PATTERN.md`
 6) `docs/ai/prompts/NEXT_CHAT_PROMPT.md`
-7) `app/unitana/lib/features/dashboard/dashboard_screen.dart`
-8) `app/unitana/lib/features/dashboard/models/lofi_audio_controller.dart`
-9) `app/unitana/lib/app/app_state.dart`
+7) `app/unitana/lib/features/dashboard/models/tool_registry.dart`
+8) `app/unitana/lib/features/dashboard/widgets/tool_modal_bottom_sheet.dart`
+9) `app/unitana/lib/features/dashboard/models/dashboard_copy.dart`
 
 ## Core operating rules
 - Work directly in-repo (Codex-first).
-- If runtime or test files are changed, keep repo green:
+- If runtime or tests are changed, keep repo green:
   - `dart format .`
   - `flutter analyze`
   - `flutter test`
@@ -26,34 +26,45 @@ Read these files first:
   - goldens opt-in only
 
 ## Mission
-Run XL-P to production-harden Pack W audio behavior and tighten public-release channel controls.
+Implement the first shippable `clothing_sizes` surface as a reference-only matrix tool (no brand-fit recommendation).
 
 ## Required outcomes
-1) Audio production hardening
-- Keep opt-in behavior and persisted volume contracts.
-- Add/confirm behavior guardrails for app lifecycle transitions.
-- Prepare track-source replacement contract for commercial-safe media swap.
+1) Reference-only activation
+- Enable `clothing_sizes` in registry and picker.
+- Implement a deterministic matrix/lookup surface with scoped categories + regions from XL-U.
 
-2) Public-channel readiness
-- Ensure Developer Tools are fully hidden when `UNITANA_DEVTOOLS_ENABLED=false`.
-- Validate About/version display contracts for public channel.
-- Add/update tests for release-gated behavior.
+2) Uncertainty and liability copy
+- Add explicit, always-visible uncertainty/disclaimer copy in tool modal.
+- Keep language factual and non-predictive.
 
-3) Docs refresh
+3) Deterministic behavior contracts
+- Copy/tap row behavior mirrors other matrix tools.
+- Missing mappings render explicitly (`—`) rather than inferred.
+
+4) Regression guardrails
+- Add tests for:
+  - picker activation/open path
+  - matrix rendering and copy behavior
+  - disclaimer visibility
+  - missing-mapping row behavior
+
+5) Docs refresh
 - Update:
   - `docs/ai/context_db.json`
   - `docs/ai/handoff/CURRENT_HANDOFF.md`
   - `docs/ai/prompts/NEXT_CHAT_PROMPT.md`
 
 ## Suggested execution order
-1) playback behavior verification + lifecycle guards
-2) release gating tests (devtools-off)
-3) docs refresh and next-slice handoff
+1) data model + matrix rows (minimal scoped v1)
+2) modal UI + disclaimer
+3) picker enablement wiring
+4) tests
+5) docs refresh
 
 ## Definition of done
-- Pack W runtime behavior is production-hardened for public release prep.
-- Release gating behavior is deterministic and test-covered.
+- `clothing_sizes` is enabled as a reference-only tool with explicit uncertainty guardrails.
+- Deterministic behavior is regression-tested.
 - Repo remains green.
 
 ## Forward plan after this slice
-- Public branch cut rehearsal (`release/public`) and staged tag workflow.
+- XL-W: Evaluate v1 usage quality and decide expand/defer for additional categories/regions.

@@ -5,6 +5,7 @@ Canonical map for `docs/ai/reference` ownership so handoff/context/prompt flows 
 
 ## Canonical (Source Of Truth)
 - `CITY_PICKER_PERF_BUDGET.md`
+- `CLOTHING_SIZES_DECISION_PACK_XL_U.md`
 - `HERO_DUAL_WORLD_DISPLAY_CONTRACT.md`
 - `LOOKUP_TABLE_TOOLS_UX_PATTERN.md`
 - `MULTI_UNIT_UX_CONTRACT.md`

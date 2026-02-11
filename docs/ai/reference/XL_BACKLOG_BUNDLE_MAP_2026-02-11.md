@@ -1,7 +1,8 @@
 # XL Backlog Bundle Map (2026-02-11)
 
 ## Current
-- XL-P (next): Pack W playback production hardening + public-channel prep.
+- XL-U shipped: Clothing Sizes Decision Pack (reference-only recommendation locked).
+- XL-V (next): Clothing Sizes reference-only implementation spike.
 
 ## Remaining Core Tracks
 - Release channel split and gating hardening:
@@ -30,6 +31,10 @@
   - keep/toss decision with user-value scoring.
   - if kept: region matrix scope (US/EU/UK/JP), category scope, and brand-policy strategy.
   - if tossed: migration path for existing references and replacement recommendations.
+- XL-V: Clothing Sizes v1 implementation (reference-only)
+  - enable `clothing_sizes` with scoped matrix categories/regions.
+  - enforce uncertainty/disclaimer contract + deterministic missing mapping behavior.
+  - add picker/modal/disclaimer regression coverage.
 
 ## Decision Gates
 - Gate A: approve public default tile set.

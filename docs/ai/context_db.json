@@ -422,8 +422,10 @@
     }
   ],
   "current_state": {
-    "current_slice": "XL-O shipped (Pack Y planning-only). Tutorial runtime surfaces were rolled back; next is XL-P for Pack W production hardening and release-channel prep.",
+    "current_slice": "XL-U shipped (Clothing Sizes decision pack, planning-only). Next is XL-V for reference-only clothing sizes implementation spike.",
     "notes": [
+      "XL-U shipped on 2026-02-11: added `docs/ai/reference/CLOTHING_SIZES_DECISION_PACK_XL_U.md` to finalize keep/toss decision for `clothing_sizes`.",
+      "XL-U shipped on 2026-02-11: decision is to keep `clothing_sizes` as a reference-only matrix scope (no brand-fit engine) with explicit uncertainty/disclaimer and activation gates.",
       "XL-N shipped on 2026-02-10: added Pack I tutorial persistence (`tutorial_dismissed_v1`, `tutorial_replay_requested_v1`) and app-state contracts (`shouldShowTutorial`, dismiss/replay APIs).",
       "XL-N shipped on 2026-02-10: dashboard now mounts a lightweight skippable overlay for hero/tools/menu targets, with replay entry from the unified settings sheet.",
       "XL-N shipped on 2026-02-10: first-run wizard now includes targeted hints for place selection and save action when tutorial guidance is active.",

@@ -6,6 +6,16 @@
 - **Operating mode:** Codex is now the primary workflow; apply edits directly in-repo (do not require patch zip workflow unless explicitly requested).
 
 ## Latest changes (2026-02-11)
+- XL-U shipped (Clothing Sizes decision pack, planning-only):
+  - added decision artifact:
+    - `docs/ai/reference/CLOTHING_SIZES_DECISION_PACK_XL_U.md`
+  - locked product decision:
+    - keep `clothing_sizes` as a **reference-only** matrix scope (no brand-fit engine),
+    - explicit v1 regions/categories, uncertainty policy, and activation gates.
+  - set next slice direction:
+    - XL-V implementation spike for reference-only clothing sizes surface.
+
+## Latest changes (2026-02-11)
 - Runtime reliability + trust UX polish:
   - Android network access: added `android.permission.INTERNET`.
   - live-data defaults updated for runtime:
