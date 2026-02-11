@@ -23,6 +23,7 @@
   "dashboard.dashboard.menu.profiles": "",
   "dashboard.dashboard.menu.resetDefaults": "",
   "dashboard.dashboard.menu.settings": "",
+  "dashboard.dashboard.menu.title": "Menú",
   "dashboard.dashboard.profileCreated": "",
   "dashboard.dashboard.profileNameFallback": "",
   "dashboard.dashboard.profileUpdated": "",

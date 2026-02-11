@@ -28,6 +28,7 @@ class ToolRegistryTool {
   final ToolSurfaceType surfaceType;
   final String? aliasTargetToolId;
   final String? deferReason;
+  final List<String> searchTokens;
 
   const ToolRegistryTool({
     required this.toolId,
@@ -39,6 +40,7 @@ class ToolRegistryTool {
     this.surfaceType = ToolSurfaceType.configurableTemplate,
     this.aliasTargetToolId,
     this.deferReason,
+    this.searchTokens = const <String>[],
   });
 }
 
@@ -78,6 +80,18 @@ class ToolRegistry {
           'defaults': 'run_walk',
         },
       },
+      searchTokens: <String>[
+        'km',
+        'kilometer',
+        'kilometre',
+        'mile',
+        'mi',
+        'meter',
+        'metre',
+        'm',
+        'feet',
+        'ft',
+      ],
     ),
     ToolRegistryTool(
       toolId: 'speed',
@@ -86,6 +100,7 @@ class ToolRegistry {
       isEnabled: true,
       surfaceType: ToolSurfaceType.configurableTemplate,
       lenses: <String>[ActivityLensId.travelEssentials],
+      searchTokens: <String>['mph', 'kmh', 'kph', 'mps'],
     ),
     ToolRegistryTool(
       toolId: 'time',
@@ -97,6 +112,7 @@ class ToolRegistry {
         ActivityLensId.travelEssentials,
         ActivityLensId.weatherTime,
       ],
+      searchTokens: <String>['timezone', 'tz', 'utc', 'gmt'],
     ),
     ToolRegistryTool(
       toolId: 'jet_lag_delta',
@@ -126,6 +142,7 @@ class ToolRegistry {
       isEnabled: true,
       surfaceType: ToolSurfaceType.configurableTemplate,
       lenses: <String>[ActivityLensId.travelEssentials],
+      searchTokens: <String>['celsius', 'fahrenheit', 'kelvin', 'c', 'f', 'k'],
     ),
 
     // Food and Cooking
@@ -133,9 +150,24 @@ class ToolRegistry {
       toolId: 'liquids',
       label: 'Liquids',
       icon: Icons.science_rounded,
-      lenses: <String>[ActivityLensId.travelEssentials],
+      lenses: <String>[
+        ActivityLensId.travelEssentials,
+        ActivityLensId.foodCooking,
+      ],
       isEnabled: true,
       surfaceType: ToolSurfaceType.configurableTemplate,
+      searchTokens: <String>[
+        'tsp',
+        'teaspoon',
+        'tbsp',
+        'tablespoon',
+        'fl oz',
+        'floz',
+        'ml',
+        'liter',
+        'litre',
+        'l',
+      ],
     ),
     ToolRegistryTool(
       toolId: 'baking',
@@ -145,6 +177,14 @@ class ToolRegistry {
       isEnabled: true,
       surfaceType: ToolSurfaceType.aliasPreset,
       aliasTargetToolId: 'liquids',
+      searchTokens: <String>[
+        'cup',
+        'cups',
+        'tsp',
+        'teaspoon',
+        'tbsp',
+        'tablespoon',
+      ],
     ),
     ToolRegistryTool(
       toolId: 'weight',
@@ -153,6 +193,7 @@ class ToolRegistry {
       isEnabled: true,
       surfaceType: ToolSurfaceType.configurableTemplate,
       lenses: <String>[ActivityLensId.foodCooking],
+      searchTokens: <String>['g', 'gram', 'kg', 'lb', 'oz', 'pound'],
     ),
     ToolRegistryTool(
       toolId: 'oven_temperature',
@@ -198,6 +239,7 @@ class ToolRegistry {
       isEnabled: true,
       surfaceType: ToolSurfaceType.configurableTemplate,
       lenses: <String>[ActivityLensId.healthFitness],
+      searchTokens: <String>['min/km', 'min/mi', '5k', '10k', 'marathon'],
     ),
     ToolRegistryTool(
       toolId: 'hydration',
@@ -214,6 +256,14 @@ class ToolRegistry {
       isEnabled: true,
       surfaceType: ToolSurfaceType.configurableTemplate,
       lenses: <String>[ActivityLensId.healthFitness],
+      searchTokens: <String>[
+        'cal',
+        'kcal',
+        'calorie',
+        'calories',
+        'kj',
+        'kilojoule',
+      ],
     ),
 
     // Home and DIY
@@ -224,6 +274,7 @@ class ToolRegistry {
       lenses: <String>[ActivityLensId.homeDiy],
       isEnabled: true,
       surfaceType: ToolSurfaceType.configurableTemplate,
+      searchTokens: <String>['mm', 'cm', 'm', 'in', 'ft', 'yd', 'yard'],
     ),
     ToolRegistryTool(
       toolId: 'area',
@@ -232,6 +283,7 @@ class ToolRegistry {
       lenses: <String>[ActivityLensId.homeDiy],
       isEnabled: true,
       surfaceType: ToolSurfaceType.configurableTemplate,
+      searchTokens: <String>['sqm', 'sqft', 'm2', 'ft2', 'acre', 'hectare'],
     ),
     ToolRegistryTool(
       toolId: 'volume',
@@ -240,6 +292,7 @@ class ToolRegistry {
       isEnabled: true,
       surfaceType: ToolSurfaceType.configurableTemplate,
       lenses: <String>[ActivityLensId.homeDiy],
+      searchTokens: <String>['ml', 'l', 'gal', 'gallon', 'oz', 'cup'],
     ),
     ToolRegistryTool(
       toolId: 'pressure',
@@ -248,6 +301,7 @@ class ToolRegistry {
       isEnabled: true,
       surfaceType: ToolSurfaceType.configurableTemplate,
       lenses: <String>[ActivityLensId.homeDiy],
+      searchTokens: <String>['psi', 'bar', 'kpa', 'pa', 'atm'],
     ),
 
     // Weather and Time
@@ -277,6 +331,7 @@ class ToolRegistry {
       isEnabled: true,
       surfaceType: ToolSurfaceType.configurableTemplate,
       lenses: <String>[ActivityLensId.moneyShopping],
+      searchTokens: <String>['usd', 'eur', 'gbp', 'jpy', 'exchange', 'fx'],
     ),
     ToolRegistryTool(
       toolId: 'tip_helper',
@@ -293,6 +348,7 @@ class ToolRegistry {
       isEnabled: true,
       surfaceType: ToolSurfaceType.dedicated,
       lenses: <String>[ActivityLensId.moneyShopping],
+      searchTokens: <String>['sales tax', 'vat', 'gst'],
     ),
     ToolRegistryTool(
       toolId: 'unit_price_helper',
@@ -301,6 +357,7 @@ class ToolRegistry {
       isEnabled: true,
       surfaceType: ToolSurfaceType.dedicated,
       lenses: <String>[ActivityLensId.moneyShopping],
+      searchTokens: <String>['unit price', 'price per', 'cost per', 'g', 'ml'],
     ),
 
     // Quick Tools
@@ -311,6 +368,7 @@ class ToolRegistry {
       isEnabled: true,
       surfaceType: ToolSurfaceType.configurableTemplate,
       lenses: <String>[ActivityLensId.quickTools, ActivityLensId.oddUseful],
+      searchTokens: <String>['us m', 'us w', 'eu', 'uk', 'jp', 'shoe size'],
     ),
     ToolRegistryTool(
       toolId: 'clothing_sizes',
@@ -328,6 +386,7 @@ class ToolRegistry {
       isEnabled: true,
       surfaceType: ToolSurfaceType.configurableTemplate,
       lenses: <String>[ActivityLensId.quickTools, ActivityLensId.oddUseful],
+      searchTokens: <String>['a4', 'letter', 'legal', 'tabloid', 'iso'],
     ),
     ToolRegistryTool(
       toolId: 'mattress_sizes',
@@ -336,6 +395,7 @@ class ToolRegistry {
       isEnabled: true,
       surfaceType: ToolSurfaceType.configurableTemplate,
       lenses: <String>[ActivityLensId.oddUseful],
+      searchTokens: <String>['twin', 'full', 'queen', 'king', 'cal king'],
     ),
     ToolRegistryTool(
       toolId: 'timezone_lookup',
@@ -367,6 +427,7 @@ class ToolRegistry {
         ],
         ActivityLensId.foodCooking: <String>[
           'baking',
+          'liquids',
           'weight',
           'oven_temperature',
           'cups_grams_estimates',

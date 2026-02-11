@@ -57,6 +57,7 @@ class ToolDefinitions {
     'mattress_sizes': 'Mattress',
     'shoe_sizes': 'Shoes',
     'world_clock_delta': 'Time Map',
+    'unit_price_helper': 'Price Compare',
   };
 
   static String widgetTitleFor(ToolDefinition tool) {
@@ -239,7 +240,7 @@ class ToolDefinitions {
     lensId: ActivityLensId.healthFitness,
     title: 'Calories / Energy',
     icon: Icons.local_fire_department_rounded,
-    defaultPrimary: '500 kcal',
+    defaultPrimary: '500 cal',
     defaultSecondary: '2092 kJ',
   );
 
@@ -369,7 +370,14 @@ class ToolDefinitions {
   );
 
   /// Default dashboard tiles shown on a fresh install.
-  static const defaultTiles = <ToolDefinition>[height, baking, liquids, area];
+  static const defaultTiles = <ToolDefinition>[
+    temperature,
+    currencyConvert,
+    baking,
+    distance,
+    time,
+    unitPriceHelper,
+  ];
 
   /// Full registry of enabled tool definitions (selection in the picker and
   /// user-added tiles).
@@ -733,7 +741,7 @@ class ToolConverters {
     if (value == null) return null;
 
     // Normalize into kilocalories as base unit.
-    const kcalPer = <String, double>{'kcal': 1.0, 'kJ': 1 / 4.184};
+    const kcalPer = <String, double>{'kcal': 1.0, 'cal': 1.0, 'kJ': 1 / 4.184};
     final fromFactor = kcalPer[fromUnit];
     final toFactor = kcalPer[toUnit];
     if (fromFactor == null || toFactor == null) return null;

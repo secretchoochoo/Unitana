@@ -130,6 +130,7 @@ class LocalizationSeed {
     'dashboard.dashboard.tooltip.refreshData': 'Refresh data',
     'dashboard.dashboard.menu.profiles': 'Profiles',
     'dashboard.dashboard.menu.settings': 'Settings',
+    'dashboard.dashboard.menu.title': 'Menu',
     'dashboard.settings.title': 'Settings',
     'dashboard.settings.option.about': 'About',
     'dashboard.settings.option.licenses': 'Licenses',
@@ -156,12 +157,10 @@ class LocalizationSeed {
     'dashboard.settings.profileSuggest.suggested':
         'Suggested profile: {profileName}',
     'dashboard.settings.about.title': 'About Unitana',
-    'dashboard.settings.about.tagline':
-        'Travel-first decoder ring; dual reality side-by-side',
-    'dashboard.settings.about.body':
-        'Unitana helps compare home and destination contexts with practical tools for time, weather, and conversions.',
-    'dashboard.settings.about.legalese': 'Copyright 2026 Unitana contributors',
-    'dashboard.settings.licenses.title': 'Open-source licenses',
+    'dashboard.settings.about.tagline': 'Created with ❤️ by Cody Pritchard',
+    'dashboard.settings.about.body': 'Build channel: Development',
+    'dashboard.settings.about.legalese': 'Copying 2026 Unitana',
+    'dashboard.settings.licenses.title': 'Open-Source Licenses',
     'dashboard.dashboard.menu.editWidgets': 'Edit Widgets',
     'dashboard.dashboard.menu.resetDefaults': 'Reset Dashboard Defaults',
     'dashboard.dashboard.menu.developerTools': 'Developer Tools',

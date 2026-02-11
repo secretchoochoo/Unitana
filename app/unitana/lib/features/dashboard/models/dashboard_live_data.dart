@@ -897,6 +897,7 @@ class DashboardLiveDataController extends ChangeNotifier {
   final Map<String, EnvSnapshot> _envByPlaceId = {};
   final Map<String, WeatherForecastSnapshot> _forecastByPlaceId = {};
   WeatherDebugOverride? _debugWeatherOverride;
+  WeatherEmergencySeverity? _debugEmergencySeverityOverride;
   Duration? _debugClockOffset;
 
   double? _debugEurToUsd;
@@ -1005,7 +1006,9 @@ class DashboardLiveDataController extends ChangeNotifier {
 
   /// Weather backend selection.
   ///
-  /// Contract: network weather is OFF by default so tests and demo builds stay hermetic.
+  /// Contract:
+  /// - Runtime builds default to live weather (Open-Meteo) for real devices.
+  /// - Flutter tests remain hermetic via the FLUTTER_TEST guard.
   ///
   /// Historically this was compile-time only (dart-define). We still honor that as a
   /// default, but Developer Tools can now toggle live weather at runtime (persisted).
@@ -1018,11 +1021,11 @@ class DashboardLiveDataController extends ChangeNotifier {
   /// - --dart-define=WEATHER_NETWORK_ALLOWED=false
   static const bool _envWeatherNetworkEnabled = bool.fromEnvironment(
     'WEATHER_NETWORK_ENABLED',
-    defaultValue: false,
+    defaultValue: true,
   );
   static const String _envWeatherProvider = String.fromEnvironment(
     'WEATHER_PROVIDER',
-    defaultValue: 'mock',
+    defaultValue: 'openmeteo',
   );
   static const bool _weatherNetworkAllowed = bool.fromEnvironment(
     'WEATHER_NETWORK_ALLOWED',
@@ -1032,7 +1035,9 @@ class DashboardLiveDataController extends ChangeNotifier {
   static const String _kDevWeatherBackend = 'dev_weather_backend_v1';
   // Currency backend selection.
   //
-  // Contract: currency network is OFF by default so tests and demo builds stay hermetic.
+  // Contract:
+  // - Runtime builds default to live currency (Frankfurter).
+  // - Flutter tests remain hermetic via the FLUTTER_TEST guard.
   //
   // Compile-time defaults (optional):
   // - --dart-define=CURRENCY_NETWORK_ENABLED=true
@@ -1042,16 +1047,17 @@ class DashboardLiveDataController extends ChangeNotifier {
   // - --dart-define=CURRENCY_NETWORK_ALLOWED=false
   static const bool _envCurrencyNetworkEnabled = bool.fromEnvironment(
     'CURRENCY_NETWORK_ENABLED',
-    defaultValue: false,
+    defaultValue: true,
   );
   static const String _envCurrencyProvider = String.fromEnvironment(
     'CURRENCY_PROVIDER',
-    defaultValue: 'mock',
+    defaultValue: 'frankfurter',
   );
   static const bool _currencyNetworkAllowed = bool.fromEnvironment(
     'CURRENCY_NETWORK_ALLOWED',
     defaultValue: true,
   );
+  static const bool _isFlutterTest = bool.fromEnvironment('FLUTTER_TEST');
 
   static const String _kDevCurrencyBackend = 'dev_currency_backend_v1';
   static const String _kCachedEurToUsdRate = 'currency_eur_to_usd_rate_v1';
@@ -1113,7 +1119,9 @@ class DashboardLiveDataController extends ChangeNotifier {
 
   /// Whether live network currency is enabled (and allowed) for this build.
   bool get currencyNetworkEnabled =>
-      _currencyNetworkAllowed && _currencyBackend != CurrencyBackend.mock;
+      !_isFlutterTest &&
+      _currencyNetworkAllowed &&
+      _currencyBackend != CurrencyBackend.mock;
 
   bool get currencyNetworkAllowed => _currencyNetworkAllowed;
 
@@ -1136,7 +1144,9 @@ class DashboardLiveDataController extends ChangeNotifier {
 
   /// Whether live network weather is enabled (and allowed) for this build.
   bool get weatherNetworkEnabled =>
-      _weatherNetworkAllowed && _weatherBackend != WeatherBackend.mock;
+      !_isFlutterTest &&
+      _weatherNetworkAllowed &&
+      _weatherBackend != WeatherBackend.mock;
 
   bool get weatherNetworkAllowed => _weatherNetworkAllowed;
 
@@ -1306,6 +1316,18 @@ class DashboardLiveDataController extends ChangeNotifier {
     _notify();
   }
 
+  /// Developer-only emergency override for testing alert badge behavior.
+  ///
+  /// When non-null, `emergencyFor` returns this severity regardless of weather.
+  WeatherEmergencySeverity? get debugEmergencySeverityOverride =>
+      _debugEmergencySeverityOverride;
+
+  void setDebugEmergencySeverityOverride(WeatherEmergencySeverity? value) {
+    if (_debugEmergencySeverityOverride == value) return;
+    _debugEmergencySeverityOverride = value;
+    _notify();
+  }
+
   /// Set the WeatherAPI debug override.
   ///
   /// This bypasses provider mapping and is highest precedence for scene choice.
@@ -1441,6 +1463,20 @@ class DashboardLiveDataController extends ChangeNotifier {
   }
 
   WeatherEmergencyAssessment emergencyFor(Place? place) {
+    final forced = _debugEmergencySeverityOverride;
+    if (forced != null) {
+      return WeatherEmergencyAssessment(
+        severity: forced,
+        reasonKey: switch (forced) {
+          WeatherEmergencySeverity.none => 'none',
+          WeatherEmergencySeverity.advisory => 'provider_advisory',
+          WeatherEmergencySeverity.watch => 'provider_watch',
+          WeatherEmergencySeverity.warning => 'provider_warning',
+          WeatherEmergencySeverity.emergency => 'tornado',
+        },
+        source: 'debug',
+      );
+    }
     if (place == null) {
       return const WeatherEmergencyAssessment(
         severity: WeatherEmergencySeverity.none,

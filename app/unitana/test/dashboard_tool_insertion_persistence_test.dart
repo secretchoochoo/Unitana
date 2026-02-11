@@ -79,7 +79,7 @@ void main() {
     await pumpDashboard(tester, state);
 
     // Defaults are present.
-    expect(find.text('Area'), findsOneWidget);
+    expect(find.text('Baking'), findsOneWidget);
 
     // Tap the first visible + slot.
     final addSlot = firstAddSlotFinder();
@@ -90,13 +90,9 @@ void main() {
     await tester.tap(addSlot.first);
     await tester.pumpAndSettle(const Duration(milliseconds: 250));
 
-    // Pick a non-default tool from the picker.
-    // ToolPickerSheet is two-level (lenses -> tools). Expand Travel Essentials,
-    // then select Distance.
-    final travelLens = find.byKey(
-      const ValueKey('toolpicker_lens_travel_essentials'),
-    );
-    expect(travelLens, findsOneWidget);
+    // Pick a non-default tool from the picker (Area).
+    final homeLens = find.byKey(const ValueKey('toolpicker_lens_home_diy'));
+    expect(homeLens, findsOneWidget);
 
     // ToolPickerSheet is presented in a modal bottom sheet. There are multiple
     // scrollables in the app (dashboard grid, bottom sheet list, etc.), so we
@@ -110,59 +106,43 @@ void main() {
         .first;
 
     // Ensure the lens header is on-screen before tapping.
-    await tester.scrollUntilVisible(
-      travelLens,
-      200,
-      scrollable: sheetScrollable,
-    );
+    await tester.scrollUntilVisible(homeLens, 200, scrollable: sheetScrollable);
     await tester.pumpAndSettle(const Duration(milliseconds: 150));
 
     // The lens header itself is tappable.
-    await tester.tap(travelLens);
+    await tester.tap(homeLens);
     await tester.pumpAndSettle(const Duration(milliseconds: 250));
 
-    final distanceTool = find.byKey(const ValueKey('toolpicker_tool_distance'));
-    await tester.scrollUntilVisible(
-      distanceTool,
-      200,
-      scrollable: sheetScrollable,
-    );
+    final areaTool = find.byKey(const ValueKey('toolpicker_tool_area'));
+    await tester.scrollUntilVisible(areaTool, 200, scrollable: sheetScrollable);
     await tester.pumpAndSettle(const Duration(milliseconds: 150));
-    await tester.tap(distanceTool);
+    await tester.tap(areaTool);
     await tester.pumpAndSettle(const Duration(milliseconds: 250));
 
-    // Distance is not a default tile, so it should appear once.
-    expect(find.text('Distance'), findsOneWidget);
+    // Area is not a default tile, so it should appear once.
+    expect(find.text('Area'), findsOneWidget);
 
-    // Attempt to add Distance again; it should be blocked.
+    // Attempt to add Area again; it should be blocked.
     await ensureVisibleAligned(tester, addSlot.first);
 
     await tester.tap(addSlot.first);
     await tester.pumpAndSettle(const Duration(milliseconds: 250));
 
-    await tester.scrollUntilVisible(
-      travelLens,
-      200,
-      scrollable: sheetScrollable,
-    );
+    await tester.scrollUntilVisible(homeLens, 200, scrollable: sheetScrollable);
     await tester.pumpAndSettle(const Duration(milliseconds: 150));
-    await tester.tap(travelLens);
+    await tester.tap(homeLens);
     await tester.pumpAndSettle(const Duration(milliseconds: 250));
 
-    await tester.scrollUntilVisible(
-      distanceTool,
-      200,
-      scrollable: sheetScrollable,
-    );
+    await tester.scrollUntilVisible(areaTool, 200, scrollable: sheetScrollable);
     await tester.pumpAndSettle(const Duration(milliseconds: 150));
-    await tester.tap(distanceTool);
+    await tester.tap(areaTool);
     await tester.pumpAndSettle(const Duration(milliseconds: 250));
 
     expect(
-      find.byKey(const ValueKey('toast_duplicate_tool_distance')),
+      find.byKey(const ValueKey('toast_duplicate_tool_area')),
       findsOneWidget,
     );
-    expect(find.text('Distance'), findsOneWidget);
+    expect(find.text('Area'), findsOneWidget);
 
     // Rebuild the screen to prove persistence.
     await tester.pumpWidget(const SizedBox.shrink());
@@ -170,7 +150,7 @@ void main() {
 
     await pumpDashboard(tester, state);
 
-    expect(find.text('Distance'), findsOneWidget);
+    expect(find.text('Area'), findsOneWidget);
   });
 
   testWidgets('long-press remove deletes a user-added tile and persists', (
@@ -185,7 +165,7 @@ void main() {
 
     await pumpDashboard(tester, state);
 
-    // Add a Distance tile via a "+" slot.
+    // Add an Area tile via a "+" slot.
     final addSlot = firstAddSlotFinder();
     expect(addSlot, findsWidgets);
 
@@ -194,10 +174,8 @@ void main() {
     await tester.tap(addSlot.first);
     await tester.pumpAndSettle(const Duration(milliseconds: 250));
 
-    final travelLens = find.byKey(
-      const ValueKey('toolpicker_lens_travel_essentials'),
-    );
-    expect(travelLens, findsOneWidget);
+    final homeLens = find.byKey(const ValueKey('toolpicker_lens_home_diy'));
+    expect(homeLens, findsOneWidget);
 
     final sheetScrollable = find
         .descendant(
@@ -206,32 +184,24 @@ void main() {
         )
         .first;
 
-    await tester.scrollUntilVisible(
-      travelLens,
-      200,
-      scrollable: sheetScrollable,
-    );
+    await tester.scrollUntilVisible(homeLens, 200, scrollable: sheetScrollable);
     await tester.pumpAndSettle(const Duration(milliseconds: 150));
-    await tester.tap(travelLens);
+    await tester.tap(homeLens);
     await tester.pumpAndSettle(const Duration(milliseconds: 250));
 
-    final distanceTool = find.byKey(const ValueKey('toolpicker_tool_distance'));
-    await tester.scrollUntilVisible(
-      distanceTool,
-      200,
-      scrollable: sheetScrollable,
-    );
+    final areaTool = find.byKey(const ValueKey('toolpicker_tool_area'));
+    await tester.scrollUntilVisible(areaTool, 200, scrollable: sheetScrollable);
     await tester.pumpAndSettle(const Duration(milliseconds: 150));
-    await tester.tap(distanceTool);
+    await tester.tap(areaTool);
     await tester.pumpAndSettle(const Duration(milliseconds: 250));
 
-    expect(find.text('Distance'), findsOneWidget);
+    expect(find.text('Area'), findsOneWidget);
 
     // The ToolPicker flow opens the Distance modal; close it so the dashboard
     // tile is actually hit-testable for long-press actions.
-    final closeDistance = find.byKey(const ValueKey('tool_close_distance'));
-    if (closeDistance.evaluate().isNotEmpty) {
-      await tester.tap(closeDistance);
+    final closeArea = find.byKey(const ValueKey('tool_close_area'));
+    if (closeArea.evaluate().isNotEmpty) {
+      await tester.tap(closeArea);
       await tester.pumpAndSettle(const Duration(milliseconds: 250));
     }
 
@@ -245,17 +215,17 @@ void main() {
     final decoded = jsonDecode(raw!) as List<dynamic>;
     expect(decoded, isNotEmpty);
 
-    // Target the user-added Distance tool specifically (avoid relying on list ordering).
-    Map<String, dynamic>? distanceEntry;
+    // Target the user-added Area tool specifically (avoid relying on list ordering).
+    Map<String, dynamic>? areaEntry;
     for (final e in decoded) {
-      if (e is Map<String, dynamic> && e['toolId'] == 'distance') {
-        distanceEntry = e;
+      if (e is Map<String, dynamic> && e['toolId'] == 'area') {
+        areaEntry = e;
         // Prefer user-added entries when present.
         if (e['userAdded'] == true) break;
       }
     }
-    expect(distanceEntry, isNotNull);
-    final id = distanceEntry!['id'] as String;
+    expect(areaEntry, isNotNull);
+    final id = areaEntry!['id'] as String;
 
     // Long-press to open actions, then remove.
     final tile = find.byKey(ValueKey('dashboard_item_$id'));
@@ -331,7 +301,7 @@ void main() {
         await tester.tap(anyRemoveByKey.first, warnIfMissed: false);
       } else {
         fail(
-          'Expected tile actions to appear after long-pressing Distance tile, but no remove action key was found.',
+          'Expected tile actions to appear after long-pressing Area tile, but no remove action key was found.',
         );
       }
     }
@@ -342,8 +312,8 @@ void main() {
     await tester.tap(find.text('Remove'));
     await pumpFor(const Duration(milliseconds: 250));
 
-    // Distance tile is removed.
-    expect(find.text('Distance'), findsNothing);
+    // Area tile is removed.
+    expect(find.text('Area'), findsNothing);
 
     // Commit edit mode so the removal persists.
     final done = find.byKey(const ValueKey('dashboard_edit_done'));
@@ -357,7 +327,7 @@ void main() {
 
     await pumpDashboard(tester, state);
 
-    expect(find.text('Distance'), findsNothing);
+    expect(find.text('Area'), findsNothing);
   });
 
   testWidgets('default tiles can be removed and later restored', (
@@ -371,13 +341,13 @@ void main() {
     final state = buildSeededState();
     await pumpDashboard(tester, state);
 
-    // Area is a default tile.
-    expect(find.text('Area'), findsOneWidget);
+    // Baking is a default tile.
+    expect(find.text('Baking'), findsOneWidget);
 
-    // Enter edit mode by long-pressing the Area tile.
-    final areaTile = find.text('Area').first;
-    await ensureVisibleAligned(tester, areaTile);
-    await tester.longPress(areaTile, warnIfMissed: false);
+    // Enter edit mode by long-pressing the Baking tile.
+    final bakingTile = find.text('Baking').first;
+    await ensureVisibleAligned(tester, bakingTile);
+    await tester.longPress(bakingTile, warnIfMissed: false);
     Future<void> pumpFor(Duration duration) async {
       final deadline = DateTime.now().add(duration);
       while (DateTime.now().isBefore(deadline)) {
@@ -402,12 +372,12 @@ void main() {
     await tester.tap(done, warnIfMissed: false);
     await pumpFor(const Duration(milliseconds: 250));
 
-    // Prove persistence: rebuild and expect Area is gone.
+    // Prove persistence: rebuild and expect Baking is gone.
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pump();
     await pumpDashboard(tester, state);
 
-    expect(find.text('Area'), findsNothing);
+    expect(find.text('Baking'), findsNothing);
 
     // Ensure the hidden defaults list persisted the removed tool.
     final prefs = await SharedPreferences.getInstance();
@@ -415,9 +385,9 @@ void main() {
         prefs.getString('dashboard_hidden_defaults_v1::profile_1') ??
         prefs.getString('dashboard_hidden_defaults_v1');
     expect(hiddenRaw, isNotNull);
-    expect(hiddenRaw, contains('area'));
+    expect(hiddenRaw, contains('baking'));
 
-    // Restore Area via the picker search.
+    // Restore Baking via the picker search.
     final addSlot = firstAddSlotFinder();
     expect(addSlot, findsWidgets);
     await ensureVisibleAligned(tester, addSlot.first);
@@ -427,14 +397,16 @@ void main() {
 
     final search = find.byKey(const ValueKey('toolpicker_search'));
     expect(search, findsOneWidget);
-    await tester.enterText(search, 'Area');
+    await tester.enterText(search, 'Baking');
     await tester.pumpAndSettle(const Duration(milliseconds: 250));
 
-    final areaTool = find.byKey(const ValueKey('toolpicker_search_tool_area'));
-    expect(areaTool, findsOneWidget);
-    await tester.tap(areaTool);
+    final bakingTool = find.byKey(
+      const ValueKey('toolpicker_search_tool_baking'),
+    );
+    expect(bakingTool, findsOneWidget);
+    await tester.tap(bakingTool);
     await tester.pumpAndSettle(const Duration(milliseconds: 250));
 
-    expect(find.text('Area'), findsOneWidget);
+    expect(find.text('Baking'), findsOneWidget);
   });
 }

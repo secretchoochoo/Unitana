@@ -108,15 +108,6 @@ void main() {
         'anchorIndex': 3,
         'userAdded': true,
       },
-      {
-        'id': 'audit_temp',
-        'kind': 'tool',
-        'toolId': 'temperature',
-        'colSpan': 1,
-        'rowSpan': 1,
-        'anchorIndex': 4,
-        'userAdded': true,
-      },
     ];
 
     SharedPreferences.setMockInitialValues({

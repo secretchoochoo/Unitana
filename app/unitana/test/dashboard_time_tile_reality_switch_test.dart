@@ -59,25 +59,10 @@ void main() {
     await tester.pumpAndSettle(const Duration(milliseconds: 300));
   }
 
-  Finder firstAddSlotFinder() {
-    return find.byWidgetPredicate((w) {
-      final key = w.key;
-      if (key is! ValueKey) return false;
-      final v = key.value.toString();
-      return v.startsWith('dashboard_add_slot_');
-    });
-  }
-
   Finder timeTileFinder() {
     return find.byWidgetPredicate((w) {
       return w is UnitanaTile && w.title == 'Time';
     });
-  }
-
-  Finder timeToolRowFinder() {
-    final searchKey = find.byKey(const ValueKey('toolpicker_search_tool_time'));
-    if (searchKey.evaluate().isNotEmpty) return searchKey;
-    return find.byKey(const ValueKey('toolpicker_tool_time'));
   }
 
   bool hasAmPm(String v) =>
@@ -93,32 +78,6 @@ void main() {
 
     final state = buildSeededState();
     await pumpDashboard(tester, state);
-
-    // Add Time via the first available + slot.
-    final addSlot = firstAddSlotFinder();
-    expect(addSlot, findsWidgets);
-    await tester.tap(addSlot.first);
-    await tester.pumpAndSettle(const Duration(milliseconds: 300));
-
-    final searchField = find.byKey(const ValueKey('toolpicker_search'));
-    expect(searchField, findsOneWidget);
-
-    await tester.enterText(searchField, 'time');
-    await tester.pumpAndSettle(const Duration(milliseconds: 250));
-
-    final timeRow = timeToolRowFinder();
-    expect(timeRow, findsOneWidget);
-
-    await tester.tap(timeRow);
-    await tester.pumpAndSettle(const Duration(milliseconds: 300));
-
-    // A confirmation toast/snackbar can briefly absorb pointer events near the
-    // Places Hero. Wait it out so segment taps are deterministic.
-    final addedToast = find.textContaining('Added Time');
-    for (var i = 0; i < 15 && addedToast.evaluate().isNotEmpty; i++) {
-      await tester.pump(const Duration(milliseconds: 200));
-    }
-    await tester.pumpAndSettle(const Duration(milliseconds: 200));
 
     // Ensure we're in a known state: Destination reality (use24h: true).
     final destSeg = find.byKey(

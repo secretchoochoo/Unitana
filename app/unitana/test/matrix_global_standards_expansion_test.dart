@@ -32,11 +32,33 @@ void main() {
       find.byKey(const ValueKey('tool_lookup_matrix_shoe_sizes')),
       findsOneWidget,
     );
+    expect(find.text('US M'), findsWidgets);
+    expect(find.text('US W'), findsWidgets);
+    await tester.tap(
+      find.byKey(const ValueKey('tool_lookup_matrix_next_shoe_sizes')),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.byKey(const ValueKey('tool_lookup_matrix_next_shoe_sizes')),
+    );
+    await tester.pumpAndSettle();
     expect(find.text('AU'), findsWidgets);
     expect(
       find.byKey(const ValueKey('tool_lookup_matrix_row_shoe_sizes_shoe_9')),
       findsOneWidget,
     );
+    final shoe17 = find.byKey(
+      const ValueKey('tool_lookup_matrix_row_shoe_sizes_shoe_17'),
+    );
+    final matrixScrollable = find.descendant(
+      of: find.byKey(const ValueKey('tool_lookup_matrix_shoe_sizes')),
+      matching: find.byType(Scrollable),
+    );
+    for (var i = 0; i < 8 && shoe17.evaluate().isEmpty; i++) {
+      await tester.drag(matrixScrollable.first, const Offset(0, -220));
+      await tester.pumpAndSettle(const Duration(milliseconds: 80));
+    }
+    expect(shoe17, findsOneWidget);
   });
 
   testWidgets(
@@ -54,6 +76,10 @@ void main() {
         find.byKey(const ValueKey('tool_lookup_matrix_paper_sizes')),
         findsOneWidget,
       );
+      await tester.tap(
+        find.byKey(const ValueKey('tool_lookup_matrix_next_paper_sizes')),
+      );
+      await tester.pumpAndSettle();
       expect(find.text('JIS'), findsWidgets);
       expect(find.text('ANSI/ARCH'), findsWidgets);
       expect(
@@ -80,8 +106,16 @@ void main() {
         find.byKey(const ValueKey('tool_lookup_matrix_mattress_sizes')),
         findsOneWidget,
       );
+      await tester.tap(
+        find.byKey(const ValueKey('tool_lookup_matrix_next_mattress_sizes')),
+      );
+      await tester.pumpAndSettle();
       expect(find.text('UK'), findsWidgets);
       expect(find.text('AU'), findsWidgets);
+      await tester.tap(
+        find.byKey(const ValueKey('tool_lookup_matrix_next_mattress_sizes')),
+      );
+      await tester.pumpAndSettle();
       expect(find.text('JP'), findsWidgets);
       expect(
         find.byKey(

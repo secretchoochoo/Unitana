@@ -138,6 +138,8 @@ void main() {
           const ValueKey('devtools_weather_default'),
           skipOffstage: false,
         );
+        final weatherSheet = find.byType(BottomSheet).last;
+        await _scrollDownUntilFound(tester, weatherSheet, defaultChoice);
         expect(defaultChoice, findsOneWidget);
 
         // The chooser must be scrollable on small phones to avoid overflow.

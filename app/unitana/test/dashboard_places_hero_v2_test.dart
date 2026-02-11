@@ -141,12 +141,12 @@ void main() {
       );
       expectClocksOrPlaceholder(sunriseText);
       expectClocksOrPlaceholder(sunsetText);
-      // Default tiles on a fresh profile are currently: Height, Baking,
-      // Liquids, Area. Distance is an enabled tool, but not a default tile.
-      expect(find.text('Height'), findsOneWidget);
+      // Default tiles on a fresh profile are now Top-6:
+      // Temp, Currency, Baking, Distance, Time, Price Compare.
+      expect(find.text('Temp'), findsOneWidget);
+      expect(find.text('Currency'), findsOneWidget);
       expect(find.text('Baking'), findsOneWidget);
-      expect(find.text('Liquids'), findsOneWidget);
-      expect(find.text('Area'), findsOneWidget);
+      expect(find.text('Distance'), findsOneWidget);
 
       // Destination is selected by default (metric).
       final primaryTempBefore = tester.widget<Text>(
@@ -206,15 +206,14 @@ void main() {
       await pumpUntilGone(tester, find.byType(BottomSheet));
       await pumpUntilGone(tester, find.byType(ModalBarrier));
 
-      // Liquids is a separate user-facing tool with its own history.
-      // Use the stable dashboard tile key so we always scroll the real tap
-      // target into view (tight viewports can show the title text while the
-      // InkWell center is still below the fold).
-      final liquidsTile = find.byKey(const ValueKey('dashboard_item_liquids'));
-      expect(liquidsTile, findsOneWidget);
-      await ensureVisibleAligned(tester, liquidsTile);
+      // Distance should remain independent with its own history stream.
+      final distanceTile = find.byKey(
+        const ValueKey('dashboard_item_distance'),
+      );
+      expect(distanceTile, findsOneWidget);
+      await ensureVisibleAligned(tester, distanceTile);
       await pumpStable(tester);
-      await tester.tap(liquidsTile);
+      await tester.tap(distanceTile);
       await pumpStable(tester);
 
       // The modal body is a scrollable ListView; on tight surfaces, the History
@@ -222,7 +221,7 @@ void main() {
       final emptyHistory = find.text('No history yet');
       if (emptyHistory.evaluate().isEmpty) {
         final scrollable = find.ancestor(
-          of: find.byKey(const ValueKey('tool_input_liquids')),
+          of: find.byKey(const ValueKey('tool_input_distance')),
           matching: find.byType(Scrollable),
         );
         if (scrollable.evaluate().isNotEmpty) {

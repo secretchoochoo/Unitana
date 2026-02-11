@@ -508,7 +508,7 @@ class WeatherSummaryBottomSheet extends StatelessWidget {
                                 ),
                               ),
                               Text(
-                                '${TimezoneUtils.formatShortDate(localNow)} • ${TimezoneUtils.formatClock(localNow, use24h: place.use24h)}',
+                                '${TimezoneUtils.formatShortDate(localNow)} • ${TimezoneUtils.formatClock(localNow, use24h: place.use24h)} ${localNow.abbreviation}',
                                 style: theme.textTheme.bodySmall?.copyWith(
                                   color: cs.onSurfaceVariant,
                                   fontWeight: FontWeight.w700,
@@ -557,7 +557,7 @@ class WeatherSummaryBottomSheet extends StatelessWidget {
                             child: Padding(
                               padding: const EdgeInsets.fromLTRB(6, 5, 6, 5),
                               child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
+                                crossAxisAlignment: CrossAxisAlignment.center,
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   Text(
@@ -573,7 +573,7 @@ class WeatherSummaryBottomSheet extends StatelessWidget {
                                     width: double.infinity,
                                     child: FittedBox(
                                       fit: BoxFit.scaleDown,
-                                      alignment: Alignment.centerLeft,
+                                      alignment: Alignment.center,
                                       child: Text(
                                         '↑ $bannerHigh',
                                         style: theme.textTheme.bodySmall?.copyWith(
@@ -585,6 +585,7 @@ class WeatherSummaryBottomSheet extends StatelessWidget {
                                           fontWeight: FontWeight.w800,
                                         ),
                                         maxLines: 1,
+                                        textAlign: TextAlign.center,
                                       ),
                                     ),
                                   ),
@@ -592,7 +593,7 @@ class WeatherSummaryBottomSheet extends StatelessWidget {
                                     width: double.infinity,
                                     child: FittedBox(
                                       fit: BoxFit.scaleDown,
-                                      alignment: Alignment.centerLeft,
+                                      alignment: Alignment.center,
                                       child: Text(
                                         '↓ $bannerLow',
                                         style: theme.textTheme.bodySmall?.copyWith(
@@ -604,6 +605,7 @@ class WeatherSummaryBottomSheet extends StatelessWidget {
                                           fontWeight: FontWeight.w800,
                                         ),
                                         maxLines: 1,
+                                        textAlign: TextAlign.center,
                                       ),
                                     ),
                                   ),
@@ -688,6 +690,27 @@ class WeatherSummaryBottomSheet extends StatelessWidget {
               ],
               values: [windPrimary, gustPrimary],
               secondaryValues: [windSecondary, gustSecondary],
+            ),
+            const SizedBox(height: 5),
+            DecoratedBox(
+              key: ValueKey('weather_summary_disclaimer_${place.id}'),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surfaceContainerHighest.withAlpha(35),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                  color: theme.colorScheme.outlineVariant.withAlpha(150),
+                ),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                child: Text(
+                  DashboardCopy.disclaimerWeather(context),
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant.withAlpha(225),
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
             ),
             const SizedBox(height: 3),
             _iconTable(

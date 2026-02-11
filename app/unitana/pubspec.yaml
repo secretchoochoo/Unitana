@@ -15,6 +15,7 @@ dependencies:
 
   cupertino_icons: ^1.0.8
   google_fonts: ^6.1.0
+  audioplayers: ^6.1.0
   shared_preferences: ^2.5.4
   http: ^1.2.2
   timezone: ^0.10.1
@@ -30,6 +31,7 @@ flutter:
   assets:
     - assets/data/cities_v1.json
     - assets/brand/unitana_logo.png
+    - assets/audio/soft_static_sundays.mp3
     - assets/maps/world_outline.png
     - assets/fonts/
 

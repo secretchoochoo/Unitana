@@ -1704,7 +1704,10 @@ class _ToolPickerSheetState extends State<ToolPickerSheet> {
       toolId: tool.toolId,
       fallback: tool.label,
     ).toLowerCase();
-    return fallback.contains(q) || localized.contains(q);
+    final tokenMatch = tool.searchTokens.any(
+      (token) => token.toLowerCase().contains(q),
+    );
+    return fallback.contains(q) || localized.contains(q) || tokenMatch;
   }
 
   List<ToolRegistryTool> _searchResults() {

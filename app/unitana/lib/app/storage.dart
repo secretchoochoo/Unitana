@@ -22,6 +22,9 @@ class UnitanaStorage {
       'profile_last_activated_at_by_id_v1';
   static const String _kLofiAudioEnabled = 'lofi_audio_enabled_v1';
   static const String _kLofiAudioVolume = 'lofi_audio_volume_v1';
+  static const String _kTutorialDismissed = 'tutorial_dismissed_v1';
+  static const String _kTutorialReplayRequested =
+      'tutorial_replay_requested_v1';
 
   Future<List<Place>> loadPlaces() async {
     final prefs = await SharedPreferences.getInstance();
@@ -199,17 +202,37 @@ class UnitanaStorage {
   Future<double> loadLofiAudioVolume() async {
     final prefs = await SharedPreferences.getInstance();
     final raw = prefs.getDouble(_kLofiAudioVolume);
-    if (raw == null) return 0.35;
-    if (raw.isNaN || raw.isInfinite) return 0.35;
+    if (raw == null) return 0.25;
+    if (raw.isNaN || raw.isInfinite) return 0.25;
     return raw.clamp(0.0, 1.0).toDouble();
   }
 
   Future<void> saveLofiAudioVolume(double volume) async {
     final prefs = await SharedPreferences.getInstance();
     final normalized = volume.isNaN || volume.isInfinite
-        ? 0.35
+        ? 0.25
         : volume.clamp(0.0, 1.0).toDouble();
     await prefs.setDouble(_kLofiAudioVolume, normalized);
+  }
+
+  Future<bool> loadTutorialDismissed() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(_kTutorialDismissed) ?? false;
+  }
+
+  Future<void> saveTutorialDismissed(bool dismissed) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_kTutorialDismissed, dismissed);
+  }
+
+  Future<bool> loadTutorialReplayRequested() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(_kTutorialReplayRequested) ?? false;
+  }
+
+  Future<void> saveTutorialReplayRequested(bool requested) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_kTutorialReplayRequested, requested);
   }
 
   Future<void> clearAll() async {
@@ -227,5 +250,7 @@ class UnitanaStorage {
     await prefs.remove(_kProfileLastActivatedAtById);
     await prefs.remove(_kLofiAudioEnabled);
     await prefs.remove(_kLofiAudioVolume);
+    await prefs.remove(_kTutorialDismissed);
+    await prefs.remove(_kTutorialReplayRequested);
   }
 }

@@ -70,31 +70,24 @@ void main() {
     // Use search so we don't depend on lens ordering.
     final search = find.byKey(const ValueKey('toolpicker_search'));
     expect(search, findsOneWidget);
-    await tester.enterText(search, 'Distance');
+    await tester.enterText(search, 'Area');
     await tester.pumpAndSettle(const Duration(milliseconds: 250));
 
-    final distanceResult = find.byKey(
-      const Key('toolpicker_search_tool_distance'),
-    );
-    expect(distanceResult, findsOneWidget);
-    await tester.tap(distanceResult);
+    final areaResult = find.byKey(const Key('toolpicker_search_tool_area'));
+    expect(areaResult, findsOneWidget);
+    await tester.tap(areaResult);
     await tester.pumpAndSettle(const Duration(milliseconds: 300));
 
     // Tool modal is now open; add the widget.
-    final addWidget = find.byKey(const ValueKey('tool_add_widget_distance'));
+    final addWidget = find.byKey(const ValueKey('tool_add_widget_area'));
     expect(addWidget, findsOneWidget);
     await tester.tap(addWidget);
     await tester.pumpAndSettle(const Duration(milliseconds: 150));
     // Confirmation should be visible while the modal is open.
-    final notice = find.byKey(
-      const ValueKey('tool_add_widget_notice_distance'),
-    );
+    final notice = find.byKey(const ValueKey('tool_add_widget_notice_area'));
     expect(notice, findsOneWidget);
-    expect(
-      find.byKey(const ValueKey('add_widget_banner_distance')),
-      findsNothing,
-    );
-    expect(find.text('Added Distance to dashboard'), findsAtLeastNWidgets(1));
+    expect(find.byKey(const ValueKey('add_widget_banner_area')), findsNothing);
+    expect(find.text('Added Area to dashboard'), findsAtLeastNWidgets(1));
 
     // Auto-dismiss after a short time.
     await tester.pump(const Duration(seconds: 2));

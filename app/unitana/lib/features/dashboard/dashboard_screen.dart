@@ -27,6 +27,15 @@ import 'widgets/weather_summary_bottom_sheet.dart';
 /// Kept file-private because this is not part of the public widget API.
 enum _DevWeatherTimeOfDay { auto, sun, night }
 
+enum _DevWeatherEmergencyMode {
+  auto,
+  none,
+  advisory,
+  watch,
+  warning,
+  emergency,
+}
+
 class DashboardScreen extends StatefulWidget {
   final UnitanaAppState state;
 
@@ -40,11 +49,22 @@ class DashboardScreen extends StatefulWidget {
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
-  static const double _kMenuSheetHeightFactor = 0.85;
   static const double _kEditAppBarActionFontSize = 14;
   static const double _kAppBarTitleMaxFontSize = 28;
   static const double _kAppBarTitleMinFontSize = 18;
   static const double _kRefreshClusterVisualNudgeX = 10;
+  static const String _kBuildVersion = String.fromEnvironment(
+    'UNITANA_APP_VERSION',
+    defaultValue: 'dev',
+  );
+  static const String _kBuildNumber = String.fromEnvironment(
+    'UNITANA_BUILD_NUMBER',
+    defaultValue: '0',
+  );
+  static const bool _kDeveloperToolsEnabled = bool.fromEnvironment(
+    'UNITANA_DEVTOOLS_ENABLED',
+    defaultValue: true,
+  );
 
   late DashboardSessionController _session;
   late final DashboardLiveDataController _liveData;
@@ -130,7 +150,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
   void initState() {
     super.initState();
     _liveData = DashboardLiveDataController();
-    _liveData.loadDevSettings();
+    if (_kDeveloperToolsEnabled) {
+      _liveData.loadDevSettings();
+    }
     _bindProfileScopedControllers();
 
     _scrollController = ScrollController();
@@ -250,6 +272,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
             currentOverride is WeatherDebugOverrideCoarse
             ? currentOverride.isNightOverride
             : null;
+        final initialEmergencyOverride =
+            _liveData.debugEmergencySeverityOverride;
 
         _DevWeatherTimeOfDay initialTimeOfDay() {
           if (initialIsNightOverride == true) return _DevWeatherTimeOfDay.night;
@@ -265,6 +289,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
         WeatherCondition? selectedCondition = initialCondition;
         _DevWeatherTimeOfDay selectedTimeOfDay = initialTimeOfDay();
+        _DevWeatherEmergencyMode selectedEmergency =
+            switch (initialEmergencyOverride) {
+              null => _DevWeatherEmergencyMode.auto,
+              WeatherEmergencySeverity.none => _DevWeatherEmergencyMode.none,
+              WeatherEmergencySeverity.advisory =>
+                _DevWeatherEmergencyMode.advisory,
+              WeatherEmergencySeverity.watch => _DevWeatherEmergencyMode.watch,
+              WeatherEmergencySeverity.warning =>
+                _DevWeatherEmergencyMode.warning,
+              WeatherEmergencySeverity.emergency =>
+                _DevWeatherEmergencyMode.emergency,
+            };
         WeatherBackend selectedBackend = _liveData.weatherBackend;
 
         return StatefulBuilder(
@@ -292,6 +328,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   isNightOverride: toNightOverride(selectedTimeOfDay),
                 ),
               );
+            }
+
+            void applyEmergencyOverride(_DevWeatherEmergencyMode mode) {
+              final value = switch (mode) {
+                _DevWeatherEmergencyMode.auto => null,
+                _DevWeatherEmergencyMode.none => WeatherEmergencySeverity.none,
+                _DevWeatherEmergencyMode.advisory =>
+                  WeatherEmergencySeverity.advisory,
+                _DevWeatherEmergencyMode.watch =>
+                  WeatherEmergencySeverity.watch,
+                _DevWeatherEmergencyMode.warning =>
+                  WeatherEmergencySeverity.warning,
+                _DevWeatherEmergencyMode.emergency =>
+                  WeatherEmergencySeverity.emergency,
+              };
+              _liveData.setDebugEmergencySeverityOverride(value);
             }
 
             String backendLabel(WeatherBackend b) {
@@ -368,6 +420,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               key: const ValueKey('devtools_weather_title'),
                               style: Theme.of(context).textTheme.titleLarge,
                             ),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.arrow_back_rounded),
+                            tooltip: 'Back',
+                            onPressed: () {
+                              Navigator.of(sheetContext).pop();
+                              Future.microtask(_openDeveloperToolsSheet);
+                            },
                           ),
                           _sheetCloseButton(sheetContext),
                         ],
@@ -487,6 +547,52 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             key: const ValueKey('devtools_weather_freshness'),
                             style: Theme.of(context).textTheme.bodySmall,
                           );
+                        },
+                      ),
+                    ),
+                    const Divider(height: 24),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Text(
+                        'Emergency Severity Override',
+                        style: Theme.of(context).textTheme.labelLarge,
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 6,
+                      ),
+                      child: SegmentedButton<_DevWeatherEmergencyMode>(
+                        key: const ValueKey('devtools_weather_emergency_mode'),
+                        segments:
+                            const <ButtonSegment<_DevWeatherEmergencyMode>>[
+                              ButtonSegment(
+                                value: _DevWeatherEmergencyMode.auto,
+                                label: Text('Auto'),
+                              ),
+                              ButtonSegment(
+                                value: _DevWeatherEmergencyMode.watch,
+                                label: Text('Watch'),
+                              ),
+                              ButtonSegment(
+                                value: _DevWeatherEmergencyMode.warning,
+                                label: Text('Warning'),
+                              ),
+                              ButtonSegment(
+                                value: _DevWeatherEmergencyMode.emergency,
+                                label: Text('Emergency'),
+                              ),
+                            ],
+                        selected: <_DevWeatherEmergencyMode>{selectedEmergency},
+                        onSelectionChanged: (selection) {
+                          final next = selection.isEmpty
+                              ? _DevWeatherEmergencyMode.auto
+                              : selection.first;
+                          setState(() {
+                            selectedEmergency = next;
+                          });
+                          applyEmergencyOverride(next);
                         },
                       ),
                     ),
@@ -622,6 +728,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             style: Theme.of(context).textTheme.titleLarge,
                           ),
                         ),
+                        IconButton(
+                          icon: const Icon(Icons.arrow_back_rounded),
+                          tooltip: 'Back',
+                          onPressed: () {
+                            Navigator.of(sheetContext).pop();
+                            Future.microtask(_openDeveloperToolsSheet);
+                          },
+                        ),
                         _sheetCloseButton(sheetContext),
                       ],
                     ),
@@ -749,6 +863,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
             suffix: nightSuffix,
           );
         }
+        final emergencyOverride = _liveData.debugEmergencySeverityOverride;
+        final weatherSubtitleWithEmergency = emergencyOverride == null
+            ? weatherSubtitle
+            : '$weatherSubtitle\nEmergency override: ${DashboardCopy.weatherEmergencyShortLabel(sheetContext, severity: emergencyOverride)}';
 
         final clockSubtitle = _clockOverrideSubtitle(
           sheetContext,
@@ -799,7 +917,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 key: const ValueKey('devtools_weather_menu'),
                 leading: const Icon(Icons.wb_sunny_outlined),
                 title: Text(DashboardCopy.devtoolsWeatherTitle(context)),
-                subtitle: Text(weatherSubtitle),
+                subtitle: Text(weatherSubtitleWithEmergency),
                 onTap: () {
                   Navigator.of(sheetContext).pop();
                   _openWeatherOverrideSheet();
@@ -921,6 +1039,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
       currencyIsStale: _liveData.isCurrencyStale,
       currencyShouldRetryNow: _liveData.shouldRetryCurrencyNow,
       currencyLastErrorAt: _liveData.lastCurrencyErrorAt,
+      currencyLastRefreshedAt: _liveData.lastCurrencyRefreshedAt,
+      currencyNetworkEnabled: _liveData.currencyNetworkEnabled,
+      currencyRefreshCadence: const Duration(hours: 12),
       onRetryCurrencyNow: () async {
         final places = <Place>[
           if (home != null) home,
@@ -983,6 +1104,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   padding: const EdgeInsets.fromLTRB(16, 8, 8, 6),
                   child: Row(
                     children: [
+                      IconButton(
+                        icon: const Icon(Icons.arrow_back_rounded),
+                        tooltip: 'Back',
+                        onPressed: () {
+                          Navigator.of(sheetContext).pop();
+                          Future.microtask(_openSettingsSheet);
+                        },
+                      ),
                       Expanded(
                         child: Text(
                           DashboardCopy.settingsLanguageTitle(context),
@@ -1049,6 +1178,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   padding: const EdgeInsets.fromLTRB(16, 8, 8, 6),
                   child: Row(
                     children: [
+                      IconButton(
+                        icon: const Icon(Icons.arrow_back_rounded),
+                        tooltip: 'Back',
+                        onPressed: () {
+                          Navigator.of(sheetContext).pop();
+                          Future.microtask(_openSettingsSheet);
+                        },
+                      ),
                       Expanded(
                         child: Text(
                           DashboardCopy.settingsThemeTitle(context),
@@ -1098,6 +1235,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Future<void> _openSettingsSheet() async {
     await showModalBottomSheet<void>(
       context: context,
+      isScrollControlled: true,
       showDragHandle: true,
       builder: (sheetContext) {
         UnitanaProfile? suggestedProfile;
@@ -1122,138 +1260,207 @@ class _DashboardScreenState extends State<DashboardScreen> {
             : fallbackSuggestion;
         return StatefulBuilder(
           builder: (context, setSheetState) {
+            final maxH = MediaQuery.of(sheetContext).size.height * 0.92;
             return SafeArea(
-              child: SingleChildScrollView(
-                child: Column(
-                  key: const ValueKey('settings_sheet'),
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 8, 8, 6),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              DashboardCopy.settingsTitle(context),
-                              style: Theme.of(sheetContext).textTheme.titleLarge
-                                  ?.copyWith(fontWeight: FontWeight.w800),
-                            ),
-                          ),
-                          _sheetCloseButton(sheetContext),
-                        ],
-                      ),
-                    ),
-                    ListTile(
-                      key: const ValueKey('settings_option_theme'),
-                      leading: const Icon(Icons.palette_outlined),
-                      title: Text(DashboardCopy.settingsThemeTitle(context)),
-                      onTap: () {
-                        Navigator.of(sheetContext).pop();
-                        Future.microtask(_openThemeSettingsSheet);
-                      },
-                    ),
-                    ListTile(
-                      key: const ValueKey('settings_option_language'),
-                      leading: const Icon(Icons.language_rounded),
-                      title: Text(DashboardCopy.settingsLanguageTitle(context)),
-                      onTap: () {
-                        Navigator.of(sheetContext).pop();
-                        Future.microtask(_openLanguageSettingsSheet);
-                      },
-                    ),
-                    SwitchListTile(
-                      key: const ValueKey('settings_option_profile_suggest'),
-                      secondary: const Icon(Icons.my_location_rounded),
-                      value: state.autoProfileSuggestEnabled,
-                      title: Text(
-                        DashboardCopy.settingsProfileSuggestTitle(context),
-                      ),
-                      subtitle: Text(
-                        '${state.autoProfileSuggestEnabled ? DashboardCopy.settingsProfileSuggestEnabled(context) : DashboardCopy.settingsProfileSuggestDisabled(context)} · $explainability',
-                      ),
-                      onChanged: (enabled) async {
-                        final updatedMessage =
-                            DashboardCopy.settingsProfileSuggestUpdated(
-                              context,
-                            );
-                        await state.setAutoProfileSuggestEnabled(enabled);
-                        await state.evaluateAutoProfileSuggestion(signal: null);
-                        setSheetState(() {});
-                        if (!sheetContext.mounted) return;
-                        UnitanaToast.showSuccess(sheetContext, updatedMessage);
-                      },
-                    ),
-                    SwitchListTile(
-                      key: const ValueKey('settings_option_lofi_audio'),
-                      secondary: const Icon(Icons.music_note_rounded),
-                      value: state.lofiAudioEnabled,
-                      title: Text(
-                        DashboardCopy.settingsLofiAudioTitle(context),
-                      ),
-                      subtitle: Text(
-                        '${state.lofiAudioEnabled ? DashboardCopy.settingsLofiAudioOn(context) : DashboardCopy.settingsLofiAudioOff(context)} · ${DashboardCopy.settingsLofiAudioVolume(context, percent: (state.lofiAudioVolume * 100).round())}',
-                      ),
-                      onChanged: (enabled) async {
-                        final updatedMessage =
-                            DashboardCopy.settingsLofiAudioUpdated(context);
-                        await state.setLofiAudioEnabled(enabled);
-                        setSheetState(() {});
-                        if (!sheetContext.mounted) return;
-                        UnitanaToast.showSuccess(sheetContext, updatedMessage);
-                      },
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-                      child: Row(
-                        children: [
-                          const Icon(Icons.volume_up_rounded, size: 18),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Slider(
-                              key: const ValueKey(
-                                'settings_lofi_volume_slider',
+              child: ConstrainedBox(
+                constraints: BoxConstraints(maxHeight: maxH),
+                child: SingleChildScrollView(
+                  child: Column(
+                    key: const ValueKey('settings_sheet'),
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 8, 8, 6),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                DashboardCopy.dashboardMenuTitle(context),
+                                style: Theme.of(sheetContext)
+                                    .textTheme
+                                    .titleLarge
+                                    ?.copyWith(fontWeight: FontWeight.w800),
                               ),
-                              value: state.lofiAudioVolume,
-                              min: 0.0,
-                              max: 1.0,
-                              divisions: 20,
-                              label: DashboardCopy.settingsLofiAudioVolume(
+                            ),
+                            _sheetCloseButton(sheetContext),
+                          ],
+                        ),
+                      ),
+                      const _MenuSectionLabel('Dashboard'),
+                      ListTile(
+                        key: const ValueKey('dashboard_menu_profiles'),
+                        leading: const Icon(Icons.switch_account),
+                        title: Text(
+                          DashboardCopy.dashboardMenuProfiles(context),
+                        ),
+                        onTap: () {
+                          Navigator.of(sheetContext).pop();
+                          Future.microtask(_openProfilesBoard);
+                        },
+                      ),
+                      if (!_isEditingWidgets)
+                        ListTile(
+                          key: const Key('dashboard_edit_mode'),
+                          leading: const Icon(Icons.edit),
+                          title: Text(
+                            DashboardCopy.dashboardMenuEditWidgets(context),
+                          ),
+                          onTap: () {
+                            Navigator.of(sheetContext).pop();
+                            Future.microtask(_enterEditWidgets);
+                          },
+                        ),
+                      ListTile(
+                        key: const ValueKey('dashboard_menu_reset_defaults'),
+                        leading: const Icon(Icons.restore),
+                        title: Text(
+                          DashboardCopy.dashboardMenuResetDefaults(context),
+                        ),
+                        onTap: () {
+                          Navigator.of(sheetContext).pop();
+                          Future.microtask(_resetDashboardDefaults);
+                        },
+                      ),
+                      if (_kDeveloperToolsEnabled)
+                        ListTile(
+                          key: const ValueKey('dashboard_menu_developer_tools'),
+                          leading: const Icon(Icons.developer_mode),
+                          title: Text(
+                            DashboardCopy.dashboardMenuDeveloperTools(context),
+                          ),
+                          onTap: () {
+                            Navigator.of(sheetContext).pop();
+                            Future.microtask(_openDeveloperToolsSheet);
+                          },
+                        ),
+                      const Divider(height: 18),
+                      _MenuSectionLabel(
+                        DashboardCopy.dashboardMenuSettings(context),
+                        key: const ValueKey('dashboard_menu_settings'),
+                        onTap: () {},
+                      ),
+                      ListTile(
+                        key: const ValueKey('settings_option_theme'),
+                        leading: const Icon(Icons.palette_outlined),
+                        title: Text(DashboardCopy.settingsThemeTitle(context)),
+                        onTap: () {
+                          Navigator.of(sheetContext).pop();
+                          Future.microtask(_openThemeSettingsSheet);
+                        },
+                      ),
+                      ListTile(
+                        key: const ValueKey('settings_option_language'),
+                        leading: const Icon(Icons.language_rounded),
+                        title: Text(
+                          DashboardCopy.settingsLanguageTitle(context),
+                        ),
+                        onTap: () {
+                          Navigator.of(sheetContext).pop();
+                          Future.microtask(_openLanguageSettingsSheet);
+                        },
+                      ),
+                      SwitchListTile(
+                        key: const ValueKey('settings_option_profile_suggest'),
+                        secondary: const Icon(Icons.my_location_rounded),
+                        value: state.autoProfileSuggestEnabled,
+                        title: Text(
+                          DashboardCopy.settingsProfileSuggestTitle(context),
+                        ),
+                        subtitle: Text(
+                          '${state.autoProfileSuggestEnabled ? DashboardCopy.settingsProfileSuggestEnabled(context) : DashboardCopy.settingsProfileSuggestDisabled(context)} · $explainability',
+                        ),
+                        onChanged: (enabled) async {
+                          final updatedMessage =
+                              DashboardCopy.settingsProfileSuggestUpdated(
                                 context,
-                                percent: (state.lofiAudioVolume * 100).round(),
+                              );
+                          await state.setAutoProfileSuggestEnabled(enabled);
+                          await state.evaluateAutoProfileSuggestion(
+                            signal: null,
+                          );
+                          setSheetState(() {});
+                          if (!sheetContext.mounted) return;
+                          UnitanaToast.showSuccess(
+                            sheetContext,
+                            updatedMessage,
+                          );
+                        },
+                      ),
+                      SwitchListTile(
+                        key: const ValueKey('settings_option_lofi_audio'),
+                        secondary: const Icon(Icons.music_note_rounded),
+                        value: state.lofiAudioEnabled,
+                        title: Text(
+                          DashboardCopy.settingsLofiAudioTitle(context),
+                        ),
+                        subtitle: Text(
+                          '${state.lofiAudioEnabled ? DashboardCopy.settingsLofiAudioOn(context) : DashboardCopy.settingsLofiAudioOff(context)} · ${DashboardCopy.settingsLofiAudioVolume(context, percent: (state.lofiAudioVolume * 100).round())}',
+                        ),
+                        onChanged: (enabled) async {
+                          final updatedMessage =
+                              DashboardCopy.settingsLofiAudioUpdated(context);
+                          await state.setLofiAudioEnabled(enabled);
+                          setSheetState(() {});
+                          if (!sheetContext.mounted) return;
+                          UnitanaToast.showSuccess(
+                            sheetContext,
+                            updatedMessage,
+                          );
+                        },
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.volume_up_rounded, size: 18),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Slider(
+                                key: const ValueKey(
+                                  'settings_lofi_volume_slider',
+                                ),
+                                value: state.lofiAudioVolume,
+                                min: 0.0,
+                                max: 1.0,
+                                divisions: 20,
+                                label: DashboardCopy.settingsLofiAudioVolume(
+                                  context,
+                                  percent: (state.lofiAudioVolume * 100)
+                                      .round(),
+                                ),
+                                onChanged: state.lofiAudioEnabled
+                                    ? (value) async {
+                                        await state.setLofiAudioVolume(value);
+                                        setSheetState(() {});
+                                      }
+                                    : null,
                               ),
-                              onChanged: state.lofiAudioEnabled
-                                  ? (value) async {
-                                      await state.setLofiAudioVolume(value);
-                                      setSheetState(() {});
-                                    }
-                                  : null,
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
-                    ListTile(
-                      key: const ValueKey('settings_option_about'),
-                      leading: const Icon(Icons.info_outline_rounded),
-                      title: Text(DashboardCopy.settingsOptionAbout(context)),
-                      onTap: () {
-                        Navigator.of(sheetContext).pop();
-                        Future.microtask(_openAboutSheet);
-                      },
-                    ),
-                    ListTile(
-                      key: const ValueKey('settings_option_licenses'),
-                      leading: const Icon(Icons.gavel_rounded),
-                      title: Text(
-                        DashboardCopy.settingsOptionLicenses(context),
+                      ListTile(
+                        key: const ValueKey('settings_option_about'),
+                        leading: const Icon(Icons.info_outline_rounded),
+                        title: Text(DashboardCopy.settingsOptionAbout(context)),
+                        onTap: () {
+                          Navigator.of(sheetContext).pop();
+                          Future.microtask(_openAboutSheet);
+                        },
                       ),
-                      onTap: () {
-                        Navigator.of(sheetContext).pop();
-                        Future.microtask(_openLicensesPage);
-                      },
-                    ),
-                    const SizedBox(height: 8),
-                  ],
+                      ListTile(
+                        key: const ValueKey('settings_option_licenses'),
+                        leading: const Icon(Icons.gavel_rounded),
+                        title: Text(
+                          DashboardCopy.settingsOptionLicenses(context),
+                        ),
+                        onTap: () {
+                          Navigator.of(sheetContext).pop();
+                          Future.microtask(_openLicensesPage);
+                        },
+                      ),
+                    ],
+                  ),
                 ),
               ),
             );
@@ -1269,51 +1476,102 @@ class _DashboardScreenState extends State<DashboardScreen> {
       showDragHandle: true,
       builder: (sheetContext) {
         final theme = Theme.of(sheetContext);
+        final versionLine = 'Version $_kBuildVersion ($_kBuildNumber)';
         return SafeArea(
-          child: Padding(
-            key: const ValueKey('settings_about_sheet'),
-            padding: const EdgeInsets.fromLTRB(16, 10, 12, 16),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        DashboardCopy.settingsAboutTitle(context),
-                        style: theme.textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.w900,
+          child: SingleChildScrollView(
+            child: Padding(
+              key: const ValueKey('settings_about_sheet'),
+              padding: const EdgeInsets.fromLTRB(16, 10, 12, 16),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.arrow_back_rounded),
+                        tooltip: 'Back',
+                        onPressed: () {
+                          Navigator.of(sheetContext).pop();
+                          Future.microtask(_openSettingsSheet);
+                        },
+                      ),
+                      Expanded(
+                        child: Text(
+                          DashboardCopy.settingsAboutTitle(context),
+                          style: theme.textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.w900,
+                          ),
                         ),
                       ),
+                      _sheetCloseButton(sheetContext),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Center(
+                    child: Container(
+                      width: 88,
+                      height: 88,
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(18),
+                        border: Border.all(
+                          color: theme.colorScheme.outlineVariant,
+                        ),
+                        color: theme.colorScheme.surfaceContainerHighest
+                            .withAlpha(64),
+                      ),
+                      child: Image.asset(
+                        'assets/brand/unitana_logo.png',
+                        fit: BoxFit.contain,
+                      ),
                     ),
-                    _sheetCloseButton(sheetContext),
-                  ],
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  DashboardCopy.settingsAboutTagline(context),
-                  key: const ValueKey('settings_about_tagline'),
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w800,
                   ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  DashboardCopy.settingsAboutBody(context),
-                  key: const ValueKey('settings_about_body'),
-                  style: theme.textTheme.bodyMedium,
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  DashboardCopy.settingsAboutLegalese(context),
-                  key: const ValueKey('settings_about_legalese'),
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                    fontWeight: FontWeight.w700,
+                  const SizedBox(height: 12),
+                  Center(
+                    child: Text(
+                      DashboardCopy.settingsAboutLegalese(context),
+                      key: const ValueKey('settings_about_legalese'),
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
                   ),
-                ),
-              ],
+                  const SizedBox(height: 6),
+                  Center(
+                    child: Text(
+                      DashboardCopy.settingsAboutTagline(context),
+                      key: const ValueKey('settings_about_tagline'),
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                        fontWeight: FontWeight.w700,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Center(
+                    child: Text(
+                      DashboardCopy.settingsAboutBody(context),
+                      key: const ValueKey('settings_about_body'),
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Center(
+                    child: Text(
+                      versionLine,
+                      key: const ValueKey('settings_about_version'),
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         );
@@ -1635,271 +1893,173 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     key: const Key('dashboard_menu_button'),
                     tooltip: DashboardCopy.dashboardOpenMenuTooltip(context),
                     icon: Icons.menu_rounded,
-                    onTap: () {
-                      showModalBottomSheet<void>(
-                        context: context,
-                        isScrollControlled: true,
-                        showDragHandle: true,
-                        builder: (sheetContext) {
-                          // Bottom sheets are particularly prone to small-phone
-                          // overflows when built as a natural-height Column.
-                          // Use a scrollable list so the sheet can adapt to
-                          // tight viewports without RenderFlex overflow.
-                          final maxH =
-                              MediaQuery.of(sheetContext).size.height *
-                              _kMenuSheetHeightFactor;
-                          return SafeArea(
-                            child: ConstrainedBox(
-                              constraints: BoxConstraints(maxHeight: maxH),
-                              child: ListView(
-                                shrinkWrap: true,
-                                padding: const EdgeInsets.only(bottom: 8),
-                                children: [
-                                  Padding(
-                                    padding: const EdgeInsets.fromLTRB(
-                                      12,
-                                      2,
-                                      6,
-                                      2,
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        const Spacer(),
-                                        _sheetCloseButton(sheetContext),
-                                      ],
-                                    ),
-                                  ),
-                                  ListTile(
-                                    leading: const Icon(Icons.switch_account),
-                                    title: Text(
-                                      DashboardCopy.dashboardMenuProfiles(
-                                        context,
-                                      ),
-                                    ),
-                                    onTap: () {
-                                      Navigator.of(sheetContext).pop();
-                                      Future.microtask(_openProfilesBoard);
-                                    },
-                                  ),
-                                  ListTile(
-                                    key: const ValueKey(
-                                      'dashboard_menu_settings',
-                                    ),
-                                    leading: const Icon(Icons.settings),
-                                    title: Text(
-                                      DashboardCopy.dashboardMenuSettings(
-                                        context,
-                                      ),
-                                    ),
-                                    onTap: () {
-                                      Navigator.of(sheetContext).pop();
-                                      Future.microtask(_openSettingsSheet);
-                                    },
-                                  ),
-                                  if (!_isEditingWidgets)
-                                    ListTile(
-                                      key: const Key('dashboard_edit_mode'),
-                                      leading: const Icon(Icons.edit),
-                                      title: Text(
-                                        DashboardCopy.dashboardMenuEditWidgets(
-                                          context,
-                                        ),
-                                      ),
-                                      onTap: () {
-                                        Navigator.of(sheetContext).pop();
-                                        Future.microtask(_enterEditWidgets);
-                                      },
-                                    ),
-                                  ListTile(
-                                    key: const ValueKey(
-                                      'dashboard_menu_reset_defaults',
-                                    ),
-                                    leading: const Icon(Icons.restore),
-                                    title: Text(
-                                      DashboardCopy.dashboardMenuResetDefaults(
-                                        context,
-                                      ),
-                                    ),
-                                    onTap: () {
-                                      Navigator.of(sheetContext).pop();
-                                      Future.microtask(_resetDashboardDefaults);
-                                    },
-                                  ),
-                                  ListTile(
-                                    key: const ValueKey(
-                                      'dashboard_menu_developer_tools',
-                                    ),
-                                    leading: const Icon(Icons.developer_mode),
-                                    title: Text(
-                                      DashboardCopy.dashboardMenuDeveloperTools(
-                                        context,
-                                      ),
-                                    ),
-                                    onTap: () {
-                                      Navigator.of(sheetContext).pop();
-                                      Future.microtask(
-                                        _openDeveloperToolsSheet,
-                                      );
-                                    },
-                                  ),
-                                ],
-                              ),
-                            ),
-                          );
-                        },
-                      );
-                    },
+                    onTap: _openSettingsSheet,
                   ),
                 ),
             ],
           ),
-          body: LayoutBuilder(
-            builder: (context, constraints) {
-              final width = constraints.maxWidth;
-              final padding = width >= 600
-                  ? const EdgeInsets.all(24)
-                  : const EdgeInsets.all(16);
+          body: Stack(
+            children: [
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final width = constraints.maxWidth;
+                  final padding = width >= 600
+                      ? const EdgeInsets.all(24)
+                      : const EdgeInsets.all(16);
 
-              final availableWidth = width - padding.horizontal;
+                  final availableWidth = width - padding.horizontal;
 
-              // Grid geometry (kept in sync with DashboardBoard)
-              const gridGap = 12.0;
-              const tileHeightRatio = 0.78;
-              final cols = availableWidth >= 520 ? 3 : 2;
-              final tileW = (availableWidth - (cols - 1) * gridGap) / cols;
-              final tileH = tileW * tileHeightRatio;
-              final heroHeight = (2 * tileH) + gridGap;
-              // Collapsing pinned header: PlacesHeroV2 -> mini hero.
-              //
-              // NOTE: With a sliver persistent header, this becomes scroll-continuous.
-              // There is no overlay insertion and no spacer threshold that can "pop".
-              const pinnedHeight = 176.0;
+                  // Grid geometry (kept in sync with DashboardBoard)
+                  const gridGap = 12.0;
+                  const tileHeightRatio = 0.78;
+                  final cols = availableWidth >= 520 ? 3 : 2;
+                  final tileW = (availableWidth - (cols - 1) * gridGap) / cols;
+                  final tileH = tileW * tileHeightRatio;
+                  final heroHeight = (2 * tileH) + gridGap;
+                  // Collapsing pinned header: PlacesHeroV2 -> mini hero.
+                  //
+                  // NOTE: With a sliver persistent header, this becomes scroll-continuous.
+                  // There is no overlay insertion and no spacer threshold that can "pop".
+                  const pinnedHeight = 176.0;
 
-              final home = _pickHome(state.places);
-              final destination = _pickDestination(state.places);
+                  final home = _pickHome(state.places);
+                  final destination = _pickDestination(state.places);
 
-              // Seed deterministic demo/live data so the header does not show a
-              // one-frame placeholder during fast scroll.
-              _liveData.ensureSeeded([
-                if (home != null) home,
-                if (destination != null) destination,
-              ]);
+                  // Seed deterministic demo/live data so the header does not show a
+                  // one-frame placeholder during fast scroll.
+                  _liveData.ensureSeeded([
+                    if (home != null) home,
+                    if (destination != null) destination,
+                  ]);
 
-              return CustomScrollView(
-                controller: _scrollController,
-                slivers: [
-                  SliverPadding(
-                    padding: EdgeInsets.only(
-                      left: padding.left,
-                      right: padding.right,
-                      top: 0,
-                    ),
-                    sliver: SliverToBoxAdapter(
-                      child: Stack(
-                        alignment: Alignment.center,
-                        children: [
-                          Padding(
-                            // Keep center cluster off the edge controls while
-                            // preserving true center alignment with the title.
-                            padding: const EdgeInsets.symmetric(horizontal: 72),
-                            child: Transform.translate(
-                              offset: const Offset(
-                                _kRefreshClusterVisualNudgeX,
-                                0,
-                              ),
-                              child: Align(
-                                alignment: Alignment.center,
-                                child: FittedBox(
-                                  fit: BoxFit.scaleDown,
-                                  alignment: Alignment.center,
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      DataRefreshStatusLabel(
-                                        key: const ValueKey(
-                                          'dashboard_refresh_status_label',
-                                        ),
-                                        liveData: _liveData,
-                                        compact: true,
-                                        showBackground: false,
-                                        hideWhenUnavailable: false,
-                                      ),
-                                      const SizedBox(width: 0),
-                                      IconButton(
-                                        tooltip:
-                                            DashboardCopy.dashboardRefreshDataTooltip(
-                                              context,
+                  return RefreshIndicator(
+                    key: const ValueKey('dashboard_pull_to_refresh'),
+                    onRefresh: _refreshAllNow,
+                    child: CustomScrollView(
+                      controller: _scrollController,
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      slivers: [
+                        SliverPadding(
+                          padding: EdgeInsets.only(
+                            left: padding.left,
+                            right: padding.right,
+                            top: 0,
+                          ),
+                          sliver: SliverToBoxAdapter(
+                            child: Stack(
+                              alignment: Alignment.center,
+                              children: [
+                                Padding(
+                                  // Keep center cluster off the edge controls while
+                                  // preserving true center alignment with the title.
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 72,
+                                  ),
+                                  child: Transform.translate(
+                                    offset: const Offset(
+                                      _kRefreshClusterVisualNudgeX,
+                                      0,
+                                    ),
+                                    child: Align(
+                                      alignment: Alignment.center,
+                                      child: FittedBox(
+                                        fit: BoxFit.scaleDown,
+                                        alignment: Alignment.center,
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            DataRefreshStatusLabel(
+                                              key: const ValueKey(
+                                                'dashboard_refresh_status_label',
+                                              ),
+                                              liveData: _liveData,
+                                              compact: true,
+                                              showBackground: false,
+                                              hideWhenUnavailable: false,
                                             ),
-                                        onPressed: _refreshAllNow,
-                                        icon: const Icon(
-                                          Icons.refresh_rounded,
-                                          size: 16,
-                                        ),
-                                        color: Theme.of(
-                                          context,
-                                        ).colorScheme.primary.withAlpha(220),
-                                        padding: EdgeInsets.zero,
-                                        visualDensity: VisualDensity.compact,
-                                        constraints: const BoxConstraints(
-                                          minWidth: 24,
-                                          minHeight: 24,
+                                            const SizedBox(width: 0),
+                                            IconButton(
+                                              tooltip:
+                                                  DashboardCopy.dashboardRefreshDataTooltip(
+                                                    context,
+                                                  ),
+                                              onPressed: _refreshAllNow,
+                                              icon: const Icon(
+                                                Icons.refresh_rounded,
+                                                size: 16,
+                                              ),
+                                              color: Theme.of(context)
+                                                  .colorScheme
+                                                  .primary
+                                                  .withAlpha(220),
+                                              padding: EdgeInsets.zero,
+                                              visualDensity:
+                                                  VisualDensity.compact,
+                                              constraints: const BoxConstraints(
+                                                minWidth: 24,
+                                                minHeight: 24,
+                                              ),
+                                            ),
+                                          ],
                                         ),
                                       ),
-                                    ],
+                                    ),
                                   ),
                                 ),
-                              ),
+                              ],
                             ),
                           ),
-                        ],
-                      ),
+                        ),
+                        SliverPadding(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: padding.left,
+                          ),
+                          sliver: SliverPersistentHeader(
+                            pinned: true,
+                            delegate: PlacesHeroCollapsingHeaderDelegate(
+                              expandedHeight: heroHeight,
+                              collapsedHeight: pinnedHeight,
+                              horizontalPadding: padding.left,
+                              home: home,
+                              destination: destination,
+                              session: _session,
+                              liveData: _liveData,
+                            ),
+                          ),
+                        ),
+                        const SliverToBoxAdapter(child: SizedBox(height: 12)),
+                        SliverPadding(
+                          padding: EdgeInsets.only(
+                            left: padding.left,
+                            right: padding.right,
+                            bottom: padding.bottom,
+                          ),
+                          sliver: SliverToBoxAdapter(
+                            child: DashboardBoard(
+                              state: state,
+                              session: _session,
+                              liveData: _liveData,
+                              layout: _layout,
+                              availableWidth: availableWidth,
+                              isEditing: _isEditingWidgets,
+                              includePlacesHero: false,
+                              focusActionTileId: _focusTileId,
+                              focusToolTileId: _focusToolTileId,
+                              onEnteredEditMode: (focusId) =>
+                                  _enterEditWidgets(focusTileId: focusId),
+                              onConsumedFocusTileId: () =>
+                                  setState(() => _focusTileId = null),
+                              onConsumedFocusToolTileId: () =>
+                                  setState(() => _focusToolTileId = null),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
-                  SliverPadding(
-                    padding: EdgeInsets.symmetric(horizontal: padding.left),
-                    sliver: SliverPersistentHeader(
-                      pinned: true,
-                      delegate: PlacesHeroCollapsingHeaderDelegate(
-                        expandedHeight: heroHeight,
-                        collapsedHeight: pinnedHeight,
-                        horizontalPadding: padding.left,
-                        home: home,
-                        destination: destination,
-                        session: _session,
-                        liveData: _liveData,
-                      ),
-                    ),
-                  ),
-                  const SliverToBoxAdapter(child: SizedBox(height: 12)),
-                  SliverPadding(
-                    padding: EdgeInsets.only(
-                      left: padding.left,
-                      right: padding.right,
-                      bottom: padding.bottom,
-                    ),
-                    sliver: SliverToBoxAdapter(
-                      child: DashboardBoard(
-                        state: state,
-                        session: _session,
-                        liveData: _liveData,
-                        layout: _layout,
-                        availableWidth: availableWidth,
-                        isEditing: _isEditingWidgets,
-                        includePlacesHero: false,
-                        focusActionTileId: _focusTileId,
-                        focusToolTileId: _focusToolTileId,
-                        onEnteredEditMode: (focusId) =>
-                            _enterEditWidgets(focusTileId: focusId),
-                        onConsumedFocusTileId: () =>
-                            setState(() => _focusTileId = null),
-                        onConsumedFocusToolTileId: () =>
-                            setState(() => _focusToolTileId = null),
-                      ),
-                    ),
-                  ),
-                ],
-              );
-            },
+                  );
+                },
+              ),
+            ],
           ),
         );
       },
@@ -1944,6 +2104,36 @@ class _HeaderIconButton extends StatelessWidget {
           ),
           alignment: Alignment.center,
           child: Icon(icon, color: cs.onSurface.withAlpha(210)),
+        ),
+      ),
+    );
+  }
+}
+
+class _MenuSectionLabel extends StatelessWidget {
+  final String text;
+  final VoidCallback? onTap;
+
+  const _MenuSectionLabel(this.text, {super.key, this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 6, 16, 4),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(8),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          child: Text(
+            text,
+            style: theme.textTheme.titleMedium?.copyWith(
+              color: theme.colorScheme.onSurface.withAlpha(220),
+              fontWeight: FontWeight.w900,
+              letterSpacing: 0.2,
+            ),
+          ),
         ),
       ),
     );

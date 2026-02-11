@@ -110,6 +110,8 @@ void main() {
     expect(toggle, findsOneWidget);
     expect(state.autoProfileSuggestEnabled, isFalse);
 
+    await tester.ensureVisible(toggle);
+    await tester.pumpAndSettle(const Duration(milliseconds: 120));
     await tester.tap(toggle);
     await tester.pumpAndSettle(const Duration(milliseconds: 200));
     expect(state.autoProfileSuggestEnabled, isTrue);

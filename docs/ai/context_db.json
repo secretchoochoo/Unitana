@@ -145,9 +145,9 @@
       ],
       "priority": "P2",
       "size": "XL",
-      "status": "planned",
-      "status_updated": "2026-02-08",
-      "status_note": "Tutorial overlays are intentionally deferred until finalization/readiness."
+      "status": "done",
+      "status_updated": "2026-02-10",
+      "status_note": "Pack I foundation shipped with persisted skip/replay gating, dashboard overlay primitives, wizard hints, and deterministic persistence tests."
     },
     {
       "id": "PACK_J_weather_tool_full_redesign",
@@ -384,8 +384,8 @@
       "priority": "P2",
       "size": "XL",
       "status": "in_progress",
-      "status_updated": "2026-02-10",
-      "status_note": "XL-M spike scaffold shipped: persisted OFF-by-default toggle + volume baseline + settings controls + no-op runtime seam; backend playback integration remains."
+      "status_updated": "2026-02-11",
+      "status_note": "Playback integration is now wired (looping asset backend + 25% default volume baseline). Remaining work is commercial-safe track/licensing and release-channel hardening."
     },
     {
       "id": "PACK_X_full_app_retro_ux_ui_performance",
@@ -416,14 +416,21 @@
       ],
       "priority": "P3",
       "size": "XL",
-      "status": "planned",
-      "status_updated": "2026-02-09",
-      "status_note": "Queued from backlog expansion; intentionally scheduled last."
+      "status": "done",
+      "status_updated": "2026-02-11",
+      "status_note": "XL-O planning-only slice shipped with concrete cross-platform scope, state/sync contracts, risk matrix, and phased rollout guardrails."
     }
   ],
   "current_state": {
-    "current_slice": "XL-M shipped (Pack W lo-fi audio spike scaffold). Next is XL-N (Pack I tutorial overlay pass).",
+    "current_slice": "XL-O shipped (Pack Y planning-only). Tutorial runtime surfaces were rolled back; next is XL-P for Pack W production hardening and release-channel prep.",
     "notes": [
+      "XL-N shipped on 2026-02-10: added Pack I tutorial persistence (`tutorial_dismissed_v1`, `tutorial_replay_requested_v1`) and app-state contracts (`shouldShowTutorial`, dismiss/replay APIs).",
+      "XL-N shipped on 2026-02-10: dashboard now mounts a lightweight skippable overlay for hero/tools/menu targets, with replay entry from the unified settings sheet.",
+      "XL-N shipped on 2026-02-10: first-run wizard now includes targeted hints for place selection and save action when tutorial guidance is active.",
+      "XL-N shipped on 2026-02-10: added deterministic tutorial regression coverage (`tutorial_state_persistence_test.dart`, `dashboard_tutorial_overlay_test.dart`).",
+      "XL-N follow-through on 2026-02-10: unified hamburger/settings IA into one larger settings-style sheet including Profiles/Edit/Reset/Developer tools.",
+      "XL-N follow-through on 2026-02-10: Price Compare received swap restoration + readability facelift and tile label was shortened to `Price Comp`.",
+      "XL-N follow-through on 2026-02-10: lookup matrices now use `Reference` header for paper/mattress, shoes expanded with US Kids + US Men 17, and focused/all-systems matrix modes reduce default scroll.",
       "XL-M shipped on 2026-02-10: Pack W spike added persisted lo-fi settings (`lofi_audio_enabled_v1`, `lofi_audio_volume_v1`) with default OFF behavior and clamped volume baseline.",
       "XL-M shipped on 2026-02-10: Settings now exposes lo-fi controls (`settings_option_lofi_audio`, `settings_lofi_volume_slider`) and runtime no-op seam via `LofiAudioController`.",
       "XL-M shipped on 2026-02-10: dashboard language/settings regression now locks lo-fi OFF-by-default and persistence/reload contracts.",
@@ -661,13 +668,13 @@
       "Reprioritization decision: move Pack N + Pack A closure to top priority (timezone correctness + canonical data validation), then Pack C + Pack B reliability hardening, then Pack H completion.",
       "De-prioritization decision: broad Pack E visual facelift and tutorial/theme/GPS expansions are deferred until correctness/reliability/localization core tracks are stabilized."
     ],
-    "overall_health": "Stable with full gates passing; canonical city data coverage is now enforced for all in-scope records.",
+    "overall_health": "Stable with full gates passing; runtime is tutorial-free, pull-to-refresh is enabled, and release gating prep is in place.",
     "status": "GREEN",
     "focus": {
-      "now": "Execute XL-N: Pack I tutorial overlay near-finalization pass.",
-      "next": "XL-O: Pack Y wearables/platform add-ons planning (deferred final-phase).",
+      "now": "Execute XL-P: Pack W playback production hardening (commercial-safe audio source + release-channel behavior contracts).",
+      "next": "Begin public-release branch pipeline hardening (devtools-off channel, version tagging flow, docs exclusion policy).",
       "later": [
-        "XL-P: Pack W playback backend integration if prioritized."
+        "Revisit tutorial product direction only after broader tool/value stabilization."
       ]
     }
   },

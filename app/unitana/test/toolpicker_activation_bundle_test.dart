@@ -236,7 +236,7 @@ void main() {
   ) async {
     await pumpDashboardForTest(tester);
     await _openToolPicker(tester);
-    await _searchTool(tester, 'price compare');
+    await _searchTool(tester, 'price');
 
     await tester.tap(
       find.byKey(const ValueKey('toolpicker_search_tool_unit_price_helper')),
@@ -277,6 +277,14 @@ void main() {
     final result = find.byKey(const ValueKey('tool_result_energy'));
     expect(result, findsOneWidget);
     expect(
+      find.byKey(const ValueKey('tool_energy_planner_card')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('tool_disclaimer_energy')),
+      findsOneWidget,
+    );
+    expect(
       find.descendant(of: result, matching: find.byType(RichText)),
       findsWidgets,
     );
@@ -303,9 +311,35 @@ void main() {
 
     final result = find.byKey(const ValueKey('tool_result_pace'));
     expect(result, findsOneWidget);
+    expect(find.byKey(const ValueKey('tool_pace_mode')), findsOneWidget);
     expect(
-      find.descendant(of: result, matching: find.byType(RichText)),
-      findsWidgets,
+      find.byKey(const ValueKey('tool_disclaimer_pace'), skipOffstage: false),
+      findsNothing,
+    );
+    expect(find.textContaining('min/km'), findsWidgets);
+    expect(find.textContaining('min/mi'), findsWidgets);
+  });
+
+  testWidgets('tool search aliases map unit terms to relevant tools', (
+    tester,
+  ) async {
+    await pumpDashboardForTest(tester);
+    await _openToolPicker(tester);
+
+    await _searchTool(tester, 'tsp');
+    expect(
+      find.byKey(const ValueKey('toolpicker_search_tool_baking')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('toolpicker_search_tool_liquids')),
+      findsOneWidget,
+    );
+
+    await _searchTool(tester, 'calorie');
+    expect(
+      find.byKey(const ValueKey('toolpicker_search_tool_energy')),
+      findsOneWidget,
     );
   });
 

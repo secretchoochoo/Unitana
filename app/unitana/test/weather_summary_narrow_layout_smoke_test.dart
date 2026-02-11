@@ -92,9 +92,6 @@ void main() {
         final hourlyMode = find.byKey(
           const ValueKey('weather_summary_forecast_mode_dest_hourly'),
         );
-        final dailyMode = find.byKey(
-          const ValueKey('weather_summary_forecast_mode_dest_daily'),
-        );
         expect(hourlyMode, findsOneWidget);
         expect(
           find.byKey(
@@ -158,20 +155,37 @@ void main() {
           findsOneWidget,
         );
 
-        await tester.tap(
+        await ensureVisibleAligned(
+          tester,
           find.byKey(
             const ValueKey('weather_summary_forecast_mode_daily_tap_dest'),
           ),
         );
+        await tester.tap(
+          find.byKey(
+            const ValueKey('weather_summary_forecast_mode_daily_tap_dest'),
+          ),
+          warnIfMissed: false,
+        );
         await tester.pump(const Duration(milliseconds: 220));
-        expect(dailyMode, findsOneWidget);
+        expect(
+          find.byKey(
+            const ValueKey('weather_summary_forecast_mode_dest_daily'),
+          ),
+          findsOneWidget,
+        );
         final dailySemanticsSelected = tester.widget<Semantics>(
           find.ancestor(of: dailyTap, matching: find.byType(Semantics)).first,
         );
         expect(dailySemanticsSelected.properties.selected, isTrue);
 
+        await ensureVisibleAligned(
+          tester,
+          find.byKey(const ValueKey('weather_summary_forecast_swap_dest')),
+        );
         await tester.tap(
           find.byKey(const ValueKey('weather_summary_forecast_swap_dest')),
+          warnIfMissed: false,
         );
         await tester.pump(const Duration(milliseconds: 220));
         expect(hourlyMode, findsOneWidget);

@@ -422,6 +422,10 @@ class DashboardCopy {
       DashboardLocalizations.of(
         context,
       ).text('dashboard.settings.title', fallback: 'Settings');
+  static String dashboardMenuTitle(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.dashboard.menu.title', fallback: 'Menu');
   static String settingsOptionAbout(BuildContext context) =>
       DashboardLocalizations.of(
         context,
@@ -545,29 +549,27 @@ class DashboardCopy {
   static String settingsAboutTagline(BuildContext context) =>
       DashboardLocalizations.of(context).text(
         'dashboard.settings.about.tagline',
-        fallback: 'Travel-first decoder ring; dual reality side-by-side',
+        fallback: 'Created with ❤️ by Cody Pritchard',
       );
-  static String settingsAboutBody(
-    BuildContext context,
-  ) => DashboardLocalizations.of(context).text(
-    'dashboard.settings.about.body',
-    fallback:
-        'Unitana helps compare home and destination contexts with practical tools for time, weather, and conversions.',
-  );
+  static String settingsAboutBody(BuildContext context) =>
+      DashboardLocalizations.of(context).text(
+        'dashboard.settings.about.body',
+        fallback: 'Build channel: Development',
+      );
   static String settingsAboutLegalese(BuildContext context) =>
       DashboardLocalizations.of(context).text(
         'dashboard.settings.about.legalese',
-        fallback: 'Copyright 2026 Unitana contributors',
+        fallback: 'Copying 2026 Unitana',
       );
   static String settingsLicensesTitle(BuildContext context) =>
       DashboardLocalizations.of(context).text(
         'dashboard.settings.licenses.title',
-        fallback: 'Open-source licenses',
+        fallback: 'Open-Source Licenses',
       );
   static String settingsLicensesReadableTitle(BuildContext context) =>
       DashboardLocalizations.of(context).text(
         'dashboard.settings.licenses.readable.title',
-        fallback: 'Readable license index',
+        fallback: 'Readable License Index',
       );
   static String settingsLicensesReadableBody(
     BuildContext context,
@@ -1159,6 +1161,20 @@ class DashboardCopy {
     params: <String, String>{'fromUnit': fromUnit},
     fallback:
         'Enter minutes:seconds in $fromUnit (example: 5:30). We will convert that pace directly.',
+  );
+  static String disclaimerMedical(
+    BuildContext context,
+  ) => DashboardLocalizations.of(context).text(
+    'dashboard.disclaimer.medical',
+    fallback:
+        'Non-medical estimate for general planning only. Consult qualified professionals for health or nutrition advice.',
+  );
+  static String disclaimerWeather(
+    BuildContext context,
+  ) => DashboardLocalizations.of(context).text(
+    'dashboard.disclaimer.weather',
+    fallback:
+        'Forecasts and alerts are guidance only and can change quickly. Follow official local emergency channels for critical decisions.',
   );
   static String unitPickerTitle(
     BuildContext context, {

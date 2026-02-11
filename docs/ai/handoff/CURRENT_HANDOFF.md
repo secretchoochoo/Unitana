@@ -1,9 +1,86 @@
 # CURRENT_HANDOFF (Unitana) - Wizard, Collapsing Header, Multi-Profile
 
 ## Snapshot
-- **Date:** 2026-02-10
-- **Status:** Repo is green (`dart format`, `flutter analyze`, `flutter test`) after XL-M Pack W lofi-audio spike scaffold.
+- **Date:** 2026-02-11
+- **Status:** Repo is green (`dart format`, `flutter analyze`, `flutter test`) after runtime data-reliability fixes (weather/currency live defaults + Android Internet permission), matrix readability mode, and marquee weather-scene polish.
 - **Operating mode:** Codex is now the primary workflow; apply edits directly in-repo (do not require patch zip workflow unless explicitly requested).
+
+## Latest changes (2026-02-11)
+- Runtime reliability + trust UX polish:
+  - Android network access: added `android.permission.INTERNET`.
+  - live-data defaults updated for runtime:
+    - weather defaults to live Open-Meteo (instead of mock),
+    - currency defaults to live Frankfurter (instead of mock),
+    - flutter tests remain hermetic via `FLUTTER_TEST` guard.
+  - currency modal stale banner made explicit:
+    - now clarifies cached-rate mode and auto-refresh cadence.
+  - matrix readability:
+    - full matrix tools now support `Focused` vs `All systems` modes;
+    - tests updated to assert global columns in `All systems` mode.
+  - weather marquee readability:
+    - tornado funnel orientation corrected (wide top, narrow ground contact),
+    - snow/hail rendering differentiated from rain with distinct particle behavior.
+  - backlog planning artifact added:
+    - `docs/ai/reference/XL_BACKLOG_BUNDLE_MAP_2026-02-11.md`
+
+## Latest changes (2026-02-11)
+- XL-O shipped (Pack Y wearables/platform add-ons planning-only):
+  - added Pack Y planning artifact:
+    - `docs/ai/reference/PACK_Y_WEARABLES_PLATFORM_PLAN_XL_O.md`
+  - added public-release branching/versioning strategy artifact:
+    - `docs/ai/reference/PUBLIC_RELEASE_BRANCHING_STRATEGY_XL_O.md`
+  - updated reference index and prompt flow for post-XL-O sequencing.
+
+## Latest changes (2026-02-11)
+- Runtime cleanup + release-readiness prep:
+  - tutorial functionality removed from runtime surfaces:
+    - dashboard tutorial overlay removed,
+    - first-run tutorial hints removed,
+    - settings replay tutorial entry removed,
+    - developer-tools tutorial toggle removed.
+  - lo-fi playback moved beyond no-op seam:
+    - `audioplayers`-based looping asset playback wired,
+    - temporary track asset integrated (`assets/audio/soft_static_sundays.mp3`),
+    - default lo-fi volume baseline changed to `25%` (`0.25`).
+  - Android polish:
+    - launcher icon resources refreshed,
+    - adaptive round icon added,
+    - launcher label normalized to `Unitana`.
+  - dashboard UX:
+    - pull-to-refresh added via `RefreshIndicator`.
+  - release gating prep:
+    - Developer Tools now compile-time gateable with
+      `UNITANA_DEVTOOLS_ENABLED` (default `true`; set `false` for public builds).
+
+## Latest changes (2026-02-10)
+- XL-N shipped (Pack I near-finalization foundation):
+  - tutorial persistence/gating contracts:
+    - added `tutorial_dismissed_v1`
+    - added `tutorial_replay_requested_v1`
+    - app-state API now exposes first-run gating + replay semantics (`shouldShowTutorial`, `markTutorialDismissed`, `requestTutorialReplay`).
+  - dashboard overlay primitives + hook points:
+    - added lightweight reusable overlay components in `app/unitana/lib/common/widgets/tutorial_overlay.dart`.
+    - dashboard now mounts skippable targeted tips for hero pills, tools entry, and menu entry.
+    - replay can be requested from unified settings sheet.
+  - wizard tutorial hints:
+    - step 2 place-selection hint and step 3 save-action hint are now rendered when tutorial state is active.
+  - deterministic regression guardrails:
+    - `app/unitana/test/tutorial_state_persistence_test.dart`
+    - `app/unitana/test/dashboard_tutorial_overlay_test.dart`
+
+## Latest changes (2026-02-10)
+- XL-N follow-through (user-requested UX polish bundle):
+  - unified hamburger/settings IA in `app/unitana/lib/features/dashboard/dashboard_screen.dart`:
+    - migrated to one larger settings-style sheet that now includes Profiles, Edit Widgets, Reset Dashboard Defaults, Developer Tools, and app settings controls.
+  - Price Compare facelift in `app/unitana/lib/features/dashboard/widgets/tool_modal_bottom_sheet.dart`:
+    - restored compare swap action (`tool_unit_price_swap_*`),
+    - stronger visual differentiation between Product A/B cards,
+    - compact hierarchy/readability pass for compare controls.
+    - tool label shortened to `Price Comp` for better tile fit.
+  - matrix standards polish:
+    - Paper/Mattress matrix first column header renamed from `Size` to `Reference` to remove redundant column semantics.
+    - Shoes matrix expanded with `US Kids` mapping and extended through `US Men 17`.
+    - matrix readability mode added (`Focused` vs `All systems`) to reduce horizontal scroll by default.
 
 ## Latest changes (2026-02-10)
 - XL-M shipped (Pack W optional lo-fi audio spike):

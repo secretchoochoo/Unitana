@@ -98,39 +98,39 @@ void main() {
 
     expect(find.byKey(const Key('dashboard_edit_done')), findsOneWidget);
 
-    final liquidsTile = find.byKey(const ValueKey('dashboard_item_liquids'));
-    final areaTile = find.byKey(const ValueKey('dashboard_item_area'));
+    final bakingTile = find.byKey(const ValueKey('dashboard_item_baking'));
+    final distanceTile = find.byKey(const ValueKey('dashboard_item_distance'));
 
-    expect(liquidsTile, findsOneWidget);
-    expect(areaTile, findsOneWidget);
+    expect(bakingTile, findsOneWidget);
+    expect(distanceTile, findsOneWidget);
 
     // Pinned headers can occlude the top edge; align these tiles lower before
     // measuring positions and dragging.
-    await ensureVisibleAligned(tester, liquidsTile);
-    await ensureVisibleAligned(tester, areaTile);
+    await ensureVisibleAligned(tester, bakingTile);
+    await ensureVisibleAligned(tester, distanceTile);
     await tester.pump(const Duration(milliseconds: 50));
 
-    final beforeLiquids = tester.getTopLeft(liquidsTile);
-    final beforeArea = tester.getTopLeft(areaTile);
+    final beforeBaking = tester.getTopLeft(bakingTile);
+    final beforeDistance = tester.getTopLeft(distanceTile);
 
-    // Defaults: Liquids appears before Area (reading order).
-    expect(comesBefore(beforeLiquids, beforeArea), isTrue);
+    // Defaults: Baking appears before Distance (reading order).
+    expect(comesBefore(beforeBaking, beforeDistance), isTrue);
 
-    final areaStack = find
-        .ancestor(of: areaTile, matching: find.byType(Stack))
+    final distanceStack = find
+        .ancestor(of: distanceTile, matching: find.byType(Stack))
         .first;
-    expect(areaStack, findsOneWidget);
+    expect(distanceStack, findsOneWidget);
 
-    final areaHandle = find.descendant(
-      of: areaStack,
+    final distanceHandle = find.descendant(
+      of: distanceStack,
       matching: find.byIcon(Icons.drag_indicator_rounded),
     );
-    expect(areaHandle, findsOneWidget);
+    expect(distanceHandle, findsOneWidget);
 
-    // Drag Area handle onto Liquids tile center (robust across row shifts).
-    final handleCenter = tester.getCenter(areaHandle);
-    final liquidsCenter = tester.getCenter(liquidsTile);
-    final delta = liquidsCenter - handleCenter;
+    // Drag Distance handle onto Baking tile center (robust across row shifts).
+    final handleCenter = tester.getCenter(distanceHandle);
+    final bakingCenter = tester.getCenter(bakingTile);
+    final delta = bakingCenter - handleCenter;
 
     await tester.dragFrom(handleCenter, delta);
     await tester.pump(const Duration(milliseconds: 400));
@@ -139,11 +139,11 @@ void main() {
     await tester.tap(find.byKey(const Key('dashboard_edit_done')));
     await tester.pump(const Duration(milliseconds: 400));
 
-    final afterLiquids = tester.getTopLeft(liquidsTile);
-    final afterArea = tester.getTopLeft(areaTile);
+    final afterBaking = tester.getTopLeft(bakingTile);
+    final afterDistance = tester.getTopLeft(distanceTile);
 
-    // Swapped: Area now appears before Liquids (reading order).
-    expect(comesBefore(afterArea, afterLiquids), isTrue);
+    // Swapped: Distance now appears before Baking (reading order).
+    expect(comesBefore(afterDistance, afterBaking), isTrue);
 
     // Tablet (3 columns): rebuild with the same persisted preferences.
     await tester.pumpWidget(const SizedBox.shrink());
@@ -151,10 +151,10 @@ void main() {
 
     await pumpDashboard(const Size(900, 844));
 
-    final tabletLiquids = tester.getTopLeft(liquidsTile);
-    final tabletArea = tester.getTopLeft(areaTile);
+    final tabletBaking = tester.getTopLeft(bakingTile);
+    final tabletDistance = tester.getTopLeft(distanceTile);
 
-    // Persisted: Area remains before Liquids in the tablet grid.
-    expect(comesBefore(tabletArea, tabletLiquids), isTrue);
+    // Persisted: Distance remains before Baking in the tablet grid.
+    expect(comesBefore(tabletDistance, tabletBaking), isTrue);
   });
 }

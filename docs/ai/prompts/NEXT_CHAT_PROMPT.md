@@ -1,4 +1,4 @@
-NEXT CHAT PROMPT — XL-N: Pack I Tutorial Overlay Near-Finalization Pass
+NEXT CHAT PROMPT — XL-P: Pack W Playback Production Hardening + Public-Channel Prep
 
 You are taking over Unitana (Flutter) in a fresh, high-context window.
 
@@ -7,18 +7,18 @@ Read these files first:
 2) `docs/ai/context_db.json`
 3) `docs/ai/reference/REFERENCE_INDEX.md`
 4) `docs/ai/reference/PACK_W_LOFI_AUDIO_SPIKE_XL_M.md`
-5) `docs/ai/prompts/NEXT_CHAT_PROMPT.md`
-6) `app/unitana/lib/features/dashboard/dashboard_screen.dart`
-7) `app/unitana/lib/features/dashboard/widgets/places_hero_v2.dart`
-8) `app/unitana/lib/features/dashboard/widgets/tool_modal_bottom_sheet.dart`
-9) `app/unitana/lib/features/first_run/first_run_screen.dart`
+5) `docs/ai/reference/PUBLIC_RELEASE_BRANCHING_STRATEGY_XL_O.md`
+6) `docs/ai/prompts/NEXT_CHAT_PROMPT.md`
+7) `app/unitana/lib/features/dashboard/dashboard_screen.dart`
+8) `app/unitana/lib/features/dashboard/models/lofi_audio_controller.dart`
+9) `app/unitana/lib/app/app_state.dart`
 
 ## Core operating rules
-- Keep repo green if any code/docs are touched:
+- Work directly in-repo (Codex-first).
+- If runtime or test files are changed, keep repo green:
   - `dart format .`
   - `flutter analyze`
   - `flutter test`
-- Work directly in-repo (Codex-first).
 - Preserve non-negotiables:
   - collapsing pinned `SliverPersistentHeader` morph
   - canonical hero key uniqueness
@@ -26,41 +26,34 @@ Read these files first:
   - goldens opt-in only
 
 ## Mission
-Start Pack I by implementing a minimal, skippable tutorial overlay foundation that is safe against current UI churn.
+Run XL-P to production-harden Pack W audio behavior and tighten public-release channel controls.
 
 ## Required outcomes
-1) Overlay foundation
-- Add opt-in/first-run gating state for tutorial visibility.
-- Implement lightweight overlay primitives for key dashboard targets.
-- Support skip/dismiss and replay-from-settings behavior contract scaffolding.
+1) Audio production hardening
+- Keep opt-in behavior and persisted volume contracts.
+- Add/confirm behavior guardrails for app lifecycle transitions.
+- Prepare track-source replacement contract for commercial-safe media swap.
 
-2) Near-finalization scope only
-- Cover highest-value targets first:
-  - wizard place selection/save action hints
-  - dashboard hero pills/tools entry/settings entry hints
-- Keep implementation modular to avoid broad UI coupling.
+2) Public-channel readiness
+- Ensure Developer Tools are fully hidden when `UNITANA_DEVTOOLS_ENABLED=false`.
+- Validate About/version display contracts for public channel.
+- Add/update tests for release-gated behavior.
 
-3) Regression guardrails
-- Add deterministic tests for gating and dismissal persistence.
-
-4) Docs update
+3) Docs refresh
 - Update:
   - `docs/ai/context_db.json`
   - `docs/ai/handoff/CURRENT_HANDOFF.md`
   - `docs/ai/prompts/NEXT_CHAT_PROMPT.md`
 
 ## Suggested execution order
-1) persistence + settings replay scaffold
-2) minimal overlay renderer
-3) targeted hook points (wizard/dashboard)
-4) tests
-5) full gates + docs refresh
+1) playback behavior verification + lifecycle guards
+2) release gating tests (devtools-off)
+3) docs refresh and next-slice handoff
 
 ## Definition of done
-- Pack I foundation exists with skip/replay persistence contracts.
-- No regressions to dashboard/wizard behavior.
-- Repo green (`format`, `analyze`, `test`).
+- Pack W runtime behavior is production-hardened for public release prep.
+- Release gating behavior is deterministic and test-covered.
+- Repo remains green.
 
 ## Forward plan after this slice
-- Next slice: XL-O (Pack Y wearables/platform add-ons planning only).
-- Following slice: XL-P (Pack W playback backend integration, if prioritized).
+- Public branch cut rehearsal (`release/public`) and staged tag workflow.

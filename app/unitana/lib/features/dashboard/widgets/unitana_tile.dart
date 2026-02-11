@@ -279,24 +279,29 @@ class UnitanaTile extends StatelessWidget {
                         padding: EdgeInsets.symmetric(
                           horizontal: iconBox + hGap,
                         ),
-                        child: Center(
-                          child: Text(
-                            safeTitle,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            softWrap: false,
-                            textAlign: TextAlign.center,
-                            style:
-                                ((isCompact
-                                                ? text.titleSmall
-                                                : text.titleMedium)
-                                            ?.copyWith(
-                                              color: scheme.onSurface,
-                                              fontWeight: FontWeight.w700,
-                                              letterSpacing: 0.2,
-                                            ) ??
-                                        const TextStyle())
-                                    .merge(GoogleFonts.robotoSlab()),
+                        child: SizedBox(
+                          width: double.infinity,
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            alignment: Alignment.center,
+                            child: Text(
+                              safeTitle,
+                              maxLines: 1,
+                              overflow: TextOverflow.visible,
+                              softWrap: false,
+                              textAlign: TextAlign.center,
+                              style:
+                                  ((isCompact
+                                                  ? text.titleSmall
+                                                  : text.titleMedium)
+                                              ?.copyWith(
+                                                color: scheme.onSurface,
+                                                fontWeight: FontWeight.w700,
+                                                letterSpacing: 0.2,
+                                              ) ??
+                                          const TextStyle())
+                                      .merge(GoogleFonts.robotoSlab()),
+                            ),
                           ),
                         ),
                       ),

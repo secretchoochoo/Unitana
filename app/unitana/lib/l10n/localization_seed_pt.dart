@@ -16,6 +16,7 @@ class LocalizationSeedPt {
     'dashboard.weather.forecast.unavailable': 'Previsao indisponivel',
     'dashboard.tool.cta.swap': 'Trocar',
     'dashboard.time.picker.mode.cities': 'Cidades',
+    'dashboard.dashboard.menu.title': 'Menu',
     'dashboard.settings.title': 'Definicoes',
     'dashboard.settings.option.about': 'Sobre',
     'dashboard.settings.option.licenses': 'Licencas',

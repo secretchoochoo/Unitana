@@ -2005,7 +2005,7 @@ class _SunTimesPill extends StatelessWidget {
         key: includeTestKeys
             ? const ValueKey('hero_details_sun_content')
             : null,
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
         mainAxisSize: MainAxisSize.min,
         children: [
           SizedBox(height: compact ? 0 : 2),
@@ -2014,11 +2014,15 @@ class _SunTimesPill extends StatelessWidget {
             textKey: includeTestKeys
                 ? const ValueKey('hero_sunrise_row')
                 : null,
+            alignment: Alignment.center,
+            textAlign: TextAlign.center,
           ),
           SizedBox(height: compact ? 0 : 1),
           _ScaleDownRichText(
             span: TextSpan(text: set, style: rowStyle),
             textKey: includeTestKeys ? const ValueKey('hero_sunset_row') : null,
+            alignment: Alignment.center,
+            textAlign: TextAlign.center,
           ),
         ],
       );
@@ -2129,9 +2133,7 @@ class _SunTimesPill extends StatelessWidget {
             child: LayoutBuilder(
               builder: (context, c) {
                 final content = Column(
-                  crossAxisAlignment: isWind
-                      ? CrossAxisAlignment.center
-                      : CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     // Contract: title row is text-only; emoji/iconography lives
@@ -2146,10 +2148,10 @@ class _SunTimesPill extends StatelessWidget {
                 );
 
                 return Align(
-                  alignment: isWind ? Alignment.center : Alignment.centerLeft,
+                  alignment: Alignment.center,
                   child: FittedBox(
                     fit: BoxFit.scaleDown,
-                    alignment: isWind ? Alignment.center : Alignment.centerLeft,
+                    alignment: Alignment.center,
                     child: ConstrainedBox(
                       constraints: BoxConstraints(maxWidth: c.maxWidth),
                       child: content,

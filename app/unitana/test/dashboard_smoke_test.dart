@@ -79,16 +79,14 @@ void main() {
       // Places Hero V2 should be present.
       expect(find.byKey(const ValueKey('places_hero_v2')), findsOneWidget);
 
-      // Default tool tiles (exact labels may evolve; keep this test flexible).
-      final hasHeight = find.text('Height').evaluate().isNotEmpty;
-      final hasDistance = find.text('Distance').evaluate().isNotEmpty;
-      expect(hasHeight || hasDistance, isTrue);
+      // Default tool tiles (Top-6 contract).
+      expect(find.text('Distance'), findsOneWidget);
+      expect(find.text('Currency'), findsOneWidget);
+      expect(find.text('Time'), findsOneWidget);
       expect(find.text('Baking'), findsOneWidget);
-      expect(find.text('Liquids'), findsOneWidget);
-      expect(find.text('Area'), findsOneWidget);
 
       // Each tile includes the same helper text.
-      expect(find.text('Convert'), findsNWidgets(4));
+      expect(find.text('Convert'), findsAtLeastNWidgets(4));
     } finally {
       await tester.binding.setSurfaceSize(null);
     }

@@ -25,6 +25,7 @@ class PlacesHeroCollapsingHeaderDelegate
   final Place? destination;
   final DashboardSessionController session;
   final DashboardLiveDataController liveData;
+  final Key? heroKey;
 
   const PlacesHeroCollapsingHeaderDelegate({
     required this.expandedHeight,
@@ -34,6 +35,7 @@ class PlacesHeroCollapsingHeaderDelegate
     required this.destination,
     required this.session,
     required this.liveData,
+    this.heroKey,
   });
 
   @override
@@ -76,12 +78,15 @@ class PlacesHeroCollapsingHeaderDelegate
                   opacity: heroOpacity,
                   child: Transform.translate(
                     offset: Offset(0, heroTranslateY),
-                    child: PlacesHeroV2(
+                    child: KeyedSubtree(
                       key: const Key('places_hero_v2'),
-                      home: home,
-                      destination: destination,
-                      session: session,
-                      liveData: liveData,
+                      child: PlacesHeroV2(
+                        key: heroKey,
+                        home: home,
+                        destination: destination,
+                        session: session,
+                        liveData: liveData,
+                      ),
                     ),
                   ),
                 ),
@@ -126,7 +131,8 @@ class PlacesHeroCollapsingHeaderDelegate
         home != oldDelegate.home ||
         destination != oldDelegate.destination ||
         session != oldDelegate.session ||
-        liveData != oldDelegate.liveData;
+        liveData != oldDelegate.liveData ||
+        heroKey != oldDelegate.heroKey;
   }
 }
 

@@ -16,6 +16,7 @@ class LocalizationSeedFr {
     'dashboard.weather.forecast.unavailable': 'Previsions indisponibles',
     'dashboard.tool.cta.swap': 'Permuter',
     'dashboard.time.picker.mode.cities': 'Villes',
+    'dashboard.dashboard.menu.title': 'Menu',
     'dashboard.settings.title': 'Parametres',
     'dashboard.settings.option.about': 'A propos',
     'dashboard.settings.option.licenses': 'Licences',

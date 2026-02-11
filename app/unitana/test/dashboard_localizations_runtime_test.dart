@@ -369,7 +369,7 @@ void main() {
     expect(settingsAbout, 'About');
     expect(settingsLicenses, 'Licenses');
     expect(settingsAboutTitle, 'About Unitana');
-    expect(settingsLicensesTitle, 'Open-source licenses');
+    expect(settingsLicensesTitle, 'Open-Source Licenses');
     expect(profileNameFallback, 'My Places');
     expect(setCityCta, 'Set city');
     expect(

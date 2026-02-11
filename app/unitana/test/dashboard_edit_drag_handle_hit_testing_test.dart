@@ -55,22 +55,22 @@ void main() {
   ) async {
     await pumpDashboardForTest(tester);
 
-    final areaTile = find.byKey(const ValueKey('dashboard_item_area'));
-    final liquidsTile = find.byKey(const ValueKey('dashboard_item_liquids'));
+    final bakingTile = find.byKey(const ValueKey('dashboard_item_baking'));
+    final distanceTile = find.byKey(const ValueKey('dashboard_item_distance'));
 
-    expect(areaTile, findsOneWidget);
-    expect(liquidsTile, findsOneWidget);
+    expect(bakingTile, findsOneWidget);
+    expect(distanceTile, findsOneWidget);
 
     await _enterEditMode(tester);
 
     // Sanity: tile body is not tappable in edit mode (no tool sheets).
-    await tester.tap(areaTile, warnIfMissed: false);
+    await tester.tap(bakingTile, warnIfMissed: false);
     await _pumpFor(tester, const Duration(milliseconds: 200));
-    expect(find.byKey(const ValueKey('tool_close_area')), findsNothing);
+    expect(find.byKey(const ValueKey('tool_close_baking')), findsNothing);
 
     // Dragging the tile body should not persist anchor overrides.
-    final areaRect = tester.getRect(areaTile);
-    await tester.dragFrom(areaRect.center, const Offset(0, -140));
+    final bakingRect = tester.getRect(bakingTile);
+    await tester.dragFrom(bakingRect.center, const Offset(0, -140));
     await _pumpFor(tester, const Duration(milliseconds: 250));
 
     await tester.tap(
@@ -80,17 +80,17 @@ void main() {
     await _pumpFor(tester, const Duration(milliseconds: 280));
 
     final anchorsAfterBodyDrag = await _readDefaultAnchors();
-    expect(anchorsAfterBodyDrag.containsKey('area'), isFalse);
-    expect(anchorsAfterBodyDrag.containsKey('liquids'), isFalse);
+    expect(anchorsAfterBodyDrag.containsKey('baking'), isFalse);
+    expect(anchorsAfterBodyDrag.containsKey('distance'), isFalse);
 
     // Now perform an actual reorder by dragging from the drag handle.
     await _enterEditMode(tester);
 
-    final areaTile2 = find.byKey(const ValueKey('dashboard_item_area'));
-    final liquidsTile2 = find.byKey(const ValueKey('dashboard_item_liquids'));
+    final bakingTile2 = find.byKey(const ValueKey('dashboard_item_baking'));
+    final distanceTile2 = find.byKey(const ValueKey('dashboard_item_distance'));
 
     final areaStack = find
-        .ancestor(of: areaTile2, matching: find.byType(Stack))
+        .ancestor(of: bakingTile2, matching: find.byType(Stack))
         .first;
     final handleIcon = find.descendant(
       of: areaStack,
@@ -99,7 +99,7 @@ void main() {
     expect(handleIcon, findsOneWidget);
 
     final start = tester.getCenter(handleIcon);
-    final target = tester.getCenter(liquidsTile2);
+    final target = tester.getCenter(distanceTile2);
     await tester.dragFrom(start, target - start);
     await _pumpFor(tester, const Duration(milliseconds: 360));
 
@@ -111,8 +111,8 @@ void main() {
 
     final anchorsAfterHandleDrag = await _readDefaultAnchors();
     expect(
-      anchorsAfterHandleDrag.containsKey('area') ||
-          anchorsAfterHandleDrag.containsKey('liquids'),
+      anchorsAfterHandleDrag.containsKey('baking') ||
+          anchorsAfterHandleDrag.containsKey('distance'),
       isTrue,
     );
   });

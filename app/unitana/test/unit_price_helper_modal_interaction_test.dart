@@ -22,7 +22,7 @@ void main() {
   ) async {
     await pumpDashboardForTest(tester);
     await _openToolPicker(tester);
-    await _searchTool(tester, 'price compare');
+    await _searchTool(tester, 'price');
 
     await tester.tap(
       find.byKey(const ValueKey('toolpicker_search_tool_unit_price_helper')),

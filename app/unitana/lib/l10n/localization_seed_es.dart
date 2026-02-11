@@ -21,6 +21,7 @@ class LocalizationSeedEs {
     'dashboard.hero.details.title.wind': 'Viento • Racha',
     'dashboard.hero.currency.ratePrefix': 'Tipo:',
     'dashboard.profiles.title': 'Perfiles',
+    'dashboard.dashboard.menu.title': 'Menú',
     'dashboard.settings.title': 'Configuración',
     'dashboard.settings.option.about': 'Acerca de',
     'dashboard.settings.option.licenses': 'Licencias',

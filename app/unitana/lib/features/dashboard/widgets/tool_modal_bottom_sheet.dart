@@ -62,6 +62,9 @@ class ToolModalBottomSheet extends StatefulWidget {
   final bool currencyIsStale;
   final bool currencyShouldRetryNow;
   final DateTime? currencyLastErrorAt;
+  final DateTime? currencyLastRefreshedAt;
+  final bool currencyNetworkEnabled;
+  final Duration currencyRefreshCadence;
   final Future<void> Function()? onRetryCurrencyNow;
 
   /// Optional context for inferring Currency direction.
@@ -85,6 +88,9 @@ class ToolModalBottomSheet extends StatefulWidget {
     this.currencyIsStale = false,
     this.currencyShouldRetryNow = false,
     this.currencyLastErrorAt,
+    this.currencyLastRefreshedAt,
+    this.currencyNetworkEnabled = true,
+    this.currencyRefreshCadence = const Duration(hours: 12),
     this.onRetryCurrencyNow,
     this.home,
     this.destination,
@@ -103,6 +109,9 @@ class ToolModalBottomSheet extends StatefulWidget {
     bool currencyIsStale = false,
     bool currencyShouldRetryNow = false,
     DateTime? currencyLastErrorAt,
+    DateTime? currencyLastRefreshedAt,
+    bool currencyNetworkEnabled = true,
+    Duration currencyRefreshCadence = const Duration(hours: 12),
     Future<void> Function()? onRetryCurrencyNow,
     Place? home,
     Place? destination,
@@ -123,6 +132,9 @@ class ToolModalBottomSheet extends StatefulWidget {
         currencyIsStale: currencyIsStale,
         currencyShouldRetryNow: currencyShouldRetryNow,
         currencyLastErrorAt: currencyLastErrorAt,
+        currencyLastRefreshedAt: currencyLastRefreshedAt,
+        currencyNetworkEnabled: currencyNetworkEnabled,
+        currencyRefreshCadence: currencyRefreshCadence,
         onRetryCurrencyNow: onRetryCurrencyNow,
         home: home,
         destination: destination,
@@ -254,6 +266,8 @@ class _LookupEntry {
 
 typedef _TimeZonePickerSelection = ({String zoneId, String displayLabel});
 
+enum _PaceMode { running, rowing }
+
 class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
   // MVP: Currency tool supports EUR ↔ USD, using a live/demo EUR→USD rate.
   // We infer a default direction from home vs destination when context is
@@ -272,6 +286,13 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
       TextEditingController();
   final TextEditingController _paceGoalTimeController = TextEditingController(
     text: '25:00',
+  );
+  final TextEditingController _paceBuilderDistanceController =
+      TextEditingController(text: '5');
+  final TextEditingController _paceBuilderTimeController =
+      TextEditingController(text: '25:00');
+  final TextEditingController _energyWeightController = TextEditingController(
+    text: '70',
   );
   Timer? _noticeTimer;
   Timer? _timeTicker;
@@ -300,6 +321,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
   String? _lookupFromSystem;
   String? _lookupToSystem;
   String? _lookupEntryKey;
+  int _lookupMatrixPageIndex = 0;
   String? _timeFromZoneId;
   String? _timeToZoneId;
   String? _timeFromDisplayLabel;
@@ -320,6 +342,10 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
   int _jetLagWakeMinutes = 7 * 60;
   bool _jetLagOverlapExpanded = false;
   double _paceGoalDistanceKm = 5.0;
+  _PaceMode _paceMode = _PaceMode.running;
+  String _paceBuilderDistanceUnit = 'km';
+  String _energyWeightUnit = 'kg';
+  String _energyActivity = 'moderate';
 
   bool get _isMultiUnitTool =>
       widget.tool.canonicalToolId == CanonicalToolId.volume ||
@@ -363,7 +389,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
       case CanonicalToolId.dataStorage:
         return const <String>['B', 'KB', 'MB', 'GB', 'TB'];
       case CanonicalToolId.energy:
-        return const <String>['kcal', 'kJ'];
+        return const <String>['cal', 'kJ'];
       default:
         return const <String>[];
     }
@@ -414,6 +440,10 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
 
     if (_isHydrationTool) {
       _seedHydrationDefaults();
+    }
+
+    if (widget.tool.id == 'energy') {
+      _seedEnergyDefaults();
     }
 
     if (_isTimeTool) {
@@ -567,6 +597,9 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
     _unitQtyBController.dispose();
     _hydrationExerciseController.dispose();
     _paceGoalTimeController.dispose();
+    _paceBuilderDistanceController.dispose();
+    _paceBuilderTimeController.dispose();
+    _energyWeightController.dispose();
     _controller.dispose();
     super.dispose();
   }
@@ -628,8 +661,8 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
         _toUnitOverride = _forward ? 'MB' : 'GB';
         return;
       case CanonicalToolId.energy:
-        _fromUnitOverride = _forward ? 'kcal' : 'kJ';
-        _toUnitOverride = _forward ? 'kJ' : 'kcal';
+        _fromUnitOverride = _forward ? 'cal' : 'kJ';
+        _toUnitOverride = _forward ? 'kJ' : 'cal';
         return;
       default:
         _fromUnitOverride = null;
@@ -890,6 +923,18 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
               'UK': '15',
               'AU': '15',
               'JP (cm)': '34.0 cm',
+            },
+          ),
+          _LookupEntry(
+            keyId: 'shoe_17',
+            label: '35.0',
+            valuesBySystem: <String, String>{
+              'US Men': '17',
+              'US Women': '18.5',
+              'EU': '52',
+              'UK': '16',
+              'AU': '16',
+              'JP (cm)': '35.0 cm',
             },
           ),
         ];
@@ -1262,6 +1307,14 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
     }
     _hydrationWeightUnit = widget.preferMetric ? 'kg' : 'lb';
     _hydrationClimateBand = 'temperate';
+  }
+
+  void _seedEnergyDefaults() {
+    if (_energyWeightController.text.trim().isEmpty) {
+      _energyWeightController.text = widget.preferMetric ? '70' : '155';
+    }
+    _energyWeightUnit = widget.preferMetric ? 'kg' : 'lb';
+    _energyActivity = 'moderate';
   }
 
   String _activeTipCountryCode() {
@@ -1647,7 +1700,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Non-medical estimate for healthy adults. Increase intake during heat/sweat, and follow clinician guidance for medical conditions.',
+                      DashboardCopy.disclaimerMedical(context),
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: textMuted,
                         fontWeight: FontWeight.w700,
@@ -2065,13 +2118,16 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
       required String selectedUnit,
       required ValueChanged<String> onUnitSelected,
       required String keyPrefix,
+      required bool isPrimaryCard,
     }) {
       return Container(
         padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
         decoration: BoxDecoration(
-          color: panelBgSoft,
+          color: isPrimaryCard ? accent.withAlpha(28) : panelBgSoft,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: panelBorder),
+          border: Border.all(
+            color: isPrimaryCard ? accent.withAlpha(170) : panelBorder,
+          ),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -2164,20 +2220,43 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
         Container(
           padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
           decoration: BoxDecoration(
-            color: panelBgSoft,
+            color: accent.withAlpha(24),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: panelBorder),
+            border: Border.all(color: accent.withAlpha(140)),
           ),
-          child: Text(
-            DashboardCopy.unitPriceCoach(
-              context,
-              primaryCurrency: primaryCurrencyCode,
-              secondaryCurrency: secondaryCurrencyCode,
-            ),
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: textMuted,
-              fontWeight: FontWeight.w700,
-            ),
+          child: Builder(
+            builder: (context) {
+              final coach = DashboardCopy.unitPriceCoach(
+                context,
+                primaryCurrency: primaryCurrencyCode,
+                secondaryCurrency: secondaryCurrencyCode,
+              );
+              final baseStyle = Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: _ToolModalThemePolicy.textPrimary(
+                  context,
+                ).withAlpha(230),
+                fontWeight: FontWeight.w700,
+              );
+              const prefix = 'How to use:';
+              if (!coach.startsWith(prefix)) {
+                return Text(coach, style: baseStyle);
+              }
+              return Text.rich(
+                TextSpan(
+                  style: baseStyle,
+                  children: [
+                    TextSpan(
+                      text: '$prefix ',
+                      style: baseStyle?.copyWith(
+                        color: accent,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    TextSpan(text: coach.substring(prefix.length).trimLeft()),
+                  ],
+                ),
+              );
+            },
           ),
         ),
         if (secondaryCurrencyCode != null) ...[
@@ -2207,6 +2286,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
           onUnitSelected: (unit) =>
               _handleUnitPriceUnitSelected(forProductA: true, unit: unit),
           keyPrefix: '${widget.tool.id}_a',
+          isPrimaryCard: true,
         ),
         const SizedBox(height: 8),
         SwitchListTile.adaptive(
@@ -2230,6 +2310,16 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
           },
         ),
         if (_unitPriceCompareEnabled) ...[
+          Align(
+            alignment: Alignment.centerRight,
+            child: OutlinedButton.icon(
+              key: ValueKey('tool_unit_price_swap_${widget.tool.id}'),
+              onPressed: _swapUnitPriceProducts,
+              icon: const Icon(Icons.swap_vert_rounded),
+              label: Text(DashboardCopy.swapCta(context)),
+            ),
+          ),
+          const SizedBox(height: 8),
           productCard(
             title: DashboardCopy.unitPriceProductTitle(context, isA: false),
             priceController: _unitPriceBController,
@@ -2238,6 +2328,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
             onUnitSelected: (unit) =>
                 _handleUnitPriceUnitSelected(forProductA: false, unit: unit),
             keyPrefix: '${widget.tool.id}_b',
+            isPrimaryCard: false,
           ),
           const SizedBox(height: 8),
         ],
@@ -2338,6 +2429,21 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
     setState(() {
       _lookupFromSystem = to;
       _lookupToSystem = from;
+    });
+  }
+
+  void _swapUnitPriceProducts() {
+    if (!_unitPriceCompareEnabled) return;
+    setState(() {
+      final aPrice = _unitPriceAController.text;
+      final aQty = _unitQtyAController.text;
+      final aUnit = _unitPriceUnitA;
+      _unitPriceAController.text = _unitPriceBController.text;
+      _unitQtyAController.text = _unitQtyBController.text;
+      _unitPriceUnitA = _unitPriceUnitB;
+      _unitPriceBController.text = aPrice;
+      _unitQtyBController.text = aQty;
+      _unitPriceUnitB = aUnit;
     });
   }
 
@@ -2471,7 +2577,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
       case CanonicalToolId.dataStorage:
         return _forward ? ('GB', 'MB') : ('MB', 'GB');
       case CanonicalToolId.energy:
-        return _forward ? ('kcal', 'kJ') : ('kJ', 'kcal');
+        return _forward ? ('cal', 'kJ') : ('kJ', 'cal');
       default:
         return ('', '');
     }
@@ -2692,7 +2798,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
         // GB <-> MB
         return true;
       case 'energy':
-        // kcal <-> kJ
+        // calories (kcal) <-> kJ
         return true;
       case 'time':
         // 24h <-> 12h
@@ -2789,7 +2895,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
       case 'data_storage':
         return _fromUnitOverride ?? (_forward ? 'GB' : 'MB');
       case 'energy':
-        return _fromUnitOverride ?? (_forward ? 'kcal' : 'kJ');
+        return _fromUnitOverride ?? (_forward ? 'cal' : 'kJ');
       default:
         return '';
     }
@@ -2828,7 +2934,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
       case 'data_storage':
         return _toUnitOverride ?? (_forward ? 'MB' : 'GB');
       case 'energy':
-        return _toUnitOverride ?? (_forward ? 'kJ' : 'kcal');
+        return _toUnitOverride ?? (_forward ? 'kJ' : 'cal');
       default:
         return '';
     }
@@ -3072,6 +3178,61 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
     return null;
   }
 
+  double? _parsePositiveDouble(String raw) {
+    final value = double.tryParse(raw.trim());
+    if (value == null || value <= 0) return null;
+    return value;
+  }
+
+  String? _toolDisclaimerCopy(BuildContext context) {
+    switch (widget.tool.id) {
+      case 'energy':
+      case 'hydration':
+        return DashboardCopy.disclaimerMedical(context);
+      default:
+        return null;
+    }
+  }
+
+  Widget _buildDisclaimerCard(
+    BuildContext context, {
+    required String text,
+    Key? key,
+  }) {
+    final panelBg = _ToolModalThemePolicy.panelBgSoft(context);
+    final panelBorder = _ToolModalThemePolicy.panelBorder(context);
+    final textMuted = _ToolModalThemePolicy.textMuted(context);
+    return Container(
+      key: key,
+      padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
+      decoration: BoxDecoration(
+        color: panelBg,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: panelBorder),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            Icons.health_and_safety_outlined,
+            size: 16,
+            color: textMuted.withAlpha(220),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              text,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: textMuted,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   List<({String label, double minutes})> _goalCheckpointPlan({
     required double goalDurationMinutes,
     required double goalDistanceKm,
@@ -3118,12 +3279,42 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
             goalDurationMinutes: goalDuration,
             goalDistanceKm: _paceGoalDistanceKm,
           );
-    final raceTargets = <({String label, double km})>[
+    final runTargets = <({String label, double km})>[
       (label: '5K', km: 5.0),
       (label: '10K', km: 10.0),
       (label: 'Half', km: 21.0975),
       (label: 'Marathon', km: 42.195),
     ];
+    final rowTargets = <({String label, double km})>[
+      (label: '500m', km: 0.5),
+      (label: '2K', km: 2.0),
+      (label: '5K', km: 5.0),
+      (label: '10K', km: 10.0),
+    ];
+    final raceTargets = _paceMode == _PaceMode.rowing ? rowTargets : runTargets;
+    final builderDistanceRaw = _parsePositiveDouble(
+      _paceBuilderDistanceController.text,
+    );
+    final builderDuration = _parseDurationMinutesValue(
+      _paceBuilderTimeController.text,
+    );
+    final builderDistanceKm = switch (_paceBuilderDistanceUnit) {
+      'km' => builderDistanceRaw,
+      'mi' => builderDistanceRaw == null ? null : builderDistanceRaw * 1.609344,
+      'm' => builderDistanceRaw == null ? null : builderDistanceRaw / 1000.0,
+      _ => builderDistanceRaw,
+    };
+    final builderPerKm =
+        (builderDistanceKm != null &&
+            builderDistanceKm > 0 &&
+            builderDuration != null &&
+            builderDuration > 0)
+        ? (builderDuration / builderDistanceKm)
+        : null;
+    final builderPerMi = builderPerKm == null
+        ? null
+        : (builderPerKm * 1.609344);
+    final builderSplit500 = builderPerKm == null ? null : (builderPerKm / 2.0);
 
     return Container(
       key: const ValueKey('tool_pace_insights_card'),
@@ -3160,6 +3351,26 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
             ),
           ),
           const SizedBox(height: 8),
+          SegmentedButton<_PaceMode>(
+            key: const ValueKey('tool_pace_mode'),
+            segments: const [
+              ButtonSegment(value: _PaceMode.running, label: Text('Run')),
+              ButtonSegment(value: _PaceMode.rowing, label: Text('Row')),
+            ],
+            selected: {_paceMode},
+            onSelectionChanged: (selection) {
+              final next = selection.isEmpty
+                  ? _PaceMode.running
+                  : selection.first;
+              setState(() {
+                _paceMode = next;
+                if (_paceMode == _PaceMode.rowing && _paceGoalDistanceKm > 10) {
+                  _paceGoalDistanceKm = 2.0;
+                }
+              });
+            },
+          ),
+          const SizedBox(height: 8),
           Wrap(
             spacing: 8,
             runSpacing: 6,
@@ -3188,6 +3399,93 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
           Divider(height: 1, color: panelBorder.withAlpha(150)),
           const SizedBox(height: 10),
           Text(
+            'Distance + Time → Pace',
+            style: Theme.of(context).textTheme.titleSmall?.copyWith(
+              color: headingTone,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  key: const ValueKey('tool_pace_builder_distance'),
+                  controller: _paceBuilderDistanceController,
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                  decoration: InputDecoration(
+                    hintText: _paceMode == _PaceMode.rowing ? '2000' : '5',
+                    labelText: 'Distance',
+                  ),
+                  onChanged: (_) => setState(() {}),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Wrap(
+                spacing: 6,
+                children: [
+                  for (final unit
+                      in _paceMode == _PaceMode.rowing
+                          ? const <String>['m', 'km']
+                          : const <String>['km', 'mi'])
+                    ChoiceChip(
+                      key: ValueKey('tool_pace_builder_unit_$unit'),
+                      label: Text(unit),
+                      selected: _paceBuilderDistanceUnit == unit,
+                      onSelected: (_) {
+                        setState(() {
+                          _paceBuilderDistanceUnit = unit;
+                        });
+                      },
+                    ),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          TextField(
+            key: const ValueKey('tool_pace_builder_time'),
+            controller: _paceBuilderTimeController,
+            keyboardType: TextInputType.datetime,
+            decoration: const InputDecoration(
+              hintText: 'Duration (mm:ss or h:mm:ss)',
+            ),
+            onChanged: (_) => setState(() {}),
+          ),
+          if (builderPerKm != null && builderPerMi != null) ...[
+            const SizedBox(height: 8),
+            Text(
+              'Derived pace: ${_formatPace(builderPerKm)} min/km • ${_formatPace(builderPerMi)} min/mi'
+              '${builderSplit500 == null ? '' : ' • ${_formatPace(builderSplit500)} /500m'}',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: accent,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton.icon(
+                key: const ValueKey('tool_pace_builder_apply'),
+                onPressed: () {
+                  final minutesForFromUnit = _fromUnit == 'min/mi'
+                      ? builderPerMi
+                      : builderPerKm;
+                  setState(() {
+                    _controller.text = _formatPace(minutesForFromUnit);
+                  });
+                },
+                icon: const Icon(Icons.input_rounded, size: 16),
+                label: const Text('Use as input pace'),
+              ),
+            ),
+          ],
+          const SizedBox(height: 10),
+          Divider(height: 1, color: panelBorder.withAlpha(150)),
+          const SizedBox(height: 10),
+          Text(
             'Goal Planner',
             style: Theme.of(context).textTheme.titleSmall?.copyWith(
               color: headingTone,
@@ -3205,16 +3503,17 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                 (label: 'Half', km: 21.0975),
                 (label: 'Marathon', km: 42.195),
               ])
-                ChoiceChip(
-                  key: ValueKey('tool_pace_goal_dist_${item.label}'),
-                  label: Text(item.label),
-                  selected: _paceGoalDistanceKm == item.km,
-                  onSelected: (_) {
-                    setState(() {
-                      _paceGoalDistanceKm = item.km;
-                    });
-                  },
-                ),
+                if (_paceMode == _PaceMode.running || item.km <= 10.0)
+                  ChoiceChip(
+                    key: ValueKey('tool_pace_goal_dist_${item.label}'),
+                    label: Text(item.label),
+                    selected: _paceGoalDistanceKm == item.km,
+                    onSelected: (_) {
+                      setState(() {
+                        _paceGoalDistanceKm = item.km;
+                      });
+                    },
+                  ),
             ],
           ),
           const SizedBox(height: 8),
@@ -3230,7 +3529,9 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
           if (goalPerKm != null) ...[
             const SizedBox(height: 8),
             Text(
-              'Required pace: ${_formatPace(goalPerKm)} min/km • ${_formatPace(goalPerMi!)} min/mi',
+              _paceMode == _PaceMode.rowing
+                  ? 'Required split: ${_formatPace(goalPerKm / 2.0)} /500m • ${_formatPace(goalPerKm)} min/km'
+                  : 'Required pace: ${_formatPace(goalPerKm)} min/km • ${_formatPace(goalPerMi!)} min/mi',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                 color: accent,
                 fontWeight: FontWeight.w800,
@@ -3285,6 +3586,138 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
     );
   }
 
+  Widget _buildEnergyPlannerCard(BuildContext context, Color accent) {
+    final panelBg = _ToolModalThemePolicy.panelBg(context);
+    final panelBorder = _ToolModalThemePolicy.panelBorder(context);
+    final textMuted = _ToolModalThemePolicy.textMuted(context);
+    final headingTone = _ToolModalThemePolicy.headingTone(context);
+    final weightRaw = _parsePositiveDouble(_energyWeightController.text);
+    final weightKg = switch (_energyWeightUnit) {
+      'lb' => weightRaw == null ? null : weightRaw * 0.453592,
+      _ => weightRaw,
+    };
+    final activityFactor = switch (_energyActivity) {
+      'light' => 0.95,
+      'high' => 1.22,
+      _ => 1.08,
+    };
+    final maintenance = weightKg == null
+        ? null
+        : (weightKg * 33.0 * activityFactor);
+    final cutTarget = maintenance == null
+        ? null
+        : math.max(1000.0, maintenance - 350);
+    final gainTarget = maintenance == null ? null : maintenance + 250;
+
+    return Container(
+      key: const ValueKey('tool_energy_planner_card'),
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
+      decoration: BoxDecoration(
+        color: panelBg,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: panelBorder),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Daily Energy Snapshot',
+            style: Theme.of(context).textTheme.titleSmall?.copyWith(
+              color: headingTone,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  key: const ValueKey('tool_energy_weight_input'),
+                  controller: _energyWeightController,
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                  decoration: const InputDecoration(
+                    labelText: 'Body weight',
+                    hintText: '70',
+                  ),
+                  onChanged: (_) => setState(() {}),
+                ),
+              ),
+              const SizedBox(width: 8),
+              ChoiceChip(
+                key: const ValueKey('tool_energy_weight_unit_kg'),
+                label: const Text('kg'),
+                selected: _energyWeightUnit == 'kg',
+                onSelected: (_) => setState(() {
+                  _energyWeightUnit = 'kg';
+                }),
+              ),
+              const SizedBox(width: 6),
+              ChoiceChip(
+                key: const ValueKey('tool_energy_weight_unit_lb'),
+                label: const Text('lb'),
+                selected: _energyWeightUnit == 'lb',
+                onSelected: (_) => setState(() {
+                  _energyWeightUnit = 'lb';
+                }),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 6,
+            children: [
+              ChoiceChip(
+                key: const ValueKey('tool_energy_activity_light'),
+                label: const Text('Light'),
+                selected: _energyActivity == 'light',
+                onSelected: (_) => setState(() {
+                  _energyActivity = 'light';
+                }),
+              ),
+              ChoiceChip(
+                key: const ValueKey('tool_energy_activity_moderate'),
+                label: const Text('Moderate'),
+                selected: _energyActivity == 'moderate',
+                onSelected: (_) => setState(() {
+                  _energyActivity = 'moderate';
+                }),
+              ),
+              ChoiceChip(
+                key: const ValueKey('tool_energy_activity_high'),
+                label: const Text('High'),
+                selected: _energyActivity == 'high',
+                onSelected: (_) => setState(() {
+                  _energyActivity = 'high';
+                }),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          if (maintenance != null && cutTarget != null && gainTarget != null)
+            Text(
+              'Maintain: ${maintenance.round()} cal (${(maintenance * 4.184).round()} kJ)\n'
+              'Cut: ${cutTarget.round()} cal • Gain: ${gainTarget.round()} cal',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: accent,
+                fontWeight: FontWeight.w800,
+              ),
+            )
+          else
+            Text(
+              'Enter body weight to estimate a rough daily calorie target.',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: textMuted,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
   String _stripKnownUnitSuffix(String label) {
     var working = label.trim();
     // Strip common currency symbol prefixes so currency history entries can
@@ -3330,6 +3763,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
       'gb',
       'tb',
       'kcal',
+      'cal',
       'kj',
     ];
 
@@ -3371,18 +3805,26 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
   String _lookupReferenceHeader() {
     return switch (widget.tool.canonicalToolId) {
       CanonicalToolId.shoeSizes => 'Foot (cm)',
-      CanonicalToolId.paperSizes => 'Size',
-      CanonicalToolId.mattressSizes => 'Size',
-      _ => 'Key',
+      _ => 'Reference',
+    };
+  }
+
+  String _lookupMatrixHeaderLabel(String system) {
+    if (widget.tool.canonicalToolId != CanonicalToolId.shoeSizes) {
+      return system;
+    }
+    return switch (system) {
+      'US Men' => 'US M',
+      'US Women' => 'US W',
+      _ => system,
     };
   }
 
   List<String> _lookupMatrixValueSystems() {
     final systems = _lookupSystemsForTool();
-    if (widget.tool.canonicalToolId == CanonicalToolId.shoeSizes) {
-      return systems.where((s) => s != 'JP (cm)').toList(growable: false);
-    }
-    return systems;
+    return widget.tool.canonicalToolId == CanonicalToolId.shoeSizes
+        ? systems.where((s) => s != 'JP (cm)').toList(growable: false)
+        : systems;
   }
 
   Widget _buildLookupBody(BuildContext context, Color accent) {
@@ -3430,6 +3872,15 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
     if (_isFullMatrixLookupTool) {
       final systems = _lookupMatrixValueSystems();
       final rows = _lookupEntriesForTool();
+      const pageSize = 2;
+      final pageCount = (systems.length / pageSize).ceil().clamp(1, 999);
+      final pageIndex = _lookupMatrixPageIndex.clamp(0, pageCount - 1);
+      final pageStart = pageIndex * pageSize;
+      final visibleSystems = systems
+          .skip(pageStart)
+          .take(pageSize)
+          .toList(growable: false);
+      final visibleLabel = visibleSystems.join(' • ');
 
       Widget headerCell(
         String text, {
@@ -3439,14 +3890,14 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
         return SizedBox(
           width: width,
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
             child: Align(
               alignment: alignment,
               child: Text(
                 text,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
                   color: textMuted,
                   fontWeight: FontWeight.w900,
                 ),
@@ -3486,7 +3937,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
               );
             },
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 9),
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
               child: Align(
                 alignment: alignment,
                 child: Text(
@@ -3496,7 +3947,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                       : TextAlign.center,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: textPrimary,
                     fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
                   ),
@@ -3529,6 +3980,55 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
               ),
             ),
             const SizedBox(height: 8),
+            Row(
+              children: [
+                IconButton(
+                  key: ValueKey('tool_lookup_matrix_prev_${widget.tool.id}'),
+                  onPressed: pageIndex > 0
+                      ? () {
+                          setState(() {
+                            _lookupMatrixPageIndex = pageIndex - 1;
+                          });
+                        }
+                      : null,
+                  icon: const Icon(Icons.chevron_left_rounded),
+                ),
+                Expanded(
+                  child: Text(
+                    'Page ${pageIndex + 1} / $pageCount • $visibleLabel',
+                    key: ValueKey(
+                      'tool_lookup_matrix_page_label_${widget.tool.id}',
+                    ),
+                    textAlign: TextAlign.center,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                      color: textPrimary,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+                IconButton(
+                  key: ValueKey('tool_lookup_matrix_next_${widget.tool.id}'),
+                  onPressed: pageIndex < pageCount - 1
+                      ? () {
+                          setState(() {
+                            _lookupMatrixPageIndex = pageIndex + 1;
+                          });
+                        }
+                      : null,
+                  icon: const Icon(Icons.chevron_right_rounded),
+                ),
+              ],
+            ),
+            Text(
+              'Swipe left/right to change table pages.',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: textMuted,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 8),
             Expanded(
               child: Container(
                 key: ValueKey('tool_lookup_matrix_${widget.tool.id}'),
@@ -3537,157 +4037,152 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(color: panelBorder),
                 ),
-                child: LayoutBuilder(
-                  builder: (context, constraints) {
-                    const sizeColWidth = 116.0;
-                    final valueColWidth = systems.length >= 4 ? 108.0 : 120.0;
-                    final tableWidth =
-                        sizeColWidth + (systems.length * valueColWidth);
-                    final canFitWithoutHorizontal =
-                        systems.length <= 2 &&
-                        tableWidth <= constraints.maxWidth + 4;
-                    final fullWidth = canFitWithoutHorizontal
-                        ? constraints.maxWidth
-                        : tableWidth;
+                child: GestureDetector(
+                  onHorizontalDragEnd: (details) {
+                    final velocity = details.primaryVelocity ?? 0;
+                    if (velocity <= -200 && pageIndex < pageCount - 1) {
+                      setState(() {
+                        _lookupMatrixPageIndex = pageIndex + 1;
+                      });
+                    } else if (velocity >= 200 && pageIndex > 0) {
+                      setState(() {
+                        _lookupMatrixPageIndex = pageIndex - 1;
+                      });
+                    }
+                  },
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      const sizeColWidth = 94.0;
+                      final valueColWidth =
+                          ((constraints.maxWidth - sizeColWidth) /
+                                  visibleSystems.length)
+                              .clamp(98.0, 170.0);
+                      final fullWidth =
+                          sizeColWidth +
+                          (visibleSystems.length * valueColWidth);
 
-                    Widget table = SizedBox(
-                      width: fullWidth,
-                      child: Column(
-                        children: [
-                          Row(
-                            children: [
-                              headerCell(
-                                _lookupReferenceHeader(),
-                                width: canFitWithoutHorizontal
-                                    ? sizeColWidth + 12
-                                    : sizeColWidth,
-                                alignment: Alignment.centerLeft,
-                              ),
-                              for (final system in systems)
+                      return SizedBox(
+                        width: constraints.maxWidth,
+                        child: Column(
+                          children: [
+                            Row(
+                              children: [
                                 headerCell(
-                                  system,
-                                  width: canFitWithoutHorizontal
-                                      ? (fullWidth - (sizeColWidth + 12)) /
-                                            systems.length
-                                      : valueColWidth,
-                                  alignment: Alignment.center,
+                                  _lookupReferenceHeader(),
+                                  width: sizeColWidth,
+                                  alignment: Alignment.centerLeft,
                                 ),
-                            ],
-                          ),
-                          Divider(height: 1, color: textMuted.withAlpha(90)),
-                          Expanded(
-                            child: ListView.builder(
-                              itemCount: rows.length,
-                              itemBuilder: (context, i) {
-                                final entry = rows[i];
-                                final selected = entry.keyId == _lookupEntryKey;
-                                final adaptiveValueWidth =
-                                    canFitWithoutHorizontal
-                                    ? (fullWidth - (sizeColWidth + 12)) /
-                                          systems.length
-                                    : valueColWidth;
-                                final adaptiveSizeWidth =
-                                    canFitWithoutHorizontal
-                                    ? sizeColWidth + 12
-                                    : sizeColWidth;
-                                return Column(
-                                  children: [
-                                    Container(
-                                      key: ValueKey(
-                                        'tool_lookup_matrix_row_${widget.tool.id}_${entry.keyId}',
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: selected
-                                            ? accent.withAlpha(36)
-                                            : Colors.transparent,
-                                      ),
-                                      child: Row(
-                                        children: [
-                                          SizedBox(
-                                            width: adaptiveSizeWidth,
-                                            child: InkWell(
-                                              key: ValueKey(
-                                                'tool_lookup_matrix_size_${widget.tool.id}_${entry.keyId}',
-                                              ),
-                                              borderRadius:
-                                                  BorderRadius.circular(8),
-                                              onTap: () {
-                                                setState(() {
-                                                  _lookupEntryKey = entry.keyId;
-                                                });
-                                              },
-                                              child: Padding(
-                                                padding:
-                                                    const EdgeInsets.symmetric(
-                                                      horizontal: 8,
-                                                      vertical: 9,
+                                for (final system in visibleSystems)
+                                  headerCell(
+                                    _lookupMatrixHeaderLabel(system),
+                                    width: valueColWidth,
+                                    alignment: Alignment.center,
+                                  ),
+                              ],
+                            ),
+                            Divider(height: 1, color: textMuted.withAlpha(90)),
+                            Expanded(
+                              child: ListView.builder(
+                                itemCount: rows.length,
+                                itemBuilder: (context, i) {
+                                  final entry = rows[i];
+                                  final selected =
+                                      entry.keyId == _lookupEntryKey;
+                                  return Column(
+                                    children: [
+                                      Container(
+                                        key: ValueKey(
+                                          'tool_lookup_matrix_row_${widget.tool.id}_${entry.keyId}',
+                                        ),
+                                        width: fullWidth,
+                                        decoration: BoxDecoration(
+                                          color: selected
+                                              ? accent.withAlpha(36)
+                                              : Colors.transparent,
+                                        ),
+                                        child: Row(
+                                          children: [
+                                            SizedBox(
+                                              width: sizeColWidth,
+                                              child: InkWell(
+                                                key: ValueKey(
+                                                  'tool_lookup_matrix_size_${widget.tool.id}_${entry.keyId}',
+                                                ),
+                                                borderRadius:
+                                                    BorderRadius.circular(8),
+                                                onTap: () {
+                                                  setState(() {
+                                                    _lookupEntryKey =
+                                                        entry.keyId;
+                                                  });
+                                                },
+                                                child: Padding(
+                                                  padding:
+                                                      const EdgeInsets.symmetric(
+                                                        horizontal: 4,
+                                                        vertical: 8,
+                                                      ),
+                                                  child: Align(
+                                                    alignment:
+                                                        Alignment.centerLeft,
+                                                    child: Text(
+                                                      _lookupReferenceLabel(
+                                                        entry,
+                                                      ),
+                                                      maxLines: 1,
+                                                      overflow:
+                                                          TextOverflow.ellipsis,
+                                                      style: Theme.of(context)
+                                                          .textTheme
+                                                          .bodySmall
+                                                          ?.copyWith(
+                                                            color: selected
+                                                                ? selectedTone
+                                                                : textPrimary,
+                                                            fontWeight: selected
+                                                                ? FontWeight
+                                                                      .w800
+                                                                : FontWeight
+                                                                      .w700,
+                                                          ),
                                                     ),
-                                                child: Align(
-                                                  alignment:
-                                                      Alignment.centerLeft,
-                                                  child: Text(
-                                                    _lookupReferenceLabel(
-                                                      entry,
-                                                    ),
-                                                    maxLines: 1,
-                                                    overflow:
-                                                        TextOverflow.ellipsis,
-                                                    style: Theme.of(context)
-                                                        .textTheme
-                                                        .bodyMedium
-                                                        ?.copyWith(
-                                                          color: selected
-                                                              ? selectedTone
-                                                              : textPrimary,
-                                                          fontWeight: selected
-                                                              ? FontWeight.w800
-                                                              : FontWeight.w700,
-                                                        ),
                                                   ),
                                                 ),
                                               ),
                                             ),
-                                          ),
-                                          for (final system in systems)
-                                            valueCell(
-                                              keySuffix:
-                                                  '${entry.keyId}_${_sanitizeUnitKey(system)}',
-                                              text: _lookupValue(
+                                            for (final system in visibleSystems)
+                                              valueCell(
+                                                keySuffix:
+                                                    '${entry.keyId}_${_sanitizeUnitKey(system)}',
+                                                text: _lookupValue(
+                                                  row: entry,
+                                                  system: system,
+                                                ),
+                                                copyLabel: '$system value',
+                                                rowKey: entry.keyId,
                                                 row: entry,
                                                 system: system,
+                                                width: valueColWidth,
+                                                selected: selected,
                                               ),
-                                              copyLabel: '$system value',
-                                              rowKey: entry.keyId,
-                                              row: entry,
-                                              system: system,
-                                              width: adaptiveValueWidth,
-                                              selected: selected,
-                                            ),
-                                        ],
+                                          ],
+                                        ),
                                       ),
-                                    ),
-                                    if (i != rows.length - 1)
-                                      Divider(
-                                        height: 1,
-                                        color: textMuted.withAlpha(70),
-                                      ),
-                                  ],
-                                );
-                              },
+                                      if (i != rows.length - 1)
+                                        Divider(
+                                          height: 1,
+                                          color: textMuted.withAlpha(70),
+                                        ),
+                                    ],
+                                  );
+                                },
+                              ),
                             ),
-                          ),
-                        ],
-                      ),
-                    );
-
-                    if (!canFitWithoutHorizontal) {
-                      table = SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: table,
+                          ],
+                        ),
                       );
-                    }
-                    return table;
-                  },
+                    },
+                  ),
                 ),
               ),
             ),
@@ -3880,7 +4375,10 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
               children: [
                 Row(
                   children: [
-                    matrixHeaderCell('Size', alignment: Alignment.centerLeft),
+                    matrixHeaderCell(
+                      _lookupReferenceHeader(),
+                      alignment: Alignment.centerLeft,
+                    ),
                     matrixHeaderCell(from, alignment: Alignment.center),
                     matrixHeaderCell(to, alignment: Alignment.center),
                   ],
@@ -3929,7 +4427,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                                   child: Align(
                                     alignment: Alignment.centerLeft,
                                     child: Text(
-                                      n.label,
+                                      _lookupReferenceLabel(n),
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                       style: Theme.of(context)
@@ -5755,6 +6253,13 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
 
   (String, Color, bool)? _currencyStatusBanner() {
     if (!_isCurrencyTool) return null;
+    if (!widget.currencyNetworkEnabled) {
+      return (
+        'Using cached rates. Live refresh is disabled in this build.',
+        _ToolModalThemePolicy.textMuted(context),
+        false,
+      );
+    }
     final errorAt = widget.currencyLastErrorAt;
     if (!widget.currencyIsStale && errorAt == null) return null;
 
@@ -5777,8 +6282,22 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
       );
     }
 
+    final refreshedAt = widget.currencyLastRefreshedAt;
+    final cadenceHours = widget.currencyRefreshCadence.inHours;
+    if (refreshedAt != null) {
+      final updatedLabel = FreshnessCopy.relativeAgeShort(
+        now: DateTime.now(),
+        then: refreshedAt,
+      );
+      return (
+        'Using cached rates from $updatedLabel. Auto-refresh target: every $cadenceHours hours.',
+        _ToolModalThemePolicy.warningTone(context),
+        false,
+      );
+    }
+
     return (
-      DashboardCopy.currencyUsingCachedRates(context),
+      'Using cached rates. Refresh target: every $cadenceHours hours.',
       _ToolModalThemePolicy.warningTone(context),
       false,
     );
@@ -6540,6 +7059,20 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                               if (widget.tool.id == 'pace') ...[
                                 const SizedBox(height: 10),
                                 _buildPaceInsightsCard(context, accent),
+                              ],
+                              if (widget.tool.id == 'energy') ...[
+                                const SizedBox(height: 10),
+                                _buildEnergyPlannerCard(context, accent),
+                              ],
+                              if (_toolDisclaimerCopy(context) != null) ...[
+                                const SizedBox(height: 10),
+                                _buildDisclaimerCard(
+                                  context,
+                                  key: ValueKey(
+                                    'tool_disclaimer_${widget.tool.id}',
+                                  ),
+                                  text: _toolDisclaimerCopy(context)!,
+                                ),
                               ],
 
                               const SizedBox(height: 12),

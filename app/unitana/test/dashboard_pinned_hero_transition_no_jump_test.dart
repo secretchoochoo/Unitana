@@ -13,7 +13,7 @@ void main() {
       surfaceSize: const Size(390, 844),
     );
 
-    final tileFinder = find.byKey(const ValueKey('dashboard_item_height'));
+    final tileFinder = find.byKey(const ValueKey('dashboard_item_baking'));
     expect(tileFinder, findsOneWidget);
 
     final miniOpacityFinder = find.byKey(

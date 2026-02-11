@@ -578,37 +578,6 @@ class _AliveScenePainter extends CustomPainter {
           final x = ((w * 0.06).round() + shiftX * 2 + i * 11) % (w + 28) - 14;
           gust(x: x, y: y, len: 18, thickness: 2, curl: 3);
         }
-      } else if (kind == SceneKey.tornado) {
-        // Tornado: unmistakable funnel over the horizon.
-        final fx = (w * 0.72).round();
-        final topY = (h * 0.20).round();
-        final baseY = (h * 0.58).round(); // just above the water
-        final steps = (baseY - topY).clamp(8, 70);
-
-        for (int i = 0; i < steps; i++) {
-          final t = i / steps;
-          final width = (14 - (t * 10)).round().clamp(3, 14);
-          final y = topY + i;
-          final x0 = fx - (width ~/ 2);
-
-          canvas.drawRect(
-            Rect.fromLTWH(x0 * px, y * px, width * px, px),
-            _tornado,
-          );
-
-          // Small jagged pixels keep it alive without heavy animation.
-          if (((i + shift) % 7) == 0) {
-            _pixel(canvas, x0 - 1, y, px, _tornadoDebris);
-          }
-        }
-
-        // Debris specks near the base.
-        final debrisY = baseY + 2;
-        for (int i = 0; i < 24; i++) {
-          final dx = ((i * 7 + shift * 5) % 17) - 8;
-          final dy = ((i * 11 + shift * 3) % 5) - 2;
-          _pixel(canvas, fx + dx, debrisY + dy, px, _tornadoDebris);
-        }
       }
     }
 
@@ -671,6 +640,36 @@ class _AliveScenePainter extends CustomPainter {
         } else if (v < 7) {
           _pixel(canvas, x, y, px, _wave);
         }
+      }
+    }
+
+    // Tornado is intentionally drawn after mountain/water layers so the
+    // funnel remains readable on compact screens.
+    if (kind == SceneKey.tornado) {
+      final fx = (w * 0.74).round();
+      final topY = (h * 0.16).round();
+      final baseY = (h * 0.72).round();
+      final steps = (baseY - topY).clamp(12, 80);
+      final core = Paint()..color = const Color(0xFFB9B7C9).withAlpha(228);
+      final edge = Paint()..color = _tornado.color.withAlpha(210);
+
+      for (int i = 0; i < steps; i++) {
+        final t = i / steps;
+        final width = (15 - (t * 12)).round().clamp(2, 15);
+        final y = topY + i;
+        final wobble = math.sin((i / 3) + (shift * 0.4)).round();
+        final x0 = fx - (width ~/ 2) + wobble;
+
+        canvas.drawRect(Rect.fromLTWH(x0 * px, y * px, width * px, px), core);
+        _pixel(canvas, x0 - 1, y, px, edge);
+        _pixel(canvas, x0 + width, y, px, edge);
+      }
+
+      final debrisY = baseY + 1;
+      for (int i = 0; i < 34; i++) {
+        final dx = ((i * 9 + shift * 4) % 24) - 12;
+        final dy = ((i * 13 + shift * 3) % 5) - 2;
+        _pixel(canvas, fx + dx, debrisY + dy, px, _tornadoDebris);
       }
     }
 
@@ -748,34 +747,36 @@ class _AliveScenePainter extends CustomPainter {
           }
         }
       } else if (isSnow || isSleet || isHail) {
-        // Snow family. Sleet mixes flakes with a few rain streaks.
-        // Hail uses chunkier pellets.
-        final int flakeSpacing = isHail ? 8 : 6;
-        final int flakeSize = isHail ? 2 : 1;
-
-        for (int y = 2; y < skyBottom; y++) {
-          for (int x = 0; x < w; x++) {
-            final v = (x * 17 + y * 19 + (shift * 7)) % flakeSpacing;
-            if (v == 0) {
-              _pixel(canvas, x, y, px, _snow);
-              if (flakeSize == 2) {
-                _pixel(canvas, x + 1, y, px, _snow);
-                _pixel(canvas, x, y + 1, px, _snow);
-              }
-            }
+        // Snow family:
+        // - Snow: cross/star flakes with gentle drift.
+        // - Hail: compact pellets with faster fall.
+        // - Sleet: snow + a few rain streaks.
+        final int flakeCount = compact ? 22 : 30;
+        final int ySpan = math.max(1, skyBottom - 2);
+        for (int i = 0; i < flakeCount; i++) {
+          final xBase = ((i * 7) + (shift * (isHail ? 2 : 1))) % w;
+          final yBase = 2 + ((i * 11 + shift * (isHail ? 5 : 3)) % ySpan);
+          if (isHail) {
+            _pixel(canvas, xBase, yBase, px, _snow);
+            _pixel(canvas, xBase + 1, yBase, px, _snow);
+            _pixel(canvas, xBase, yBase + 1, px, _snow);
+          } else {
+            _pixel(canvas, xBase, yBase, px, _snow);
+            _pixel(canvas, xBase - 1, yBase, px, _snow);
+            _pixel(canvas, xBase + 1, yBase, px, _snow);
+            _pixel(canvas, xBase, yBase - 1, px, _snow);
+            _pixel(canvas, xBase, yBase + 1, px, _snow);
           }
         }
 
         if (isSleet) {
-          for (int y = 2; y < skyBottom; y++) {
-            for (int x = 0; x < w; x++) {
-              final v = (x * 11 + y * 23 + (shift * 9)) % 11;
-              if (v == 0) {
-                _pixel(canvas, x, y, px, _rain);
-                _pixel(canvas, x + 1, y + 1, px, _rain);
-                _pixel(canvas, x + 2, y + 2, px, _rain);
-              }
-            }
+          final int sleetSpan = math.max(1, skyBottom - 4);
+          for (int i = 0; i < (compact ? 8 : 12); i++) {
+            final x = ((i * 13) + shift * 3) % w;
+            final y = 2 + ((i * 17 + shift * 4) % sleetSpan);
+            _pixel(canvas, x, y, px, _rain);
+            _pixel(canvas, x + 1, y + 1, px, _rain);
+            _pixel(canvas, x + 2, y + 2, px, _rain);
           }
         }
       } else if (isFoggy) {

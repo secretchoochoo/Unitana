@@ -121,7 +121,7 @@ void main() {
     );
     expect(
       LocalizationSeed.enUs['dashboard.settings.licenses.title'],
-      'Open-source licenses',
+      'Open-Source Licenses',
     );
     expect(LocalizationSeed.enUs['dashboard.profiles.title'], 'Profiles');
     expect(

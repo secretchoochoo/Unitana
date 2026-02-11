@@ -7,7 +7,6 @@ import 'package:unitana/app/storage.dart';
 import 'package:unitana/features/dashboard/dashboard_screen.dart';
 import 'package:unitana/features/dashboard/models/activity_lenses.dart';
 import 'package:unitana/features/dashboard/models/lens_accents.dart';
-import 'package:unitana/features/dashboard/widgets/unitana_tile.dart';
 import 'package:unitana/models/place.dart';
 import 'package:unitana/theme/app_theme.dart';
 
@@ -65,16 +64,18 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 150));
 
-      final heightTile = find.widgetWithText(UnitanaTile, 'Height');
-      expect(heightTile, findsOneWidget);
+      final temperatureTile = find.byKey(
+        const ValueKey('dashboard_item_baking'),
+      );
+      expect(temperatureTile, findsOneWidget);
 
       final expectedAccent = LensAccents.iconTintFor(
-        ActivityLensId.healthFitness,
+        ActivityLensId.foodCooking,
       );
 
       final leadingIconFinder = find.descendant(
-        of: heightTile,
-        matching: find.byIcon(Icons.height),
+        of: temperatureTile,
+        matching: find.byIcon(Icons.local_cafe_rounded),
       );
       expect(leadingIconFinder, findsOneWidget);
 
@@ -82,7 +83,7 @@ void main() {
       expect(leadingIcon.color, expectedAccent);
 
       final dotFinder = find.descendant(
-        of: heightTile,
+        of: temperatureTile,
         matching: find.byIcon(Icons.swap_horiz),
       );
       expect(dotFinder, findsOneWidget);

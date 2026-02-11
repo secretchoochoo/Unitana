@@ -120,6 +120,6 @@ void main() {
       findsOneWidget,
     );
     expect(find.textContaining('42'), findsWidgets);
-    expect(find.textContaining('US Men'), findsWidgets);
+    expect(find.textContaining('US M'), findsWidgets);
   });
 }

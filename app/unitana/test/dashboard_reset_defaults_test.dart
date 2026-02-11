@@ -58,17 +58,17 @@ void main() {
     'Reset Dashboard Defaults clears hidden defaults and user-added tiles',
     (tester) async {
       // Seed prefs with:
-      // - a hidden default (Area)
-      // - a user-added Distance tile persisted in the layout controller
+      // - a hidden default (Baking)
+      // - a user-added Area tile persisted in the layout controller
       SharedPreferences.setMockInitialValues({
-        'dashboard_hidden_defaults_v1': jsonEncode(<String>['area']),
+        'dashboard_hidden_defaults_v1': jsonEncode(<String>['baking']),
         // Legacy key still supported for backward compatibility.
-        'hidden_defaults_v1': jsonEncode(<String>['area']),
+        'hidden_defaults_v1': jsonEncode(<String>['baking']),
         'dashboard_layout_v1': jsonEncode([
           {
-            'id': 'user_distance_1',
+            'id': 'user_area_1',
             'kind': 'tool',
-            'toolId': 'distance',
+            'toolId': 'area',
             'colSpan': 1,
             'rowSpan': 1,
             'anchorIndex': 0,
@@ -83,9 +83,9 @@ void main() {
       final state = buildSeededState();
       await pumpDashboard(tester, state);
 
-      // Hidden default should not be visible; user-added Distance should be visible.
-      expect(find.text('Area'), findsNothing);
-      expect(find.text('Distance'), findsAtLeastNWidgets(1));
+      // Hidden default should not be visible; user-added Area should be visible.
+      expect(find.text('Baking'), findsNothing);
+      expect(find.text('Area'), findsAtLeastNWidgets(1));
 
       // Open the dashboard menu.
       await tester.tap(find.byKey(const Key('dashboard_menu_button')));
@@ -106,9 +106,9 @@ void main() {
       await tester.pumpAndSettle(const Duration(milliseconds: 400));
 
       // After reset:
-      // - hidden default is cleared (Area returns)
+      // - hidden default is cleared (Baking returns)
       // - user-added layout is cleared (dashboard_layout_v1 removed)
-      expect(find.text('Area'), findsAtLeastNWidgets(1));
+      expect(find.text('Baking'), findsAtLeastNWidgets(1));
 
       final prefs = await SharedPreferences.getInstance();
       expect(prefs.get('dashboard_layout_v1'), isNull);
