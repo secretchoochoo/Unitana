@@ -348,6 +348,9 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
   String _energyActivity = 'moderate';
 
   bool get _isMultiUnitTool =>
+      widget.tool.canonicalToolId == CanonicalToolId.distance ||
+      widget.tool.canonicalToolId == CanonicalToolId.area ||
+      widget.tool.canonicalToolId == CanonicalToolId.liquids ||
       widget.tool.canonicalToolId == CanonicalToolId.volume ||
       widget.tool.canonicalToolId == CanonicalToolId.pressure ||
       widget.tool.canonicalToolId == CanonicalToolId.weight ||
@@ -380,6 +383,12 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
       return const <String>['tsp', 'tbsp', 'cup', 'ml', 'L'];
     }
     switch (widget.tool.canonicalToolId) {
+      case CanonicalToolId.distance:
+        return const <String>['m', 'km', 'mi', 'yd', 'ft', 'in'];
+      case CanonicalToolId.area:
+        return const <String>['m²', 'ft²', 'yd²', 'acre', 'ha'];
+      case CanonicalToolId.liquids:
+        return const <String>['tsp', 'tbsp', 'cup', 'mL', 'L', 'pt', 'qt'];
       case CanonicalToolId.volume:
         return const <String>['mL', 'L', 'pt', 'qt', 'gal'];
       case CanonicalToolId.pressure:
@@ -6831,19 +6840,12 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                                                   child: Align(
                                                     alignment:
                                                         Alignment.centerLeft,
-                                                    child: _supportsUnitPicker
-                                                        ? FittedBox(
-                                                            fit: BoxFit
-                                                                .scaleDown,
-                                                            alignment: Alignment
-                                                                .centerLeft,
-                                                            child: unitsWidget,
-                                                          )
-                                                        : SingleChildScrollView(
-                                                            scrollDirection:
-                                                                Axis.horizontal,
-                                                            child: unitsWidget,
-                                                          ),
+                                                    child:
+                                                        SingleChildScrollView(
+                                                          scrollDirection:
+                                                              Axis.horizontal,
+                                                          child: unitsWidget,
+                                                        ),
                                                   ),
                                                 ),
                                                 const SizedBox(width: 10),

@@ -915,7 +915,7 @@ class _DashboardBoardState extends State<DashboardBoard>
                 // Enter edit mode without triggering a second actions sheet.
                 widget.onEnteredEditMode(null);
               }
-              _showTileActions(context, item);
+              _showTileActions(context, item, currentIndex: currentIndex);
             }
           : null,
       onTap: widget.isEditing
@@ -1014,7 +1014,8 @@ class _DashboardBoardState extends State<DashboardBoard>
               const SizedBox(width: 2),
               _EditIconButton(
                 icon: Icons.edit_rounded,
-                onTap: () => _showTileActions(context, item),
+                onTap: () =>
+                    _showTileActions(context, item, currentIndex: currentIndex),
               ),
               const SizedBox(width: 2),
               _EditIconButton(
@@ -1077,8 +1078,9 @@ class _DashboardBoardState extends State<DashboardBoard>
 
   Future<void> _showTileActions(
     BuildContext context,
-    DashboardBoardItem item,
-  ) async {
+    DashboardBoardItem item, {
+    int? currentIndex,
+  }) async {
     final action = await showModalBottomSheet<_TileEditAction>(
       context: context,
       showDragHandle: true,
@@ -1157,7 +1159,12 @@ class _DashboardBoardState extends State<DashboardBoard>
           if (currentId != null) {
             await widget.layout.hideDefaultTool(currentId);
           }
-          await widget.layout.addTool(picked);
+          await widget.layout.addTool(
+            picked,
+            anchor: currentIndex == null
+                ? null
+                : DashboardAnchor(index: currentIndex),
+          );
         } else {
           await widget.layout.replaceItem(item.id, picked);
         }
@@ -1281,6 +1288,9 @@ class _DashboardBoardState extends State<DashboardBoard>
     );
 
     if (isDefault && widget.layout.isDefaultToolHidden(picked.id)) {
+      if (anchor != null) {
+        await widget.layout.setDefaultToolAnchorIndex(picked.id, anchor.index);
+      }
       await widget.layout.unhideDefaultTool(picked.id);
       if (!context.mounted) {
         return;

@@ -309,12 +309,17 @@ class UnitanaAppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> createProfile(UnitanaProfile profile) async {
+  Future<void> createProfile(UnitanaProfile profile, {int? insertIndex}) async {
     final id = profile.id.trim();
     if (id.isEmpty) return;
     if (_profiles.any((p) => p.id == id)) return;
 
-    _profiles = <UnitanaProfile>[..._profiles, profile];
+    final next = List<UnitanaProfile>.from(_profiles);
+    final targetIndex = insertIndex == null
+        ? next.length
+        : insertIndex.clamp(0, next.length).toInt();
+    next.insert(targetIndex, profile);
+    _profiles = next;
     _activeProfileId = id;
     _touchProfileRecency(_activeProfileId, notify: false);
     await _persistProfiles();

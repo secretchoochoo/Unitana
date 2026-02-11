@@ -188,7 +188,7 @@ class City {
     }
     return City(
       id: json['id'].toString().trim(),
-      cityName: json['cityName'].toString().trim(),
+      cityName: json['cityName'].toString().trim().replaceAll('_', ' '),
       countryCode: json['countryCode'].toString().trim(),
       timeZoneId: json['timeZoneId'].toString().trim(),
       currencyCode: json['currencyCode'].toString().trim(),

@@ -17,7 +17,6 @@ void main() {
   // Allow runtime font fetching in widget/golden tests so GoogleFonts can resolve
   // required font files during tests (avoids bundling font assets in-repo).
   GoogleFonts.config.allowRuntimeFetching = true;
-
   const arrow = '→';
 
   UnitanaAppState buildSeededState() {
@@ -81,17 +80,22 @@ void main() {
     return key.value.substring('tool_input_'.length);
   }
 
-  String readUnitArrowLabel(
+  String readFromUnitLabel(
     WidgetTester tester,
     Finder modalRoot,
     String toolId,
   ) {
-    final label = find.descendant(
+    final fromButton = find.descendant(
       of: modalRoot,
-      matching: find.byKey(ValueKey('tool_units_$toolId')),
+      matching: find.byKey(ValueKey('tool_unit_from_$toolId')),
     );
-    expect(label, findsOneWidget);
-    return tester.widget<Text>(label).data ?? '';
+    expect(fromButton, findsOneWidget);
+    final fromText = find.descendant(
+      of: fromButton,
+      matching: find.byType(Text),
+    );
+    expect(fromText, findsAtLeastNWidgets(1));
+    return tester.widget<Text>(fromText.first).data?.trim() ?? '';
   }
 
   String readResultLine(WidgetTester tester, String toolId) {
@@ -184,8 +188,7 @@ void main() {
 
       final toolId = resolveToolIdFromModal(tester, modal);
 
-      final units = readUnitArrowLabel(tester, modal, toolId);
-      final fromUnit = units.split(arrow).first.trim().toLowerCase();
+      final fromUnit = readFromUnitLabel(tester, modal, toolId).toLowerCase();
 
       // m² -> ft² (forward) OR ft² -> m² (reverse)
       final fromIsM2 = fromUnit.contains('m') && !fromUnit.contains('ft');

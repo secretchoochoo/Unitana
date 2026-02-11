@@ -160,7 +160,11 @@ void main() {
       required String side,
       required String code,
     }) async {
-      await tester.tap(find.byKey(ValueKey(buttonKey)));
+      final button = find.byKey(ValueKey(buttonKey));
+      expect(button, findsOneWidget);
+      await tester.ensureVisible(button);
+      await tester.pumpAndSettle(const Duration(milliseconds: 120));
+      await tester.tap(button, warnIfMissed: false);
       await tester.pumpAndSettle();
 
       final pickerList = find.byKey(

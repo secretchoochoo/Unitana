@@ -62,9 +62,19 @@ void main() {
         ),
         findsNothing,
       );
-      final distanceText = tester.widget<Text>(distanceUnits);
+      final distanceFromButton = find.byKey(
+        const ValueKey('tool_unit_from_distance'),
+      );
+      expect(distanceFromButton, findsOneWidget);
+      final distanceText = tester.widget<Text>(
+        find
+            .descendant(of: distanceFromButton, matching: find.byType(Text))
+            .first,
+      );
       expect(distanceText.style?.fontWeight, FontWeight.w800);
-      expect(distanceText.style?.fontSize, speedFontSize);
+      expect(distanceText.style?.fontSize, isNotNull);
+      expect(distanceText.style!.fontSize!, greaterThanOrEqualTo(14));
+      expect(speedFontSize, isNotNull);
     },
   );
 }

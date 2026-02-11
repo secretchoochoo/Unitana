@@ -16,7 +16,7 @@ class CityLabelUtils {
   }
 
   static String cleanCityName(String raw) {
-    var s = raw.trim();
+    var s = raw.trim().replaceAll('_', ' ');
     if (s.isEmpty) return raw;
 
     // Trim noisy leading punctuation from data-source aliases.

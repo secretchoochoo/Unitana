@@ -26,6 +26,10 @@
   - alert semantics QA, marquee scene legibility closure, stale/advisory standards.
 - XL-T: Versioning + Release Ops
   - semantic/app versioning hooks, build metadata strategy, distribution checklist.
+- XL-U: Clothing Sizes Decision Pack
+  - keep/toss decision with user-value scoring.
+  - if kept: region matrix scope (US/EU/UK/JP), category scope, and brand-policy strategy.
+  - if tossed: migration path for existing references and replacement recommendations.
 
 ## Decision Gates
 - Gate A: approve public default tile set.

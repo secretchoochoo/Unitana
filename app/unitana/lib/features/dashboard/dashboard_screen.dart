@@ -1671,8 +1671,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
             await _switchActiveProfileAndReload(profileId);
           },
           onEditProfile: _editProfileFromBoard,
-          onAddProfile: () async {
-            await _createAndOpenNewProfileWizard(reopenOnCancel: false);
+          onAddProfile: ({int? slotIndex}) async {
+            await _createAndOpenNewProfileWizard(
+              reopenOnCancel: false,
+              slotIndex: slotIndex,
+            );
           },
           onDeleteProfile: (profileId) async {
             final before = state.activeProfileId;
@@ -1713,20 +1716,34 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return 'profile_$n';
   }
 
+  String _nextProfileDisplayName() {
+    var highest = 0;
+    final pattern = RegExp(r'^Profile\s*#\s*(\d+)$', caseSensitive: false);
+    for (final profile in state.profiles) {
+      final match = pattern.firstMatch(profile.name.trim());
+      if (match == null) continue;
+      final parsed = int.tryParse(match.group(1) ?? '');
+      if (parsed != null && parsed > highest) {
+        highest = parsed;
+      }
+    }
+    final next = highest + 1;
+    return 'Profile #$next';
+  }
+
   Future<void> _createAndOpenNewProfileWizard({
     bool reopenOnCancel = true,
+    int? slotIndex,
   }) async {
     final previousProfileId = state.activeProfileId;
     final profile = UnitanaProfile(
       id: _nextProfileId(),
-      name: DashboardCopy.profilesDefaultName(context),
+      name: _nextProfileDisplayName(),
       places: const <Place>[],
       defaultPlaceId: null,
     );
 
-    await state.createProfile(profile);
-    if (!mounted) return;
-    await _switchActiveProfileAndReload(profile.id);
+    await state.createProfile(profile, insertIndex: slotIndex);
     if (!mounted) return;
     await _openEditProfileWizard(
       reopenSwitcherOnCancel: reopenOnCancel,
@@ -1734,6 +1751,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
       returnToProfileIdOnCancel: previousProfileId,
       successToast: DashboardCopy.dashboardProfileCreated(context),
     );
+    if (!mounted) return;
+
+    // Rebind profile-scoped controllers after wizard save/cancel flow settles.
+    _session.dispose();
+    _layout.dispose();
+    _bindProfileScopedControllers();
+    setState(() {
+      _isEditingWidgets = false;
+      _focusTileId = null;
+    });
+    await _refreshAllNow();
   }
 
   Widget _sheetCloseButton(BuildContext context) {

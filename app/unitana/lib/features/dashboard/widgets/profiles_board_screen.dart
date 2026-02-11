@@ -14,7 +14,7 @@ class ProfilesBoardScreen extends StatefulWidget {
   final UnitanaAppState state;
   final Future<void> Function(String profileId) onSwitchProfile;
   final Future<void> Function(String profileId) onEditProfile;
-  final Future<void> Function() onAddProfile;
+  final Future<void> Function({int? slotIndex}) onAddProfile;
   final Future<void> Function(String profileId) onDeleteProfile;
 
   const ProfilesBoardScreen({
@@ -399,7 +399,8 @@ class _ProfilesBoardScreenState extends State<ProfilesBoardScreen>
                                   ? 0
                                   : index - ordered.length;
                               return _AddProfileTile(
-                                onTap: widget.onAddProfile,
+                                onTap: () =>
+                                    widget.onAddProfile(slotIndex: index),
                                 slotIndex: slotIndex,
                               );
                             },
@@ -495,7 +496,7 @@ class _ProfilesBoardScreenState extends State<ProfilesBoardScreen>
                       if (index >= ordered.length) {
                         final addSlot = index - ordered.length;
                         return _AddProfileTile(
-                          onTap: widget.onAddProfile,
+                          onTap: () => widget.onAddProfile(slotIndex: index),
                           slotIndex: addSlot,
                         );
                       }

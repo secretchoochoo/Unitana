@@ -531,6 +531,12 @@ class ToolConverters {
           toUnit: toUnit,
           input: input,
         );
+      case CanonicalToolId.area:
+        return _convertAreaWithUnits(
+          fromUnit: fromUnit,
+          toUnit: toUnit,
+          input: input,
+        );
       case CanonicalToolId.liquids:
         return _convertLiquidsWithUnits(
           fromUnit: fromUnit,
@@ -586,6 +592,7 @@ class ToolConverters {
       'm': 1.0,
       'km': 1000.0,
       'mi': 1609.344,
+      'yd': 0.9144,
       'ft': 0.3048,
       'in': 0.0254,
     };
@@ -626,6 +633,36 @@ class ToolConverters {
     return '${_fmt(out)} $toUnit';
   }
 
+  static String? _convertAreaWithUnits({
+    required String fromUnit,
+    required String toUnit,
+    required String input,
+  }) {
+    final value = double.tryParse(input.trim());
+    if (value == null) return null;
+
+    // Normalize into square meters as a base unit.
+    const sqmPer = <String, double>{
+      'm²': 1.0,
+      'm2': 1.0,
+      'ft²': 0.09290304,
+      'ft2': 0.09290304,
+      'yd²': 0.83612736,
+      'yd2': 0.83612736,
+      'acre': 4046.8564224,
+      'ha': 10000.0,
+      'hectare': 10000.0,
+    };
+
+    final fromFactor = sqmPer[fromUnit];
+    final toFactor = sqmPer[toUnit];
+    if (fromFactor == null || toFactor == null) return null;
+
+    final sqm = value * fromFactor;
+    final out = sqm / toFactor;
+    return '${_fmt(out)} $toUnit';
+  }
+
   static String? _convertLiquidsWithUnits({
     required String fromUnit,
     required String toUnit,
@@ -644,6 +681,8 @@ class ToolConverters {
       'tsp': 4.92892159375,
       'oz': 29.5735295625,
       'fl oz': 29.5735295625,
+      'pt': 473.176473,
+      'qt': 946.352946,
     };
 
     final fromFactor = mlPer[fromUnit];

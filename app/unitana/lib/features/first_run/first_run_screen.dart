@@ -13,6 +13,7 @@ import 'package:unitana/features/dashboard/widgets/compact_reality_toggle.dart';
 import 'package:unitana/features/dashboard/widgets/pinned_mini_hero_readout.dart';
 import 'package:unitana/features/dashboard/widgets/places_hero_v2.dart';
 import 'package:unitana/models/place.dart';
+import 'package:unitana/theme/app_theme.dart';
 import 'package:unitana/widgets/city_picker.dart';
 
 enum FirstRunExitAction { saved, cancelled }
@@ -73,6 +74,9 @@ class _FirstRunScreenState extends State<FirstRunScreen> {
 
   String _profileName = '';
   late final TextEditingController _nameCtrl;
+  String _wizardThemeMode = 'dark';
+  bool _wizardLofiEnabled = false;
+  double _wizardLofiVolume = 0.25;
 
   // Preview-only controllers. These mirror dashboard wiring so the wizard can
   // show the real visual system without duplicating widget trees.
@@ -115,6 +119,9 @@ class _FirstRunScreenState extends State<FirstRunScreen> {
     _previewSession = DashboardSessionController();
     _previewLiveData = DashboardLiveDataController();
     _nameCtrl = TextEditingController();
+    _wizardThemeMode = _normalizeThemeMode(widget.state.preferredThemeMode);
+    _wizardLofiEnabled = widget.state.lofiAudioEnabled;
+    _wizardLofiVolume = widget.state.lofiAudioVolume;
 
     if (widget.editMode) {
       _profileName = widget.state.profileName;
@@ -144,6 +151,11 @@ class _FirstRunScreenState extends State<FirstRunScreen> {
       }
     }
 
+    if (!widget.editMode) {
+      _profileName = _suggestedDefaultProfileName();
+      _nameCtrl.text = _profileName;
+    }
+
     // Best-effort load of the full city dataset in the background.
     _cityRepo.load().then((_) {
       if (!mounted) return;
@@ -170,6 +182,24 @@ class _FirstRunScreenState extends State<FirstRunScreen> {
         }
       });
     });
+  }
+
+  static String _normalizeThemeMode(String raw) {
+    final mode = raw.trim().toLowerCase();
+    if (mode == 'light' || mode == 'dark' || mode == 'system') return mode;
+    return 'dark';
+  }
+
+  String _suggestedDefaultProfileName() {
+    var highest = 0;
+    final pattern = RegExp(r'^Profile\s*#\s*(\d+)$', caseSensitive: false);
+    for (final profile in widget.state.profiles) {
+      final match = pattern.firstMatch(profile.name.trim());
+      if (match == null) continue;
+      final parsed = int.tryParse(match.group(1) ?? '');
+      if (parsed != null && parsed > highest) highest = parsed;
+    }
+    return 'Profile #${highest + 1}';
   }
 
   City? _findCity(String cityName, String countryCode) {
@@ -298,11 +328,6 @@ class _FirstRunScreenState extends State<FirstRunScreen> {
         _destUnitSystem = selected.defaultUnitSystem;
         _destUse24h = selected.defaultUse24h;
       }
-      // Keep the default name aligned to Destination unless the user typed.
-      if (_profileName.trim().isEmpty && _destCity != null) {
-        _profileName = _destCity!.cityName;
-        _nameCtrl.text = _profileName;
-      }
     });
 
     _schedulePreviewRefresh();
@@ -361,11 +386,7 @@ class _FirstRunScreenState extends State<FirstRunScreen> {
   String _effectiveProfileName() {
     final trimmed = _profileName.trim();
     if (trimmed.isNotEmpty) return trimmed;
-    final dest = _destCity;
-    if (dest != null && dest.cityName.trim().isNotEmpty) {
-      return dest.cityName.trim();
-    }
-    return 'Unitana';
+    return _suggestedDefaultProfileName();
   }
 
   void _cancelAndClose() {
@@ -841,10 +862,6 @@ class _FirstRunScreenState extends State<FirstRunScreen> {
       color: cs.onSurface,
       height: 1.05,
     );
-    final subStyle = (tt.bodyMedium ?? const TextStyle(fontSize: 14)).copyWith(
-      color: cs.onSurface.withAlpha(200),
-      height: 1.35,
-    );
 
     final home = _previewHome();
     final dest = _previewDest();
@@ -864,15 +881,7 @@ class _FirstRunScreenState extends State<FirstRunScreen> {
                   textAlign: TextAlign.center,
                 ),
               ),
-              const SizedBox(height: 10),
-              Center(
-                child: Text(
-                  DashboardCopy.firstRunConfirmSubtitle(context),
-                  style: subStyle,
-                  textAlign: TextAlign.center,
-                ),
-              ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 14),
               TextField(
                 key: const ValueKey('first_run_profile_name_field'),
                 decoration: InputDecoration(
@@ -882,9 +891,7 @@ class _FirstRunScreenState extends State<FirstRunScreen> {
                         color: cs.primary.withAlpha(220),
                         fontWeight: FontWeight.w700,
                       ),
-                  hintText:
-                      _destCity?.cityName ??
-                      DashboardCopy.firstRunProfileNameHint(context),
+                  hintText: DashboardCopy.firstRunProfileNameHint(context),
                   filled: true,
                   fillColor: cs.surfaceContainerHighest.withAlpha(55),
                   border: OutlineInputBorder(
@@ -906,7 +913,11 @@ class _FirstRunScreenState extends State<FirstRunScreen> {
                   ),
                   child: Text(
                     DashboardCopy.firstRunPickCitiesHint(context),
-                    style: subStyle,
+                    style: (tt.bodyMedium ?? const TextStyle(fontSize: 14))
+                        .copyWith(
+                          color: cs.onSurface.withAlpha(200),
+                          height: 1.35,
+                        ),
                     textAlign: TextAlign.center,
                   ),
                 )
@@ -922,25 +933,39 @@ class _FirstRunScreenState extends State<FirstRunScreen> {
                       children: [
                         ClipRRect(
                           borderRadius: BorderRadius.circular(22),
-                          child: DecoratedBox(
-                            decoration: BoxDecoration(
-                              border: Border.all(
-                                color: cs.outlineVariant.withAlpha(160),
-                                width: 1,
-                              ),
-                            ),
-                            child: Padding(
-                              padding: const EdgeInsets.all(12),
-                              child: PlacesHeroV2(
-                                includeTestKeys: false,
-                                home: home,
-                                destination: dest,
-                                session: _previewSession,
-                                liveData: _previewLiveData,
-                              ),
+                          child: Theme(
+                            data: _previewThemeData(context),
+                            child: Builder(
+                              builder: (previewContext) {
+                                final previewCs = Theme.of(
+                                  previewContext,
+                                ).colorScheme;
+                                return DecoratedBox(
+                                  decoration: BoxDecoration(
+                                    border: Border.all(
+                                      color: previewCs.outlineVariant.withAlpha(
+                                        160,
+                                      ),
+                                      width: 1,
+                                    ),
+                                  ),
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(12),
+                                    child: PlacesHeroV2(
+                                      includeTestKeys: false,
+                                      home: home,
+                                      destination: dest,
+                                      session: _previewSession,
+                                      liveData: _previewLiveData,
+                                    ),
+                                  ),
+                                );
+                              },
                             ),
                           ),
                         ),
+                        const SizedBox(height: 14),
+                        _themeAndAudioControls(context),
                       ],
                     );
                   },
@@ -948,6 +973,120 @@ class _FirstRunScreenState extends State<FirstRunScreen> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  ThemeData _previewThemeData(BuildContext context) {
+    final mode = _normalizeThemeMode(_wizardThemeMode);
+    if (mode == 'light') return UnitanaTheme.light();
+    if (mode == 'dark') return UnitanaTheme.dark();
+    final brightness = MediaQuery.platformBrightnessOf(context);
+    return brightness == Brightness.light
+        ? UnitanaTheme.light()
+        : UnitanaTheme.dark();
+  }
+
+  Widget _themeAndAudioControls(BuildContext context) {
+    final tt = Theme.of(context).textTheme;
+    final sectionTitle = tt.titleMedium?.copyWith(
+      fontWeight: FontWeight.w800,
+      color: cs.onSurface.withAlpha(230),
+    );
+    final sectionBody = tt.bodyMedium?.copyWith(
+      color: cs.onSurface.withAlpha(190),
+    );
+
+    Widget modeChip({
+      required String label,
+      required String mode,
+      required IconData icon,
+    }) {
+      final selected = _wizardThemeMode == mode;
+      return FilterChip(
+        selected: selected,
+        showCheckmark: true,
+        avatar: Icon(icon, size: 16),
+        label: Text(label),
+        onSelected: (_) async {
+          if (_wizardThemeMode == mode) return;
+          setState(() => _wizardThemeMode = mode);
+          await widget.state.setPreferredThemeMode(mode);
+        },
+      );
+    }
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
+      decoration: BoxDecoration(
+        color: cs.surfaceContainerHighest.withAlpha(55),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: cs.outlineVariant.withAlpha(160)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(DashboardCopy.settingsThemeTitle(context), style: sectionTitle),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              modeChip(
+                label: DashboardCopy.settingsThemeDark(context),
+                mode: 'dark',
+                icon: Icons.dark_mode_rounded,
+              ),
+              modeChip(
+                label: DashboardCopy.settingsThemeLight(context),
+                mode: 'light',
+                icon: Icons.light_mode_rounded,
+              ),
+              modeChip(
+                label: DashboardCopy.settingsThemeSystem(context),
+                mode: 'system',
+                icon: Icons.phone_android_rounded,
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Text(
+            DashboardCopy.settingsLofiAudioTitle(context),
+            style: sectionTitle,
+          ),
+          const SizedBox(height: 4),
+          Text(
+            '${_wizardLofiEnabled ? DashboardCopy.settingsLofiAudioOn(context) : DashboardCopy.settingsLofiAudioOff(context)} · ${DashboardCopy.settingsLofiAudioVolume(context, percent: (_wizardLofiVolume * 100).round())}',
+            style: sectionBody,
+          ),
+          const SizedBox(height: 6),
+          SwitchListTile(
+            value: _wizardLofiEnabled,
+            onChanged: (v) async {
+              setState(() => _wizardLofiEnabled = v);
+              await widget.state.setLofiAudioEnabled(v);
+            },
+            contentPadding: EdgeInsets.zero,
+            title: Text(DashboardCopy.settingsLofiAudioTitle(context)),
+          ),
+          Opacity(
+            opacity: _wizardLofiEnabled ? 1 : 0.5,
+            child: Slider(
+              value: _wizardLofiVolume,
+              min: 0,
+              max: 1,
+              divisions: 20,
+              label: '${(_wizardLofiVolume * 100).round()}%',
+              onChanged: _wizardLofiEnabled
+                  ? (v) async {
+                      setState(() => _wizardLofiVolume = v);
+                      await widget.state.setLofiAudioVolume(v);
+                    }
+                  : null,
+            ),
+          ),
+        ],
       ),
     );
   }

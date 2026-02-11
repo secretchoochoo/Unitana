@@ -81,17 +81,22 @@ void main() {
     return key.value.substring('tool_input_'.length);
   }
 
-  String readUnitArrowLabel(
+  String readFromUnitLabel(
     WidgetTester tester,
     Finder modalRoot,
     String toolId,
   ) {
-    final label = find.descendant(
+    final fromButton = find.descendant(
       of: modalRoot,
-      matching: find.byKey(ValueKey('tool_units_$toolId')),
+      matching: find.byKey(ValueKey('tool_unit_from_$toolId')),
     );
-    expect(label, findsOneWidget);
-    return tester.widget<Text>(label).data ?? '';
+    expect(fromButton, findsOneWidget);
+    final fromText = find.descendant(
+      of: fromButton,
+      matching: find.byType(Text),
+    );
+    expect(fromText, findsAtLeastNWidgets(1));
+    return tester.widget<Text>(fromText.first).data?.trim() ?? '';
   }
 
   String readResultLine(WidgetTester tester, String toolId) {
@@ -170,8 +175,7 @@ void main() {
     expect(modal, findsOneWidget);
 
     final toolId = resolveToolIdFromModal(tester, modal);
-    final units = readUnitArrowLabel(tester, modal, toolId);
-    final fromUnit = units.split(arrow).first.trim().toLowerCase();
+    final fromUnit = readFromUnitLabel(tester, modal, toolId).toLowerCase();
 
     // Liquids tool uses the travel preset: oz <-> ml (1 oz = 29.5735 ml).
     final fromIsOz = fromUnit.contains('oz');
