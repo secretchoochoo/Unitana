@@ -891,7 +891,7 @@ class _FirstRunScreenState extends State<FirstRunScreen> {
                         color: cs.primary.withAlpha(220),
                         fontWeight: FontWeight.w700,
                       ),
-                  hintText: DashboardCopy.firstRunProfileNameHint(context),
+                  hintText: _suggestedDefaultProfileName(),
                   filled: true,
                   fillColor: cs.surfaceContainerHighest.withAlpha(55),
                   border: OutlineInputBorder(
@@ -900,6 +900,14 @@ class _FirstRunScreenState extends State<FirstRunScreen> {
                 ),
                 onChanged: (v) => setState(() => _profileName = v),
                 controller: _nameCtrl,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                DashboardCopy.firstRunConfirmSubtitle(context),
+                style: (tt.bodySmall ?? const TextStyle(fontSize: 12)).copyWith(
+                  color: cs.onSurface.withAlpha(180),
+                  height: 1.3,
+                ),
               ),
               const SizedBox(height: 18),
               if (home == null || dest == null)

@@ -107,4 +107,47 @@ void main() {
     await tripLayout.load();
     expect(tripLayout.items, isEmpty);
   });
+
+  test('createProfile supports insertIndex ordering', () async {
+    final storage = UnitanaStorage();
+    final state = UnitanaAppState(storage);
+    await state.load();
+
+    await state.createProfile(
+      const UnitanaProfile(
+        id: 'profile_2',
+        name: 'Profile #2',
+        places: <Place>[],
+        defaultPlaceId: null,
+      ),
+    );
+    await state.createProfile(
+      const UnitanaProfile(
+        id: 'profile_3',
+        name: 'Profile #3',
+        places: <Place>[],
+        defaultPlaceId: null,
+      ),
+    );
+    await state.createProfile(
+      const UnitanaProfile(
+        id: 'profile_inserted',
+        name: 'Profile #X',
+        places: <Place>[],
+        defaultPlaceId: null,
+      ),
+      insertIndex: 1,
+    );
+
+    final ids = state.profiles.map((p) => p.id).toList(growable: false);
+    expect(
+      ids,
+      equals(<String>[
+        'profile_1',
+        'profile_inserted',
+        'profile_2',
+        'profile_3',
+      ]),
+    );
+  });
 }
