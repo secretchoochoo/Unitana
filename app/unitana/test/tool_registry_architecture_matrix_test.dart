@@ -3,25 +3,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:unitana/features/dashboard/models/tool_registry.dart';
 
 void main() {
-  test('deferred tools remain explicit and reasoned', () {
+  test('no deferred tools remain in registry', () {
     final deferred = ToolRegistry.deferredTools();
-    final deferredIds = deferred.map((t) => t.toolId).toSet();
-
-    expect(deferredIds, {'clothing_sizes'});
-
-    for (final tool in deferred) {
-      expect(
-        tool.isEnabled,
-        isFalse,
-        reason: '${tool.toolId} must be disabled',
-      );
-      expect(tool.deferReason, isNotNull);
-      expect(tool.deferReason!.trim(), isNotEmpty);
-      if (tool.toolId == 'clothing_sizes') {
-        expect(tool.deferReason, contains('Activate only after'));
-        expect(tool.deferReason, contains('confidence'));
-      }
-    }
+    expect(deferred, isEmpty);
   });
 
   test('time and temperature aliases map to canonical targets', () {

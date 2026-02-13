@@ -137,6 +137,32 @@ void main() {
     );
   });
 
+  testWidgets('clothing sizes is enabled and opens lookup modal', (
+    tester,
+  ) async {
+    await pumpDashboardForTest(tester);
+    await _openToolPicker(tester);
+    await _searchTool(tester, 'clothing sizes');
+
+    await tester.tap(
+      find.byKey(const ValueKey('toolpicker_search_tool_clothing_sizes')),
+    );
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const ValueKey('tool_title_clothing_sizes')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('tool_lookup_matrix_clothing_sizes')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('tool_lookup_disclaimer_clothing_sizes')),
+      findsOneWidget,
+    );
+  });
+
   testWidgets('baking appears in picker and opens Baking modal', (
     tester,
   ) async {

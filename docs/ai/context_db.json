@@ -96,9 +96,9 @@
       ],
       "priority": "P1",
       "size": "XL",
-      "status": "closed_with_defer",
-      "status_updated": "2026-02-08",
-      "status_note": "Activated tools shipped; `clothing_sizes` remains intentionally deferred behind explicit acceptance criteria."
+      "status": "done",
+      "status_updated": "2026-02-13",
+      "status_note": "XL-V shipped `clothing_sizes` as a reference-only matrix with explicit uncertainty disclaimer, deterministic copy behavior, and missing-mapping (`—`) contracts."
     },
     {
       "id": "PACK_G_polish_compliance_release_readiness",
@@ -422,8 +422,11 @@
     }
   ],
   "current_state": {
-    "current_slice": "XL-U shipped (Clothing Sizes decision pack, planning-only). Next is XL-V for reference-only clothing sizes implementation spike.",
+    "current_slice": "XL-V shipped (Clothing Sizes reference-only implementation). Next is XL-W for usage quality evaluation and expansion/defer decision.",
     "notes": [
+      "XL-V shipped on 2026-02-13: activated `clothing_sizes` as a reference-only lookup matrix in picker + modal surfaces.",
+      "XL-V shipped on 2026-02-13: added always-visible uncertainty disclaimer and explicit missing-mapping (`—`) behavior to avoid inferred fit claims.",
+      "XL-V shipped on 2026-02-13: added deterministic regression tests for picker activation, matrix copy behavior, disclaimer visibility, and missing mapping rows.",
       "XL-U shipped on 2026-02-11: added `docs/ai/reference/CLOTHING_SIZES_DECISION_PACK_XL_U.md` to finalize keep/toss decision for `clothing_sizes`.",
       "XL-U shipped on 2026-02-11: decision is to keep `clothing_sizes` as a reference-only matrix scope (no brand-fit engine) with explicit uncertainty/disclaimer and activation gates.",
       "XL-N shipped on 2026-02-10: added Pack I tutorial persistence (`tutorial_dismissed_v1`, `tutorial_replay_requested_v1`) and app-state contracts (`shouldShowTutorial`, dismiss/replay APIs).",

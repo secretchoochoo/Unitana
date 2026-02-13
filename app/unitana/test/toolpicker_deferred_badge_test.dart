@@ -9,7 +9,7 @@ void main() {
     await tester.pumpAndSettle(const Duration(milliseconds: 250));
   }
 
-  testWidgets('deferred tools show Deferred badge and rationale in picker', (
+  testWidgets('clothing sizes is enabled and opens modal from picker', (
     tester,
   ) async {
     await pumpDashboardForTest(tester);
@@ -23,26 +23,18 @@ void main() {
 
     final row = find.byKey(const Key('toolpicker_search_tool_clothing_sizes'));
     expect(row, findsOneWidget);
-    expect(
-      find.descendant(of: row, matching: find.text('Deferred')),
-      findsOneWidget,
-    );
-    expect(
-      find.descendant(
-        of: row,
-        matching: find.textContaining('High brand variance'),
-      ),
-      findsOneWidget,
-    );
 
     await tester.tap(row, warnIfMissed: false);
     await tester.pumpAndSettle(const Duration(milliseconds: 250));
 
-    // Disabled row should not open a tool modal.
-    expect(find.byType(BottomSheet), findsOneWidget);
+    // Tool modal is visible and routed through clothing lookup surface.
     expect(
       find.byKey(const ValueKey('tool_title_clothing_sizes')),
-      findsNothing,
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('tool_lookup_matrix_clothing_sizes')),
+      findsOneWidget,
     );
   });
 }

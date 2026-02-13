@@ -56,6 +56,7 @@ class ToolLensMap {
       CanonicalToolId.time,
       CanonicalToolId.distance,
       CanonicalToolId.shoeSizes,
+      CanonicalToolId.clothingSizes,
       CanonicalToolId.paperSizes,
       CanonicalToolId.mattressSizes,
     ],
@@ -68,6 +69,7 @@ class ToolLensMap {
       CanonicalToolId.currency,
       CanonicalToolId.distance,
       CanonicalToolId.shoeSizes,
+      CanonicalToolId.clothingSizes,
       CanonicalToolId.paperSizes,
     ],
   };

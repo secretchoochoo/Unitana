@@ -1,9 +1,23 @@
 # CURRENT_HANDOFF (Unitana) - Wizard, Collapsing Header, Multi-Profile
 
 ## Snapshot
-- **Date:** 2026-02-11
-- **Status:** Repo is green (`dart format`, `flutter analyze`, `flutter test`) after runtime data-reliability fixes (weather/currency live defaults + Android Internet permission), matrix readability mode, and marquee weather-scene polish.
+- **Date:** 2026-02-13
+- **Status:** Repo is green (`dart format`, `flutter analyze`, `flutter test`) after XL-V shipped `clothing_sizes` as a reference-only matrix tool with disclaimer and missing-mapping guardrails.
 - **Operating mode:** Codex is now the primary workflow; apply edits directly in-repo (do not require patch zip workflow unless explicitly requested).
+
+## Latest changes (2026-02-13)
+- XL-V shipped (Clothing Sizes reference-only implementation):
+  - activated `clothing_sizes` in picker/registry and added canonical + tool definition wiring.
+  - added deterministic clothing matrix scope (US/EU/UK/JP) across v1 categories:
+    - Women Tops, Women Bottoms, Men Tops, Men Bottoms, Outerwear (Unisex).
+  - added always-visible uncertainty/disclaimer contract in modal:
+    - “Sizes vary by brand and cut. Use this as a reference and check retailer size charts.”
+  - enforced explicit missing mapping behavior (`—`) for unsupported cells (no inferred fit mapping).
+  - added/updated regression coverage:
+    - `app/unitana/test/clothing_sizes_matrix_interaction_test.dart`
+    - `app/unitana/test/toolpicker_activation_bundle_test.dart`
+    - `app/unitana/test/toolpicker_deferred_badge_test.dart`
+    - `app/unitana/test/tool_registry_architecture_matrix_test.dart`
 
 ## Latest changes (2026-02-11)
 - XL-U shipped (Clothing Sizes decision pack, planning-only):

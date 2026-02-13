@@ -56,6 +56,7 @@ class ToolDefinitions {
     'paper_sizes': 'Paper',
     'mattress_sizes': 'Mattress',
     'shoe_sizes': 'Shoes',
+    'clothing_sizes': 'Clothing',
     'world_clock_delta': 'Time Map',
     'unit_price_helper': 'Price Compare',
   };
@@ -274,6 +275,16 @@ class ToolDefinitions {
     defaultSecondary: '9 US M',
   );
 
+  static const clothingSizes = ToolDefinition(
+    id: 'clothing_sizes',
+    canonicalToolId: CanonicalToolId.clothingSizes,
+    lensId: ActivityLensId.oddUseful,
+    title: 'Clothing Sizes',
+    icon: Icons.checkroom_rounded,
+    defaultPrimary: 'Women Tops • US 6',
+    defaultSecondary: 'EU 38',
+  );
+
   static const paperSizes = ToolDefinition(
     id: 'paper_sizes',
     canonicalToolId: CanonicalToolId.paperSizes,
@@ -402,6 +413,7 @@ class ToolDefinitions {
     hydration,
     currencyConvert,
     shoeSizes,
+    clothingSizes,
     paperSizes,
     mattressSizes,
     weight,
@@ -435,6 +447,7 @@ class ToolDefinitions {
     'hydration': hydration,
     'currency_convert': currencyConvert,
     'shoe_sizes': shoeSizes,
+    'clothing_sizes': clothingSizes,
     'paper_sizes': paperSizes,
     'mattress_sizes': mattressSizes,
     'weight': weight,

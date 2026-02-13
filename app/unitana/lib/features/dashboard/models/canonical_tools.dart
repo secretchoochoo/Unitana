@@ -19,6 +19,7 @@ class CanonicalToolId {
   static const String volume = 'volume';
   static const String pressure = 'pressure';
   static const String shoeSizes = 'shoe_sizes';
+  static const String clothingSizes = 'clothing_sizes';
   static const String paperSizes = 'paper_sizes';
   static const String mattressSizes = 'mattress_sizes';
   static const String weather = 'weather';
@@ -42,6 +43,7 @@ class CanonicalToolId {
     volume,
     pressure,
     shoeSizes,
+    clothingSizes,
     paperSizes,
     mattressSizes,
     weather,
@@ -187,6 +189,13 @@ class CanonicalTools {
     icon: Icons.description_rounded,
   );
 
+  static const CanonicalTool clothingSizes = CanonicalTool(
+    id: CanonicalToolId.clothingSizes,
+    name: 'Clothing Sizes',
+    descriptor: 'US/EU/UK/JP reference matrix by category',
+    icon: Icons.checkroom_rounded,
+  );
+
   static const CanonicalTool mattressSizes = CanonicalTool(
     id: CanonicalToolId.mattressSizes,
     name: 'Mattress Sizes',
@@ -249,6 +258,7 @@ class CanonicalTools {
     volume,
     pressure,
     shoeSizes,
+    clothingSizes,
     paperSizes,
     mattressSizes,
     weather,

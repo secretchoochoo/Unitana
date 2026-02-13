@@ -359,13 +359,17 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
       widget.tool.id == 'baking';
   bool get _isLookupTool =>
       widget.tool.canonicalToolId == CanonicalToolId.shoeSizes ||
+      widget.tool.canonicalToolId == CanonicalToolId.clothingSizes ||
       widget.tool.canonicalToolId == CanonicalToolId.paperSizes ||
       widget.tool.canonicalToolId == CanonicalToolId.mattressSizes ||
       widget.tool.canonicalToolId == CanonicalToolId.cupsGramsEstimates;
   bool get _isFullMatrixLookupTool =>
       widget.tool.canonicalToolId == CanonicalToolId.shoeSizes ||
+      widget.tool.canonicalToolId == CanonicalToolId.clothingSizes ||
       widget.tool.canonicalToolId == CanonicalToolId.paperSizes ||
       widget.tool.canonicalToolId == CanonicalToolId.mattressSizes;
+  bool get _isClothingLookupTool =>
+      widget.tool.canonicalToolId == CanonicalToolId.clothingSizes;
   bool get _isTipHelperTool => widget.tool.id == 'tip_helper';
   bool get _isTaxVatTool => widget.tool.id == 'tax_vat_helper';
   bool get _isUnitPriceTool => widget.tool.id == 'unit_price_helper';
@@ -693,6 +697,8 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
         ];
       case CanonicalToolId.paperSizes:
         return const <String>['ISO', 'US', 'JIS', 'ANSI/ARCH'];
+      case CanonicalToolId.clothingSizes:
+        return const <String>['US', 'EU', 'UK', 'JP'];
       case CanonicalToolId.mattressSizes:
         return const <String>['US', 'EU', 'UK', 'AU', 'JP'];
       case CanonicalToolId.cupsGramsEstimates:
@@ -945,6 +951,138 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
               'AU': '16',
               'JP (cm)': '35.0 cm',
             },
+          ),
+        ];
+      case CanonicalToolId.clothingSizes:
+        return const <_LookupEntry>[
+          _LookupEntry(
+            keyId: 'cloth_w_tops_xs',
+            label: 'Women Tops • XS',
+            valuesBySystem: <String, String>{
+              'US': '2',
+              'EU': '34',
+              'UK': '6',
+              'JP': '5',
+            },
+            note:
+                'Approximate reference only • Source: public standards + retailer aggregate.',
+            approximate: true,
+          ),
+          _LookupEntry(
+            keyId: 'cloth_w_tops_s',
+            label: 'Women Tops • S',
+            valuesBySystem: <String, String>{
+              'US': '4-6',
+              'EU': '36-38',
+              'UK': '8-10',
+              'JP': '7-9',
+            },
+            note:
+                'Approximate reference only • Source: public standards + retailer aggregate.',
+            approximate: true,
+          ),
+          _LookupEntry(
+            keyId: 'cloth_w_bottoms_6',
+            label: 'Women Bottoms • US 6',
+            valuesBySystem: <String, String>{
+              'US': '6',
+              'EU': '38',
+              'UK': '10',
+              'JP': '9',
+            },
+            note:
+                'Approximate reference only • Source: public standards + retailer aggregate.',
+            approximate: true,
+          ),
+          _LookupEntry(
+            keyId: 'cloth_w_bottoms_10',
+            label: 'Women Bottoms • US 10',
+            valuesBySystem: <String, String>{
+              'US': '10',
+              'EU': '42',
+              'UK': '14',
+              'JP': '13',
+            },
+            note:
+                'Approximate reference only • Source: public standards + retailer aggregate.',
+            approximate: true,
+          ),
+          _LookupEntry(
+            keyId: 'cloth_m_tops_m',
+            label: 'Men Tops • M',
+            valuesBySystem: <String, String>{
+              'US': 'M',
+              'EU': '48',
+              'UK': 'M',
+              'JP': 'L',
+            },
+            note:
+                'Approximate reference only • Source: public standards + retailer aggregate.',
+            approximate: true,
+          ),
+          _LookupEntry(
+            keyId: 'cloth_m_tops_l',
+            label: 'Men Tops • L',
+            valuesBySystem: <String, String>{
+              'US': 'L',
+              'EU': '50',
+              'UK': 'L',
+              'JP': 'LL',
+            },
+            note:
+                'Approximate reference only • Source: public standards + retailer aggregate.',
+            approximate: true,
+          ),
+          _LookupEntry(
+            keyId: 'cloth_m_bottoms_32',
+            label: 'Men Bottoms • Waist 32',
+            valuesBySystem: <String, String>{
+              'US': '32',
+              'EU': '48',
+              'UK': '32',
+              'JP': '82',
+            },
+            note:
+                'Approximate reference only • Source: public standards + retailer aggregate.',
+            approximate: true,
+          ),
+          _LookupEntry(
+            keyId: 'cloth_m_bottoms_34',
+            label: 'Men Bottoms • Waist 34',
+            valuesBySystem: <String, String>{
+              'US': '34',
+              'EU': '50',
+              'UK': '34',
+              'JP': '86',
+            },
+            note:
+                'Approximate reference only • Source: public standards + retailer aggregate.',
+            approximate: true,
+          ),
+          _LookupEntry(
+            keyId: 'cloth_outer_unisex_m',
+            label: 'Outerwear (Unisex) • M',
+            valuesBySystem: <String, String>{
+              'US': 'M',
+              'EU': '48',
+              'UK': 'M',
+              'JP': 'L',
+            },
+            note:
+                'Approximate reference only • Source: public standards + retailer aggregate.',
+            approximate: true,
+          ),
+          _LookupEntry(
+            keyId: 'cloth_outer_unisex_xl',
+            label: 'Outerwear (Unisex) • XL',
+            valuesBySystem: <String, String>{
+              'US': 'XL',
+              'EU': '54',
+              'UK': 'XL',
+            },
+            note:
+                'Approximate reference only • Source: public standards + retailer aggregate.',
+            approximate: true,
           ),
         ];
       case CanonicalToolId.paperSizes:
@@ -1245,6 +1383,11 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
         _lookupFromSystem = 'ISO';
         _lookupToSystem = 'US';
         _lookupEntryKey = 'paper_a4';
+        return;
+      case CanonicalToolId.clothingSizes:
+        _lookupFromSystem = 'US';
+        _lookupToSystem = 'EU';
+        _lookupEntryKey = 'cloth_w_tops_s';
         return;
       case CanonicalToolId.mattressSizes:
         _lookupFromSystem = 'US';
@@ -3805,6 +3948,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
   String _lookupReferenceLabel(_LookupEntry row) {
     return switch (widget.tool.canonicalToolId) {
       CanonicalToolId.shoeSizes => row.valuesBySystem['JP (cm)'] ?? row.label,
+      CanonicalToolId.clothingSizes => row.label,
       CanonicalToolId.paperSizes => row.label,
       CanonicalToolId.mattressSizes => row.label,
       _ => row.label,
@@ -3814,6 +3958,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
   String _lookupReferenceHeader() {
     return switch (widget.tool.canonicalToolId) {
       CanonicalToolId.shoeSizes => 'Foot (cm)',
+      CanonicalToolId.clothingSizes => 'Category',
       _ => 'Reference',
     };
   }
@@ -3862,6 +4007,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
       if (row != null &&
           system != null &&
           (widget.tool.canonicalToolId == CanonicalToolId.shoeSizes ||
+              widget.tool.canonicalToolId == CanonicalToolId.clothingSizes ||
               widget.tool.canonicalToolId == CanonicalToolId.paperSizes ||
               widget.tool.canonicalToolId == CanonicalToolId.mattressSizes)) {
         await widget.session.setMatrixWidgetSelection(
@@ -3988,6 +4134,28 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                 fontWeight: FontWeight.w600,
               ),
             ),
+            if (_isClothingLookupTool) ...[
+              const SizedBox(height: 8),
+              Container(
+                key: const ValueKey('tool_lookup_disclaimer_clothing_sizes'),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 10,
+                ),
+                decoration: BoxDecoration(
+                  color: panelBg,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: panelBorder),
+                ),
+                child: Text(
+                  'Sizes vary by brand and cut. Use this as a reference and check retailer size charts.',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: textMuted,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
             const SizedBox(height: 8),
             Row(
               children: [
@@ -4061,7 +4229,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                   },
                   child: LayoutBuilder(
                     builder: (context, constraints) {
-                      const sizeColWidth = 94.0;
+                      final sizeColWidth = _isClothingLookupTool ? 150.0 : 94.0;
                       final valueColWidth =
                           ((constraints.maxWidth - sizeColWidth) /
                                   visibleSystems.length)
@@ -4138,7 +4306,10 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                                                       _lookupReferenceLabel(
                                                         entry,
                                                       ),
-                                                      maxLines: 1,
+                                                      maxLines:
+                                                          _isClothingLookupTool
+                                                          ? 2
+                                                          : 1,
                                                       overflow:
                                                           TextOverflow.ellipsis,
                                                       style: Theme.of(context)
@@ -4177,6 +4348,32 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                                           ],
                                         ),
                                       ),
+                                      if (_isClothingLookupTool &&
+                                          entry.note != null &&
+                                          entry.note!.trim().isNotEmpty)
+                                        Padding(
+                                          padding: const EdgeInsets.fromLTRB(
+                                            8,
+                                            0,
+                                            8,
+                                            8,
+                                          ),
+                                          child: Align(
+                                            alignment: Alignment.centerLeft,
+                                            child: Text(
+                                              entry.note!,
+                                              maxLines: 2,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: Theme.of(context)
+                                                  .textTheme
+                                                  .labelSmall
+                                                  ?.copyWith(
+                                                    color: textMuted,
+                                                    fontWeight: FontWeight.w700,
+                                                  ),
+                                            ),
+                                          ),
+                                        ),
                                       if (i != rows.length - 1)
                                         Divider(
                                           height: 1,

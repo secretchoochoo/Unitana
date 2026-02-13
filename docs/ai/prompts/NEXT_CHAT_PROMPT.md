@@ -1,4 +1,4 @@
-NEXT CHAT PROMPT — XL-V: Clothing Sizes Reference-Only Implementation Spike
+NEXT CHAT PROMPT — XL-W: Clothing Sizes Usage-Quality Evaluation and Scope Decision
 
 You are taking over Unitana (Flutter) in a fresh, high-context window.
 
@@ -7,11 +7,11 @@ Read these files first:
 2) `docs/ai/context_db.json`
 3) `docs/ai/reference/REFERENCE_INDEX.md`
 4) `docs/ai/reference/CLOTHING_SIZES_DECISION_PACK_XL_U.md`
-5) `docs/ai/reference/LOOKUP_TABLE_TOOLS_UX_PATTERN.md`
-6) `docs/ai/prompts/NEXT_CHAT_PROMPT.md`
+5) `docs/ai/prompts/NEXT_CHAT_PROMPT.md`
+6) `app/unitana/lib/features/dashboard/widgets/tool_modal_bottom_sheet.dart`
 7) `app/unitana/lib/features/dashboard/models/tool_registry.dart`
-8) `app/unitana/lib/features/dashboard/widgets/tool_modal_bottom_sheet.dart`
-9) `app/unitana/lib/features/dashboard/models/dashboard_copy.dart`
+8) `app/unitana/lib/features/dashboard/models/tool_lens_map.dart`
+9) `app/unitana/test/clothing_sizes_matrix_interaction_test.dart`
 
 ## Core operating rules
 - Work directly in-repo (Codex-first).
@@ -26,45 +26,35 @@ Read these files first:
   - goldens opt-in only
 
 ## Mission
-Implement the first shippable `clothing_sizes` surface as a reference-only matrix tool (no brand-fit recommendation).
+Run an XL-level quality pass on the newly activated `clothing_sizes` tool and decide whether to expand data scope now or defer additional expansion.
 
 ## Required outcomes
-1) Reference-only activation
-- Enable `clothing_sizes` in registry and picker.
-- Implement a deterministic matrix/lookup surface with scoped categories + regions from XL-U.
+1) Usage-quality audit
+- Validate matrix readability and copy behavior on compact surfaces.
+- Validate disclaimer clarity and non-predictive language consistency.
+- Identify any row-label or category wording that could imply fit certainty.
 
-2) Uncertainty and liability copy
-- Add explicit, always-visible uncertainty/disclaimer copy in tool modal.
-- Keep language factual and non-predictive.
+2) Scope decision
+- Decide one path with explicit rationale:
+  - expand categories/rows now, or
+  - keep current v1 scope and defer expansion.
+- If expand: define exact row additions and guardrails.
+- If defer: define acceptance gates and trigger signals.
 
-3) Deterministic behavior contracts
-- Copy/tap row behavior mirrors other matrix tools.
-- Missing mappings render explicitly (`—`) rather than inferred.
+3) Contract hardening
+- Add/adjust deterministic tests for any changed behavior.
+- Keep missing mappings explicit (`—`) where data is unknown.
 
-4) Regression guardrails
-- Add tests for:
-  - picker activation/open path
-  - matrix rendering and copy behavior
-  - disclaimer visibility
-  - missing-mapping row behavior
-
-5) Docs refresh
+4) Docs refresh
 - Update:
   - `docs/ai/context_db.json`
   - `docs/ai/handoff/CURRENT_HANDOFF.md`
   - `docs/ai/prompts/NEXT_CHAT_PROMPT.md`
 
-## Suggested execution order
-1) data model + matrix rows (minimal scoped v1)
-2) modal UI + disclaimer
-3) picker enablement wiring
-4) tests
-5) docs refresh
-
 ## Definition of done
-- `clothing_sizes` is enabled as a reference-only tool with explicit uncertainty guardrails.
-- Deterministic behavior is regression-tested.
+- XL-W decision is explicit and documented.
+- Any runtime changes are regression-tested.
 - Repo remains green.
 
 ## Forward plan after this slice
-- XL-W: Evaluate v1 usage quality and decide expand/defer for additional categories/regions.
+- XL-X: tool-category and unit-coverage audit + taxonomy cleanup across picker/search and matrix tools.
