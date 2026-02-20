@@ -59,10 +59,12 @@ void main() {
     );
     await tester.pumpAndSettle(const Duration(milliseconds: 120));
 
-    expect(
-      find.byKey(const ValueKey('tool_unit_price_result_unit_price_helper')),
-      findsOneWidget,
+    final scrollRoot = find.byKey(
+      const ValueKey('tool_unit_price_scroll_unit_price_helper'),
     );
+    expect(scrollRoot, findsOneWidget);
+    await tester.drag(scrollRoot, const Offset(0, -420));
+    await tester.pumpAndSettle(const Duration(milliseconds: 120));
     expect(
       find.byKey(
         const ValueKey('tool_unit_price_compare_result_unit_price_helper'),

@@ -1089,7 +1089,6 @@ class _DashboardScreenState extends State<DashboardScreen>
       currencyLastErrorAt: _liveData.lastCurrencyErrorAt,
       currencyLastRefreshedAt: _liveData.lastCurrencyRefreshedAt,
       currencyNetworkEnabled: _liveData.currencyNetworkEnabled,
-      currencyRefreshCadence: _liveData.currencyRefreshCadence,
       onRetryCurrencyNow: () async {
         final places = <Place>[
           if (home != null) home,

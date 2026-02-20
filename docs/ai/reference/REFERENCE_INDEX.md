@@ -35,6 +35,7 @@ Canonical map for `docs/ai/reference` ownership so handoff/context/prompt flows 
 - `SAVE_UPDATE_FEEDBACK_MATRIX.md`
 - `SCENEKEY_CATALOG.md`
 - `SCENEKEY_REDESIGN_AUDIT.md`
+- `RELEASE_SYNC_2026-02-20_V1.0.0.md`
 - `WEATHERAPI_KEY_MANAGEMENT.md`
 - `XL_W_DOCS_REALIGNMENT_AND_HARDENING_PLAN_2026-02-19.md`
 
