@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../app/app_state.dart';
+import '../../common/tutorial/tutorial_overlay.dart';
 import '../../data/city_repository.dart';
 import '../../models/place.dart';
 import '../../common/feedback/unitana_toast.dart';
@@ -86,6 +87,12 @@ class _DashboardScreenState extends State<DashboardScreen>
   bool _isEditingWidgets = false;
   String? _focusTileId;
   String? _focusToolTileId;
+  bool _showDashboardTutorial = false;
+
+  final GlobalKey _tutorialToolsButtonKey = GlobalKey();
+  final GlobalKey _tutorialMenuButtonKey = GlobalKey();
+  final GlobalKey _tutorialRefreshKey = GlobalKey();
+  final GlobalKey _tutorialWidgetsKey = GlobalKey();
 
   UnitanaAppState get state => widget.state;
 
@@ -179,7 +186,21 @@ class _DashboardScreenState extends State<DashboardScreen>
       final pendingSuccess = state.consumePendingSuccessToast();
       if (!mounted || pendingSuccess == null) return;
       UnitanaToast.showSuccess(context, pendingSuccess);
+      _maybeStartDashboardTutorial();
     });
+  }
+
+  void _maybeStartDashboardTutorial() {
+    if (_isEditingWidgets) return;
+    if (_showDashboardTutorial) return;
+    if (state.hasCompletedTutorialSurface('dashboard')) return;
+    setState(() => _showDashboardTutorial = true);
+  }
+
+  Future<void> _completeDashboardTutorial() async {
+    if (!mounted) return;
+    setState(() => _showDashboardTutorial = false);
+    await state.markTutorialSurfaceCompleted('dashboard');
   }
 
   @override
@@ -1440,6 +1461,24 @@ class _DashboardScreenState extends State<DashboardScreen>
                         ),
                       ),
                       ListTile(
+                        key: const ValueKey('settings_option_reset_tutorials'),
+                        leading: const Icon(Icons.school_rounded),
+                        title: const Text('Reset tutorials'),
+                        subtitle: const Text(
+                          'Show tips again across wizard, dashboard, and profiles.',
+                        ),
+                        onTap: () async {
+                          await state.resetTutorialSurfaces();
+                          if (!sheetContext.mounted) return;
+                          UnitanaToast.showSuccess(
+                            sheetContext,
+                            'Tutorials reset.',
+                          );
+                          if (!mounted) return;
+                          setState(() => _showDashboardTutorial = true);
+                        },
+                      ),
+                      ListTile(
                         key: const ValueKey('settings_option_about'),
                         leading: const Icon(Icons.info_outline_rounded),
                         title: Text(DashboardCopy.settingsOptionAbout(context)),
@@ -1902,11 +1941,14 @@ class _DashboardScreenState extends State<DashboardScreen>
             leadingWidth: 72,
             leading: Padding(
               padding: const EdgeInsets.only(left: 16),
-              child: _HeaderIconButton(
-                key: const Key('dashboard_tools_button'),
-                tooltip: DashboardCopy.dashboardOpenToolsTooltip(context),
-                icon: Icons.handyman_rounded,
-                onTap: _openToolPickerFromMenu,
+              child: KeyedSubtree(
+                key: _tutorialToolsButtonKey,
+                child: _HeaderIconButton(
+                  key: const Key('dashboard_tools_button'),
+                  tooltip: DashboardCopy.dashboardOpenToolsTooltip(context),
+                  icon: Icons.handyman_rounded,
+                  onTap: _openToolPickerFromMenu,
+                ),
               ),
             ),
             title: Text(
@@ -1955,11 +1997,14 @@ class _DashboardScreenState extends State<DashboardScreen>
               ] else
                 Padding(
                   padding: const EdgeInsets.only(right: 16),
-                  child: _HeaderIconButton(
-                    key: const Key('dashboard_menu_button'),
-                    tooltip: DashboardCopy.dashboardOpenMenuTooltip(context),
-                    icon: Icons.menu_rounded,
-                    onTap: _openSettingsSheet,
+                  child: KeyedSubtree(
+                    key: _tutorialMenuButtonKey,
+                    child: _HeaderIconButton(
+                      key: const Key('dashboard_menu_button'),
+                      tooltip: DashboardCopy.dashboardOpenMenuTooltip(context),
+                      icon: Icons.menu_rounded,
+                      onTap: _openSettingsSheet,
+                    ),
                   ),
                 ),
             ],
@@ -2028,45 +2073,49 @@ class _DashboardScreenState extends State<DashboardScreen>
                                     ),
                                     child: Align(
                                       alignment: Alignment.center,
-                                      child: FittedBox(
-                                        fit: BoxFit.scaleDown,
-                                        alignment: Alignment.center,
-                                        child: Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            DataRefreshStatusLabel(
-                                              key: const ValueKey(
-                                                'dashboard_refresh_status_label',
+                                      child: KeyedSubtree(
+                                        key: _tutorialRefreshKey,
+                                        child: FittedBox(
+                                          fit: BoxFit.scaleDown,
+                                          alignment: Alignment.center,
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              DataRefreshStatusLabel(
+                                                key: const ValueKey(
+                                                  'dashboard_refresh_status_label',
+                                                ),
+                                                liveData: _liveData,
+                                                compact: true,
+                                                showBackground: false,
+                                                hideWhenUnavailable: false,
                                               ),
-                                              liveData: _liveData,
-                                              compact: true,
-                                              showBackground: false,
-                                              hideWhenUnavailable: false,
-                                            ),
-                                            const SizedBox(width: 0),
-                                            IconButton(
-                                              tooltip:
-                                                  DashboardCopy.dashboardRefreshDataTooltip(
-                                                    context,
-                                                  ),
-                                              onPressed: _refreshAllNow,
-                                              icon: const Icon(
-                                                Icons.refresh_rounded,
-                                                size: 16,
+                                              const SizedBox(width: 0),
+                                              IconButton(
+                                                tooltip:
+                                                    DashboardCopy.dashboardRefreshDataTooltip(
+                                                      context,
+                                                    ),
+                                                onPressed: _refreshAllNow,
+                                                icon: const Icon(
+                                                  Icons.refresh_rounded,
+                                                  size: 16,
+                                                ),
+                                                color: Theme.of(context)
+                                                    .colorScheme
+                                                    .primary
+                                                    .withAlpha(220),
+                                                padding: EdgeInsets.zero,
+                                                visualDensity:
+                                                    VisualDensity.compact,
+                                                constraints:
+                                                    const BoxConstraints(
+                                                      minWidth: 24,
+                                                      minHeight: 24,
+                                                    ),
                                               ),
-                                              color: Theme.of(context)
-                                                  .colorScheme
-                                                  .primary
-                                                  .withAlpha(220),
-                                              padding: EdgeInsets.zero,
-                                              visualDensity:
-                                                  VisualDensity.compact,
-                                              constraints: const BoxConstraints(
-                                                minWidth: 24,
-                                                minHeight: 24,
-                                              ),
-                                            ),
-                                          ],
+                                            ],
+                                          ),
                                         ),
                                       ),
                                     ),
@@ -2101,22 +2150,25 @@ class _DashboardScreenState extends State<DashboardScreen>
                             bottom: padding.bottom,
                           ),
                           sliver: SliverToBoxAdapter(
-                            child: DashboardBoard(
-                              state: state,
-                              session: _session,
-                              liveData: _liveData,
-                              layout: _layout,
-                              availableWidth: availableWidth,
-                              isEditing: _isEditingWidgets,
-                              includePlacesHero: false,
-                              focusActionTileId: _focusTileId,
-                              focusToolTileId: _focusToolTileId,
-                              onEnteredEditMode: (focusId) =>
-                                  _enterEditWidgets(focusTileId: focusId),
-                              onConsumedFocusTileId: () =>
-                                  setState(() => _focusTileId = null),
-                              onConsumedFocusToolTileId: () =>
-                                  setState(() => _focusToolTileId = null),
+                            child: KeyedSubtree(
+                              key: _tutorialWidgetsKey,
+                              child: DashboardBoard(
+                                state: state,
+                                session: _session,
+                                liveData: _liveData,
+                                layout: _layout,
+                                availableWidth: availableWidth,
+                                isEditing: _isEditingWidgets,
+                                includePlacesHero: false,
+                                focusActionTileId: _focusTileId,
+                                focusToolTileId: _focusToolTileId,
+                                onEnteredEditMode: (focusId) =>
+                                    _enterEditWidgets(focusTileId: focusId),
+                                onConsumedFocusTileId: () =>
+                                    setState(() => _focusTileId = null),
+                                onConsumedFocusToolTileId: () =>
+                                    setState(() => _focusToolTileId = null),
+                              ),
                             ),
                           ),
                         ),
@@ -2125,6 +2177,41 @@ class _DashboardScreenState extends State<DashboardScreen>
                   );
                 },
               ),
+              if (_showDashboardTutorial && !_isEditingWidgets)
+                TutorialOverlay(
+                  steps: [
+                    TutorialStep(
+                      title: 'Tools',
+                      body:
+                          'Tap the wrench to open tools. Search fast and pin what you use most.',
+                      targetKey: _tutorialToolsButtonKey,
+                      cardAlignment: Alignment.topLeft,
+                    ),
+                    TutorialStep(
+                      title: 'Menu',
+                      body:
+                          'Tap the menu for settings, profiles, and tutorial controls.',
+                      targetKey: _tutorialMenuButtonKey,
+                      cardAlignment: Alignment.topRight,
+                    ),
+                    TutorialStep(
+                      title: 'Refresh',
+                      body:
+                          'Pull down to refresh weather and rates. Or tap the refresh icon.',
+                      targetKey: _tutorialRefreshKey,
+                      cardAlignment: Alignment.topCenter,
+                    ),
+                    TutorialStep(
+                      title: 'Widgets',
+                      body:
+                          'Scroll to browse cards. Tap a widget to open it. Use edit mode to rearrange.',
+                      targetKey: _tutorialWidgetsKey,
+                      cardAlignment: Alignment.bottomCenter,
+                    ),
+                  ],
+                  onSkip: _completeDashboardTutorial,
+                  onComplete: _completeDashboardTutorial,
+                ),
             ],
           ),
         );

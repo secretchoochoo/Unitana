@@ -25,6 +25,8 @@ class UnitanaStorage {
   static const String _kTutorialDismissed = 'tutorial_dismissed_v1';
   static const String _kTutorialReplayRequested =
       'tutorial_replay_requested_v1';
+  static const String _kTutorialCompletedSurfaces =
+      'tutorial_completed_surfaces_v1';
 
   Future<List<Place>> loadPlaces() async {
     final prefs = await SharedPreferences.getInstance();
@@ -235,6 +237,24 @@ class UnitanaStorage {
     await prefs.setBool(_kTutorialReplayRequested, requested);
   }
 
+  Future<Set<String>> loadTutorialCompletedSurfaces() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getStringList(_kTutorialCompletedSurfaces) ?? const [];
+    return raw.map((e) => e.trim()).where((e) => e.isNotEmpty).toSet();
+  }
+
+  Future<void> saveTutorialCompletedSurfaces(Set<String> surfaces) async {
+    final prefs = await SharedPreferences.getInstance();
+    final sorted =
+        surfaces
+            .map((e) => e.trim())
+            .where((e) => e.isNotEmpty)
+            .toSet()
+            .toList(growable: false)
+          ..sort();
+    await prefs.setStringList(_kTutorialCompletedSurfaces, sorted);
+  }
+
   Future<void> clearAll() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_kPlaces);
@@ -252,5 +272,6 @@ class UnitanaStorage {
     await prefs.remove(_kLofiAudioVolume);
     await prefs.remove(_kTutorialDismissed);
     await prefs.remove(_kTutorialReplayRequested);
+    await prefs.remove(_kTutorialCompletedSurfaces);
   }
 }
