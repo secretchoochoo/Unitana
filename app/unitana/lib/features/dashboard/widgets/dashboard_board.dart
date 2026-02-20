@@ -1697,10 +1697,20 @@ class _ToolPickerSheetState extends State<ToolPickerSheet> {
       toolId: tool.toolId,
       fallback: tool.label,
     ).toLowerCase();
+    final localizedAliases = DashboardCopy.toolSearchAliases(
+      context,
+      toolId: tool.toolId,
+    );
     final tokenMatch = tool.searchTokens.any(
       (token) => token.toLowerCase().contains(q),
     );
-    return fallback.contains(q) || localized.contains(q) || tokenMatch;
+    final localizedTokenMatch = localizedAliases.any(
+      (token) => token.toLowerCase().contains(q),
+    );
+    return fallback.contains(q) ||
+        localized.contains(q) ||
+        tokenMatch ||
+        localizedTokenMatch;
   }
 
   List<ToolRegistryTool> _searchResults() {

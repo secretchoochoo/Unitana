@@ -70,7 +70,7 @@ class _SettingsLicensesPageState extends State<SettingsLicensesPage> {
   }
 
   static String _deriveSummary(List<String> entries) {
-    if (entries.isEmpty) return 'License text available';
+    if (entries.isEmpty) return '';
     final haystack = entries.join('\n').toLowerCase();
     if (haystack.contains('mit license')) return 'MIT';
     if (haystack.contains('apache license')) return 'Apache';
@@ -78,7 +78,7 @@ class _SettingsLicensesPageState extends State<SettingsLicensesPage> {
     if (haystack.contains('mozilla public license')) return 'MPL';
     if (haystack.contains('gnu lesser general public license')) return 'LGPL';
     if (haystack.contains('gnu general public license')) return 'GPL';
-    return 'License text';
+    return '';
   }
 
   Future<void> _openRawLicensePage() async {
@@ -246,11 +246,14 @@ class _SettingsLicensesPageState extends State<SettingsLicensesPage> {
                 decoration: InputDecoration(
                   isDense: true,
                   prefixIcon: const Icon(Icons.search_rounded),
-                  hintText: 'Search package',
+                  hintText: DashboardCopy.settingsLicensesSearchHint(context),
                   suffixIcon: _query.trim().isEmpty
                       ? null
                       : IconButton(
-                          tooltip: 'Clear search',
+                          tooltip:
+                              DashboardCopy.settingsLicensesClearSearchTooltip(
+                                context,
+                              ),
                           icon: const Icon(Icons.close_rounded, size: 18),
                           onPressed: () {
                             _queryController.clear();
@@ -265,7 +268,7 @@ class _SettingsLicensesPageState extends State<SettingsLicensesPage> {
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 20),
                   child: Text(
-                    'No matching package',
+                    DashboardCopy.settingsLicensesNoMatchingPackage(context),
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
                       fontWeight: FontWeight.w700,
@@ -294,7 +297,7 @@ class _SettingsLicensesPageState extends State<SettingsLicensesPage> {
                       ),
                     ),
                     subtitle: Text(
-                      '${package.summary} • ${package.entries.length} ${DashboardCopy.settingsLicensesEntries(context)}',
+                      '${package.summary.isEmpty ? DashboardCopy.settingsLicensesSummaryFallback(context) : package.summary} • ${package.entries.length} ${DashboardCopy.settingsLicensesEntries(context)}',
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
                       ),

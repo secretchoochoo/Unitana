@@ -245,10 +245,28 @@ class _CityPickerState extends State<CityPicker> {
           'UNITED STATES',
           'U S',
         ],
+        if (c.countryCode.toUpperCase() == 'BR') ...const <String>[
+          'BRAZIL',
+          'BRASIL',
+        ],
         if (c.countryCode.toUpperCase() == 'GB') ...const <String>[
           'UK',
           'UNITED KINGDOM',
           'GREAT BRITAIN',
+        ],
+        if (c.countryCode.toUpperCase() == 'ES') ...const <String>[
+          'SPAIN',
+          'ESPANA',
+          'ESPAÑA',
+        ],
+        if (c.countryCode.toUpperCase() == 'DE') ...const <String>[
+          'GERMANY',
+          'DEUTSCHLAND',
+        ],
+        if (c.countryCode.toUpperCase() == 'PT') ...const <String>[
+          'PORTUGAL',
+          'PORTUGUES',
+          'PORTUGUÊS',
         ],
       ],
     );

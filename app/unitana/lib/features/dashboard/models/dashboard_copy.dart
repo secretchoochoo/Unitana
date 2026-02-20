@@ -596,6 +596,35 @@ class DashboardCopy {
         'dashboard.settings.licenses.viewDetails',
         fallback: 'View full text',
       );
+  static String settingsLicensesSearchHint(BuildContext context) =>
+      DashboardLocalizations.of(context).text(
+        'dashboard.settings.licenses.searchHint',
+        fallback: 'Search package',
+      );
+  static String settingsLicensesClearSearchTooltip(BuildContext context) =>
+      DashboardLocalizations.of(context).text(
+        'dashboard.settings.licenses.clearSearch',
+        fallback: 'Clear search',
+      );
+  static String settingsLicensesSummaryAvailable(BuildContext context) =>
+      DashboardLocalizations.of(context).text(
+        'dashboard.settings.licenses.summary.available',
+        fallback: 'License text available',
+      );
+  static String settingsLicensesSummaryFallback(BuildContext context) =>
+      DashboardLocalizations.of(context).text(
+        'dashboard.settings.licenses.summary.fallback',
+        fallback: 'License text',
+      );
+  static String settingsLicensesNoMatchingPackage(BuildContext context) =>
+      DashboardLocalizations.of(context).text(
+        'dashboard.settings.licenses.noMatchingPackage',
+        fallback: 'No matching package',
+      );
+  static String commonBackTooltip(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.common.tooltip.back', fallback: 'Back');
   static String dashboardMenuEditWidgets(BuildContext context) =>
       DashboardLocalizations.of(
         context,
@@ -638,6 +667,24 @@ class DashboardCopy {
       DashboardLocalizations.of(
         context,
       ).text('dashboard.devtools.weather.title', fallback: 'Weather');
+  static String devtoolsWeatherEmergencyOverrideTitle(BuildContext context) =>
+      DashboardLocalizations.of(context).text(
+        'dashboard.devtools.weather.emergencyOverride.title',
+        fallback: 'Emergency Severity Override',
+      );
+  static String devtoolsWeatherEmergencyMode(
+    BuildContext context, {
+    required String modeKey,
+  }) => DashboardLocalizations.of(context).text(
+    'dashboard.devtools.weather.emergencyOverride.$modeKey',
+    fallback: switch (modeKey) {
+      'auto' => 'Auto',
+      'watch' => 'Watch',
+      'warning' => 'Warning',
+      'emergency' => 'Emergency',
+      _ => modeKey,
+    },
+  );
   static String devtoolsWeatherSourceHeading(BuildContext context) =>
       DashboardLocalizations.of(context).text(
         'dashboard.devtools.weather.sourceHeading',
@@ -1718,6 +1765,99 @@ class DashboardCopy {
         'dashboard.firstRun.cta.createProfile',
         fallback: 'Create Profile',
       );
+  static List<String> toolSearchAliases(
+    BuildContext context, {
+    required String toolId,
+  }) {
+    final languageCode =
+        (Localizations.maybeLocaleOf(context)?.languageCode ?? 'en')
+            .toLowerCase();
+    final out = <String>{};
+
+    void addCommon(Iterable<String> values) => out.addAll(
+      values.where((v) => v.trim().isNotEmpty).map((v) => v.toLowerCase()),
+    );
+
+    switch (toolId) {
+      case 'liquids':
+      case 'baking':
+        addCommon(const <String>[
+          'tsp',
+          'teaspoon',
+          'tbsp',
+          'tablespoon',
+          'pint',
+          'quart',
+          'cup',
+          'ml',
+          'liter',
+          'litre',
+        ]);
+        if (languageCode == 'es') {
+          addCommon(const <String>[
+            'cucharadita',
+            'cucharada',
+            'pinta',
+            'cuarto',
+            'taza',
+            'litro',
+          ]);
+        } else if (languageCode == 'pt') {
+          addCommon(const <String>[
+            'colher de cha',
+            'colher de sopa',
+            'caneca',
+            'litro',
+            'quarto',
+          ]);
+        } else if (languageCode == 'fr') {
+          addCommon(const <String>[
+            'cuillere a cafe',
+            'cuillere a soupe',
+            'tasse',
+            'pinte',
+            'quart',
+            'litre',
+          ]);
+        }
+        break;
+      case 'distance':
+      case 'length':
+        addCommon(const <String>[
+          'yard',
+          'yards',
+          'yd',
+          'meter',
+          'metre',
+          'mile',
+          'kilometer',
+          'kilometre',
+        ]);
+        if (languageCode == 'es') addCommon(const <String>['yarda', 'metro']);
+        if (languageCode == 'pt') addCommon(const <String>['jarda', 'metro']);
+        if (languageCode == 'fr') addCommon(const <String>['verge', 'metre']);
+        break;
+      case 'area':
+        addCommon(const <String>['acre', 'acres', 'hectare', 'ha', 'yd2']);
+        if (languageCode == 'es') addCommon(const <String>['hectarea']);
+        break;
+      case 'currency_convert':
+        addCommon(const <String>['exchange', 'fx', 'usd', 'eur', 'gbp', 'jpy']);
+        if (languageCode == 'es') {
+          addCommon(const <String>['cambio', 'divisa', 'moneda']);
+        } else if (languageCode == 'pt') {
+          addCommon(const <String>['cambio', 'moeda', 'divisa']);
+        } else if (languageCode == 'fr') {
+          addCommon(const <String>['change', 'devise', 'monnaie']);
+        }
+        break;
+      default:
+        break;
+    }
+
+    return out.toList(growable: false);
+  }
+
   static String ratesStaleShort(BuildContext context) =>
       DashboardLocalizations.of(
         context,

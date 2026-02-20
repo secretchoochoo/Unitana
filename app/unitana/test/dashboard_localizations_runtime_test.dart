@@ -74,7 +74,7 @@ void main() {
   );
 
   test(
-    'DashboardLocalizations uses partial spanish seed and falls back to english',
+    'DashboardLocalizations uses spanish seed and auto-translates english fallback',
     () {
       final weatherEs = DashboardLocalizations.resolveForLocale(
         locale: const Locale('es'),
@@ -96,7 +96,7 @@ void main() {
       expect(weatherEs, 'Clima');
       expect(citiesEs, 'Ciudades');
       expect(settingsTitleEs, 'Idioma');
-      expect(englishFallback, 'Convert Local Time');
+      expect(englishFallback, 'Convertir Local Hora');
     },
   );
 

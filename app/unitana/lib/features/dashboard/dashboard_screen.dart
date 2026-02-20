@@ -425,7 +425,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           ),
                           IconButton(
                             icon: const Icon(Icons.arrow_back_rounded),
-                            tooltip: 'Back',
+                            tooltip: DashboardCopy.commonBackTooltip(context),
                             onPressed: () {
                               Navigator.of(sheetContext).pop();
                               Future.microtask(_openDeveloperToolsSheet);
@@ -556,7 +556,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
                       child: Text(
-                        'Emergency Severity Override',
+                        DashboardCopy.devtoolsWeatherEmergencyOverrideTitle(
+                          context,
+                        ),
                         style: Theme.of(context).textTheme.labelLarge,
                       ),
                     ),
@@ -567,25 +569,44 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       ),
                       child: SegmentedButton<_DevWeatherEmergencyMode>(
                         key: const ValueKey('devtools_weather_emergency_mode'),
-                        segments:
-                            const <ButtonSegment<_DevWeatherEmergencyMode>>[
-                              ButtonSegment(
-                                value: _DevWeatherEmergencyMode.auto,
-                                label: Text('Auto'),
+                        segments: <ButtonSegment<_DevWeatherEmergencyMode>>[
+                          ButtonSegment(
+                            value: _DevWeatherEmergencyMode.auto,
+                            label: Text(
+                              DashboardCopy.devtoolsWeatherEmergencyMode(
+                                context,
+                                modeKey: 'auto',
                               ),
-                              ButtonSegment(
-                                value: _DevWeatherEmergencyMode.watch,
-                                label: Text('Watch'),
+                            ),
+                          ),
+                          ButtonSegment(
+                            value: _DevWeatherEmergencyMode.watch,
+                            label: Text(
+                              DashboardCopy.devtoolsWeatherEmergencyMode(
+                                context,
+                                modeKey: 'watch',
                               ),
-                              ButtonSegment(
-                                value: _DevWeatherEmergencyMode.warning,
-                                label: Text('Warning'),
+                            ),
+                          ),
+                          ButtonSegment(
+                            value: _DevWeatherEmergencyMode.warning,
+                            label: Text(
+                              DashboardCopy.devtoolsWeatherEmergencyMode(
+                                context,
+                                modeKey: 'warning',
                               ),
-                              ButtonSegment(
-                                value: _DevWeatherEmergencyMode.emergency,
-                                label: Text('Emergency'),
+                            ),
+                          ),
+                          ButtonSegment(
+                            value: _DevWeatherEmergencyMode.emergency,
+                            label: Text(
+                              DashboardCopy.devtoolsWeatherEmergencyMode(
+                                context,
+                                modeKey: 'emergency',
                               ),
-                            ],
+                            ),
+                          ),
+                        ],
                         selected: <_DevWeatherEmergencyMode>{selectedEmergency},
                         onSelectionChanged: (selection) {
                           final next = selection.isEmpty
@@ -732,7 +753,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         ),
                         IconButton(
                           icon: const Icon(Icons.arrow_back_rounded),
-                          tooltip: 'Back',
+                          tooltip: DashboardCopy.commonBackTooltip(context),
                           onPressed: () {
                             Navigator.of(sheetContext).pop();
                             Future.microtask(_openDeveloperToolsSheet);
@@ -868,7 +889,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         final emergencyOverride = _liveData.debugEmergencySeverityOverride;
         final weatherSubtitleWithEmergency = emergencyOverride == null
             ? weatherSubtitle
-            : '$weatherSubtitle\nEmergency override: ${DashboardCopy.weatherEmergencyShortLabel(sheetContext, severity: emergencyOverride)}';
+            : '$weatherSubtitle\n${DashboardCopy.devtoolsWeatherEmergencyOverrideTitle(sheetContext)}: ${DashboardCopy.weatherEmergencyShortLabel(sheetContext, severity: emergencyOverride)}';
 
         final clockSubtitle = _clockOverrideSubtitle(
           sheetContext,
@@ -1108,7 +1129,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     children: [
                       IconButton(
                         icon: const Icon(Icons.arrow_back_rounded),
-                        tooltip: 'Back',
+                        tooltip: DashboardCopy.commonBackTooltip(context),
                         onPressed: () {
                           Navigator.of(sheetContext).pop();
                           Future.microtask(_openSettingsSheet);
@@ -1182,7 +1203,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     children: [
                       IconButton(
                         icon: const Icon(Icons.arrow_back_rounded),
-                        tooltip: 'Back',
+                        tooltip: DashboardCopy.commonBackTooltip(context),
                         onPressed: () {
                           Navigator.of(sheetContext).pop();
                           Future.microtask(_openSettingsSheet);
@@ -1492,7 +1513,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     children: [
                       IconButton(
                         icon: const Icon(Icons.arrow_back_rounded),
-                        tooltip: 'Back',
+                        tooltip: DashboardCopy.commonBackTooltip(context),
                         onPressed: () {
                           Navigator.of(sheetContext).pop();
                           Future.microtask(_openSettingsSheet);

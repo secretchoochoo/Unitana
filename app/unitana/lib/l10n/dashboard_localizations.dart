@@ -75,6 +75,8 @@ class DashboardLocalizations {
 
   static String _autoTranslateIfNeeded(String text, String languageCode) {
     switch (languageCode) {
+      case 'es':
+        return _replaceDictionary(text, _esDictionary);
       case 'pt':
         return _replaceDictionary(text, _ptDictionary);
       case 'fr':
@@ -152,6 +154,63 @@ class DashboardLocalizations {
     'Mattress Sizes': 'Tamanhos de colchao',
     'Shoe Sizes': 'Tamanhos de sapatos',
     'Shoes': 'Sapatos',
+  };
+
+  static const Map<String, String> _esDictionary = <String, String>{
+    'Weather': 'Clima',
+    'Time': 'Hora',
+    'Settings': 'Configuracion',
+    'Profiles': 'Perfiles',
+    'Profile': 'Perfil',
+    'Language': 'Idioma',
+    'Theme': 'Tema',
+    'About': 'Acerca de',
+    'Licenses': 'Licencias',
+    'History': 'Historial',
+    'Clear History': 'Borrar historial',
+    'Clear': 'Borrar',
+    'Convert': 'Convertir',
+    'Swap': 'Intercambiar',
+    'Close': 'Cerrar',
+    'Search': 'Buscar',
+    'Choose': 'Elegir',
+    'Most recent': 'Reciente',
+    'Results': 'Resultados',
+    'No matching tools.': 'Sin herramientas coincidentes.',
+    'No tools yet.': 'Sin herramientas aun.',
+    'City not set': 'Ciudad no definida',
+    'Destination': 'Destino',
+    'Home': 'Origen',
+    'Updated': 'Actualizado',
+    'Stale': 'Desactualizado',
+    'Retry': 'Reintentar',
+    'Open menu': 'Abrir menu',
+    'Open tools': 'Abrir herramientas',
+    'Edit Widgets': 'Editar widgets',
+    'Done': 'Listo',
+    'Cancel': 'Cancelar',
+    'Delete': 'Eliminar',
+    'Add Widget': 'Agregar widget',
+    'Height': 'Altura',
+    'Weight': 'Peso',
+    'Distance': 'Distancia',
+    'Speed': 'Velocidad',
+    'Temperature': 'Temperatura',
+    'Pressure': 'Presion',
+    'Volume': 'Volumen',
+    'Area': 'Area',
+    'Length': 'Longitud',
+    'Liquids': 'Liquidos',
+    'Baking': 'Horneado',
+    'Pace': 'Ritmo',
+    'Currency': 'Moneda',
+    'Data Storage': 'Datos',
+    'Jet Lag': 'Jet Lag',
+    'World Time Map': 'Mapa horario',
+    'Paper Sizes': 'Tamanos de papel',
+    'Mattress Sizes': 'Tamanos de colchon',
+    'Shoe Sizes': 'Tallas de zapatos',
+    'Shoes': 'Zapatos',
   };
 
   static const Map<String, String> _frDictionary = <String, String>{
