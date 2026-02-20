@@ -88,11 +88,13 @@ class _DashboardScreenState extends State<DashboardScreen>
   String? _focusTileId;
   String? _focusToolTileId;
   bool _showDashboardTutorial = false;
+  bool _showDashboardEditTutorial = false;
 
   final GlobalKey _tutorialToolsButtonKey = GlobalKey();
   final GlobalKey _tutorialMenuButtonKey = GlobalKey();
   final GlobalKey _tutorialRefreshKey = GlobalKey();
   final GlobalKey _tutorialWidgetsKey = GlobalKey();
+  final GlobalKey _tutorialEditDoneKey = GlobalKey();
 
   UnitanaAppState get state => widget.state;
 
@@ -201,6 +203,12 @@ class _DashboardScreenState extends State<DashboardScreen>
     if (!mounted) return;
     setState(() => _showDashboardTutorial = false);
     await state.markTutorialSurfaceCompleted('dashboard');
+  }
+
+  Future<void> _completeDashboardEditTutorial() async {
+    if (!mounted) return;
+    setState(() => _showDashboardEditTutorial = false);
+    await state.markTutorialSurfaceCompleted('dashboard_edit');
   }
 
   @override
@@ -1738,6 +1746,7 @@ class _DashboardScreenState extends State<DashboardScreen>
 
   Future<void> _openProfilesBoard() async {
     if (!mounted) return;
+    final showProfilesTutorial = !state.hasCompletedTutorialSurface('profiles');
 
     await Navigator.of(context).push<void>(
       MaterialPageRoute(
@@ -1764,6 +1773,9 @@ class _DashboardScreenState extends State<DashboardScreen>
             }
             await _refreshAllNow();
           },
+          showTutorial: showProfilesTutorial,
+          onCompleteTutorial: () =>
+              state.markTutorialSurfaceCompleted('profiles'),
         ),
       ),
     );
@@ -1777,9 +1789,13 @@ class _DashboardScreenState extends State<DashboardScreen>
   void _enterEditWidgets({String? focusTileId}) {
     if (_isEditingWidgets) return;
     _layout.beginEdit();
+    final shouldShowEditTutorial = !state.hasCompletedTutorialSurface(
+      'dashboard_edit',
+    );
     setState(() {
       _isEditingWidgets = true;
       _focusTileId = focusTileId;
+      _showDashboardEditTutorial = shouldShowEditTutorial;
     });
   }
 
@@ -1979,18 +1995,21 @@ class _DashboardScreenState extends State<DashboardScreen>
                 ),
                 Padding(
                   padding: const EdgeInsets.only(right: 4),
-                  child: TextButton(
-                    key: const Key('dashboard_edit_done'),
-                    onPressed: _exitEditWidgetsDone,
-                    style: TextButton.styleFrom(
-                      visualDensity: VisualDensity.compact,
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      padding: const EdgeInsets.symmetric(horizontal: 6),
-                      minimumSize: const Size(0, 36),
-                    ),
-                    child: Text(
-                      DashboardCopy.dashboardEditDone(context),
-                      style: TextStyle(fontSize: _kEditAppBarActionFontSize),
+                  child: KeyedSubtree(
+                    key: _tutorialEditDoneKey,
+                    child: TextButton(
+                      key: const Key('dashboard_edit_done'),
+                      onPressed: _exitEditWidgetsDone,
+                      style: TextButton.styleFrom(
+                        visualDensity: VisualDensity.compact,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        padding: const EdgeInsets.symmetric(horizontal: 6),
+                        minimumSize: const Size(0, 36),
+                      ),
+                      child: Text(
+                        DashboardCopy.dashboardEditDone(context),
+                        style: TextStyle(fontSize: _kEditAppBarActionFontSize),
+                      ),
                     ),
                   ),
                 ),
@@ -2183,34 +2202,64 @@ class _DashboardScreenState extends State<DashboardScreen>
                     TutorialStep(
                       title: 'Tools',
                       body:
-                          'Tap the wrench to open tools. Search fast and pin what you use most.',
+                          'This is your tool belt. Tap the hammer + wrench to open tools, then pin your go-to picks.',
                       targetKey: _tutorialToolsButtonKey,
                       cardAlignment: Alignment.topLeft,
+                      targetAlignment: Alignment.center,
+                      showSpotlight: false,
                     ),
                     TutorialStep(
                       title: 'Menu',
                       body:
-                          'Tap the menu for settings, profiles, and tutorial controls.',
+                          'This is your control room: switch profiles, tune your theme, and adjust settings.',
                       targetKey: _tutorialMenuButtonKey,
                       cardAlignment: Alignment.topRight,
+                      targetAlignment: Alignment.center,
+                      showSpotlight: false,
                     ),
                     TutorialStep(
                       title: 'Refresh',
                       body:
-                          'Pull down to refresh weather and rates. Or tap the refresh icon.',
+                          'Need fresh data fast? Pull down on the page to refresh weather and currency. Tap the icon for a quick refresh too.',
                       targetKey: _tutorialRefreshKey,
                       cardAlignment: Alignment.topCenter,
+                      arrowStyle: TutorialArrowStyle.pullDownBounce,
+                      showSpotlight: false,
                     ),
                     TutorialStep(
                       title: 'Widgets',
                       body:
-                          'Scroll to browse cards. Tap a widget to open it. Use edit mode to rearrange.',
+                          'These are tool widgets. Each one shows your last result so key info is always one tap away.',
                       targetKey: _tutorialWidgetsKey,
-                      cardAlignment: Alignment.bottomCenter,
+                      cardAlignment: Alignment.topCenter,
+                      targetAlignment: const Alignment(0, -0.98),
                     ),
                   ],
                   onSkip: _completeDashboardTutorial,
                   onComplete: _completeDashboardTutorial,
+                ),
+              if (_showDashboardEditTutorial && _isEditingWidgets)
+                TutorialOverlay(
+                  steps: [
+                    TutorialStep(
+                      title: 'Move Widgets',
+                      body:
+                          'Long-press a tool widget, then drag it. Drop on a widget to swap, or drop on an empty slot to place it there.',
+                      targetKey: _tutorialWidgetsKey,
+                      cardAlignment: Alignment.topCenter,
+                      targetAlignment: const Alignment(0, -0.9),
+                    ),
+                    TutorialStep(
+                      title: 'Save Layout',
+                      body:
+                          'Tap Done to keep your layout. Tap Cancel to exit without saving.',
+                      targetKey: _tutorialEditDoneKey,
+                      cardAlignment: Alignment.topRight,
+                      showSpotlight: false,
+                    ),
+                  ],
+                  onSkip: _completeDashboardEditTutorial,
+                  onComplete: _completeDashboardEditTutorial,
                 ),
             ],
           ),

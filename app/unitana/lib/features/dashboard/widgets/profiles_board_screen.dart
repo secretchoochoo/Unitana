@@ -6,6 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../../app/app_state.dart';
 import '../../../common/feedback/unitana_toast.dart';
+import '../../../common/tutorial/tutorial_overlay.dart';
 import '../../../models/place.dart';
 import '../models/dashboard_copy.dart';
 import 'destructive_confirmation_sheet.dart';
@@ -16,6 +17,8 @@ class ProfilesBoardScreen extends StatefulWidget {
   final Future<void> Function(String profileId) onEditProfile;
   final Future<void> Function({int? slotIndex}) onAddProfile;
   final Future<void> Function(String profileId) onDeleteProfile;
+  final bool showTutorial;
+  final Future<void> Function()? onCompleteTutorial;
 
   const ProfilesBoardScreen({
     super.key,
@@ -24,6 +27,8 @@ class ProfilesBoardScreen extends StatefulWidget {
     required this.onEditProfile,
     required this.onAddProfile,
     required this.onDeleteProfile,
+    this.showTutorial = false,
+    this.onCompleteTutorial,
   });
 
   @override
@@ -42,6 +47,10 @@ class _ProfilesBoardScreenState extends State<ProfilesBoardScreen>
   List<String> _orderedIds = const <String>[];
   List<String?> _editSlots = const <String?>[];
   String? _draggingId;
+  bool _showTutorial = false;
+  final GlobalKey _tutorialEditButtonKey = GlobalKey();
+  final GlobalKey _tutorialGridKey = GlobalKey();
+  final GlobalKey _tutorialAddButtonKey = GlobalKey();
   late final AnimationController _wiggle;
 
   @override
@@ -52,6 +61,7 @@ class _ProfilesBoardScreenState extends State<ProfilesBoardScreen>
       duration: const Duration(milliseconds: 700),
     );
     _syncOrderFromState();
+    _showTutorial = widget.showTutorial;
   }
 
   @override
@@ -65,6 +75,14 @@ class _ProfilesBoardScreenState extends State<ProfilesBoardScreen>
     if (_orderedIds.isEmpty || !_sameItems(_orderedIds, ids)) {
       _orderedIds = ids;
     }
+  }
+
+  Future<void> _completeTutorial() async {
+    if (!_showTutorial) return;
+    setState(() {
+      _showTutorial = false;
+    });
+    await widget.onCompleteTutorial?.call();
   }
 
   void _ensureEditSlots(List<String> orderedIds, int addTileCount) {
@@ -340,29 +358,36 @@ class _ProfilesBoardScreenState extends State<ProfilesBoardScreen>
               ] else
                 Padding(
                   padding: const EdgeInsets.only(right: 8),
-                  child: TextButton(
-                    key: const ValueKey('profiles_board_edit_mode'),
-                    onPressed: () => _setEditMode(
-                      true,
-                      orderedIds: ordered
-                          .map((p) => p.id)
-                          .toList(growable: false),
-                      addTileCount: addTileCount,
+                  child: KeyedSubtree(
+                    key: _tutorialEditButtonKey,
+                    child: TextButton(
+                      key: const ValueKey('profiles_board_edit_mode'),
+                      onPressed: () => _setEditMode(
+                        true,
+                        orderedIds: ordered
+                            .map((p) => p.id)
+                            .toList(growable: false),
+                        addTileCount: addTileCount,
+                      ),
+                      child: Text(DashboardCopy.profilesBoardEditCta(context)),
                     ),
-                    child: Text(DashboardCopy.profilesBoardEditCta(context)),
                   ),
                 ),
             ],
           ),
           body: SafeArea(
-            child: Column(
-              key: const Key('profiles_board_screen'),
+            child: Stack(
               children: [
-                const SizedBox(height: 8),
-                Expanded(
-                  child: GridView.builder(
-                    key: const Key('profiles_board_grid'),
-                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                Column(
+                  key: const Key('profiles_board_screen'),
+                  children: [
+                    const SizedBox(height: 8),
+                    Expanded(
+                      child: KeyedSubtree(
+                        key: _tutorialGridKey,
+                        child: GridView.builder(
+                          key: const Key('profiles_board_grid'),
+                          padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
                     gridDelegate:
                         const SliverGridDelegateWithFixedCrossAxisCount(
                           crossAxisCount: 2,
@@ -373,7 +398,7 @@ class _ProfilesBoardScreenState extends State<ProfilesBoardScreen>
                     itemCount: _editMode
                         ? _editSlots.length
                         : (ordered.length + addTileCount),
-                    itemBuilder: (context, index) {
+                          itemBuilder: (context, index) {
                       if (_editMode) {
                         final slotId = _editSlots[index];
                         final slotProfile = slotId == null
@@ -493,9 +518,14 @@ class _ProfilesBoardScreenState extends State<ProfilesBoardScreen>
 
                       if (index >= ordered.length) {
                         final addSlot = index - ordered.length;
-                        return _AddProfileTile(
+                        return KeyedSubtree(
+                          key: index == ordered.length
+                              ? _tutorialAddButtonKey
+                              : null,
+                          child: _AddProfileTile(
                           onTap: () => widget.onAddProfile(slotIndex: index),
                           slotIndex: addSlot,
+                          ),
                         );
                       }
 
@@ -583,9 +613,43 @@ class _ProfilesBoardScreenState extends State<ProfilesBoardScreen>
                           );
                         },
                       );
-                    },
-                  ),
+                          },
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
+                if (_showTutorial)
+                  TutorialOverlay(
+                    steps: [
+                      TutorialStep(
+                        title: 'Profiles',
+                        body:
+                            'Tap a profile tile to switch places instantly. Your dashboard updates right away.',
+                        targetKey: _tutorialGridKey,
+                        cardAlignment: Alignment.topCenter,
+                        targetAlignment: const Alignment(0, -0.75),
+                      ),
+                      TutorialStep(
+                        title: 'Add Profile',
+                        body:
+                            'Hit the + tile to create a new setup for another trip or home base.',
+                        targetKey: _tutorialAddButtonKey,
+                        cardAlignment: Alignment.bottomCenter,
+                        targetAlignment: Alignment.center,
+                      ),
+                      TutorialStep(
+                        title: 'Edit Mode',
+                        body:
+                            'Use Edit to reorder profile tiles with long-press drag, then tap Done to save.',
+                        targetKey: _tutorialEditButtonKey,
+                        cardAlignment: Alignment.topCenter,
+                        targetAlignment: Alignment.center,
+                      ),
+                    ],
+                    onSkip: _completeTutorial,
+                    onComplete: _completeTutorial,
+                  ),
               ],
             ),
           ),

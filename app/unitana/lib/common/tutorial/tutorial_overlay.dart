@@ -3,17 +3,25 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+enum TutorialArrowStyle { targetCurve, pullDownBounce, none }
+
 class TutorialStep {
   final String title;
   final String body;
   final GlobalKey? targetKey;
   final Alignment cardAlignment;
+  final TutorialArrowStyle arrowStyle;
+  final Alignment targetAlignment;
+  final bool showSpotlight;
 
   const TutorialStep({
     required this.title,
     required this.body,
     this.targetKey,
     this.cardAlignment = Alignment.bottomCenter,
+    this.arrowStyle = TutorialArrowStyle.targetCurve,
+    this.targetAlignment = Alignment.center,
+    this.showSpotlight = true,
   });
 }
 
@@ -33,15 +41,46 @@ class TutorialOverlay extends StatefulWidget {
   State<TutorialOverlay> createState() => _TutorialOverlayState();
 }
 
-class _TutorialOverlayState extends State<TutorialOverlay> {
+class _TutorialOverlayState extends State<TutorialOverlay>
+    with SingleTickerProviderStateMixin {
   int _stepIndex = 0;
+  final GlobalKey _cardKey = GlobalKey();
+  late final AnimationController _arrowController;
+  bool _queuedLayoutTick = false;
 
   TutorialStep get _step => widget.steps[_stepIndex];
+
+  @override
+  void initState() {
+    super.initState();
+    _arrowController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    );
+    _syncArrowAnimation();
+  }
+
+  @override
+  void dispose() {
+    _arrowController.dispose();
+    super.dispose();
+  }
 
   Rect? _targetRect() {
     final targetKey = _step.targetKey;
     if (targetKey == null) return null;
     final context = targetKey.currentContext;
+    if (context == null) return null;
+    final box = context.findRenderObject();
+    if (box is! RenderBox || !box.hasSize || !box.attached) return null;
+    final overlayBox = Overlay.of(this.context).context.findRenderObject();
+    if (overlayBox is! RenderBox || !overlayBox.hasSize) return null;
+    final topLeft = box.localToGlobal(Offset.zero, ancestor: overlayBox);
+    return topLeft & box.size;
+  }
+
+  Rect? _cardRect() {
+    final context = _cardKey.currentContext;
     if (context == null) return null;
     final box = context.findRenderObject();
     if (box is! RenderBox || !box.hasSize || !box.attached) return null;
@@ -57,11 +96,43 @@ class _TutorialOverlayState extends State<TutorialOverlay> {
       return;
     }
     setState(() => _stepIndex += 1);
+    _syncArrowAnimation();
+  }
+
+  void _back() {
+    if (_stepIndex <= 0) return;
+    setState(() => _stepIndex -= 1);
+    _syncArrowAnimation();
+  }
+
+  void _syncArrowAnimation() {
+    final needsBounce = _step.arrowStyle == TutorialArrowStyle.pullDownBounce;
+    if (needsBounce) {
+      if (!_arrowController.isAnimating) {
+        _arrowController.repeat();
+      }
+      return;
+    }
+    if (_arrowController.isAnimating) {
+      _arrowController.stop();
+    }
+    if (_arrowController.value != 0) {
+      _arrowController.value = 0;
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final target = _targetRect();
+    final cardRect = _cardRect();
+    if ((target == null || cardRect == null) && !_queuedLayoutTick) {
+      _queuedLayoutTick = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _queuedLayoutTick = false;
+        if (!mounted) return;
+        setState(() {});
+      });
+    }
     final cs = Theme.of(context).colorScheme;
     final chalkCard = Color.alphaBlend(
       Colors.black.withAlpha(90),
@@ -77,37 +148,46 @@ class _TutorialOverlayState extends State<TutorialOverlay> {
           children: [
             Positioned.fill(
               child: CustomPaint(
-                painter: _SpotlightPainter(targetRect: target),
+                painter: _SpotlightPainter(
+                  targetRect: _step.showSpotlight ? target : null,
+                ),
               ),
             ),
+            if (_step.arrowStyle != TutorialArrowStyle.none)
+              Positioned.fill(
+                child: IgnorePointer(
+                  child: AnimatedBuilder(
+                    animation: _arrowController,
+                    builder: (context, _) => CustomPaint(
+                      painter: _ArrowPainter(
+                        targetRect: target,
+                        cardRect: cardRect,
+                        style: _step.arrowStyle,
+                        phase: _arrowController.value,
+                        targetAlignment: _step.targetAlignment,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
             Align(
               alignment: _step.cardAlignment,
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(16, 20, 16, 28),
                 child: _ChalkCard(
+                  key: _cardKey,
                   title: _step.title,
                   body: _step.body,
                   textColor: chalkText,
                   background: chalkCard,
                   showBack: _stepIndex > 0,
-                  onBack: () => setState(() => _stepIndex -= 1),
+                  onBack: _back,
                   onNext: _next,
                   onSkip: widget.onSkip,
                   isLast: _stepIndex == widget.steps.length - 1,
                 ),
               ),
             ),
-            if (target != null)
-              Positioned.fill(
-                child: IgnorePointer(
-                  child: CustomPaint(
-                    painter: _ArrowPainter(
-                      targetRect: target,
-                      cardAlignment: _step.cardAlignment,
-                    ),
-                  ),
-                ),
-              ),
           ],
         ),
       ),
@@ -156,38 +236,82 @@ class _SpotlightPainter extends CustomPainter {
 }
 
 class _ArrowPainter extends CustomPainter {
-  final Rect targetRect;
-  final Alignment cardAlignment;
+  final Rect? targetRect;
+  final Rect? cardRect;
+  final TutorialArrowStyle style;
+  final double phase;
+  final Alignment targetAlignment;
 
-  const _ArrowPainter({required this.targetRect, required this.cardAlignment});
+  const _ArrowPainter({
+    required this.targetRect,
+    required this.cardRect,
+    required this.style,
+    required this.phase,
+    required this.targetAlignment,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
-    final target = targetRect.center;
-    final start = Offset(
-      size.width * (cardAlignment.x + 1) / 2,
-      size.height * (cardAlignment.y + 1) / 2,
-    );
-
-    final p = Paint()
-      ..color = Colors.white.withAlpha(220)
+    final chalkInk = Colors.white.withAlpha(238);
+    final chalkDust = Colors.white.withAlpha(110);
+    final pShadow = Paint()
+      ..color = Colors.black.withAlpha(170)
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 3
+      ..strokeWidth = 8
+      ..strokeCap = StrokeCap.round;
+    final p = Paint()
+      ..color = chalkInk
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 5.2
+      ..strokeCap = StrokeCap.round;
+    final pDust = Paint()
+      ..color = chalkDust
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.2
       ..strokeCap = StrokeCap.round;
 
-    final path = Path()
-      ..moveTo(start.dx, start.dy)
-      ..quadraticBezierTo(
-        (start.dx + target.dx) / 2 + 30,
-        (start.dy + target.dy) / 2 - 30,
-        target.dx,
-        target.dy,
-      );
-    canvas.drawPath(path, p);
+    if (style == TutorialArrowStyle.pullDownBounce) {
+      final card = cardRect;
+      if (card == null) return;
+      final bob = math.sin(phase * math.pi * 2) * 12;
+      final start = Offset(card.center.dx, card.bottom + 14 + bob);
+      final end = Offset(start.dx, start.dy + 114);
+      canvas.drawLine(start, end, pShadow);
+      canvas.drawLine(start, end, p);
+      canvas.drawLine(start, end, pDust);
+      const head = 34.0;
+      final left = Offset(end.dx - 15, end.dy - head);
+      final right = Offset(end.dx + 15, end.dy - head);
+      canvas.drawLine(end, left, pShadow);
+      canvas.drawLine(end, right, pShadow);
+      canvas.drawLine(end, left, p);
+      canvas.drawLine(end, right, p);
+      canvas.drawLine(end, left, pDust);
+      canvas.drawLine(end, right, pDust);
+      return;
+    }
 
-    final angle = math.atan2(target.dy - start.dy, target.dx - start.dx);
-    const head = 12.0;
-    final tip = target;
+    final target = targetRect;
+    final card = cardRect;
+    if (target == null || card == null) return;
+    final to = _pointFromAlignment(target, targetAlignment);
+    final edgePoint = _nearestPointOnRect(card, to);
+    final vx = to.dx - edgePoint.dx;
+    final vy = to.dy - edgePoint.dy;
+    final dist = math.max(1.0, math.sqrt(vx * vx + vy * vy));
+    final ux = vx / dist;
+    final uy = vy / dist;
+    final from = Offset(edgePoint.dx + (ux * 22), edgePoint.dy + (uy * 22));
+    final path = Path()
+      ..moveTo(from.dx, from.dy)
+      ..lineTo(to.dx, to.dy);
+    canvas.drawPath(path, pShadow);
+    canvas.drawPath(path, p);
+    canvas.drawPath(path, pDust);
+
+    final angle = math.atan2(to.dy - from.dy, to.dx - from.dx);
+    const head = 18.0;
+    final tip = to;
     final left = Offset(
       tip.dx - head * math.cos(angle - 0.45),
       tip.dy - head * math.sin(angle - 0.45),
@@ -196,14 +320,51 @@ class _ArrowPainter extends CustomPainter {
       tip.dx - head * math.cos(angle + 0.45),
       tip.dy - head * math.sin(angle + 0.45),
     );
+    canvas.drawLine(tip, left, pShadow);
+    canvas.drawLine(tip, right, pShadow);
     canvas.drawLine(tip, left, p);
     canvas.drawLine(tip, right, p);
+    canvas.drawLine(tip, left, pDust);
+    canvas.drawLine(tip, right, pDust);
+  }
+
+  Offset _pointFromAlignment(Rect rect, Alignment alignment) {
+    final dx = rect.center.dx + (alignment.x * rect.width / 2);
+    final dy = rect.center.dy + (alignment.y * rect.height / 2);
+    return Offset(dx, dy);
+  }
+
+  Offset _nearestPointOnRect(Rect rect, Offset point) {
+    double x = point.dx.clamp(rect.left, rect.right);
+    double y = point.dy.clamp(rect.top, rect.bottom);
+    final inside =
+        point.dx >= rect.left &&
+        point.dx <= rect.right &&
+        point.dy >= rect.top &&
+        point.dy <= rect.bottom;
+    if (!inside) return Offset(x, y);
+
+    final leftDist = (point.dx - rect.left).abs();
+    final rightDist = (rect.right - point.dx).abs();
+    final topDist = (point.dy - rect.top).abs();
+    final bottomDist = (rect.bottom - point.dy).abs();
+    final minDist = math.min(
+      math.min(leftDist, rightDist),
+      math.min(topDist, bottomDist),
+    );
+    if (minDist == leftDist) return Offset(rect.left, point.dy);
+    if (minDist == rightDist) return Offset(rect.right, point.dy);
+    if (minDist == topDist) return Offset(point.dx, rect.top);
+    return Offset(point.dx, rect.bottom);
   }
 
   @override
   bool shouldRepaint(covariant _ArrowPainter oldDelegate) =>
       oldDelegate.targetRect != targetRect ||
-      oldDelegate.cardAlignment != cardAlignment;
+      oldDelegate.cardRect != cardRect ||
+      oldDelegate.style != style ||
+      oldDelegate.phase != phase ||
+      oldDelegate.targetAlignment != targetAlignment;
 }
 
 class _ChalkCard extends StatelessWidget {
@@ -218,6 +379,7 @@ class _ChalkCard extends StatelessWidget {
   final VoidCallback onSkip;
 
   const _ChalkCard({
+    super.key,
     required this.title,
     required this.body,
     required this.showBack,

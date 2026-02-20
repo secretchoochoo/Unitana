@@ -1057,6 +1057,10 @@ class DashboardLiveDataController extends ChangeNotifier {
     'CURRENCY_NETWORK_ALLOWED',
     defaultValue: true,
   );
+  static const bool _devToolsEnabled = bool.fromEnvironment(
+    'UNITANA_ENABLE_DEVTOOLS',
+    defaultValue: false,
+  );
   static const bool _isFlutterTest = bool.fromEnvironment('FLUTTER_TEST');
 
   static const String _kDevCurrencyBackend = 'dev_currency_backend_v1';
@@ -1064,7 +1068,7 @@ class DashboardLiveDataController extends ChangeNotifier {
   static const String _kCachedEurToUsdUpdatedAt =
       'currency_eur_to_usd_updated_at_v1';
 
-  static const Duration _currencyTtl = Duration(hours: 12);
+  static const Duration _currencyTtl = Duration(minutes: 10);
   static WeatherBackend _backendFromEnv() {
     if (!_envWeatherNetworkEnabled) return WeatherBackend.mock;
     switch (_envWeatherProvider.toLowerCase()) {
@@ -1128,6 +1132,7 @@ class DashboardLiveDataController extends ChangeNotifier {
   DateTime? get lastCurrencyRefreshedAt => _lastCurrencyRefreshedAt;
   DateTime? get lastCurrencyErrorAt => _lastCurrencyErrorAt;
   Object? get lastCurrencyError => _lastCurrencyError;
+  Duration get currencyRefreshCadence => _currencyTtl;
 
   bool get isCurrencyStale {
     final last = _lastCurrencyRefreshedAt;
@@ -1166,7 +1171,7 @@ class DashboardLiveDataController extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
 
     final weatherRaw = prefs.getString(_kDevWeatherBackend);
-    if (weatherRaw != null && weatherRaw.trim().isNotEmpty) {
+    if (_devToolsEnabled && weatherRaw != null && weatherRaw.trim().isNotEmpty) {
       final norm = weatherRaw.trim().toLowerCase();
       final WeatherBackend next;
       if (norm == 'openmeteo' ||
@@ -1192,7 +1197,9 @@ class DashboardLiveDataController extends ChangeNotifier {
     }
 
     final currencyRaw = prefs.getString(_kDevCurrencyBackend);
-    if (currencyRaw != null && currencyRaw.trim().isNotEmpty) {
+    if (_devToolsEnabled &&
+        currencyRaw != null &&
+        currencyRaw.trim().isNotEmpty) {
       final norm = currencyRaw.trim().toLowerCase();
       final CurrencyBackend next;
       if (norm == 'frankfurter') {
@@ -1221,6 +1228,7 @@ class DashboardLiveDataController extends ChangeNotifier {
   }
 
   Future<void> setWeatherBackend(WeatherBackend backend) async {
+    if (!_devToolsEnabled) return;
     if (!_weatherNetworkAllowed && backend != WeatherBackend.mock) {
       _lastError = StateError('Network weather is disallowed for this build');
       _notify();
@@ -1245,6 +1253,7 @@ class DashboardLiveDataController extends ChangeNotifier {
   }
 
   Future<void> setCurrencyBackend(CurrencyBackend backend) async {
+    if (!_devToolsEnabled) return;
     if (!_currencyNetworkAllowed && backend != CurrencyBackend.mock) {
       _lastError = StateError('Network currency is disallowed for this build');
       _notify();

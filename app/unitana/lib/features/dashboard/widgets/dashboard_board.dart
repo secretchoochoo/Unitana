@@ -96,7 +96,8 @@ class _DashboardBoardState extends State<DashboardBoard>
   bool _pendingShowActions = false;
   String? _lastFocusToolId;
   bool _pendingFocusTool = false;
-  final Map<String, GlobalKey> _toolTileKeys = <String, GlobalKey>{};
+  final Map<String, GlobalKey> _toolTileKeysByItemId = <String, GlobalKey>{};
+  final Map<String, String> _firstVisibleItemIdForTool = <String, String>{};
   final Set<String> _pulsingToolIds = <String>{};
   final Map<String, Timer> _pulseTimers = <String, Timer>{};
   String? _lastSeedSignature;
@@ -326,8 +327,8 @@ class _DashboardBoardState extends State<DashboardBoard>
     _pendingFocusTool = toolId != null && toolId.trim().isNotEmpty;
   }
 
-  GlobalKey _toolTileKeyFor(String toolId) {
-    return _toolTileKeys.putIfAbsent(toolId, GlobalKey.new);
+  GlobalKey _toolTileKeyForItem(String itemId) {
+    return _toolTileKeysByItemId.putIfAbsent(itemId, GlobalKey.new);
   }
 
   Future<void> _pulseToolTile(String toolId) async {
@@ -346,7 +347,9 @@ class _DashboardBoardState extends State<DashboardBoard>
   }
 
   Future<void> _focusExistingToolTile(String toolId) async {
-    final targetContext = _toolTileKeyFor(toolId).currentContext;
+    final targetItemId = _firstVisibleItemIdForTool[toolId];
+    if (targetItemId == null || targetItemId.trim().isEmpty) return;
+    final targetContext = _toolTileKeyForItem(targetItemId).currentContext;
     if (targetContext == null) return;
     await Scrollable.ensureVisible(
       targetContext,
@@ -358,11 +361,15 @@ class _DashboardBoardState extends State<DashboardBoard>
     unawaited(_pulseToolTile(toolId));
   }
 
-  Widget _wrapToolFocusFrame({required String toolId, required Widget child}) {
+  Widget _wrapToolFocusFrame({
+    required String itemId,
+    required String toolId,
+    required Widget child,
+  }) {
     final pulsing = _pulsingToolIds.contains(toolId);
     final pulseColor = Theme.of(context).colorScheme.primary;
     return AnimatedContainer(
-      key: _toolTileKeyFor(toolId),
+      key: _toolTileKeyForItem(itemId),
       duration: const Duration(milliseconds: 180),
       curve: Curves.easeOut,
       decoration: BoxDecoration(
@@ -514,6 +521,12 @@ class _DashboardBoardState extends State<DashboardBoard>
     ];
 
     final placed = _place(items, cols);
+    _firstVisibleItemIdForTool.clear();
+    for (final placedItem in placed) {
+      final toolId = placedItem.item.toolId;
+      if (toolId == null) continue;
+      _firstVisibleItemIdForTool.putIfAbsent(toolId, () => placedItem.item.id);
+    }
     final rowsUsed = placed.isEmpty
         ? 0
         : placed.map((p) => p.row + p.span.rowSpan).reduce(math.max);
@@ -1029,6 +1042,9 @@ class _DashboardBoardState extends State<DashboardBoard>
                 currencyIsStale: widget.liveData.isCurrencyStale,
                 currencyShouldRetryNow: widget.liveData.shouldRetryCurrencyNow,
                 currencyLastErrorAt: widget.liveData.lastCurrencyErrorAt,
+                currencyLastRefreshedAt: widget.liveData.lastCurrencyRefreshedAt,
+                currencyNetworkEnabled: widget.liveData.currencyNetworkEnabled,
+                currencyRefreshCadence: widget.liveData.currencyRefreshCadence,
                 onRetryCurrencyNow: () async {
                   final places = <Place>[
                     if (home != null) home,
@@ -1049,7 +1065,7 @@ class _DashboardBoardState extends State<DashboardBoard>
       //
       // KeyedSubtree is not reliably hit-testable because it does not
       // necessarily introduce its own RenderObject.
-      return _wrapToolFocusFrame(toolId: tool.id, child: tile);
+      return _wrapToolFocusFrame(itemId: item.id, toolId: tool.id, child: tile);
     }
 
     final payload = _payloadForToolTile(item: item, currentIndex: currentIndex);
@@ -1148,6 +1164,7 @@ class _DashboardBoardState extends State<DashboardBoard>
     );
 
     return _wrapToolFocusFrame(
+      itemId: item.id,
       toolId: tool.id,
       child: _maybeWiggle(item.id, target),
     );

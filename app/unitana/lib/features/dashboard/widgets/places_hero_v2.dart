@@ -1911,9 +1911,8 @@ class _SunTimesPill extends StatelessWidget {
 
     if (sun == null && primaryTzId != null && secondaryTzId != null) {
       final pZ = TimezoneUtils.nowInZone(primaryTzId!);
-      final sZ = TimezoneUtils.nowInZone(secondaryTzId!);
-      rise = '🌅 --:-- ${pZ.abbreviation} (--:-- ${sZ.abbreviation})';
-      set = '🌇 --:-- ${pZ.abbreviation} (--:-- ${sZ.abbreviation})';
+      rise = '🌅 --:-- ${pZ.abbreviation}';
+      set = '🌇 --:-- ${pZ.abbreviation}';
     }
 
     if (sun != null && primaryTzId != null && secondaryTzId != null) {
@@ -1921,34 +1920,23 @@ class _SunTimesPill extends StatelessWidget {
         primaryTzId!,
         nowUtc: sun!.sunriseUtc,
       );
-      final riseSecondary = TimezoneUtils.nowInZone(
-        secondaryTzId!,
-        nowUtc: sun!.sunriseUtc,
-      );
 
       final setPrimary = TimezoneUtils.nowInZone(
         primaryTzId!,
         nowUtc: sun!.sunsetUtc,
       );
-      final setSecondary = TimezoneUtils.nowInZone(
-        secondaryTzId!,
-        nowUtc: sun!.sunsetUtc,
-      );
 
-      // Hero semantics: this pill teaches time zones, not two separate city events.
-      // Use the selected city's clock preference for both values so the row reads
-      // as a single statement with a parenthetical conversion.
+      // Sunrise/Sunset should follow the selected place timezone only.
+      // For lightweight comparison, show both 12h and 24h for that same timezone.
       final use24 = primaryUse24h ?? true;
 
       final riseP = TimezoneUtils.formatClock(risePrimary, use24h: use24);
-      final riseS = TimezoneUtils.formatClock(riseSecondary, use24h: use24);
-      rise =
-          '🌅 $riseP ${risePrimary.abbreviation} ($riseS ${riseSecondary.abbreviation})';
+      final riseAlt = TimezoneUtils.formatClock(risePrimary, use24h: !use24);
+      rise = '🌅 $riseP ${risePrimary.abbreviation} • $riseAlt';
 
       final setP = TimezoneUtils.formatClock(setPrimary, use24h: use24);
-      final setS = TimezoneUtils.formatClock(setSecondary, use24h: use24);
-      set =
-          '🌇 $setP ${setPrimary.abbreviation} ($setS ${setSecondary.abbreviation})';
+      final setAlt = TimezoneUtils.formatClock(setPrimary, use24h: !use24);
+      set = '🌇 $setP ${setPrimary.abbreviation} • $setAlt';
     }
 
     final isWind = detailsMode == HeroDetailsPillMode.wind;
