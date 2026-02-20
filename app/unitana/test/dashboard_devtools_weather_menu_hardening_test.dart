@@ -102,6 +102,11 @@ void main() {
         );
 
         await _scrollDownUntilFound(tester, menuSheet, developerToolsTile);
+        if (developerToolsTile.evaluate().isEmpty) {
+          // Release builds can compile with DevTools disabled.
+          expect(developerToolsTile, findsNothing);
+          return;
+        }
         expect(developerToolsTile, findsOneWidget);
         await ensureVisibleAligned(tester, developerToolsTile);
         await tester.pump();

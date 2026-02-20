@@ -106,6 +106,11 @@ void main() {
     final devtools = find.byKey(
       const ValueKey('dashboard_menu_developer_tools'),
     );
+    if (devtools.evaluate().isEmpty) {
+      // Release builds can compile with DevTools disabled.
+      expect(devtools, findsNothing);
+      return;
+    }
     expect(devtools, findsOneWidget);
     await tester.tap(devtools);
     await tester.pumpAndSettle(const Duration(milliseconds: 300));

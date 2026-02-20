@@ -57,15 +57,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
   static const Duration _kWeatherAutoRefreshMinInterval = Duration(seconds: 30);
   static const String _kBuildVersion = String.fromEnvironment(
     'UNITANA_APP_VERSION',
-    defaultValue: 'dev',
+    defaultValue: '1.0.0',
   );
   static const String _kBuildNumber = String.fromEnvironment(
     'UNITANA_BUILD_NUMBER',
-    defaultValue: '0',
+    defaultValue: '100',
   );
   static const bool _kDeveloperToolsEnabled = bool.fromEnvironment(
     'UNITANA_DEVTOOLS_ENABLED',
-    defaultValue: true,
+    defaultValue: false,
   );
 
   late DashboardSessionController _session;
