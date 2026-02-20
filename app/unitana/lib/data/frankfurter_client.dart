@@ -72,8 +72,15 @@ class FrankfurterClient {
     parsed.forEach((code, value) {
       final cc = code.trim().toUpperCase();
       if (cc.isEmpty) return;
-      if (value <= 0) return;
-      out[cc] = value;
+      final parsedValue = switch (value) {
+        num n => n.toDouble(),
+        String s => double.tryParse(s),
+        _ => null,
+      };
+      if (parsedValue == null || !parsedValue.isFinite || parsedValue <= 0) {
+        return;
+      }
+      out[cc] = parsedValue;
     });
     return out;
   }

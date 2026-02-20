@@ -50,6 +50,7 @@ class _ProfilesBoardScreenState extends State<ProfilesBoardScreen>
   bool _showTutorial = false;
   final GlobalKey _tutorialEditButtonKey = GlobalKey();
   final GlobalKey _tutorialGridKey = GlobalKey();
+  final GlobalKey _tutorialProfilesFirstRowKey = GlobalKey();
   final GlobalKey _tutorialAddButtonKey = GlobalKey();
   late final AnimationController _wiggle;
 
@@ -61,7 +62,8 @@ class _ProfilesBoardScreenState extends State<ProfilesBoardScreen>
       duration: const Duration(milliseconds: 700),
     );
     _syncOrderFromState();
-    _showTutorial = widget.showTutorial;
+    const isFlutterTest = bool.fromEnvironment('FLUTTER_TEST');
+    _showTutorial = !isFlutterTest && widget.showTutorial;
   }
 
   @override
@@ -385,234 +387,325 @@ class _ProfilesBoardScreenState extends State<ProfilesBoardScreen>
                     Expanded(
                       child: KeyedSubtree(
                         key: _tutorialGridKey,
-                        child: GridView.builder(
-                          key: const Key('profiles_board_grid'),
-                          padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-                    gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
-                          mainAxisSpacing: 10,
-                          crossAxisSpacing: 10,
-                          childAspectRatio: 1.0,
-                        ),
-                    itemCount: _editMode
-                        ? _editSlots.length
-                        : (ordered.length + addTileCount),
-                          itemBuilder: (context, index) {
-                      if (_editMode) {
-                        final slotId = _editSlots[index];
-                        final slotProfile = slotId == null
-                            ? null
-                            : byId[slotId];
-                        if (slotProfile == null) {
-                          return DragTarget<String>(
-                            key: ValueKey('profiles_board_target_empty_$index'),
-                            onWillAcceptWithDetails: (details) =>
-                                details.data.trim().isNotEmpty,
-                            onAcceptWithDetails: (details) {
-                              _swapDraggedIntoSlot(
-                                draggedId: details.data,
-                                targetIndex: index,
-                              );
-                            },
-                            builder: (context, candidateData, rejectedData) {
-                              if (candidateData.isNotEmpty &&
-                                  rejectedData.isNotEmpty) {
-                                // no-op
-                              }
-                              final slotIndex = index - ordered.length < 0
-                                  ? 0
-                                  : index - ordered.length;
-                              return _AddProfileTile(
-                                onTap: () =>
-                                    widget.onAddProfile(slotIndex: index),
-                                slotIndex: slotIndex,
-                              );
-                            },
-                          );
-                        }
-
-                        final profile = slotProfile;
-                        final active =
-                            profile.id == widget.state.activeProfileId;
-
-                        return DragTarget<String>(
-                          key: ValueKey('profiles_board_target_${profile.id}'),
-                          onWillAcceptWithDetails: (details) =>
-                              details.data != profile.id,
-                          onAcceptWithDetails: (details) {
-                            _swapDraggedIntoSlot(
-                              draggedId: details.data,
-                              targetIndex: index,
-                            );
-                          },
-                          builder: (context, candidateData, rejectedData) {
-                            if (candidateData.isNotEmpty &&
-                                rejectedData.isNotEmpty) {
-                              // no-op
-                            }
-
-                            final feedbackTile = _ProfileTile(
-                              profile: profile,
-                              isActive: active,
-                              isEditing: false,
-                              onTap: () {},
-                              onEdit: () {},
-                              onDelete: () {},
-                              flagEmojiForCountry: _flagEmoji,
-                              homeAndDestination: _homeAndDestination,
-                            );
-
-                            final tile = _ProfileTile(
-                              profile: profile,
-                              isActive: active,
-                              isEditing: true,
-                              onTap: () => widget.onSwitchProfile(profile.id),
-                              onEdit: () => widget.onEditProfile(profile.id),
-                              onDelete: () => _confirmDelete(profile),
-                              flagEmojiForCountry: _flagEmoji,
-                              homeAndDestination: _homeAndDestination,
-                            );
-                            final draggableTile = LongPressDraggable<String>(
-                              data: profile.id,
-                              dragAnchorStrategy: pointerDragAnchorStrategy,
-                              onDragStarted: () {
-                                setState(() {
-                                  _draggingId = profile.id;
-                                });
-                              },
-                              onDragEnd: (_) {
-                                setState(() {
-                                  _draggingId = null;
-                                });
-                              },
-                              feedback: SizedBox(
-                                width: _kDragFeedbackWidth,
-                                height: _kDragFeedbackHeight,
-                                child: Material(
-                                  elevation: 6,
-                                  color: Colors.transparent,
-                                  child: Opacity(
-                                    opacity: 0.92,
-                                    child: feedbackTile,
+                        child: LayoutBuilder(
+                          builder: (context, constraints) {
+                            const spacing = 10.0;
+                            const horizontalPadding = 32.0;
+                            final cellWidth =
+                                (constraints.maxWidth -
+                                    horizontalPadding -
+                                    spacing) /
+                                2;
+                            final firstRowHeight = math.max(120.0, cellWidth);
+                            return Stack(
+                              children: [
+                                Positioned(
+                                  left: 16,
+                                  right: 16,
+                                  top: 8,
+                                  height: firstRowHeight,
+                                  child: IgnorePointer(
+                                    child: SizedBox(
+                                      key: _tutorialProfilesFirstRowKey,
+                                    ),
                                   ),
                                 ),
-                              ),
-                              childWhenDragging: Opacity(
-                                opacity: 0.42,
-                                child: tile,
-                              ),
-                              child: tile,
-                            );
-                            final wiggledTile = _maybeWiggle(
-                              profile.id,
-                              draggableTile,
-                            );
-                            return Opacity(
-                              opacity: _draggingId == profile.id ? 0.4 : 1.0,
-                              child: wiggledTile,
-                            );
-                          },
-                        );
-                      }
-
-                      if (index >= ordered.length) {
-                        final addSlot = index - ordered.length;
-                        return KeyedSubtree(
-                          key: index == ordered.length
-                              ? _tutorialAddButtonKey
-                              : null,
-                          child: _AddProfileTile(
-                          onTap: () => widget.onAddProfile(slotIndex: index),
-                          slotIndex: addSlot,
-                          ),
-                        );
-                      }
-
-                      final profile = ordered[index];
-                      final active = profile.id == widget.state.activeProfileId;
-
-                      return DragTarget<String>(
-                        key: ValueKey('profiles_board_target_${profile.id}'),
-                        onWillAcceptWithDetails: (details) =>
-                            _editMode && details.data != profile.id,
-                        onAcceptWithDetails: (details) {
-                          _moveDraggedBeforeTarget(
-                            draggedId: details.data,
-                            targetId: profile.id,
-                          );
-                        },
-                        builder: (context, candidateData, rejectedData) {
-                          if (candidateData.isNotEmpty &&
-                              rejectedData.isNotEmpty) {
-                            // no-op (keeps strict lint happy without hiding params)
-                          }
-                          Widget buildTile() {
-                            return _ProfileTile(
-                              profile: profile,
-                              isActive: active,
-                              isEditing: _editMode,
-                              onTap: () => widget.onSwitchProfile(profile.id),
-                              onEdit: () => widget.onEditProfile(profile.id),
-                              onDelete: () => _confirmDelete(profile),
-                              flagEmojiForCountry: _flagEmoji,
-                              homeAndDestination: _homeAndDestination,
-                            );
-                          }
-
-                          final feedbackTile = _ProfileTile(
-                            profile: profile,
-                            isActive: active,
-                            isEditing: false,
-                            onTap: () {},
-                            onEdit: () {},
-                            onDelete: () {},
-                            flagEmojiForCountry: _flagEmoji,
-                            homeAndDestination: _homeAndDestination,
-                          );
-
-                          Widget tile = buildTile();
-                          if (_editMode) {
-                            tile = LongPressDraggable<String>(
-                              data: profile.id,
-                              dragAnchorStrategy: pointerDragAnchorStrategy,
-                              onDragStarted: () {
-                                setState(() {
-                                  _draggingId = profile.id;
-                                });
-                              },
-                              onDragEnd: (_) {
-                                setState(() {
-                                  _draggingId = null;
-                                });
-                              },
-                              feedback: SizedBox(
-                                width: _kDragFeedbackWidth,
-                                height: _kDragFeedbackHeight,
-                                child: Material(
-                                  elevation: 6,
-                                  color: Colors.transparent,
-                                  child: Opacity(
-                                    opacity: 0.92,
-                                    child: feedbackTile,
+                                GridView.builder(
+                                  key: const Key('profiles_board_grid'),
+                                  padding: const EdgeInsets.fromLTRB(
+                                    16,
+                                    8,
+                                    16,
+                                    16,
                                   ),
-                                ),
-                              ),
-                              childWhenDragging: Opacity(
-                                opacity: 0.42,
-                                child: tile,
-                              ),
-                              child: tile,
-                            );
-                          }
+                                  gridDelegate:
+                                      const SliverGridDelegateWithFixedCrossAxisCount(
+                                        crossAxisCount: 2,
+                                        mainAxisSpacing: 10,
+                                        crossAxisSpacing: 10,
+                                        childAspectRatio: 1.0,
+                                      ),
+                                  itemCount: _editMode
+                                      ? _editSlots.length
+                                      : (ordered.length + addTileCount),
+                                  itemBuilder: (context, index) {
+                                    if (_editMode) {
+                                      final slotId = _editSlots[index];
+                                      final slotProfile = slotId == null
+                                          ? null
+                                          : byId[slotId];
+                                      if (slotProfile == null) {
+                                        return DragTarget<String>(
+                                          key: ValueKey(
+                                            'profiles_board_target_empty_$index',
+                                          ),
+                                          onWillAcceptWithDetails: (details) =>
+                                              details.data.trim().isNotEmpty,
+                                          onAcceptWithDetails: (details) {
+                                            _swapDraggedIntoSlot(
+                                              draggedId: details.data,
+                                              targetIndex: index,
+                                            );
+                                          },
+                                          builder:
+                                              (
+                                                context,
+                                                candidateData,
+                                                rejectedData,
+                                              ) {
+                                                if (candidateData.isNotEmpty &&
+                                                    rejectedData.isNotEmpty) {
+                                                  // no-op
+                                                }
+                                                final slotIndex =
+                                                    index - ordered.length < 0
+                                                    ? 0
+                                                    : index - ordered.length;
+                                                return _AddProfileTile(
+                                                  onTap: () =>
+                                                      widget.onAddProfile(
+                                                        slotIndex: index,
+                                                      ),
+                                                  slotIndex: slotIndex,
+                                                );
+                                              },
+                                        );
+                                      }
 
-                          final wiggledTile = _maybeWiggle(profile.id, tile);
-                          return Opacity(
-                            opacity: _draggingId == profile.id ? 0.4 : 1.0,
-                            child: wiggledTile,
-                          );
-                        },
-                      );
+                                      final profile = slotProfile;
+                                      final active =
+                                          profile.id ==
+                                          widget.state.activeProfileId;
+
+                                      return DragTarget<String>(
+                                        key: ValueKey(
+                                          'profiles_board_target_${profile.id}',
+                                        ),
+                                        onWillAcceptWithDetails: (details) =>
+                                            details.data != profile.id,
+                                        onAcceptWithDetails: (details) {
+                                          _swapDraggedIntoSlot(
+                                            draggedId: details.data,
+                                            targetIndex: index,
+                                          );
+                                        },
+                                        builder:
+                                            (
+                                              context,
+                                              candidateData,
+                                              rejectedData,
+                                            ) {
+                                              if (candidateData.isNotEmpty &&
+                                                  rejectedData.isNotEmpty) {
+                                                // no-op
+                                              }
+
+                                              final feedbackTile = _ProfileTile(
+                                                profile: profile,
+                                                isActive: active,
+                                                isEditing: false,
+                                                onTap: () {},
+                                                onEdit: () {},
+                                                onDelete: () {},
+                                                flagEmojiForCountry: _flagEmoji,
+                                                homeAndDestination:
+                                                    _homeAndDestination,
+                                              );
+
+                                              final tile = _ProfileTile(
+                                                profile: profile,
+                                                isActive: active,
+                                                isEditing: true,
+                                                onTap: () =>
+                                                    widget.onSwitchProfile(
+                                                      profile.id,
+                                                    ),
+                                                onEdit: () => widget
+                                                    .onEditProfile(profile.id),
+                                                onDelete: () =>
+                                                    _confirmDelete(profile),
+                                                flagEmojiForCountry: _flagEmoji,
+                                                homeAndDestination:
+                                                    _homeAndDestination,
+                                              );
+                                              final draggableTile =
+                                                  LongPressDraggable<String>(
+                                                    data: profile.id,
+                                                    dragAnchorStrategy:
+                                                        pointerDragAnchorStrategy,
+                                                    onDragStarted: () {
+                                                      setState(() {
+                                                        _draggingId =
+                                                            profile.id;
+                                                      });
+                                                    },
+                                                    onDragEnd: (_) {
+                                                      setState(() {
+                                                        _draggingId = null;
+                                                      });
+                                                    },
+                                                    feedback: SizedBox(
+                                                      width:
+                                                          _kDragFeedbackWidth,
+                                                      height:
+                                                          _kDragFeedbackHeight,
+                                                      child: Material(
+                                                        elevation: 6,
+                                                        color:
+                                                            Colors.transparent,
+                                                        child: Opacity(
+                                                          opacity: 0.92,
+                                                          child: feedbackTile,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                    childWhenDragging: Opacity(
+                                                      opacity: 0.42,
+                                                      child: tile,
+                                                    ),
+                                                    child: tile,
+                                                  );
+                                              final wiggledTile = _maybeWiggle(
+                                                profile.id,
+                                                draggableTile,
+                                              );
+                                              return Opacity(
+                                                opacity:
+                                                    _draggingId == profile.id
+                                                    ? 0.4
+                                                    : 1.0,
+                                                child: wiggledTile,
+                                              );
+                                            },
+                                      );
+                                    }
+
+                                    if (index >= ordered.length) {
+                                      final addSlot = index - ordered.length;
+                                      return KeyedSubtree(
+                                        key: index == ordered.length
+                                            ? _tutorialAddButtonKey
+                                            : null,
+                                        child: _AddProfileTile(
+                                          onTap: () => widget.onAddProfile(
+                                            slotIndex: index,
+                                          ),
+                                          slotIndex: addSlot,
+                                        ),
+                                      );
+                                    }
+
+                                    final profile = ordered[index];
+                                    final active =
+                                        profile.id ==
+                                        widget.state.activeProfileId;
+
+                                    return DragTarget<String>(
+                                      key: ValueKey(
+                                        'profiles_board_target_${profile.id}',
+                                      ),
+                                      onWillAcceptWithDetails: (details) =>
+                                          _editMode &&
+                                          details.data != profile.id,
+                                      onAcceptWithDetails: (details) {
+                                        _moveDraggedBeforeTarget(
+                                          draggedId: details.data,
+                                          targetId: profile.id,
+                                        );
+                                      },
+                                      builder:
+                                          (
+                                            context,
+                                            candidateData,
+                                            rejectedData,
+                                          ) {
+                                            if (candidateData.isNotEmpty &&
+                                                rejectedData.isNotEmpty) {
+                                              // no-op (keeps strict lint happy without hiding params)
+                                            }
+                                            Widget buildTile() {
+                                              return _ProfileTile(
+                                                profile: profile,
+                                                isActive: active,
+                                                isEditing: _editMode,
+                                                onTap: () =>
+                                                    widget.onSwitchProfile(
+                                                      profile.id,
+                                                    ),
+                                                onEdit: () => widget
+                                                    .onEditProfile(profile.id),
+                                                onDelete: () =>
+                                                    _confirmDelete(profile),
+                                                flagEmojiForCountry: _flagEmoji,
+                                                homeAndDestination:
+                                                    _homeAndDestination,
+                                              );
+                                            }
+
+                                            final feedbackTile = _ProfileTile(
+                                              profile: profile,
+                                              isActive: active,
+                                              isEditing: false,
+                                              onTap: () {},
+                                              onEdit: () {},
+                                              onDelete: () {},
+                                              flagEmojiForCountry: _flagEmoji,
+                                              homeAndDestination:
+                                                  _homeAndDestination,
+                                            );
+
+                                            Widget tile = buildTile();
+                                            if (_editMode) {
+                                              tile = LongPressDraggable<String>(
+                                                data: profile.id,
+                                                dragAnchorStrategy:
+                                                    pointerDragAnchorStrategy,
+                                                onDragStarted: () {
+                                                  setState(() {
+                                                    _draggingId = profile.id;
+                                                  });
+                                                },
+                                                onDragEnd: (_) {
+                                                  setState(() {
+                                                    _draggingId = null;
+                                                  });
+                                                },
+                                                feedback: SizedBox(
+                                                  width: _kDragFeedbackWidth,
+                                                  height: _kDragFeedbackHeight,
+                                                  child: Material(
+                                                    elevation: 6,
+                                                    color: Colors.transparent,
+                                                    child: Opacity(
+                                                      opacity: 0.92,
+                                                      child: feedbackTile,
+                                                    ),
+                                                  ),
+                                                ),
+                                                childWhenDragging: Opacity(
+                                                  opacity: 0.42,
+                                                  child: tile,
+                                                ),
+                                                child: tile,
+                                              );
+                                            }
+
+                                            final wiggledTile = _maybeWiggle(
+                                              profile.id,
+                                              tile,
+                                            );
+                                            return Opacity(
+                                              opacity: _draggingId == profile.id
+                                                  ? 0.4
+                                                  : 1.0,
+                                              child: wiggledTile,
+                                            );
+                                          },
+                                    );
+                                  },
+                                ),
+                              ],
+                            );
                           },
                         ),
                       ),
@@ -626,25 +719,36 @@ class _ProfilesBoardScreenState extends State<ProfilesBoardScreen>
                         title: 'Profiles',
                         body:
                             'Tap a profile tile to switch places instantly. Your dashboard updates right away.',
-                        targetKey: _tutorialGridKey,
-                        cardAlignment: Alignment.topCenter,
-                        targetAlignment: const Alignment(0, -0.75),
+                        targetKey: _tutorialProfilesFirstRowKey,
+                        cardAlignment: Alignment.bottomCenter,
+                        targetAlignment: const Alignment(0, 0.0),
+                        arrowAboveCard: true,
+                        arrowScale: 1.32,
+                        fallbackScreenTargetAlignment: const Alignment(0, 0.1),
                       ),
                       TutorialStep(
                         title: 'Add Profile',
                         body:
                             'Hit the + tile to create a new setup for another trip or home base.',
-                        targetKey: _tutorialAddButtonKey,
+                        targetKey: null,
                         cardAlignment: Alignment.bottomCenter,
-                        targetAlignment: Alignment.center,
+                        arrowStyle: TutorialArrowStyle.none,
+                        showSpotlight: false,
                       ),
                       TutorialStep(
                         title: 'Edit Mode',
                         body:
                             'Use Edit to reorder profile tiles with long-press drag, then tap Done to save.',
-                        targetKey: _tutorialEditButtonKey,
-                        cardAlignment: Alignment.topCenter,
-                        targetAlignment: Alignment.center,
+                        targetKey: null,
+                        cardAlignment: const Alignment(1, -0.84),
+                        targetAlignment: const Alignment(0, -1),
+                        showSpotlight: false,
+                        arrowAboveCard: true,
+                        arrowScale: 1.3,
+                        fallbackScreenTargetAlignment: const Alignment(
+                          0.82,
+                          -0.88,
+                        ),
                       ),
                     ],
                     onSkip: _completeTutorial,

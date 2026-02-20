@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'dashboard_exceptions.dart';
 import 'dashboard_board_item.dart';
 import 'tool_definitions.dart';
 
@@ -69,6 +70,18 @@ class DashboardLayoutController extends ChangeNotifier {
 
   List<DashboardBoardItem> get items =>
       List<DashboardBoardItem>.unmodifiable(_items);
+
+  bool hasVisibleToolId(String toolId) {
+    final normalized = toolId.trim();
+    if (normalized.isEmpty) return false;
+    final defaultVisible =
+        ToolDefinitions.defaultTiles.any((t) => t.id == normalized) &&
+        !_hiddenDefaultToolIds.contains(normalized);
+    if (defaultVisible) return true;
+    return _items.any(
+      (i) => i.kind == DashboardItemKind.tool && i.toolId == normalized,
+    );
+  }
 
   bool isDefaultToolHidden(String toolId) =>
       _hiddenDefaultToolIds.contains(toolId);
@@ -207,9 +220,18 @@ class DashboardLayoutController extends ChangeNotifier {
       try {
         final decoded = jsonDecode(raw);
         if (decoded is List) {
+          final seenToolIds = <String>{};
           for (final entry in decoded) {
             final item = _fromJson(entry);
-            if (item != null) _items.add(item);
+            if (item == null) continue;
+            if (item.kind == DashboardItemKind.tool) {
+              final toolId = item.toolId?.trim() ?? '';
+              if (toolId.isNotEmpty) {
+                if (seenToolIds.contains(toolId)) continue;
+                seenToolIds.add(toolId);
+              }
+            }
+            _items.add(item);
           }
         }
       } catch (_) {
@@ -265,6 +287,31 @@ class DashboardLayoutController extends ChangeNotifier {
 
     _loaded = true;
     notifyListeners();
+
+    // Self-heal persisted duplicates from older builds.
+    final hadPersistedDuplicates = _hasPersistedDuplicates(raw: raw);
+    if (hadPersistedDuplicates) {
+      await _persist();
+    }
+  }
+
+  bool _hasPersistedDuplicates({required String? raw}) {
+    if (raw == null || raw.trim().isEmpty) return false;
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is! List) return false;
+      final seenToolIds = <String>{};
+      for (final entry in decoded) {
+        final item = _fromJson(entry);
+        if (item == null || item.kind != DashboardItemKind.tool) continue;
+        final toolId = item.toolId?.trim() ?? '';
+        if (toolId.isEmpty) continue;
+        if (!seenToolIds.add(toolId)) return true;
+      }
+    } catch (_) {
+      return false;
+    }
+    return false;
   }
 
   /// Persists the "hidden default tiles" set in the canonical JSON-string format.
@@ -360,6 +407,13 @@ class DashboardLayoutController extends ChangeNotifier {
   }
 
   Future<void> addTool(ToolDefinition tool, {DashboardAnchor? anchor}) async {
+    if (hasVisibleToolId(tool.id)) {
+      throw DuplicateDashboardWidgetException(
+        toolId: tool.id,
+        title: tool.title,
+      );
+    }
+
     // Keep ids unique and stable across sessions.
     final id = '${tool.id}_${DateTime.now().millisecondsSinceEpoch}';
 
@@ -383,6 +437,20 @@ class DashboardLayoutController extends ChangeNotifier {
     if (idx < 0) return;
 
     final existing = _items[idx];
+    final replacingWithDifferentTool = existing.toolId != tool.id;
+    if (replacingWithDifferentTool &&
+        hasVisibleToolId(tool.id) &&
+        _items
+            .where(
+              (i) => i.kind == DashboardItemKind.tool && i.toolId == tool.id,
+            )
+            .every((i) => i.id != itemId)) {
+      throw DuplicateDashboardWidgetException(
+        toolId: tool.id,
+        title: tool.title,
+      );
+    }
+
     _items[idx] = DashboardBoardItem(
       id: existing.id,
       kind: DashboardItemKind.tool,

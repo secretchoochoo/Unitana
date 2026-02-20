@@ -833,7 +833,10 @@ class _DashboardBoardState extends State<DashboardBoard>
       double toOffsetHours,
     })
     resolvedTimePairForTool({required String toolId}) {
-      final options = TimeZoneCatalog.options(home: home, destination: destination);
+      final options = TimeZoneCatalog.options(
+        home: home,
+        destination: destination,
+      );
       final validZoneIds = options.map((o) => o.id).toSet();
       String alternateZoneFor(String zoneId) {
         for (final option in options) {
@@ -841,6 +844,7 @@ class _DashboardBoardState extends State<DashboardBoard>
         }
         return zoneId == 'UTC' ? 'Europe/London' : 'UTC';
       }
+
       String labelFor(String zoneId) {
         for (final option in options) {
           if (option.id == zoneId) return option.label;
@@ -867,8 +871,7 @@ class _DashboardBoardState extends State<DashboardBoard>
           saved != null && validZoneIds.contains(saved.fromZoneId)
           ? saved.fromZoneId
           : fallbackFrom;
-      String toZoneId =
-          saved != null && validZoneIds.contains(saved.toZoneId)
+      String toZoneId = saved != null && validZoneIds.contains(saved.toZoneId)
           ? saved.toZoneId
           : fallbackTo;
       if (fromZoneId == toZoneId) {
@@ -969,8 +972,7 @@ class _DashboardBoardState extends State<DashboardBoard>
 
     final isDefaultTile = _isDefaultToolTile(item);
     final canEdit = item.userAdded || isDefaultTile;
-    final customBody =
-        !widget.isEditing && tool.id == 'world_clock_delta'
+    final customBody = !widget.isEditing && tool.id == 'world_clock_delta'
         ? _DashboardWorldTimeMiniMap(
             fromOffsetHours: worldClockPair.fromOffsetHours,
             toOffsetHours: worldClockPair.toOffsetHours,
@@ -1042,7 +1044,8 @@ class _DashboardBoardState extends State<DashboardBoard>
                 currencyIsStale: widget.liveData.isCurrencyStale,
                 currencyShouldRetryNow: widget.liveData.shouldRetryCurrencyNow,
                 currencyLastErrorAt: widget.liveData.lastCurrencyErrorAt,
-                currencyLastRefreshedAt: widget.liveData.lastCurrencyRefreshedAt,
+                currencyLastRefreshedAt:
+                    widget.liveData.lastCurrencyRefreshedAt,
                 currencyNetworkEnabled: widget.liveData.currencyNetworkEnabled,
                 currencyRefreshCadence: widget.liveData.currencyRefreshCadence,
                 onRetryCurrencyNow: () async {
@@ -1728,31 +1731,79 @@ class _DashboardWorldTimeMiniMap extends StatelessWidget {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final compact = constraints.maxHeight < 76 || constraints.maxWidth < 170;
+        final compact =
+            constraints.maxHeight < 76 || constraints.maxWidth < 170;
         if (compact) {
+          final fromX = ((fromBand + 12) / 26).clamp(0.0, 1.0);
+          final toX = ((toBand + 12) / 26).clamp(0.0, 1.0);
           return Column(
-            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              Expanded(
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      Opacity(
+                        opacity: 0.38,
+                        child: ColorFiltered(
+                          colorFilter: ColorFilter.mode(
+                            scheme.onSurfaceVariant.withAlpha(205),
+                            BlendMode.modulate,
+                          ),
+                          child: Image.asset(
+                            'assets/maps/world_outline.png',
+                            fit: BoxFit.cover,
+                            alignment: const Alignment(0.06, -0.08),
+                          ),
+                        ),
+                      ),
+                      CustomPaint(
+                        painter: _DashboardWorldBackdropPainter(
+                          color: scheme.onSurfaceVariant.withAlpha(48),
+                        ),
+                      ),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          for (final band in bands)
+                            Expanded(child: ColoredBox(color: bandColor(band))),
+                        ],
+                      ),
+                      Align(
+                        alignment: Alignment((fromX * 2) - 1, 0),
+                        child: SizedBox(
+                          width: 2.4,
+                          height: double.infinity,
+                          child: ColoredBox(
+                            color: scheme.tertiary.withAlpha(235),
+                          ),
+                        ),
+                      ),
+                      Align(
+                        alignment: Alignment((toX * 2) - 1, 0),
+                        child: SizedBox(
+                          width: 2.4,
+                          height: double.infinity,
+                          child: ColoredBox(
+                            color: scheme.primary.withAlpha(235),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 3),
               FittedBox(
                 fit: BoxFit.scaleDown,
                 child: Text(
                   deltaLabel,
                   maxLines: 1,
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
                     color: scheme.onSurface,
                     fontWeight: FontWeight.w900,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 4),
-              FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Text(
-                  summaryLabel,
-                  maxLines: 1,
-                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    color: scheme.onSurfaceVariant,
-                    fontWeight: FontWeight.w700,
                   ),
                 ),
               ),
@@ -1969,27 +2020,49 @@ class _DashboardTimeMiniClocks extends StatelessWidget {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final compact = constraints.maxHeight < 76 || constraints.maxWidth < 170;
+        final compact =
+            constraints.maxHeight < 76 || constraints.maxWidth < 170;
         if (compact) {
           return Column(
-            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              Expanded(
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: _MiniAnalogClock(
+                        local: fromLocal,
+                        tone: scheme.tertiary,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: _MiniAnalogClock(
+                        local: toLocal,
+                        tone: scheme.primary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 3),
               FittedBox(
                 fit: BoxFit.scaleDown,
+                alignment: Alignment.center,
                 child: Text(
-                  '${formatClock(fromLocal)} • ${formatClock(toLocal)}',
+                  '$fromCity • $toCity',
                   maxLines: 1,
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
                     color: scheme.onSurface,
-                    fontWeight: FontWeight.w900,
+                    fontWeight: FontWeight.w800,
                   ),
                 ),
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: 2),
               FittedBox(
                 fit: BoxFit.scaleDown,
                 child: Text(
-                  '$fromCity • $toCity • $deltaLabel',
+                  '${formatClock(fromLocal)} • ${formatClock(toLocal)} • $deltaLabel',
                   maxLines: 1,
                   style: Theme.of(context).textTheme.labelSmall?.copyWith(
                     color: scheme.onSurfaceVariant,
@@ -2039,6 +2112,124 @@ class _DashboardTimeMiniClocks extends StatelessWidget {
         );
       },
     );
+  }
+}
+
+class _MiniAnalogClock extends StatelessWidget {
+  final DateTime local;
+  final Color tone;
+
+  const _MiniAnalogClock({required this.local, required this.tone});
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return AspectRatio(
+      aspectRatio: 1,
+      child: CustomPaint(
+        painter: _MiniAnalogClockPainter(
+          local: local,
+          tone: tone,
+          faceColor: scheme.surfaceContainerHighest.withAlpha(72),
+          tickColor: scheme.onSurface.withAlpha(150),
+          handColor: scheme.onSurface.withAlpha(228),
+        ),
+      ),
+    );
+  }
+}
+
+class _MiniAnalogClockPainter extends CustomPainter {
+  final DateTime local;
+  final Color tone;
+  final Color faceColor;
+  final Color tickColor;
+  final Color handColor;
+
+  const _MiniAnalogClockPainter({
+    required this.local,
+    required this.tone,
+    required this.faceColor,
+    required this.tickColor,
+    required this.handColor,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = math.min(size.width, size.height) / 2;
+    final face = Paint()..color = faceColor;
+    final border = Paint()
+      ..color = tone.withAlpha(175)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = math.max(1.2, radius * 0.08);
+
+    canvas.drawCircle(center, radius * 0.98, face);
+    canvas.drawCircle(center, radius * 0.98, border);
+
+    final ticks = Paint()
+      ..color = tickColor
+      ..strokeCap = StrokeCap.round
+      ..strokeWidth = math.max(1.0, radius * 0.05);
+    for (var i = 0; i < 12; i++) {
+      final angle = (i * math.pi / 6) - (math.pi / 2);
+      final outer = Offset(
+        center.dx + math.cos(angle) * radius * 0.87,
+        center.dy + math.sin(angle) * radius * 0.87,
+      );
+      final inner = Offset(
+        center.dx + math.cos(angle) * radius * 0.72,
+        center.dy + math.sin(angle) * radius * 0.72,
+      );
+      canvas.drawLine(inner, outer, ticks);
+    }
+
+    final minuteAngle =
+        ((local.minute + (local.second / 60)) * math.pi / 30) - (math.pi / 2);
+    final hourAngle =
+        (((local.hour % 12) + (local.minute / 60)) * math.pi / 6) -
+        (math.pi / 2);
+
+    final minuteHand = Paint()
+      ..color = handColor
+      ..strokeCap = StrokeCap.round
+      ..strokeWidth = math.max(1.4, radius * 0.08);
+    final hourHand = Paint()
+      ..color = handColor.withAlpha(230)
+      ..strokeCap = StrokeCap.round
+      ..strokeWidth = math.max(1.6, radius * 0.11);
+    final accentHand = Paint()
+      ..color = tone.withAlpha(228)
+      ..strokeCap = StrokeCap.round
+      ..strokeWidth = math.max(1.0, radius * 0.06);
+
+    final hourEnd = Offset(
+      center.dx + math.cos(hourAngle) * radius * 0.45,
+      center.dy + math.sin(hourAngle) * radius * 0.45,
+    );
+    final minuteEnd = Offset(
+      center.dx + math.cos(minuteAngle) * radius * 0.65,
+      center.dy + math.sin(minuteAngle) * radius * 0.65,
+    );
+    final accentEnd = Offset(
+      center.dx + math.cos(minuteAngle) * radius * 0.72,
+      center.dy + math.sin(minuteAngle) * radius * 0.72,
+    );
+
+    canvas.drawLine(center, hourEnd, hourHand);
+    canvas.drawLine(center, minuteEnd, minuteHand);
+    canvas.drawLine(center, accentEnd, accentHand);
+    canvas.drawCircle(center, math.max(1.8, radius * 0.08), accentHand);
+  }
+
+  @override
+  bool shouldRepaint(covariant _MiniAnalogClockPainter oldDelegate) {
+    return oldDelegate.local.minute != local.minute ||
+        oldDelegate.local.hour != local.hour ||
+        oldDelegate.tone != tone ||
+        oldDelegate.faceColor != faceColor ||
+        oldDelegate.tickColor != tickColor ||
+        oldDelegate.handColor != handColor;
   }
 }
 

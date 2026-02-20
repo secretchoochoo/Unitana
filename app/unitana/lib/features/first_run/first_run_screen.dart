@@ -774,89 +774,118 @@ class _FirstRunScreenState extends State<FirstRunScreen> {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        return SingleChildScrollView(
-          padding: const EdgeInsets.only(bottom: 12),
-          child: ConstrainedBox(
-            constraints: BoxConstraints(minHeight: constraints.maxHeight),
-            child: Center(
+        return Stack(
+          children: [
+            SingleChildScrollView(
+              padding: const EdgeInsets.only(bottom: 12),
               child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 640),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Text(
-                      DashboardCopy.firstRunPlacesTitle(context),
-                      style: titleStyle,
-                      textAlign: TextAlign.center,
+                constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 640),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Text(
+                          DashboardCopy.firstRunPlacesTitle(context),
+                          style: titleStyle,
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 10),
+                        Text(
+                          DashboardCopy.firstRunPlacesSubtitle(context),
+                          style: subStyle,
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 18),
+                        _cityPickButton(
+                          context,
+                          key: const Key('first_run_home_city_button'),
+                          onPressed: _cityPickerOpening
+                              ? null
+                              : () => _pickCity(home: true),
+                          icon: Icons.home,
+                          label:
+                              _homeCity?.display ??
+                              DashboardCopy.firstRunChooseHome(context),
+                        ),
+                        if (_homeCity != null) ...[
+                          const SizedBox(height: 10),
+                          _unitClockControls(
+                            unitSystem: _homeUnitSystem,
+                            use24h: _homeUse24h,
+                            onPickUnit: (v) {
+                              setState(() => _homeUnitSystem = v);
+                              _schedulePreviewRefresh();
+                            },
+                            onPickClock: (v) {
+                              setState(() => _homeUse24h = v);
+                              _schedulePreviewRefresh();
+                            },
+                          ),
+                        ],
+                        const SizedBox(height: 14),
+                        _cityPickButton(
+                          context,
+                          key: const Key('first_run_dest_city_button'),
+                          onPressed: _cityPickerOpening
+                              ? null
+                              : () => _pickCity(home: false),
+                          icon: Icons.flight_takeoff,
+                          label:
+                              _destCity?.display ??
+                              DashboardCopy.firstRunChooseDestination(context),
+                        ),
+                        if (_destCity != null) ...[
+                          const SizedBox(height: 10),
+                          _unitClockControls(
+                            unitSystem: _destUnitSystem,
+                            use24h: _destUse24h,
+                            onPickUnit: (v) {
+                              setState(() => _destUnitSystem = v);
+                              _schedulePreviewRefresh();
+                            },
+                            onPickClock: (v) {
+                              setState(() => _destUse24h = v);
+                              _schedulePreviewRefresh();
+                            },
+                          ),
+                        ],
+                        const SizedBox(height: 18),
+                        preview(),
+                      ],
                     ),
-                    const SizedBox(height: 10),
-                    Text(
-                      DashboardCopy.firstRunPlacesSubtitle(context),
-                      style: subStyle,
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 18),
-                    _cityPickButton(
-                      context,
-                      key: const Key('first_run_home_city_button'),
-                      onPressed: _cityPickerOpening
-                          ? null
-                          : () => _pickCity(home: true),
-                      icon: Icons.home,
-                      label:
-                          _homeCity?.display ??
-                          DashboardCopy.firstRunChooseHome(context),
-                    ),
-                    if (_homeCity != null) ...[
-                      const SizedBox(height: 10),
-                      _unitClockControls(
-                        unitSystem: _homeUnitSystem,
-                        use24h: _homeUse24h,
-                        onPickUnit: (v) {
-                          setState(() => _homeUnitSystem = v);
-                          _schedulePreviewRefresh();
-                        },
-                        onPickClock: (v) {
-                          setState(() => _homeUse24h = v);
-                          _schedulePreviewRefresh();
-                        },
-                      ),
-                    ],
-                    const SizedBox(height: 14),
-                    _cityPickButton(
-                      context,
-                      key: const Key('first_run_dest_city_button'),
-                      onPressed: _cityPickerOpening
-                          ? null
-                          : () => _pickCity(home: false),
-                      icon: Icons.flight_takeoff,
-                      label:
-                          _destCity?.display ??
-                          DashboardCopy.firstRunChooseDestination(context),
-                    ),
-                    if (_destCity != null) ...[
-                      const SizedBox(height: 10),
-                      _unitClockControls(
-                        unitSystem: _destUnitSystem,
-                        use24h: _destUse24h,
-                        onPickUnit: (v) {
-                          setState(() => _destUnitSystem = v);
-                          _schedulePreviewRefresh();
-                        },
-                        onPickClock: (v) {
-                          setState(() => _destUse24h = v);
-                          _schedulePreviewRefresh();
-                        },
-                      ),
-                    ],
-                    const SizedBox(height: 18),
-                    preview(),
-                  ],
+                  ),
                 ),
               ),
             ),
-          ),
+            if (_cityPickerOpening)
+              Positioned.fill(
+                child: ColoredBox(
+                  color: Colors.black.withAlpha(68),
+                  child: Center(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 10,
+                      ),
+                      decoration: BoxDecoration(
+                        color: cs.surface.withAlpha(220),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: cs.outlineVariant),
+                      ),
+                      child: Text(
+                        'Opening city list…',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+          ],
         );
       },
     );

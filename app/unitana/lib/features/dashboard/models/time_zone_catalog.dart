@@ -275,6 +275,24 @@ class TimeZoneCatalog {
       timeZoneIdOf: (c) => c.timeZoneId,
       isCurated: (c) => curatedZoneIds.contains(c.timeZoneId),
       mainstreamCountryBonus: 70,
+      extraSearchTermsOf: (c) => <String>[
+        c.admin1Name ?? '',
+        c.countryCode,
+        c.iso3 ?? '',
+        if (c.countryCode.toUpperCase() == 'BR') ...const <String>[
+          'BRAZIL',
+          'BRASIL',
+        ],
+        if (c.countryCode.toUpperCase() == 'PT') ...const <String>[
+          'PORTUGAL',
+          'PORTUGUES',
+          'PORTUGUÊS',
+        ],
+        if (c.cityName.toLowerCase().contains('porto')) ...const <String>[
+          'OPORTO',
+          'O PORTO',
+        ],
+      ],
     );
     final sorted = CityPickerEngine.sortByBaseScore(entries);
     return sorted

@@ -12,6 +12,7 @@ import '../../../data/weather_api_client.dart';
 import '../../../data/open_meteo_client.dart';
 import '../../../data/open_meteo_air_quality_client.dart';
 import '../../../data/frankfurter_client.dart';
+import '../../../data/open_er_api_client.dart';
 import '../../../models/place.dart';
 import '../../../utils/timezone_utils.dart';
 
@@ -903,10 +904,7 @@ class DashboardLiveDataController extends ChangeNotifier {
   double? _debugEurToUsd;
 
   double _eurToUsd = 1.10;
-  final Map<String, double> _eurBaseRates = <String, double>{
-    'EUR': 1.0,
-    'USD': 1.10,
-  };
+  final Map<String, double> _eurBaseRates = <String, double>{'EUR': 1.0};
   bool _isRefreshing = false;
   Object? _lastError;
   DateTime? _lastRefreshedAt;
@@ -918,6 +916,7 @@ class DashboardLiveDataController extends ChangeNotifier {
   final OpenMeteoClient _openMeteo;
   final OpenMeteoAirQualityClient _openMeteoAirQuality;
   final FrankfurterClient _frankfurter;
+  final OpenErApiClient _openErApi;
   final bool allowLiveRefreshInTestHarness;
   final Duration refreshDebounceDuration;
   final Duration simulatedNetworkLatency;
@@ -929,6 +928,7 @@ class DashboardLiveDataController extends ChangeNotifier {
     OpenMeteoClient? openMeteoClient,
     OpenMeteoAirQualityClient? openMeteoAirQualityClient,
     FrankfurterClient? frankfurterClient,
+    OpenErApiClient? openErApiClient,
     this.allowLiveRefreshInTestHarness = false,
     this.refreshDebounceDuration = const Duration(milliseconds: 250),
     this.simulatedNetworkLatency = const Duration(milliseconds: 350),
@@ -938,7 +938,8 @@ class DashboardLiveDataController extends ChangeNotifier {
        _openMeteo = openMeteoClient ?? OpenMeteoClient(),
        _openMeteoAirQuality =
            openMeteoAirQualityClient ?? OpenMeteoAirQualityClient(),
-       _frankfurter = frankfurterClient ?? FrankfurterClient();
+       _frankfurter = frankfurterClient ?? FrankfurterClient(),
+       _openErApi = openErApiClient ?? OpenErApiClient();
 
   bool get isRefreshing => _isRefreshing;
   Object? get lastError => _lastError;
@@ -987,8 +988,13 @@ class DashboardLiveDataController extends ChangeNotifier {
     if (from == to) return 1.0;
 
     final rates = _effectiveEurBaseRates();
-    final fromRate = rates[from] ?? _mockEurRateForCode(from);
-    final toRate = rates[to] ?? _mockEurRateForCode(to);
+    final canUseMockFallback =
+        !currencyNetworkEnabled || _lastCurrencyRefreshedAt != null;
+    final fromRate =
+        rates[from] ?? (canUseMockFallback ? _mockEurRateForCode(from) : null);
+    final toRate =
+        rates[to] ?? (canUseMockFallback ? _mockEurRateForCode(to) : null);
+    if (fromRate == null || toRate == null) return null;
     if (fromRate <= 0 || toRate <= 0) return null;
     return toRate / fromRate;
   }
@@ -1171,7 +1177,9 @@ class DashboardLiveDataController extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
 
     final weatherRaw = prefs.getString(_kDevWeatherBackend);
-    if (_devToolsEnabled && weatherRaw != null && weatherRaw.trim().isNotEmpty) {
+    if (_devToolsEnabled &&
+        weatherRaw != null &&
+        weatherRaw.trim().isNotEmpty) {
       final norm = weatherRaw.trim().toLowerCase();
       final WeatherBackend next;
       if (norm == 'openmeteo' ||
@@ -1861,18 +1869,28 @@ class DashboardLiveDataController extends ChangeNotifier {
       Map<String, double>? normalizedRates;
       switch (_currencyBackend) {
         case CurrencyBackend.frankfurter:
-          final fetched = await _frankfurter.fetchLatestRates(base: 'EUR');
-          if (fetched != null && fetched.isNotEmpty) {
-            normalizedRates = _normalizeEurBaseRates(fetched);
-            rate = normalizedRates['USD'];
-            if (rate == null || rate <= 0) {
-              rate = await _frankfurter.fetchEurToUsd();
-              if (rate != null && rate > 0) {
-                normalizedRates['USD'] = rate;
-              }
-            }
+          final frankfurterRates = await _frankfurter.fetchLatestRates(
+            base: 'EUR',
+          );
+          if (frankfurterRates != null && frankfurterRates.isNotEmpty) {
+            normalizedRates = _normalizeEurBaseRates(frankfurterRates);
           } else {
+            final openErRates = await _openErApi.fetchLatestRates(base: 'EUR');
+            if (openErRates != null && openErRates.isNotEmpty) {
+              normalizedRates = _normalizeEurBaseRates(openErRates);
+            }
+          }
+
+          rate = normalizedRates?['USD'];
+          if (rate == null || rate <= 0) {
             rate = await _frankfurter.fetchEurToUsd();
+            if ((rate == null || rate <= 0)) {
+              rate = await _openErApi.fetchEurToUsd();
+            }
+            if (rate != null && rate > 0) {
+              normalizedRates ??= <String, double>{'EUR': 1.0};
+              normalizedRates['USD'] = rate;
+            }
           }
           break;
         case CurrencyBackend.mock:

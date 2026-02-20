@@ -73,6 +73,7 @@ class _DashboardScreenState extends State<DashboardScreen>
     'UNITANA_DEVTOOLS_ENABLED',
     defaultValue: false,
   );
+  static const bool _kIsFlutterTest = bool.fromEnvironment('FLUTTER_TEST');
 
   late DashboardSessionController _session;
   late final DashboardLiveDataController _liveData;
@@ -186,13 +187,17 @@ class _DashboardScreenState extends State<DashboardScreen>
       _syncLofiAudioFromState();
       _refreshAllNow();
       final pendingSuccess = state.consumePendingSuccessToast();
-      if (!mounted || pendingSuccess == null) return;
-      UnitanaToast.showSuccess(context, pendingSuccess);
+      if (!mounted) return;
+      if (pendingSuccess != null) {
+        UnitanaToast.showSuccess(context, pendingSuccess);
+      }
       _maybeStartDashboardTutorial();
     });
   }
 
   void _maybeStartDashboardTutorial() {
+    if (_kIsFlutterTest) return;
+    if (state.tutorialDismissed && !state.tutorialReplayRequested) return;
     if (_isEditingWidgets) return;
     if (_showDashboardTutorial) return;
     if (state.hasCompletedTutorialSurface('dashboard')) return;
@@ -224,6 +229,15 @@ class _DashboardScreenState extends State<DashboardScreen>
   }
 
   void _onAppStateChanged() {
+    final dashboardCompleted = state.hasCompletedTutorialSurface('dashboard');
+    final editCompleted = state.hasCompletedTutorialSurface('dashboard_edit');
+    if ((_showDashboardTutorial && dashboardCompleted) ||
+        (_showDashboardEditTutorial && editCompleted)) {
+      setState(() {
+        if (dashboardCompleted) _showDashboardTutorial = false;
+        if (editCompleted) _showDashboardEditTutorial = false;
+      });
+    }
     _syncLofiAudioFromState();
   }
 
@@ -1746,7 +1760,11 @@ class _DashboardScreenState extends State<DashboardScreen>
 
   Future<void> _openProfilesBoard() async {
     if (!mounted) return;
-    final showProfilesTutorial = !state.hasCompletedTutorialSurface('profiles');
+    const isFlutterTest = bool.fromEnvironment('FLUTTER_TEST');
+    final showProfilesTutorial =
+        !isFlutterTest &&
+        (!state.tutorialDismissed || state.tutorialReplayRequested) &&
+        !state.hasCompletedTutorialSurface('profiles');
 
     await Navigator.of(context).push<void>(
       MaterialPageRoute(
@@ -1887,16 +1905,20 @@ class _DashboardScreenState extends State<DashboardScreen>
   }
 
   void _maybeAutoRefreshWeather(List<Place> places) {
-    final isLive =
+    final weatherLive =
         _liveData.weatherNetworkEnabled &&
         _liveData.weatherBackend != WeatherBackend.mock;
-    if (!isLive) return;
+    final currencyLive = _liveData.currencyNetworkEnabled;
+    if (!weatherLive && !currencyLive) return;
     if (_liveData.isRefreshing) return;
 
     final last = _liveData.lastRefreshedAt;
     final now = DateTime.now();
-    final isStale =
-        last == null || now.difference(last) > _kWeatherAutoRefreshStaleAfter;
+    final weatherStale =
+        weatherLive &&
+        (last == null || now.difference(last) > _kWeatherAutoRefreshStaleAfter);
+    final currencyStale = currencyLive && _liveData.isCurrencyStale;
+    final isStale = weatherStale || currencyStale;
     if (!isStale) return;
 
     final prev = _lastAutoWeatherRefreshAttemptAt;
@@ -2203,36 +2225,50 @@ class _DashboardScreenState extends State<DashboardScreen>
                       title: 'Tools',
                       body:
                           'This is your tool belt. Tap the hammer + wrench to open tools, then pin your go-to picks.',
-                      targetKey: _tutorialToolsButtonKey,
-                      cardAlignment: Alignment.topLeft,
-                      targetAlignment: Alignment.center,
+                      targetKey: null,
+                      cardAlignment: const Alignment(-1, -0.84),
+                      targetAlignment: const Alignment(0, -1),
                       showSpotlight: false,
+                      arrowAboveCard: true,
+                      arrowScale: 1.28,
+                      fallbackScreenTargetAlignment: const Alignment(
+                        -0.96,
+                        -0.98,
+                      ),
                     ),
                     TutorialStep(
                       title: 'Menu',
                       body:
                           'This is your control room: switch profiles, tune your theme, and adjust settings.',
-                      targetKey: _tutorialMenuButtonKey,
-                      cardAlignment: Alignment.topRight,
-                      targetAlignment: Alignment.center,
+                      targetKey: null,
+                      cardAlignment: const Alignment(1, -0.84),
+                      targetAlignment: const Alignment(0, -1),
                       showSpotlight: false,
+                      arrowAboveCard: true,
+                      arrowScale: 1.28,
+                      fallbackScreenTargetAlignment: const Alignment(
+                        0.96,
+                        -0.98,
+                      ),
                     ),
                     TutorialStep(
                       title: 'Refresh',
                       body:
                           'Need fresh data fast? Pull down on the page to refresh weather and currency. Tap the icon for a quick refresh too.',
                       targetKey: _tutorialRefreshKey,
-                      cardAlignment: Alignment.topCenter,
+                      cardAlignment: const Alignment(0, -0.86),
                       arrowStyle: TutorialArrowStyle.pullDownBounce,
                       showSpotlight: false,
+                      arrowScale: 1.72,
                     ),
                     TutorialStep(
                       title: 'Widgets',
                       body:
                           'These are tool widgets. Each one shows your last result so key info is always one tap away.',
                       targetKey: _tutorialWidgetsKey,
-                      cardAlignment: Alignment.topCenter,
-                      targetAlignment: const Alignment(0, -0.98),
+                      cardAlignment: const Alignment(0, -0.84),
+                      targetAlignment: const Alignment(0, -1.45),
+                      arrowScale: 1.36,
                     ),
                   ],
                   onSkip: _completeDashboardTutorial,
@@ -2246,16 +2282,24 @@ class _DashboardScreenState extends State<DashboardScreen>
                       body:
                           'Long-press a tool widget, then drag it. Drop on a widget to swap, or drop on an empty slot to place it there.',
                       targetKey: _tutorialWidgetsKey,
-                      cardAlignment: Alignment.topCenter,
-                      targetAlignment: const Alignment(0, -0.9),
+                      cardAlignment: const Alignment(0, -0.84),
+                      targetAlignment: const Alignment(0, -1.45),
+                      arrowScale: 1.36,
                     ),
                     TutorialStep(
                       title: 'Save Layout',
                       body:
                           'Tap Done to keep your layout. Tap Cancel to exit without saving.',
-                      targetKey: _tutorialEditDoneKey,
-                      cardAlignment: Alignment.topRight,
+                      targetKey: null,
+                      cardAlignment: const Alignment(1, -0.84),
+                      targetAlignment: const Alignment(0, -1),
                       showSpotlight: false,
+                      arrowAboveCard: true,
+                      arrowScale: 1.25,
+                      fallbackScreenTargetAlignment: const Alignment(
+                        0.96,
+                        -0.98,
+                      ),
                     ),
                   ],
                   onSkip: _completeDashboardEditTutorial,

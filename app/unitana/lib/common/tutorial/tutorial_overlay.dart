@@ -13,6 +13,9 @@ class TutorialStep {
   final TutorialArrowStyle arrowStyle;
   final Alignment targetAlignment;
   final bool showSpotlight;
+  final bool arrowAboveCard;
+  final double arrowScale;
+  final Alignment? fallbackScreenTargetAlignment;
 
   const TutorialStep({
     required this.title,
@@ -22,6 +25,9 @@ class TutorialStep {
     this.arrowStyle = TutorialArrowStyle.targetCurve,
     this.targetAlignment = Alignment.center,
     this.showSpotlight = true,
+    this.arrowAboveCard = false,
+    this.arrowScale = 1.0,
+    this.fallbackScreenTargetAlignment,
   });
 }
 
@@ -47,6 +53,7 @@ class _TutorialOverlayState extends State<TutorialOverlay>
   final GlobalKey _cardKey = GlobalKey();
   late final AnimationController _arrowController;
   bool _queuedLayoutTick = false;
+  final Map<int, Rect> _targetRectCache = <int, Rect>{};
 
   TutorialStep get _step => widget.steps[_stepIndex];
 
@@ -72,11 +79,17 @@ class _TutorialOverlayState extends State<TutorialOverlay>
     final context = targetKey.currentContext;
     if (context == null) return null;
     final box = context.findRenderObject();
-    if (box is! RenderBox || !box.hasSize || !box.attached) return null;
+    if (box is! RenderBox || !box.hasSize || !box.attached) {
+      return _targetRectCache[_stepIndex];
+    }
     final overlayBox = Overlay.of(this.context).context.findRenderObject();
-    if (overlayBox is! RenderBox || !overlayBox.hasSize) return null;
+    if (overlayBox is! RenderBox || !overlayBox.hasSize) {
+      return _targetRectCache[_stepIndex];
+    }
     final topLeft = box.localToGlobal(Offset.zero, ancestor: overlayBox);
-    return topLeft & box.size;
+    final rect = topLeft & box.size;
+    _targetRectCache[_stepIndex] = rect;
+    return rect;
   }
 
   Rect? _cardRect() {
@@ -153,7 +166,8 @@ class _TutorialOverlayState extends State<TutorialOverlay>
                 ),
               ),
             ),
-            if (_step.arrowStyle != TutorialArrowStyle.none)
+            if (_step.arrowStyle != TutorialArrowStyle.none &&
+                !_step.arrowAboveCard)
               Positioned.fill(
                 child: IgnorePointer(
                   child: AnimatedBuilder(
@@ -165,6 +179,9 @@ class _TutorialOverlayState extends State<TutorialOverlay>
                         style: _step.arrowStyle,
                         phase: _arrowController.value,
                         targetAlignment: _step.targetAlignment,
+                        arrowScale: _step.arrowScale,
+                        fallbackScreenTargetAlignment:
+                            _step.fallbackScreenTargetAlignment,
                       ),
                     ),
                   ),
@@ -173,7 +190,7 @@ class _TutorialOverlayState extends State<TutorialOverlay>
             Align(
               alignment: _step.cardAlignment,
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 20, 16, 28),
+                padding: const EdgeInsets.fromLTRB(16, 96, 16, 28),
                 child: _ChalkCard(
                   key: _cardKey,
                   title: _step.title,
@@ -188,6 +205,27 @@ class _TutorialOverlayState extends State<TutorialOverlay>
                 ),
               ),
             ),
+            if (_step.arrowStyle != TutorialArrowStyle.none &&
+                _step.arrowAboveCard)
+              Positioned.fill(
+                child: IgnorePointer(
+                  child: AnimatedBuilder(
+                    animation: _arrowController,
+                    builder: (context, _) => CustomPaint(
+                      painter: _ArrowPainter(
+                        targetRect: target,
+                        cardRect: cardRect,
+                        style: _step.arrowStyle,
+                        phase: _arrowController.value,
+                        targetAlignment: _step.targetAlignment,
+                        arrowScale: _step.arrowScale,
+                        fallbackScreenTargetAlignment:
+                            _step.fallbackScreenTargetAlignment,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
           ],
         ),
       ),
@@ -241,6 +279,8 @@ class _ArrowPainter extends CustomPainter {
   final TutorialArrowStyle style;
   final double phase;
   final Alignment targetAlignment;
+  final double arrowScale;
+  final Alignment? fallbackScreenTargetAlignment;
 
   const _ArrowPainter({
     required this.targetRect,
@@ -248,6 +288,8 @@ class _ArrowPainter extends CustomPainter {
     required this.style,
     required this.phase,
     required this.targetAlignment,
+    required this.arrowScale,
+    required this.fallbackScreenTargetAlignment,
   });
 
   @override
@@ -257,17 +299,17 @@ class _ArrowPainter extends CustomPainter {
     final pShadow = Paint()
       ..color = Colors.black.withAlpha(170)
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 8
+      ..strokeWidth = 8.8 * arrowScale
       ..strokeCap = StrokeCap.round;
     final p = Paint()
       ..color = chalkInk
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 5.2
+      ..strokeWidth = 6.2 * arrowScale
       ..strokeCap = StrokeCap.round;
     final pDust = Paint()
       ..color = chalkDust
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.2
+      ..strokeWidth = 2.8 * arrowScale
       ..strokeCap = StrokeCap.round;
 
     if (style == TutorialArrowStyle.pullDownBounce) {
@@ -275,57 +317,109 @@ class _ArrowPainter extends CustomPainter {
       if (card == null) return;
       final bob = math.sin(phase * math.pi * 2) * 12;
       final start = Offset(card.center.dx, card.bottom + 14 + bob);
-      final end = Offset(start.dx, start.dy + 114);
-      canvas.drawLine(start, end, pShadow);
-      canvas.drawLine(start, end, p);
-      canvas.drawLine(start, end, pDust);
-      const head = 34.0;
-      final left = Offset(end.dx - 15, end.dy - head);
-      final right = Offset(end.dx + 15, end.dy - head);
-      canvas.drawLine(end, left, pShadow);
-      canvas.drawLine(end, right, pShadow);
-      canvas.drawLine(end, left, p);
-      canvas.drawLine(end, right, p);
-      canvas.drawLine(end, left, pDust);
-      canvas.drawLine(end, right, pDust);
+      final end = Offset(start.dx, start.dy + (126 * arrowScale));
+      _drawChalkLine(canvas, start, end, pShadow, p, pDust);
+      final head = 40.0 * arrowScale;
+      final left = Offset(end.dx - (18 * arrowScale), end.dy - head);
+      final right = Offset(end.dx + (18 * arrowScale), end.dy - head);
+      _drawChalkLine(canvas, end, left, pShadow, p, pDust);
+      _drawChalkLine(canvas, end, right, pShadow, p, pDust);
       return;
     }
 
     final target = targetRect;
     final card = cardRect;
-    if (target == null || card == null) return;
-    final to = _pointFromAlignment(target, targetAlignment);
-    final edgePoint = _nearestPointOnRect(card, to);
-    final vx = to.dx - edgePoint.dx;
-    final vy = to.dy - edgePoint.dy;
-    final dist = math.max(1.0, math.sqrt(vx * vx + vy * vy));
-    final ux = vx / dist;
-    final uy = vy / dist;
+    if (card == null) return;
+    final fallbackPoint = fallbackScreenTargetAlignment == null
+        ? null
+        : _pointFromAlignment(
+            Offset.zero & size,
+            fallbackScreenTargetAlignment!,
+          );
+    var to = target != null
+        ? _pointFromAlignment(target, targetAlignment)
+        : fallbackPoint;
+    if (to == null) return;
+    if (card.contains(to)) {
+      to =
+          fallbackPoint ??
+          Offset(card.center.dx, card.top - (120 * arrowScale));
+    }
+    final targetPoint = to;
+    final edgePoint = targetPoint.dy < card.top
+        ? (() {
+            if (targetPoint.dx < card.left + 24) {
+              return Offset(card.left - 12, card.top);
+            }
+            if (targetPoint.dx > card.right - 24) {
+              return Offset(card.right + 12, card.top);
+            }
+            return Offset(
+              targetPoint.dx.clamp(card.left + 24, card.right - 24),
+              card.top,
+            );
+          })()
+        : _nearestPointOnRect(card, to);
+    final baseVx = to.dx - edgePoint.dx;
+    final baseVy = to.dy - edgePoint.dy;
+    final baseDist = math.max(
+      1.0,
+      math.sqrt(baseVx * baseVx + baseVy * baseVy),
+    );
+    final ux = baseVx / baseDist;
+    final uy = baseVy / baseDist;
+    final minTargetDistance = 86.0 * arrowScale;
+    if (baseDist < minTargetDistance) {
+      to = Offset(
+        edgePoint.dx + (ux * minTargetDistance),
+        edgePoint.dy + (uy * minTargetDistance),
+      );
+    }
     final from = Offset(edgePoint.dx + (ux * 22), edgePoint.dy + (uy * 22));
-    final path = Path()
-      ..moveTo(from.dx, from.dy)
-      ..lineTo(to.dx, to.dy);
-    canvas.drawPath(path, pShadow);
-    canvas.drawPath(path, p);
-    canvas.drawPath(path, pDust);
+    _drawChalkLine(canvas, from, to, pShadow, p, pDust);
 
     final angle = math.atan2(to.dy - from.dy, to.dx - from.dx);
-    const head = 18.0;
+    final head = 22.0 * arrowScale;
     final tip = to;
     final left = Offset(
-      tip.dx - head * math.cos(angle - 0.45),
-      tip.dy - head * math.sin(angle - 0.45),
+      tip.dx - head * math.cos(angle - 0.52),
+      tip.dy - head * math.sin(angle - 0.52),
     );
     final right = Offset(
-      tip.dx - head * math.cos(angle + 0.45),
-      tip.dy - head * math.sin(angle + 0.45),
+      tip.dx - head * math.cos(angle + 0.52),
+      tip.dy - head * math.sin(angle + 0.52),
     );
-    canvas.drawLine(tip, left, pShadow);
-    canvas.drawLine(tip, right, pShadow);
-    canvas.drawLine(tip, left, p);
-    canvas.drawLine(tip, right, p);
-    canvas.drawLine(tip, left, pDust);
-    canvas.drawLine(tip, right, pDust);
+    _drawChalkLine(canvas, tip, left, pShadow, p, pDust);
+    _drawChalkLine(canvas, tip, right, pShadow, p, pDust);
+  }
+
+  void _drawChalkLine(
+    Canvas canvas,
+    Offset a,
+    Offset b,
+    Paint shadow,
+    Paint main,
+    Paint dust,
+  ) {
+    canvas.drawLine(a, b, shadow);
+    canvas.drawLine(a, b, main);
+    canvas.drawLine(a, b, dust);
+
+    final dx = b.dx - a.dx;
+    final dy = b.dy - a.dy;
+    final len = math.max(1.0, math.sqrt((dx * dx) + (dy * dy)));
+    final nx = -dy / len;
+    final ny = dx / len;
+
+    final jitterA = Offset(
+      a.dx + (nx * 1.4 * arrowScale),
+      a.dy + (ny * 1.4 * arrowScale),
+    );
+    final jitterB = Offset(
+      b.dx + (nx * 1.4 * arrowScale),
+      b.dy + (ny * 1.4 * arrowScale),
+    );
+    canvas.drawLine(jitterA, jitterB, dust);
   }
 
   Offset _pointFromAlignment(Rect rect, Alignment alignment) {
@@ -364,7 +458,10 @@ class _ArrowPainter extends CustomPainter {
       oldDelegate.cardRect != cardRect ||
       oldDelegate.style != style ||
       oldDelegate.phase != phase ||
-      oldDelegate.targetAlignment != targetAlignment;
+      oldDelegate.targetAlignment != targetAlignment ||
+      oldDelegate.arrowScale != arrowScale ||
+      oldDelegate.fallbackScreenTargetAlignment !=
+          fallbackScreenTargetAlignment;
 }
 
 class _ChalkCard extends StatelessWidget {
@@ -396,7 +493,7 @@ class _ChalkCard extends StatelessWidget {
     final border = Colors.white.withAlpha(110);
     return Container(
       constraints: const BoxConstraints(maxWidth: 520),
-      padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
+      padding: const EdgeInsets.fromLTRB(28, 14, 22, 12),
       decoration: BoxDecoration(
         color: background,
         borderRadius: BorderRadius.circular(14),

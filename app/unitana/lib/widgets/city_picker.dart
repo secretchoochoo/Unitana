@@ -323,6 +323,10 @@ class _CityPickerState extends State<CityPicker> {
           'PORTUGUES',
           'PORTUGUÊS',
         ],
+        if (c.cityName.toLowerCase().contains('porto')) ...const <String>[
+          'OPORTO',
+          'O PORTO',
+        ],
       ],
     );
     indexed = CityPickerEngine.sortByBaseScore(indexed);
