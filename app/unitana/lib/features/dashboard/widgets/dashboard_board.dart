@@ -265,10 +265,6 @@ class _DashboardBoardState extends State<DashboardBoard>
       final idx = widget.layout.defaultToolAnchorIndex(t.id);
       if (idx != null) legacyAnchors.add(idx);
     }
-    for (final i in widget.layout.items) {
-      final a = i.anchor;
-      if (a != null) legacyAnchors.add(a.index);
-    }
     return legacyAnchors;
   }
 
@@ -892,7 +888,7 @@ class _DashboardBoardState extends State<DashboardBoard>
       primaryDeemphasizedPrefix: null,
       compactValues: widget.isEditing,
       valuesTopInset: widget.isEditing ? 22 : 0,
-      onLongPress: canEdit
+      onLongPress: canEdit && !widget.isEditing
           ? () {
               if (!widget.isEditing) {
                 // Enter edit mode without triggering a second actions sheet.
@@ -969,9 +965,24 @@ class _DashboardBoardState extends State<DashboardBoard>
       valuesTopInset: 22,
     );
 
+    final draggableTile = LongPressDraggable<_DragTilePayload>(
+      data: payload,
+      dragAnchorStrategy: pointerDragAnchorStrategy,
+      feedback: Material(
+        color: Colors.transparent,
+        child: SizedBox(
+          width: 220,
+          height: 172,
+          child: Opacity(opacity: 0.9, child: previewTile),
+        ),
+      ),
+      childWhenDragging: Opacity(opacity: 0.42, child: tile),
+      child: tile,
+    );
+
     final stack = Stack(
       children: [
-        tile,
+        draggableTile,
         Positioned(
           top: 38,
           left: 8,
@@ -979,22 +990,6 @@ class _DashboardBoardState extends State<DashboardBoard>
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Draggable<_DragTilePayload>(
-                data: payload,
-                dragAnchorStrategy: pointerDragAnchorStrategy,
-                feedback: Material(
-                  color: Colors.transparent,
-                  child: Opacity(opacity: 0.9, child: previewTile),
-                ),
-                childWhenDragging: const _EditIconButton(
-                  icon: Icons.drag_indicator_rounded,
-                  isDragging: true,
-                ),
-                child: const _EditIconButton(
-                  icon: Icons.drag_indicator_rounded,
-                ),
-              ),
-              const SizedBox(width: 2),
               _EditIconButton(
                 icon: Icons.edit_rounded,
                 onTap: () =>
@@ -2066,18 +2061,13 @@ class _ToolPickerSheetState extends State<ToolPickerSheet> {
 class _EditIconButton extends StatelessWidget {
   final IconData icon;
   final VoidCallback? onTap;
-  final bool isDragging;
 
-  const _EditIconButton({
-    required this.icon,
-    this.onTap,
-    this.isDragging = false,
-  });
+  const _EditIconButton({required this.icon, this.onTap});
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final fg = scheme.onSurface.withAlpha(isDragging ? 150 : 220);
+    final fg = scheme.onSurface.withAlpha(220);
 
     final button = SizedBox(
       width: 32,
@@ -2086,12 +2076,7 @@ class _EditIconButton extends StatelessWidget {
     );
 
     if (onTap == null) {
-      return MouseRegion(
-        cursor: isDragging
-            ? SystemMouseCursors.grabbing
-            : SystemMouseCursors.grab,
-        child: button,
-      );
+      return MouseRegion(cursor: SystemMouseCursors.grab, child: button);
     }
 
     return Material(

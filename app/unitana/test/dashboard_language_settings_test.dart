@@ -85,7 +85,7 @@ void main() {
     expect(prefs.getString('preferred_language_code_v1'), 'pt-PT');
   });
 
-  testWidgets('Settings exposes profile auto-suggest toggle (off by default)', (
+  testWidgets('Settings no longer exposes profile auto-suggest toggle', (
     tester,
   ) async {
     SharedPreferences.setMockInitialValues(<String, Object>{});
@@ -104,21 +104,10 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('dashboard_menu_settings')));
     await tester.pumpAndSettle(const Duration(milliseconds: 200));
 
-    final toggle = find.byKey(
-      const ValueKey('settings_option_profile_suggest'),
+    expect(
+      find.byKey(const ValueKey('settings_option_profile_suggest')),
+      findsNothing,
     );
-    expect(toggle, findsOneWidget);
-    expect(state.autoProfileSuggestEnabled, isFalse);
-
-    await tester.ensureVisible(toggle);
-    await tester.pumpAndSettle(const Duration(milliseconds: 120));
-    await tester.tap(toggle);
-    await tester.pumpAndSettle(const Duration(milliseconds: 200));
-    expect(state.autoProfileSuggestEnabled, isTrue);
-
-    final prefs = await SharedPreferences.getInstance();
-    expect(prefs.getBool('auto_profile_suggest_enabled_v1'), isTrue);
-    expect(state.activeProfileId, 'profile_1');
   });
 
   testWidgets('Settings opens theme sheet and persists selection', (

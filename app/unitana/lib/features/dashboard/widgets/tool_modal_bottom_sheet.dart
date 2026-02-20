@@ -90,7 +90,7 @@ class ToolModalBottomSheet extends StatefulWidget {
     this.currencyLastErrorAt,
     this.currencyLastRefreshedAt,
     this.currencyNetworkEnabled = true,
-    this.currencyRefreshCadence = const Duration(hours: 12),
+    this.currencyRefreshCadence = const Duration(minutes: 10),
     this.onRetryCurrencyNow,
     this.home,
     this.destination,
@@ -111,7 +111,7 @@ class ToolModalBottomSheet extends StatefulWidget {
     DateTime? currencyLastErrorAt,
     DateTime? currencyLastRefreshedAt,
     bool currencyNetworkEnabled = true,
-    Duration currencyRefreshCadence = const Duration(hours: 12),
+    Duration currencyRefreshCadence = const Duration(minutes: 10),
     Future<void> Function()? onRetryCurrencyNow,
     Place? home,
     Place? destination,
@@ -203,6 +203,7 @@ class _TerminalLine extends StatelessWidget {
   final String output;
   final bool emphasize;
   final Color arrowColor;
+  final bool lineBreakBeforeOutput;
 
   const _TerminalLine({
     required this.prompt,
@@ -210,6 +211,7 @@ class _TerminalLine extends StatelessWidget {
     required this.output,
     required this.emphasize,
     required this.arrowColor,
+    this.lineBreakBeforeOutput = false,
   });
 
   @override
@@ -241,7 +243,7 @@ class _TerminalLine extends StatelessWidget {
               fontWeight: FontWeight.w900,
             ),
           ),
-          TextSpan(text: ' $output'),
+          TextSpan(text: lineBreakBeforeOutput ? '\n  $output' : ' $output'),
         ],
       ),
     );
@@ -1664,12 +1666,6 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
     if (pairRate != null && pairRate > 0) {
       return amount * pairRate;
     }
-
-    final rate = (widget.eurToUsd == null || widget.eurToUsd! <= 0)
-        ? 1.10
-        : widget.eurToUsd!;
-    if (from == 'EUR' && to == 'USD') return amount * rate;
-    if (from == 'USD' && to == 'EUR') return amount / rate;
     return null;
   }
 
@@ -2232,6 +2228,36 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
         ? null
         : _unitPriceToBaseAmount(quantity: qtyB, unit: _unitPriceUnitB);
     final perBaseB = (baseB == null || baseB <= 0) ? null : priceB! / baseB;
+    final bMass = _isUnitPriceMassUnit(_unitPriceUnitB);
+    final bVolume = _isUnitPriceVolumeUnit(_unitPriceUnitB);
+    final per100B = perBaseB == null
+        ? null
+        : bMass
+        ? perBaseB * 100.0
+        : bVolume
+        ? perBaseB * 100.0
+        : null;
+    final per1kB = perBaseB == null
+        ? null
+        : bMass
+        ? perBaseB * 1000.0
+        : bVolume
+        ? perBaseB * 1000.0
+        : null;
+    final per100BSecondary = (per100B != null && secondaryCurrencyCode != null)
+        ? _convertCurrencyAmount(
+            amount: per100B,
+            fromCode: primaryCurrencyCode,
+            toCode: secondaryCurrencyCode,
+          )
+        : null;
+    final per1kBSecondary = (per1kB != null && secondaryCurrencyCode != null)
+        ? _convertCurrencyAmount(
+            amount: per1kB,
+            fromCode: primaryCurrencyCode,
+            toCode: secondaryCurrencyCode,
+          )
+        : null;
 
     final comparable =
         _unitPriceCompareEnabled &&
@@ -2275,11 +2301,9 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
       return Container(
         padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
         decoration: BoxDecoration(
-          color: isPrimaryCard ? accent.withAlpha(28) : panelBgSoft,
+          color: isPrimaryCard ? panelBg : panelBgSoft,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: isPrimaryCard ? accent.withAlpha(170) : panelBorder,
-          ),
+          border: Border.all(color: panelBorder),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -2287,7 +2311,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
             Text(
               title,
               style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                color: _ToolModalThemePolicy.headingTone(context),
+                color: _ToolModalThemePolicy.textPrimary(context),
                 fontWeight: FontWeight.w800,
               ),
             ),
@@ -2309,48 +2333,73 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
             ),
             const SizedBox(height: 8),
             Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Expanded(
-                  child: TextField(
-                    key: ValueKey('tool_unit_price_qty_$keyPrefix'),
-                    controller: qtyController,
-                    keyboardType: const TextInputType.numberWithOptions(
-                      decimal: true,
-                    ),
-                    decoration: InputDecoration(
-                      labelText: DashboardCopy.unitPriceLabelQuantity(context),
-                      hintText: DashboardCopy.unitPriceQuantityHint(context),
-                    ),
-                    onChanged: (_) => setState(() {}),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      TextField(
+                        key: ValueKey('tool_unit_price_qty_$keyPrefix'),
+                        controller: qtyController,
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
+                        decoration: InputDecoration(
+                          labelText: DashboardCopy.unitPriceLabelQuantity(
+                            context,
+                          ),
+                          hintText: DashboardCopy.unitPriceQuantityHint(
+                            context,
+                          ),
+                        ),
+                        onChanged: (_) => setState(() {}),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        'Enter unit amount (g, oz, mL, L).',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: textMuted,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
                 const SizedBox(width: 8),
-                OutlinedButton(
-                  key: ValueKey('tool_unit_price_unit_$keyPrefix'),
-                  onPressed: () async {
-                    final picked = await showModalBottomSheet<String>(
-                      context: context,
-                      showDragHandle: true,
-                      builder: (context) => SafeArea(
-                        child: ListView(
-                          shrinkWrap: true,
-                          children: [
-                            for (final unit in _unitPriceUnits)
-                              ListTile(
-                                title: Text(unit),
-                                trailing: unit == selectedUnit
-                                    ? const Icon(Icons.check_rounded)
-                                    : null,
-                                onTap: () => Navigator.of(context).pop(unit),
-                              ),
-                          ],
-                        ),
-                      ),
-                    );
-                    if (picked == null) return;
-                    onUnitSelected(picked);
-                  },
-                  child: Text(selectedUnit),
+                Padding(
+                  padding: const EdgeInsets.only(top: 2),
+                  child: SizedBox(
+                    height: 56,
+                    child: OutlinedButton(
+                      key: ValueKey('tool_unit_price_unit_$keyPrefix'),
+                      onPressed: () async {
+                        final picked = await showModalBottomSheet<String>(
+                          context: context,
+                          showDragHandle: true,
+                          builder: (context) => SafeArea(
+                            child: ListView(
+                              shrinkWrap: true,
+                              children: [
+                                for (final unit in _unitPriceUnits)
+                                  ListTile(
+                                    title: Text(unit),
+                                    trailing: unit == selectedUnit
+                                        ? const Icon(Icons.check_rounded)
+                                        : null,
+                                    onTap: () =>
+                                        Navigator.of(context).pop(unit),
+                                  ),
+                              ],
+                            ),
+                          ),
+                        );
+                        if (picked == null) return;
+                        onUnitSelected(picked);
+                      },
+                      child: Text(selectedUnit),
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -2364,6 +2413,91 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
         : aVolume
         ? '1 L'
         : '1 base';
+    final benchmarkShort = aMass
+        ? '100g'
+        : aVolume
+        ? '100mL'
+        : 'base unit';
+    final benchmarkLong = aMass
+        ? '1 kg'
+        : aVolume
+        ? '1 L'
+        : '1 base unit';
+
+    Widget quickStep(String text, IconData icon) {
+      return Padding(
+        padding: const EdgeInsets.only(right: 8, bottom: 2),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 14, color: accent.withAlpha(210)),
+            const SizedBox(width: 6),
+            Text(
+              text,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: _ToolModalThemePolicy.textPrimary(context),
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    Widget productResultBlock({
+      required String title,
+      required double? per100Primary,
+      required double? per1kPrimary,
+      required double? per100Secondary,
+      required double? per1kSecondary,
+    }) {
+      if (per100Primary == null || per1kPrimary == null) {
+        return Text(
+          '$title: add valid price and units',
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            color: textMuted,
+            fontWeight: FontWeight.w700,
+          ),
+        );
+      }
+
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: Theme.of(context).textTheme.titleSmall?.copyWith(
+              color: _ToolModalThemePolicy.headingTone(context),
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 4),
+          _TerminalLine(
+            prompt: '>',
+            input: activePlaceName,
+            output:
+                '$benchmarkShort: ${_moneyWithCurrency(per100Primary, primaryCurrencyCode)}\n$benchmarkLong: ${_moneyWithCurrency(per1kPrimary, primaryCurrencyCode)}',
+            emphasize: true,
+            arrowColor: accent,
+            lineBreakBeforeOutput: true,
+          ),
+          if (secondaryCurrencyCode != null &&
+              per100Secondary != null &&
+              per1kSecondary != null) ...[
+            const SizedBox(height: 4),
+            _TerminalLine(
+              prompt: '>',
+              input: oppositePlaceName,
+              output:
+                  '$benchmarkShort: ${_moneyWithCurrency(per100Secondary, secondaryCurrencyCode)}\n$benchmarkLong: ${_moneyWithCurrency(per1kSecondary, secondaryCurrencyCode)}',
+              emphasize: false,
+              arrowColor: accent,
+              lineBreakBeforeOutput: true,
+            ),
+          ],
+        ],
+      );
+    }
 
     return ListView(
       key: ValueKey('tool_unit_price_scroll_${widget.tool.id}'),
@@ -2372,43 +2506,35 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
         Container(
           padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
           decoration: BoxDecoration(
-            color: accent.withAlpha(24),
+            color: panelBg,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: accent.withAlpha(140)),
+            border: Border.all(color: panelBorder),
           ),
-          child: Builder(
-            builder: (context) {
-              final coach = DashboardCopy.unitPriceCoach(
-                context,
-                primaryCurrency: primaryCurrencyCode,
-                secondaryCurrency: secondaryCurrencyCode,
-              );
-              final baseStyle = Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: _ToolModalThemePolicy.textPrimary(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                DashboardCopy.unitPriceCoach(
                   context,
-                ).withAlpha(230),
-                fontWeight: FontWeight.w700,
-              );
-              const prefix = 'How to use:';
-              if (!coach.startsWith(prefix)) {
-                return Text(coach, style: baseStyle);
-              }
-              return Text.rich(
-                TextSpan(
-                  style: baseStyle,
-                  children: [
-                    TextSpan(
-                      text: '$prefix ',
-                      style: baseStyle?.copyWith(
-                        color: accent,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                    TextSpan(text: coach.substring(prefix.length).trimLeft()),
-                  ],
+                  primaryCurrency: primaryCurrencyCode,
+                  secondaryCurrency: secondaryCurrencyCode,
                 ),
-              );
-            },
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: _ToolModalThemePolicy.textPrimary(context),
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  quickStep('1 Price', Icons.local_offer_rounded),
+                  quickStep('2 Units', Icons.straighten_rounded),
+                  quickStep('3 Compare', Icons.compare_arrows_rounded),
+                ],
+              ),
+            ],
           ),
         ),
         if (secondaryCurrencyCode != null) ...[
@@ -2503,45 +2629,28 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
               : Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _TerminalLine(
-                      prompt: '>',
-                      input: 'Product A',
-                      output:
-                          '${_moneyWithCurrency(per100A!, primaryCurrencyCode)} per ${aMass ? '100g' : '100mL'}',
-                      emphasize: true,
-                      arrowColor: accent,
+                    productResultBlock(
+                      title: DashboardCopy.unitPriceProductTitle(
+                        context,
+                        isA: true,
+                      ),
+                      per100Primary: per100A,
+                      per1kPrimary: per1kA,
+                      per100Secondary: per100ASecondary,
+                      per1kSecondary: per1kASecondary,
                     ),
                     const SizedBox(height: 6),
-                    _TerminalLine(
-                      prompt: '>',
-                      input: 'Product A',
-                      output:
-                          '${_moneyWithCurrency(per1kA!, primaryCurrencyCode)} per ${aMass ? 'kg' : 'L'}',
-                      emphasize: false,
-                      arrowColor: accent,
-                    ),
-                    if (secondaryCurrencyCode != null &&
-                        per100ASecondary != null &&
-                        per1kASecondary != null) ...[
-                      const SizedBox(height: 8),
-                      _TerminalLine(
-                        prompt: '>',
-                        input: oppositePlaceName,
-                        output:
-                            '${_moneyWithCurrency(per100ASecondary, secondaryCurrencyCode)} per ${aMass ? '100g' : '100mL'}',
-                        emphasize: false,
-                        arrowColor: accent,
+                    if (_unitPriceCompareEnabled)
+                      productResultBlock(
+                        title: DashboardCopy.unitPriceProductTitle(
+                          context,
+                          isA: false,
+                        ),
+                        per100Primary: per100B,
+                        per1kPrimary: per1kB,
+                        per100Secondary: per100BSecondary,
+                        per1kSecondary: per1kBSecondary,
                       ),
-                      const SizedBox(height: 6),
-                      _TerminalLine(
-                        prompt: '>',
-                        input: oppositePlaceName,
-                        output:
-                            '${_moneyWithCurrency(per1kASecondary, secondaryCurrencyCode)} per ${aMass ? 'kg' : 'L'}',
-                        emphasize: false,
-                        arrowColor: accent,
-                      ),
-                    ],
                     if (_unitPriceCompareEnabled && compareText != null) ...[
                       const SizedBox(height: 8),
                       Text(
@@ -2558,7 +2667,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                     if (comparable) ...[
                       const SizedBox(height: 6),
                       Text(
-                        'Normalized basket ($normalizedTarget): '
+                        'Cost for $normalizedTarget: '
                         '${_moneyWithCurrency(perBaseA * 1000, primaryCurrencyCode)} vs '
                         '${_moneyWithCurrency(perBaseB * 1000, primaryCurrencyCode)}',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
@@ -3107,10 +3216,6 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
         return;
       }
 
-      final rate = (widget.eurToUsd == null || widget.eurToUsd! <= 0)
-          ? 1.10
-          : widget.eurToUsd!;
-
       final from = _fromCurrencyCode;
       final to = _toCurrencyCode;
 
@@ -3121,13 +3226,12 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
         final pairRate = widget.currencyRateForPair?.call(from, to);
         if (pairRate != null && pairRate > 0) {
           out = value * pairRate;
-        } else if (from == 'EUR' && to == 'USD') {
-          out = value * rate;
-        } else if (from == 'USD' && to == 'EUR') {
-          out = value / rate;
         } else {
-          // Deterministic fallback when pair data is unavailable.
-          out = value;
+          _showNotice(
+            DashboardCopy.currencyRateUnavailableNotice(context),
+            UnitanaNoticeKind.error,
+          );
+          return;
         }
       }
 
@@ -6471,7 +6575,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
     if (!widget.currencyIsStale && errorAt == null) return null;
 
     final refreshedAt = widget.currencyLastRefreshedAt;
-    final cadenceHours = widget.currencyRefreshCadence.inHours;
+    final cadenceLabel = _currencyCadenceLabel(widget.currencyRefreshCadence);
     final lastSavedLabel = refreshedAt == null
         ? null
         : FreshnessCopy.relativeAgeShort(
@@ -6516,17 +6620,27 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
 
     if (refreshedAt != null) {
       return (
-        'Using saved rates from $lastSavedLabel. Auto-refresh target: every $cadenceHours hours.',
+        'Using saved rates from $lastSavedLabel. Auto-refresh target: every $cadenceLabel.',
         _ToolModalThemePolicy.textMuted(context),
         false,
       );
     }
 
     return (
-      'Using saved rates. Auto-refresh target: every $cadenceHours hours.',
+      'Using saved rates. Auto-refresh target: every $cadenceLabel.',
       _ToolModalThemePolicy.textMuted(context),
       false,
     );
+  }
+
+  String _currencyCadenceLabel(Duration cadence) {
+    final minutes = cadence.inMinutes;
+    if (minutes <= 0) return 'few minutes';
+    if (minutes % 60 == 0) {
+      final hours = minutes ~/ 60;
+      return hours == 1 ? 'hour' : '$hours hours';
+    }
+    return minutes == 1 ? 'minute' : '$minutes minutes';
   }
 
   Widget _buildSheetHeader({

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -116,23 +117,14 @@ void main() {
     // Defaults: Baking appears before Distance (reading order).
     expect(comesBefore(beforeBaking, beforeDistance), isTrue);
 
-    final distanceStack = find
-        .ancestor(of: distanceTile, matching: find.byType(Stack))
-        .first;
-    expect(distanceStack, findsOneWidget);
-
-    final distanceHandle = find.descendant(
-      of: distanceStack,
-      matching: find.byIcon(Icons.drag_indicator_rounded),
-    );
-    expect(distanceHandle, findsOneWidget);
-
-    // Drag Distance handle onto Baking tile center (robust across row shifts).
-    final handleCenter = tester.getCenter(distanceHandle);
+    // Long-press drag Distance onto Baking tile center.
+    final handleCenter = tester.getCenter(distanceTile);
     final bakingCenter = tester.getCenter(bakingTile);
     final delta = bakingCenter - handleCenter;
-
-    await tester.dragFrom(handleCenter, delta);
+    final gesture = await tester.startGesture(handleCenter);
+    await tester.pump(kLongPressTimeout + const Duration(milliseconds: 120));
+    await gesture.moveBy(delta);
+    await gesture.up();
     await tester.pump(const Duration(milliseconds: 400));
 
     // Commit reorder.

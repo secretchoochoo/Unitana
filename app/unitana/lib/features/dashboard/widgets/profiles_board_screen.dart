@@ -436,10 +436,19 @@ class _ProfilesBoardScreenState extends State<ProfilesBoardScreen>
                               onDelete: () {},
                               flagEmojiForCountry: _flagEmoji,
                               homeAndDestination: _homeAndDestination,
-                              dragHandle: null,
                             );
 
-                            final dragHandle = Draggable<String>(
+                            final tile = _ProfileTile(
+                              profile: profile,
+                              isActive: active,
+                              isEditing: true,
+                              onTap: () => widget.onSwitchProfile(profile.id),
+                              onEdit: () => widget.onEditProfile(profile.id),
+                              onDelete: () => _confirmDelete(profile),
+                              flagEmojiForCountry: _flagEmoji,
+                              homeAndDestination: _homeAndDestination,
+                            );
+                            final draggableTile = LongPressDraggable<String>(
                               data: profile.id,
                               dragAnchorStrategy: pointerDragAnchorStrategy,
                               onDragStarted: () {
@@ -464,27 +473,16 @@ class _ProfilesBoardScreenState extends State<ProfilesBoardScreen>
                                   ),
                                 ),
                               ),
-                              childWhenDragging: const _ProfileEditIconButton(
-                                icon: Icons.drag_indicator_rounded,
-                                isDragging: true,
+                              childWhenDragging: Opacity(
+                                opacity: 0.42,
+                                child: tile,
                               ),
-                              child: const _ProfileEditIconButton(
-                                icon: Icons.drag_indicator_rounded,
-                              ),
+                              child: tile,
                             );
-
-                            final tile = _ProfileTile(
-                              profile: profile,
-                              isActive: active,
-                              isEditing: true,
-                              onTap: () => widget.onSwitchProfile(profile.id),
-                              onEdit: () => widget.onEditProfile(profile.id),
-                              onDelete: () => _confirmDelete(profile),
-                              flagEmojiForCountry: _flagEmoji,
-                              homeAndDestination: _homeAndDestination,
-                              dragHandle: dragHandle,
+                            final wiggledTile = _maybeWiggle(
+                              profile.id,
+                              draggableTile,
                             );
-                            final wiggledTile = _maybeWiggle(profile.id, tile);
                             return Opacity(
                               opacity: _draggingId == profile.id ? 0.4 : 1.0,
                               child: wiggledTile,
@@ -519,7 +517,7 @@ class _ProfilesBoardScreenState extends State<ProfilesBoardScreen>
                               rejectedData.isNotEmpty) {
                             // no-op (keeps strict lint happy without hiding params)
                           }
-                          Widget buildTile({required Widget? dragHandle}) {
+                          Widget buildTile() {
                             return _ProfileTile(
                               profile: profile,
                               isActive: active,
@@ -529,7 +527,6 @@ class _ProfilesBoardScreenState extends State<ProfilesBoardScreen>
                               onDelete: () => _confirmDelete(profile),
                               flagEmojiForCountry: _flagEmoji,
                               homeAndDestination: _homeAndDestination,
-                              dragHandle: dragHandle,
                             );
                           }
 
@@ -542,12 +539,11 @@ class _ProfilesBoardScreenState extends State<ProfilesBoardScreen>
                             onDelete: () {},
                             flagEmojiForCountry: _flagEmoji,
                             homeAndDestination: _homeAndDestination,
-                            dragHandle: null,
                           );
 
-                          Widget? dragHandle;
+                          Widget tile = buildTile();
                           if (_editMode) {
-                            dragHandle = Draggable<String>(
+                            tile = LongPressDraggable<String>(
                               data: profile.id,
                               dragAnchorStrategy: pointerDragAnchorStrategy,
                               onDragStarted: () {
@@ -572,17 +568,14 @@ class _ProfilesBoardScreenState extends State<ProfilesBoardScreen>
                                   ),
                                 ),
                               ),
-                              childWhenDragging: const _ProfileEditIconButton(
-                                icon: Icons.drag_indicator_rounded,
-                                isDragging: true,
+                              childWhenDragging: Opacity(
+                                opacity: 0.42,
+                                child: tile,
                               ),
-                              child: const _ProfileEditIconButton(
-                                icon: Icons.drag_indicator_rounded,
-                              ),
+                              child: tile,
                             );
                           }
 
-                          final tile = buildTile(dragHandle: dragHandle);
                           final wiggledTile = _maybeWiggle(profile.id, tile);
                           return Opacity(
                             opacity: _draggingId == profile.id ? 0.4 : 1.0,
@@ -638,26 +631,6 @@ class _AddProfileTile extends StatelessWidget {
   }
 }
 
-class _ProfileEditIconButton extends StatelessWidget {
-  final IconData icon;
-  final bool isDragging;
-
-  const _ProfileEditIconButton({required this.icon, this.isDragging = false});
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final onSurface = Theme.of(context).colorScheme.onSurface;
-    return Icon(
-      icon,
-      size: 18,
-      color: isDragging
-          ? onSurface.withAlpha(90)
-          : scheme.onSurfaceVariant.withAlpha(220),
-    );
-  }
-}
-
 class _ProfileTile extends StatelessWidget {
   final UnitanaProfile profile;
   final bool isActive;
@@ -665,7 +638,6 @@ class _ProfileTile extends StatelessWidget {
   final VoidCallback onTap;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
-  final Widget? dragHandle;
   final String Function(String?) flagEmojiForCountry;
   final (Place?, Place?) Function(UnitanaProfile) homeAndDestination;
 
@@ -676,7 +648,6 @@ class _ProfileTile extends StatelessWidget {
     required this.onTap,
     required this.onEdit,
     required this.onDelete,
-    required this.dragHandle,
     required this.flagEmojiForCountry,
     required this.homeAndDestination,
   });
@@ -782,20 +753,6 @@ class _ProfileTile extends StatelessWidget {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        SizedBox(
-                          key: ValueKey('profiles_board_drag_${profile.id}'),
-                          width: iconBox,
-                          height: iconBox,
-                          child: Center(
-                            child:
-                                dragHandle ??
-                                Icon(
-                                  Icons.drag_indicator_rounded,
-                                  size: iconSize,
-                                ),
-                          ),
-                        ),
-                        const SizedBox(width: 2),
                         IconButton(
                           key: ValueKey('profiles_board_edit_${profile.id}'),
                           tooltip: DashboardCopy.profilesBoardTooltipEdit(

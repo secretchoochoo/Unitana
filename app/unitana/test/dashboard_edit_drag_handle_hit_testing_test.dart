@@ -1,17 +1,17 @@
 import 'dart:convert';
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'dashboard_test_helpers.dart';
 
-/// P0 regression guard: edit-mode reordering must only start from the drag handle.
+/// P0 regression guard: edit-mode reordering starts from long-press on the tile.
 ///
 /// This test verifies:
 /// - In edit mode, tapping the tile body does not open tool sheets.
-/// - Dragging the tile body does not persist default tile anchors.
-/// - Dragging from the drag handle does persist default tile anchors.
+/// - Long-press dragging the tile body persists default tile anchors.
 
 Future<void> _pumpFor(WidgetTester tester, Duration duration) async {
   final deadline = DateTime.now().add(duration);
@@ -50,7 +50,7 @@ Future<Map<String, dynamic>> _readDefaultAnchors() async {
 }
 
 void main() {
-  testWidgets('dashboard edit mode only reorders from drag handle', (
+  testWidgets('dashboard edit mode reorders from long-press tile drag', (
     tester,
   ) async {
     await pumpDashboardForTest(tester);
@@ -68,39 +68,13 @@ void main() {
     await _pumpFor(tester, const Duration(milliseconds: 200));
     expect(find.byKey(const ValueKey('tool_close_baking')), findsNothing);
 
-    // Dragging the tile body should not persist anchor overrides.
-    final bakingRect = tester.getRect(bakingTile);
-    await tester.dragFrom(bakingRect.center, const Offset(0, -140));
-    await _pumpFor(tester, const Duration(milliseconds: 250));
-
-    await tester.tap(
-      find.byKey(const Key('dashboard_edit_done')),
-      warnIfMissed: false,
-    );
-    await _pumpFor(tester, const Duration(milliseconds: 280));
-
-    final anchorsAfterBodyDrag = await _readDefaultAnchors();
-    expect(anchorsAfterBodyDrag.containsKey('baking'), isFalse);
-    expect(anchorsAfterBodyDrag.containsKey('distance'), isFalse);
-
-    // Now perform an actual reorder by dragging from the drag handle.
-    await _enterEditMode(tester);
-
-    final bakingTile2 = find.byKey(const ValueKey('dashboard_item_baking'));
-    final distanceTile2 = find.byKey(const ValueKey('dashboard_item_distance'));
-
-    final areaStack = find
-        .ancestor(of: bakingTile2, matching: find.byType(Stack))
-        .first;
-    final handleIcon = find.descendant(
-      of: areaStack,
-      matching: find.byIcon(Icons.drag_indicator_rounded),
-    );
-    expect(handleIcon, findsOneWidget);
-
-    final start = tester.getCenter(handleIcon);
-    final target = tester.getCenter(distanceTile2);
-    await tester.dragFrom(start, target - start);
+    // Long-press drag on the tile body should persist anchor overrides.
+    final start = tester.getCenter(bakingTile);
+    final target = tester.getCenter(distanceTile);
+    final gesture = await tester.startGesture(start);
+    await tester.pump(kLongPressTimeout + const Duration(milliseconds: 120));
+    await gesture.moveTo(target);
+    await gesture.up();
     await _pumpFor(tester, const Duration(milliseconds: 360));
 
     await tester.tap(

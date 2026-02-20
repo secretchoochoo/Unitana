@@ -48,7 +48,8 @@ class DashboardScreen extends StatefulWidget {
   State<DashboardScreen> createState() => _DashboardScreenState();
 }
 
-class _DashboardScreenState extends State<DashboardScreen> {
+class _DashboardScreenState extends State<DashboardScreen>
+    with WidgetsBindingObserver {
   static const double _kEditAppBarActionFontSize = 14;
   static const double _kAppBarTitleMaxFontSize = 28;
   static const double _kAppBarTitleMinFontSize = 18;
@@ -57,15 +58,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
   static const Duration _kWeatherAutoRefreshMinInterval = Duration(seconds: 30);
   static const String _kBuildVersion = String.fromEnvironment(
     'UNITANA_APP_VERSION',
-    defaultValue: 'dev',
+    defaultValue: '1.0.0',
   );
   static const String _kBuildNumber = String.fromEnvironment(
     'UNITANA_BUILD_NUMBER',
-    defaultValue: '0',
+    defaultValue: '100',
+  );
+  static const String _kBuildChannel = String.fromEnvironment(
+    'UNITANA_BUILD_CHANNEL',
+    defaultValue: 'Release',
   );
   static const bool _kDeveloperToolsEnabled = bool.fromEnvironment(
     'UNITANA_DEVTOOLS_ENABLED',
-    defaultValue: true,
+    defaultValue: false,
   );
 
   late DashboardSessionController _session;
@@ -74,6 +79,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   late final ScrollController _scrollController;
   late final LofiAudioController _lofiAudioController;
+  bool _appIsInForeground = true;
 
   DateTime? _lastAutoWeatherRefreshAttemptAt;
 
@@ -151,6 +157,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _appIsInForeground = _isLifecycleForeground(
+      WidgetsBinding.instance.lifecycleState,
+    );
     _liveData = DashboardLiveDataController();
     if (_kDeveloperToolsEnabled) {
       _liveData.loadDevSettings();
@@ -164,6 +174,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     // Kick off an initial refresh so the hero is never stuck showing placeholders.
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      _syncLofiAudioFromState();
       _refreshAllNow();
       final pendingSuccess = state.consumePendingSuccessToast();
       if (!mounted || pendingSuccess == null) return;
@@ -173,6 +184,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     state.removeListener(_onAppStateChanged);
     _scrollController.dispose();
     _session.dispose();
@@ -188,9 +200,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   void _syncLofiAudioFromState() {
     _lofiAudioController.apply(
-      enabled: state.lofiAudioEnabled,
+      enabled: state.lofiAudioEnabled && _appIsInForeground,
       volume: state.lofiAudioVolume,
     );
+  }
+
+  bool _isLifecycleForeground(AppLifecycleState? lifecycleState) {
+    return lifecycleState == null ||
+        lifecycleState == AppLifecycleState.resumed;
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState lifecycleState) {
+    final nextIsForeground = _isLifecycleForeground(lifecycleState);
+    if (_appIsInForeground == nextIsForeground) return;
+    _appIsInForeground = nextIsForeground;
+    _syncLofiAudioFromState();
   }
 
   void _bindProfileScopedControllers() {
@@ -1064,7 +1089,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       currencyLastErrorAt: _liveData.lastCurrencyErrorAt,
       currencyLastRefreshedAt: _liveData.lastCurrencyRefreshedAt,
       currencyNetworkEnabled: _liveData.currencyNetworkEnabled,
-      currencyRefreshCadence: const Duration(hours: 12),
+      currencyRefreshCadence: _liveData.currencyRefreshCadence,
       onRetryCurrencyNow: () async {
         final places = <Place>[
           if (home != null) home,
@@ -1261,26 +1286,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
       isScrollControlled: true,
       showDragHandle: true,
       builder: (sheetContext) {
-        UnitanaProfile? suggestedProfile;
-        final suggestedId = state.autoSuggestedProfileId;
-        if (suggestedId != null) {
-          for (final profile in state.profiles) {
-            if (profile.id == suggestedId) {
-              suggestedProfile = profile;
-              break;
-            }
-          }
-        }
-        final fallbackSuggestion = suggestedProfile == null
-            ? DashboardCopy.settingsProfileSuggestReasonUnavailable(context)
-            : DashboardCopy.settingsProfileSuggestSuggested(
-                context,
-                profileName: suggestedProfile.name,
-              );
-        final explainability =
-            state.autoProfileSuggestionReason?.trim().isNotEmpty == true
-            ? state.autoProfileSuggestionReason!.trim()
-            : fallbackSuggestion;
         return StatefulBuilder(
           builder: (context, setSheetState) {
             final maxH = MediaQuery.of(sheetContext).size.height * 0.92;
@@ -1380,33 +1385,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         onTap: () {
                           Navigator.of(sheetContext).pop();
                           Future.microtask(_openLanguageSettingsSheet);
-                        },
-                      ),
-                      SwitchListTile(
-                        key: const ValueKey('settings_option_profile_suggest'),
-                        secondary: const Icon(Icons.my_location_rounded),
-                        value: state.autoProfileSuggestEnabled,
-                        title: Text(
-                          DashboardCopy.settingsProfileSuggestTitle(context),
-                        ),
-                        subtitle: Text(
-                          '${state.autoProfileSuggestEnabled ? DashboardCopy.settingsProfileSuggestEnabled(context) : DashboardCopy.settingsProfileSuggestDisabled(context)} · $explainability',
-                        ),
-                        onChanged: (enabled) async {
-                          final updatedMessage =
-                              DashboardCopy.settingsProfileSuggestUpdated(
-                                context,
-                              );
-                          await state.setAutoProfileSuggestEnabled(enabled);
-                          await state.evaluateAutoProfileSuggestion(
-                            signal: null,
-                          );
-                          setSheetState(() {});
-                          if (!sheetContext.mounted) return;
-                          UnitanaToast.showSuccess(
-                            sheetContext,
-                            updatedMessage,
-                          );
                         },
                       ),
                       SwitchListTile(
@@ -1575,11 +1553,48 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   const SizedBox(height: 10),
                   Center(
                     child: Text(
-                      DashboardCopy.settingsAboutBody(context),
+                      'Build channel: $_kBuildChannel',
                       key: const ValueKey('settings_about_body'),
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
                       ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: theme.colorScheme.outlineVariant,
+                      ),
+                      color: theme.colorScheme.surfaceContainerHighest
+                          .withAlpha(48),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Data providers',
+                          style: theme.textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          'Weather: Open-Meteo (primary runtime), WeatherAPI (development diagnostics)',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                        Text(
+                          'Currency: Frankfurter (primary), open.er-api.com (fallback)',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                   const SizedBox(height: 4),

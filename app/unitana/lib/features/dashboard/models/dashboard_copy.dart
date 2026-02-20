@@ -366,6 +366,12 @@ class DashboardCopy {
         'dashboard.currency.notice.refreshFailed',
         fallback: 'Could not refresh rates',
       );
+  static String currencyRateUnavailableNotice(BuildContext context) =>
+      DashboardLocalizations.of(context).text(
+        'dashboard.currency.notice.rateUnavailable',
+        fallback:
+            'Live rate unavailable for this pair. Refresh rates and try again.',
+      );
   static String dashboardComingSoon(BuildContext context, String label) =>
       DashboardLocalizations.of(context).text(
         'dashboard.dashboard.comingSoon',
@@ -554,13 +560,12 @@ class DashboardCopy {
   static String settingsAboutBody(BuildContext context) =>
       DashboardLocalizations.of(context).text(
         'dashboard.settings.about.body',
-        fallback: 'Build channel: Development',
+        fallback: 'Build channel: Release',
       );
   static String settingsAboutLegalese(BuildContext context) =>
-      DashboardLocalizations.of(context).text(
-        'dashboard.settings.about.legalese',
-        fallback: 'Copying 2026 Unitana',
-      );
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.settings.about.legalese', fallback: '© 2026 Unitana');
   static String settingsLicensesTitle(BuildContext context) =>
       DashboardLocalizations.of(context).text(
         'dashboard.settings.licenses.title',
@@ -1100,7 +1105,7 @@ class DashboardCopy {
   static String unitPriceLabelQuantity(BuildContext context) =>
       DashboardLocalizations.of(
         context,
-      ).text('dashboard.unitPrice.label.quantity', fallback: 'Quantity');
+      ).text('dashboard.unitPrice.label.quantity', fallback: 'Units');
   static String unitPriceProductTitle(
     BuildContext context, {
     required bool isA,
@@ -1115,7 +1120,7 @@ class DashboardCopy {
   static String unitPriceCompareToggle(BuildContext context) =>
       DashboardLocalizations.of(context).text(
         'dashboard.unitPrice.compareToggle',
-        fallback: 'Compare with Product B',
+        fallback: 'Compare with another product',
       );
   static String unitPriceInvalidProductA(BuildContext context) =>
       DashboardLocalizations.of(context).text(
@@ -1129,7 +1134,7 @@ class DashboardCopy {
   }) => DashboardLocalizations.of(context).text(
     'dashboard.unitPrice.coach',
     fallback:
-        'How to use: enter shelf price and package size for Product A. Turn on comparison to add Product B in the same unit family (mass or volume).',
+        'Price + size for Product A. Turn on compare for Product B in the same unit family.',
   );
 
   static String bakingInputCoach(

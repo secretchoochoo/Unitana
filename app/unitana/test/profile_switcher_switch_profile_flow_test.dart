@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -150,7 +151,7 @@ void main() {
     },
   );
 
-  testWidgets('Profiles board reorder works via drag handle interaction', (
+  testWidgets('Profiles board reorder works via long-press drag interaction', (
     tester,
   ) async {
     SharedPreferences.setMockInitialValues(<String, Object>{});
@@ -200,13 +201,11 @@ void main() {
     final pre2 = tester.getTopLeft(tile2);
     expect(pre2.dx > pre1.dx, isTrue);
 
-    final dragHandle2 = find.byKey(
-      const ValueKey('profiles_board_drag_profile_2'),
-    );
     final target1 = tester.getCenter(
       find.byKey(const ValueKey('profiles_board_target_profile_1')),
     );
-    final gesture = await tester.startGesture(tester.getCenter(dragHandle2));
+    final gesture = await tester.startGesture(tester.getCenter(tile2));
+    await tester.pump(kLongPressTimeout + const Duration(milliseconds: 120));
     await gesture.moveTo(target1);
     await gesture.up();
     await tester.pump(const Duration(milliseconds: 450));
