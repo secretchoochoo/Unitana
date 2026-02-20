@@ -1,9 +1,97 @@
 # CURRENT_HANDOFF (Unitana) - Wizard, Collapsing Header, Multi-Profile
 
 ## Snapshot
-- **Date:** 2026-02-13
-- **Status:** Repo is green (`dart format`, `flutter analyze`, `flutter test`) after XL-V shipped `clothing_sizes` as a reference-only matrix tool with disclaimer and missing-mapping guardrails.
+- **Date:** 2026-02-20
+- **Status:** XL-W3 is complete (docs verification + ownership hardening). XL-X phase A and phase B are complete and validated green; XL-X phase C is queued next. Pack O is iceboxed and Pack V is closed.
 - **Operating mode:** Codex is now the primary workflow; apply edits directly in-repo (do not require patch zip workflow unless explicitly requested).
+
+## Latest changes (2026-02-20)
+- XL-X phase B completed (tool modal decomposition + render-cost cleanup):
+  - `tool_modal_bottom_sheet.dart`:
+    - extracted sheet header rendering into `_buildSheetHeader(...)`.
+    - extracted currency status/retry panel rendering into `_buildCurrencyStatusBanner(...)`.
+    - extracted history panel + clear action rendering into `_buildHistorySection(...)`.
+    - extracted post-conversion default stack into `_buildDefaultPostConversionSection(...)` (result card, pace/energy extensions, disclaimer, history section) and removed duplicate disclaimer lookups.
+    - extracted default calculator/input controls into `_buildDefaultCalculatorSection(...)` while preserving unit-picker, add-widget, reset-defaults, and convert-button behavior contracts.
+    - extracted tool body router into `_buildToolBody(...)` and default flow container into `_buildDefaultToolBody(...)` so default-only state/policy reads are no longer computed for specialized tool bodies.
+  - validation: full `tools/verify.sh` passed (`docs verify`, `dart format .`, `flutter analyze`, `flutter test`).
+  - next: XL-X phase C (profile/wizard path cleanup + state-lifecycle hardening).
+
+## Latest changes (2026-02-20)
+- XL-X phase B started (tool modal decomposition):
+  - `tool_modal_bottom_sheet.dart`:
+    - extracted sheet header rendering into `_buildSheetHeader(...)`.
+    - extracted currency status/retry panel rendering into `_buildCurrencyStatusBanner(...)`.
+    - extracted history panel + clear action rendering into `_buildHistorySection(...)`.
+    - extracted post-conversion default stack into `_buildDefaultPostConversionSection(...)` (result card, pace/energy extensions, disclaimer, history section) and removed duplicate disclaimer lookups.
+    - extracted default calculator/input controls into `_buildDefaultCalculatorSection(...)` while preserving unit-picker, add-widget, reset-defaults, and convert-button behavior contracts.
+    - goal: reduce top-level `build()` nesting and isolate high-churn UI blocks without behavior drift.
+
+## Latest changes (2026-02-20)
+- XL-X phase A completed (dashboard/hero hardening):
+  - `dashboard_board.dart`:
+    - added place-signature guard around `liveData.ensureSeeded(...)` so repeated rebuilds do not redundantly re-run seeding work when home/destination context is unchanged.
+    - extracted shared legacy-anchor migration/offset logic into helpers (`_legacyAnchors`, `_heroAnchorOffsetForCols`) to remove duplicated anchor-shift code paths.
+    - cleaned stale historical comments and replaced with concise current layout contracts.
+  - `dashboard_screen.dart`:
+    - centralized weather auto-refresh stale/interval thresholds into class constants to keep refresh policy explicit and consistent.
+  - `places_hero_v2.dart`:
+    - replaced stale historical comments with current readability/layout contract comments.
+  - behavior contract intent: no UX changes; maintainability and drift reduction only.
+  - validation: full `tools/verify.sh` passed (`docs verify`, `dart format .`, `flutter analyze`, `flutter test`).
+  - next: XL-X phase B (tool modal decomposition + targeted render-cost cleanup).
+
+## Latest changes (2026-02-20)
+- XL-X phase A started (hardening/performance prep):
+  - `dashboard_board.dart`:
+    - extracted shared legacy-anchor migration/offset logic into helpers (`_legacyAnchors`, `_heroAnchorOffsetForCols`) to remove duplicated anchor-shift code paths.
+  - `dashboard_screen.dart`:
+    - centralized weather auto-refresh stale/interval thresholds into class constants to keep refresh policy explicit and consistent.
+  - behavior contract intent: no UX changes; maintainability and drift reduction only.
+  - validation: full `tools/verify.sh` passed (`docs verify`, `dart format .`, `flutter analyze`, `flutter test`).
+
+## Latest changes (2026-02-20)
+- XL-W3 completed:
+  - added docs verification tooling:
+    - `docs/tools/verify_docs.sh`
+  - hardened verify pipeline and wrapper pathing:
+    - `tools/verify.sh`
+    - `app/unitana/tools/verify.sh`
+  - added ownership/source-of-truth metadata blocks to top-level product docs:
+    - `docs/00-mvp-truth.md`
+    - `docs/01-flows.md`
+    - `docs/02-wireframes.md`
+    - `docs/03-ux-package.md`
+  - full verify gate passed via `tools/verify.sh` (`docs verify`, `dart format .`, `flutter analyze`, `flutter test`).
+- Pack O update:
+  - `PACK_O_contextual_tutorial_overlays_by_tool_family` is now **iceboxed** by product direction (tutorials paused).
+- Pack V closure:
+  - `PACK_V_emergency_weather_system_and_marquee_states` is now **done**.
+  - added closure artifact:
+    - `docs/ai/reference/PACK_V_EMERGENCY_WEATHER_CLOSURE_XL_W3.md`
+
+## Latest changes (2026-02-19)
+- XL-W combined phase (W1+W2) completed:
+  - rewrote top-level product docs to current runtime contracts:
+    - `docs/00-mvp-truth.md`
+    - `docs/01-flows.md`
+    - `docs/02-wireframes.md`
+    - `docs/03-ux-package.md`
+  - removed stale entrypoint drift and broken reference paths:
+    - `README.md`
+    - `app/unitana/README.md`
+    - `docs/README.md`
+  - next target moved to XL-W3 (docs IA verification tooling + ownership hardening).
+- XL-W kickoff (documentation + hardening planning):
+  - corrected stale/broken entry docs:
+    - `README.md`
+    - `app/unitana/README.md`
+    - `docs/README.md`
+  - added major execution plan:
+    - `docs/ai/reference/XL_W_DOCS_REALIGNMENT_AND_HARDENING_PLAN_2026-02-19.md`
+  - updated reference ownership index and forward prompt:
+    - `docs/ai/reference/REFERENCE_INDEX.md`
+    - `docs/ai/prompts/NEXT_CHAT_PROMPT.md`
 
 ## Latest changes (2026-02-13)
 - XL-V shipped (Clothing Sizes reference-only implementation):

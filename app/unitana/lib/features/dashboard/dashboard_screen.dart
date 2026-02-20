@@ -53,6 +53,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
   static const double _kAppBarTitleMaxFontSize = 28;
   static const double _kAppBarTitleMinFontSize = 18;
   static const double _kRefreshClusterVisualNudgeX = 10;
+  static const Duration _kWeatherAutoRefreshStaleAfter = Duration(minutes: 10);
+  static const Duration _kWeatherAutoRefreshMinInterval = Duration(seconds: 30);
   static const String _kBuildVersion = String.fromEnvironment(
     'UNITANA_APP_VERSION',
     defaultValue: 'dev',
@@ -1803,12 +1805,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     final last = _liveData.lastRefreshedAt;
     final now = DateTime.now();
-    const staleAfter = Duration(minutes: 10);
-    final isStale = last == null || now.difference(last) > staleAfter;
+    final isStale =
+        last == null || now.difference(last) > _kWeatherAutoRefreshStaleAfter;
     if (!isStale) return;
 
     final prev = _lastAutoWeatherRefreshAttemptAt;
-    if (prev != null && now.difference(prev) < const Duration(seconds: 30)) {
+    if (prev != null &&
+        now.difference(prev) < _kWeatherAutoRefreshMinInterval) {
       return;
     }
     _lastAutoWeatherRefreshAttemptAt = now;

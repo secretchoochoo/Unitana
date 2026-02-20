@@ -252,9 +252,9 @@
       ],
       "priority": "P2",
       "size": "XL",
-      "status": "planned",
-      "status_updated": "2026-02-08",
-      "status_note": "Contextual tutorial overlays remain unscheduled until post-core readiness."
+      "status": "iceboxed",
+      "status_updated": "2026-02-20",
+      "status_note": "Iceboxed by product direction; tutorials are intentionally paused for now."
     },
     {
       "id": "PACK_P_licenses_information_architecture",
@@ -367,9 +367,9 @@
       ],
       "priority": "P1",
       "size": "XL",
-      "status": "in_progress",
-      "status_updated": "2026-02-09",
-      "status_note": "XL-D phase shipped: deterministic emergency taxonomy with precedence/fallback, hero alert cues, weather-sheet alert readouts, and regression coverage."
+      "status": "done",
+      "status_updated": "2026-02-20",
+      "status_note": "Closed in XL-W3 with deterministic emergency taxonomy/UX shipped and closure artifact `docs/ai/reference/PACK_V_EMERGENCY_WEATHER_CLOSURE_XL_W3.md`."
     },
     {
       "id": "PACK_W_lofi_audio_opt_in",
@@ -422,8 +422,27 @@
     }
   ],
   "current_state": {
-    "current_slice": "XL-V shipped (Clothing Sizes reference-only implementation). Next is XL-W for usage quality evaluation and expansion/defer decision.",
+    "current_slice": "XL-X phase C queued (profile/wizard path cleanup + lifecycle hardening). XL-X phase B complete; Pack O iceboxed; Pack V closed.",
     "notes": [
+      "XL-X phase B completed on 2026-02-20: extracted tool-body routing into `_buildToolBody(...)` and isolated default flow into `_buildDefaultToolBody(...)` in `tool_modal_bottom_sheet.dart`, reducing top-level `build()` branching and avoiding default-only session/policy work on specialized tool paths.",
+      "XL-X phase B completed on 2026-02-20: full `tools/verify.sh` passed after decomposition bundle (`docs verify`, `dart format .`, `flutter analyze`, `flutter test`).",
+      "XL-X phase B started on 2026-02-20: extracted tool-modal header and currency-status banner into dedicated helper builders in `tool_modal_bottom_sheet.dart` to reduce monolithic `build()` depth without behavior change.",
+      "XL-X phase B follow-through on 2026-02-20: extracted tool-modal history panel and clear-history actions into `_buildHistorySection(...)` in `tool_modal_bottom_sheet.dart` to isolate high-churn UI blocks while preserving interaction contracts.",
+      "XL-X phase B follow-through on 2026-02-20: extracted post-conversion result/insights/disclaimer/history stack into `_buildDefaultPostConversionSection(...)` and removed duplicate disclaimer computation within the default tool body path.",
+      "XL-X phase B follow-through on 2026-02-20: extracted default calculator/input controls into `_buildDefaultCalculatorSection(...)` to reduce `build()` complexity while preserving existing keys, add-widget flow, and unit-swap behavior contracts.",
+      "XL-X phase A completed on 2026-02-20: reduced dashboard rebuild pressure by guarding `liveData.ensureSeeded(...)` behind place-signature checks in `dashboard_board.dart`.",
+      "XL-X phase A completed on 2026-02-20: removed stale historical comments and tightened contract-oriented layout comments in `dashboard_board.dart` and `places_hero_v2.dart`.",
+      "XL-X phase A completed on 2026-02-20: full `tools/verify.sh` passed after hardening changes (`docs verify`, `dart format .`, `flutter analyze`, `flutter test`).",
+      "XL-X phase A started on 2026-02-20: extracted shared legacy-anchor migration logic in `dashboard_board.dart` to remove duplicated anchor offset code paths.",
+      "XL-X phase A started on 2026-02-20: centralized weather auto-refresh stale/interval thresholds in `dashboard_screen.dart` for explicit refresh-policy contracts.",
+      "XL-X phase A validation on 2026-02-20: full `tools/verify.sh` passed (`docs verify`, `dart format .`, `flutter analyze`, `flutter test`).",
+      "XL-W3 completed on 2026-02-20: added docs verification script (`docs/tools/verify_docs.sh`), hardened verify pipeline (`tools/verify.sh`, `app/unitana/tools/verify.sh`), and added ownership metadata to docs `00-03`.",
+      "Pack O was iceboxed on 2026-02-20 by product direction; tutorial overlays are paused.",
+      "Pack V closed on 2026-02-20 with closure artifact `docs/ai/reference/PACK_V_EMERGENCY_WEATHER_CLOSURE_XL_W3.md`.",
+      "XL-W combined W1+W2 completed on 2026-02-19: rewrote `docs/00-mvp-truth.md`, `docs/01-flows.md`, `docs/02-wireframes.md`, and `docs/03-ux-package.md` to match current runtime behavior.",
+      "XL-W kickoff on 2026-02-19: corrected stale entry docs (`README.md`, `app/unitana/README.md`, `docs/README.md`) and fixed broken references to missing AI prompt/workflow files.",
+      "XL-W kickoff on 2026-02-19: added `docs/ai/reference/XL_W_DOCS_REALIGNMENT_AND_HARDENING_PLAN_2026-02-19.md` to drive docs realignment and hotspot hardening execution.",
+      "XL-W kickoff on 2026-02-19: updated `REFERENCE_INDEX.md` and `NEXT_CHAT_PROMPT.md` to prioritize documentation truth pass before further feature expansion.",
       "XL-V shipped on 2026-02-13: activated `clothing_sizes` as a reference-only lookup matrix in picker + modal surfaces.",
       "XL-V shipped on 2026-02-13: added always-visible uncertainty disclaimer and explicit missing-mapping (`—`) behavior to avoid inferred fit claims.",
       "XL-V shipped on 2026-02-13: added deterministic regression tests for picker activation, matrix copy behavior, disclaimer visibility, and missing mapping rows.",

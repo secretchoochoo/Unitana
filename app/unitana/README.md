@@ -1,16 +1,36 @@
-# Unitana
+# Unitana Flutter App
 
-A new Flutter project.
+## Commands
 
-## Getting Started
+```bash
+flutter pub get
+dart format .
+flutter analyze
+flutter test
+flutter run
+```
 
-This project is a starting point for a Flutter application.
+## Main Paths
 
-A few resources to get you started if this is your first Flutter project:
+- Entry: `lib/main.dart`
+- App shell/state: `lib/app/`
+- Dashboard feature: `lib/features/dashboard/`
+- First-run wizard: `lib/features/first_run/`
+- Shared city/data layer: `lib/data/`
+- Localization: `lib/l10n/`
+- Tests: `test/`
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+## Quality Gates
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+Run these before committing:
+
+```bash
+dart format .
+flutter analyze
+flutter test
+```
+
+## Notes
+
+- Goldens are opt-in and are not required for standard test runs.
+- Prefer stable `ValueKey` contracts in UI tests.

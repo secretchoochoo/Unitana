@@ -13,6 +13,7 @@ Canonical map for `docs/ai/reference` ownership so handoff/context/prompt flows 
 - `PACK_J_WEATHER_POSITIONING_CLOSURE_XL_J.md`
 - `PACK_K_PROFILE_AUTOSUGGEST_CLOSURE_SPEC_XL_K.md`
 - `PACK_L_THEME_PARITY_CLOSURE_SPEC_XL_K.md`
+- `PACK_V_EMERGENCY_WEATHER_CLOSURE_XL_W3.md`
 - `PACK_W_LOFI_AUDIO_SPIKE_XL_M.md`
 - `PACK_Y_WEARABLES_PLATFORM_PLAN_XL_O.md`
 - `PACK_X_RETRO_BASELINE_XL_H2.md`
@@ -35,6 +36,7 @@ Canonical map for `docs/ai/reference` ownership so handoff/context/prompt flows 
 - `SCENEKEY_CATALOG.md`
 - `SCENEKEY_REDESIGN_AUDIT.md`
 - `WEATHERAPI_KEY_MANAGEMENT.md`
+- `XL_W_DOCS_REALIGNMENT_AND_HARDENING_PLAN_2026-02-19.md`
 
 ## Superseded / Archival (Do Not Treat As Current Contract)
 - `SETTINGS_BACKLOG_GPS_THEME.md` (superseded by Pack K/Pack L closure specs + context backlog statuses)

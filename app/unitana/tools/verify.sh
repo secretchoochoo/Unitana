@@ -1,10 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Thin wrapper to run merge gates + lightweight platform icon audit.
-# Can be run from anywhere.
+# App-local wrapper to monorepo verify entrypoint.
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd -- "${SCRIPT_DIR}/.." && pwd)"
+REPO_ROOT="$(cd -- "${SCRIPT_DIR}/../../.." && pwd)"
 
-"${REPO_ROOT}/app/unitana/tools/verify.sh"
+"${REPO_ROOT}/tools/verify.sh" "$@"

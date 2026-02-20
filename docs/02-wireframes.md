@@ -1,97 +1,102 @@
-# Unitana - Wireframes (MVP, aligned to code)
+# Unitana — Wireframes (Current Behavior Contracts)
 
-This document reflects the current implemented flows in the Flutter repo. It is intentionally concrete so a new contributor can map diagrams to files quickly.
+Updated: 2026-02-19
 
-## High-level navigation
+## Metadata
+- Owner: Product + Design + Engineering
+- Source of truth: Implemented surfaces in `app/unitana/lib/features/dashboard/` and `app/unitana/lib/features/first_run/`
+- Last validated against code: 2026-02-19
 
-```mermaid
-flowchart TD
-  A[UnitanaApp] --> B{Persisted state loaded?}
-  B -->|Loading| C[Startup shell: CircularProgressIndicator]
-  B -->|Loaded| D{Onboarded? (defaultPlaceId + places)}
-  D -->|No| FR[FirstRunScreen]
-  D -->|Yes| DS[DashboardScreen]
+This is a contract-level wireframe spec aligned to implemented surfaces. It is not pixel art.
 
-  DS -->|Reset| R[UnitanaAppState.resetAll]
-  R --> DS2[PushAndRemoveUntil: new UnitanaApp]
-  DS2 --> B
-```
-
-## First Run Wizard
-
-Implementation: `lib/features/first_run/first_run_screen.dart`
-
-Wizard steps are internal state, not separate routes.
-
-```mermaid
-stateDiagram-v2
-  [*] --> Splash
-  Splash --> Profile: Start
-  Profile --> Home: Continue
-  Home --> Destination: Continue
-  Destination --> Review: Continue
-  Review --> Home: Tap Home card
-  Review --> Destination: Tap Destination card
-  Review --> Profile: Tap Profile tile
-  Home --> Profile: Back
-  Destination --> Home: Back
-  Review --> Destination: Back
-  Review --> [*]: Finish (saves Places)
-```
-
-### City selection
-
-City selection is a bottom sheet modal.
-
-Implementation:
-- City picker UI: `lib/widgets/city_picker.dart`
-- City data loading: `lib/data/city_repository.dart` (JSON asset with curated fallback)
-
-```mermaid
-sequenceDiagram
-  participant U as User
-  participant FR as FirstRunScreen
-  participant BS as Modal Bottom Sheet
-  participant CP as CityPicker
-
-  U->>FR: Tap "Pick a city"
-  FR->>BS: showModalBottomSheet(isScrollControlled: true)
-  BS->>CP: build CityPicker(cities, selected)
-  U->>CP: Search + tap a city
-  CP-->>BS: Navigator.pop(city)
-  BS-->>FR: returns selected City
-  FR->>FR: apply city defaults (units/clock) if not touched
-```
-
-### Review screen layout invariant
-
-On the Review step, each of these should span the available width:
-- Profile tile
-- Home card
-- Destination card
-
-Implementation note: the Review step uses a `Column` with an `Expanded(SingleChildScrollView(...))` so cards remain full width and do not collapse into side-by-side layouts.
-
-## Dashboard
-
-Implementation: `lib/features/dashboard/dashboard_screen.dart`
-
-Current state is a placeholder with a Reset action to re-enter onboarding.
+## A) Startup routing
 
 ```mermaid
 flowchart TD
-  DS[DashboardScreen] -->|Reset| R[UnitanaAppState.resetAll]
-  R --> N[Navigator.pushAndRemoveUntil(UnitanaApp)]
-  N --> FR[FirstRunScreen]
+  A[App launch] --> B[Load persisted state]
+  B --> C{Has runnable profile context?}
+  C -->|No| D[First-run wizard]
+  C -->|Yes| E[Dashboard]
 ```
 
-## Places and editing flows
+## B) First-run / New profile wizard
 
-Implemented today:
-- A single profile name stored alongside Places
-- Two Places created by onboarding: `Home` (living) and `Destination` (visiting)
+```mermaid
+flowchart LR
+  S1[Step 1 Welcome] --> S2[Step 2 Places\nHome + Destination + hero preview]
+  S2 --> S3[Step 3 Confirm\nName + Theme + Lo-fi]
+  S3 --> SAVE[Save profile]
+  SAVE --> DASH[Dashboard]
+```
 
-Not implemented yet (intent only, not diagrammed here):
-- Place switching sheet
-- Place editor screens
-- Reordering / deletion rules
+Wireframe notes:
+- Stepper is controlled (not free-swipe onboarding).
+- Step 2 shows dual-place context with live preview feedback.
+- Step 3 is final commit point and includes profile personalization controls.
+
+## C) Dashboard shell
+
+```mermaid
+flowchart TD
+  H[Hero + reality toggle] --> G[Widget grid]
+  G --> T[Tool modals]
+  H --> R[Pull-to-refresh]
+  H --> M[Unified settings menu]
+```
+
+Wireframe notes:
+- Hero always prioritizes home/destination comparability.
+- Widget grid supports edit/reorder/add/remove workflows.
+- Tools and menu buttons are persistent anchor actions.
+
+## D) Unified settings surface
+
+```mermaid
+flowchart TD
+  U[Menu / Settings sheet] --> P[Profiles]
+  U --> E[Edit Widgets]
+  U --> RD[Reset Defaults]
+  U --> DT[Developer Tools]
+  U --> TH[Theme]
+  U --> LG[Language]
+  U --> AS[Auto-suggest profile]
+  U --> LF[Lo-fi audio]
+```
+
+Wireframe notes:
+- Settings is a single consolidated sheet pattern.
+- Developer Tools visibility depends on compile-time flag.
+
+## E) Tool modal families
+
+### 1. Converter modal
+- Header (tool name + close)
+- Input row
+- Unit/system row + swap (where applicable)
+- Run/convert action
+- Result block
+- History block
+
+### 2. Matrix/lookup modal
+- Header
+- Matrix controls (pagination/system slices)
+- Table body (reference + value columns)
+- Copy-by-cell interaction
+- Disclaimer/uncertainty copy where needed (for example clothing)
+
+### 3. Dedicated modal
+- Domain-specific cards and controls (for example Weather, Time, Jet Lag, Tip, Tax)
+- Same global modal framing and result/history expectations where relevant
+
+## F) Top-6 default tile strip (initial layout)
+- Temperature
+- Currency
+- Baking
+- Distance
+- Time
+- Price Compare
+
+## G) Known visual constraints
+- Small-screen readability is first-class for matrix tools.
+- Stale/freshness indicators must remain visible without overwhelming primary values.
+- Tutorial overlays are currently removed from runtime and are not part of this wireframe baseline.

@@ -1,76 +1,55 @@
 # Unitana
 
-```
-U   U  N   N  I  TTTTT  AAAAA  N   N  AAAAA
-U   U  NN  N  I    T    A   A  NN  N  A   A
-U   U  N N N  I    T    AAAAA  N N N  AAAAA
-U   U  N  NN  I    T    A   A  N  NN  A   A
- UUU   N   N  I    T    A   A  N   N  A   A
-```
+Unitana is a travel-first dual-reality dashboard for home/destination context:
+time, weather, currency, and conversion tools in one surface.
 
-Unitana is a travel-first “decoder ring” app that helps people live in two measurement systems at once, so they learn through exposure.
+## Quick Start
 
-## Quick start
-
-From the Flutter project root:
+From `app/unitana`:
 
 ```bash
 flutter pub get
+dart format .
 flutter analyze
 flutter test
 flutter run
 ```
 
-## Project layout
-
-- `lib/main.dart` – app entry
-- `lib/features/first_run/` – first-run setup wizard
-  - `first_run_screen.dart` – the wizard UI and state
-- `test/` – basic widget test scaffold
-
-## First-run wizard
-
-The wizard is implemented as a controlled `PageView` (no free swipe by default) with:
-
-- A single state owner (`_FirstRunScreenState`) that holds draft values for:
-  - profile name
-  - home + destination place configuration
-- A bottom navigation/control area that:
-  - gates forward navigation to keep the user in a simple, linear flow
-  - allows “back” and “next” where appropriate
-  - exposes “Finish” on the review step
-
-The review step renders “card” style summaries for each place. These cards are intended to become the visual basis for the dashboard widgets.
-
-## Documentation
-
-Project documentation lives in `docs/`:
-
-- `docs/postmortems/` – what we learned while building and stabilizing flows
-- `docs/architecture/` – current state diagrams and component structure
-- `docs/ai/` – prompts, workflows, and guidance for AI-assisted development
-- `docs/context/` – compact machine-ingestible context (JSON) used to seed new chats
-
-Start here:
-
-- `docs/ai/WORKING_WITH_CHATGPT.md`
-- `docs/ai/prompts/NEXT_CHAT_PROMPT.md`
-
-
-## Local quality checks
-
-Run the standard verification sequence:
+From repo root:
 
 ```bash
 ./tools/verify.sh
 ```
 
-## Testing notes
+## Repo Layout
 
-- Smoke and regression widget tests live in `app/unitana/test/`.
-- Prefer `ValueKey('...')` selectors in tests, rather than matching on visible copy.
+- `app/unitana/`: Flutter app source and tests.
+- `docs/`: product, architecture, AI handoff/reference, and operations docs.
+- `tools/`: repo-level scripts/hooks.
 
-Optional: enable a local pre-commit hook so you can’t accidentally commit code that fails analyze/test:
+## Key App Surfaces
+
+- Dashboard shell: `app/unitana/lib/features/dashboard/dashboard_screen.dart`
+- Hero and weather cockpit: `app/unitana/lib/features/dashboard/widgets/places_hero_v2.dart`
+- Tool modal surface: `app/unitana/lib/features/dashboard/widgets/tool_modal_bottom_sheet.dart`
+- First-run wizard: `app/unitana/lib/features/first_run/first_run_screen.dart`
+
+## Documentation Start Points
+
+- `docs/README.md`
+- `docs/00-mvp-truth.md`
+- `docs/ai/handoff/CURRENT_HANDOFF.md`
+- `docs/ai/context_db.json`
+- `docs/ai/prompts/NEXT_CHAT_PROMPT.md`
+- `docs/ai/reference/REFERENCE_INDEX.md`
+
+## Testing Notes
+
+- Tests live in `app/unitana/test/`.
+- Prefer `ValueKey('...')` selectors over visible-copy matching.
+- Goldens are opt-in only; normal `flutter test` should pass without golden updates.
+
+## Git Hook (Optional)
 
 ```bash
 git config core.hooksPath tools/githooks

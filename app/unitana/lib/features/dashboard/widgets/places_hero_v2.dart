@@ -123,8 +123,8 @@ class PlacesHeroV2 extends StatelessWidget {
             // Keep these values whole-numbered to avoid sub-pixel rounding
             // overflows in widget tests.
             final padH = isCompact ? 9.0 : 10.0;
-            // Pack E kickoff: reclaim a little vertical budget from chrome so
-            // the marquee can use more of the hero body space on phones.
+            // Reclaim vertical budget from outer chrome so the marquee remains
+            // readable on compact phones.
             final padV = isCompact ? 0.0 : 8.0;
             final gap = isCompact ? 4.0 : 5.0;
 
@@ -570,9 +570,9 @@ class _HeroBandsBody extends StatelessWidget {
         final colGap = gap;
         final stackGap = compact ? 4.0 : 2.0;
 
-        // Option 3: remove the middle animation bay.
-        // Sizing priority: Sunrise/Wind (right) gets the most space;
-        // Env/Currency (left) stays readable and never collapses into a stamp.
+        // Sizing priority:
+        // - Sunrise/Wind (right) gets the larger share.
+        // - Env/Currency (left) remains readable and non-collapsed.
         final leftMin = 150.0;
 
         final available = (innerW - colGap).clamp(0.0, double.infinity);

@@ -28,16 +28,11 @@ import 'unitana_tile.dart';
 import 'weather_summary_bottom_sheet.dart';
 
 // Layout constants for the dashboard grid.
-// The board measures itself based on available width and derives tile geometry
-// from these values.
-// Baseline grid height. This intentionally shows a few empty slots even when the
-// user is not in edit mode, so the “add” affordance is discoverable.
 //
-// Phone (2 cols): +2 rows equals an additional 2x2 of visible capacity.
-// Tablet (3 cols): keep proportionally similar breathing room.
-// D2: add one more baseline row of visible capacity.
-// Phone (2 cols): +1 row = +2 additional slots visible by default.
-// Tablet (3 cols): +1 row keeps parity with the denser phone baseline.
+// Baseline row counts intentionally leave visible empty slots so add-widget
+// targets remain discoverable in non-edit mode.
+// - Phone (2 cols): 9 rows.
+// - Tablet (3 cols): 8 rows.
 const int _minRowsPhone = 9;
 const int _minRowsTablet = 8;
 const double _gap = 12.0;
@@ -103,6 +98,7 @@ class _DashboardBoardState extends State<DashboardBoard>
   final Map<String, GlobalKey> _toolTileKeys = <String, GlobalKey>{};
   final Set<String> _pulsingToolIds = <String>{};
   final Map<String, Timer> _pulseTimers = <String, Timer>{};
+  String? _lastSeedSignature;
 
   late final AnimationController _wiggle;
 
@@ -199,25 +195,7 @@ class _DashboardBoardState extends State<DashboardBoard>
 
   Future<void> _freezeVisibleAnchorsForEdit() async {
     final cols = widget.availableWidth >= 520 ? 3 : 2;
-
-    const int heroRows = 2;
-    final legacyAnchors = <int>[];
-    if (!widget.includePlacesHero) {
-      for (final t in ToolDefinitions.defaultTiles) {
-        final idx = widget.layout.defaultToolAnchorIndex(t.id);
-        if (idx != null) legacyAnchors.add(idx);
-      }
-      for (final i in widget.layout.items) {
-        final a = i.anchor;
-        if (a != null) legacyAnchors.add(a.index);
-      }
-    }
-
-    final bool needsLegacyHeroOffset =
-        !widget.includePlacesHero && legacyAnchors.isNotEmpty
-        ? legacyAnchors.map((a) => a ~/ cols).reduce(math.min) >= heroRows
-        : false;
-    final heroAnchorOffset = needsLegacyHeroOffset ? cols * heroRows : 0;
+    final heroAnchorOffset = _heroAnchorOffsetForCols(cols);
     int adjustAnchor(int raw) =>
         heroAnchorOffset == 0 ? raw : math.max(0, raw - heroAnchorOffset);
 
@@ -278,6 +256,29 @@ class _DashboardBoardState extends State<DashboardBoard>
     if (mounted) {
       setState(() {});
     }
+  }
+
+  List<int> _legacyAnchors() {
+    if (widget.includePlacesHero) return const <int>[];
+    final legacyAnchors = <int>[];
+    for (final t in ToolDefinitions.defaultTiles) {
+      final idx = widget.layout.defaultToolAnchorIndex(t.id);
+      if (idx != null) legacyAnchors.add(idx);
+    }
+    for (final i in widget.layout.items) {
+      final a = i.anchor;
+      if (a != null) legacyAnchors.add(a.index);
+    }
+    return legacyAnchors;
+  }
+
+  int _heroAnchorOffsetForCols(int cols) {
+    const heroRows = 2;
+    final legacyAnchors = _legacyAnchors();
+    if (legacyAnchors.isEmpty) return 0;
+    final minRow = legacyAnchors.map((a) => a ~/ cols).reduce(math.min);
+    final needsLegacyHeroOffset = minRow >= heroRows;
+    return needsLegacyHeroOffset ? cols * heroRows : 0;
   }
 
   @override
@@ -395,6 +396,16 @@ class _DashboardBoardState extends State<DashboardBoard>
     );
   }
 
+  void _maybeEnsureSeeded(Place? home, Place? dest) {
+    final signature = '${home?.id ?? 'none'}|${dest?.id ?? 'none'}';
+    if (_lastSeedSignature == signature) return;
+    _lastSeedSignature = signature;
+    widget.liveData.ensureSeeded([
+      if (home != null) home,
+      if (dest != null) dest,
+    ]);
+  }
+
   @override
   void dispose() {
     for (final timer in _pulseTimers.values) {
@@ -449,42 +460,14 @@ class _DashboardBoardState extends State<DashboardBoard>
     final home = _pickHome(places);
     final dest = _pickDestination(places);
 
-    // Deterministic mock/demo data: seed per-place snapshots (weather, sun, AQI, pollen)
-    // before any tiles attempt to read them. This is idempotent and guarded internally.
-    widget.liveData.ensureSeeded([
-      if (home != null) home,
-      if (dest != null) dest,
-    ]);
+    // Seed per-place snapshots when place context changes.
+    _maybeEnsureSeeded(home, dest);
 
     final cols = widget.availableWidth >= 520 ? 3 : 2;
 
-    // When the Places hero moved into the sliver header, some persisted
-    // tile anchor indices still assume the hero consumes the first 2 rows.
-    // We only apply the offset removal when the anchors *look* legacy.
-    //
-    // Why this matters: applying a row-based offset unconditionally can break
-    // reorder persistence across breakpoints (2 cols vs 3 cols), because the
-    // same anchors would be "shifted" differently when the column count changes.
-    const int heroRows = 2;
-    final legacyAnchors = <int>[];
-
-    if (!widget.includePlacesHero) {
-      for (final t in ToolDefinitions.defaultTiles) {
-        final idx = widget.layout.defaultToolAnchorIndex(t.id);
-        if (idx != null) legacyAnchors.add(idx);
-      }
-      for (final i in widget.layout.items) {
-        final a = i.anchor;
-        if (a != null) legacyAnchors.add(a.index);
-      }
-    }
-
-    final bool needsLegacyHeroOffset =
-        !widget.includePlacesHero && legacyAnchors.isNotEmpty
-        ? legacyAnchors.map((a) => a ~/ cols).reduce(math.min) >= heroRows
-        : false;
-
-    final heroAnchorOffset = needsLegacyHeroOffset ? cols * heroRows : 0;
+    // Some persisted anchors still encode the old in-grid hero offset.
+    // Remove it only when anchors clearly match that legacy shape.
+    final heroAnchorOffset = _heroAnchorOffsetForCols(cols);
 
     int adjustAnchor(int raw) =>
         heroAnchorOffset == 0 ? raw : math.max(0, raw - heroAnchorOffset);

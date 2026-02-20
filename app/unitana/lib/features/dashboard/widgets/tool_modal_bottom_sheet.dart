@@ -6509,6 +6509,775 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
     );
   }
 
+  Widget _buildSheetHeader({
+    required Color accent,
+    required Color textPrimary,
+    required Color panelBorder,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+      child: Row(
+        children: [
+          // Balance the trailing close action so the title reads centered.
+          const SizedBox(width: 44),
+          Expanded(
+            child: Center(
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(widget.tool.icon, color: accent, size: 28),
+                  const SizedBox(width: 12),
+                  Flexible(
+                    child: Text(
+                      DashboardCopy.toolDisplayName(
+                        context,
+                        toolId: widget.tool.id,
+                        fallback: widget.tool.title,
+                      ),
+                      key: ValueKey('tool_title_${widget.tool.id}'),
+                      maxLines: 2,
+                      softWrap: true,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
+                      style:
+                          (Theme.of(context).textTheme.headlineSmall ??
+                                  const TextStyle())
+                              .merge(
+                                GoogleFonts.robotoSlab(
+                                  fontWeight: FontWeight.w800,
+                                  color: textPrimary,
+                                ),
+                              ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          Tooltip(
+            message: DashboardCopy.closeToolTooltip(context),
+            child: OutlinedButton(
+              key: ValueKey('tool_close_${widget.tool.id}'),
+              style: OutlinedButton.styleFrom(
+                minimumSize: const Size(44, 34),
+                padding: const EdgeInsets.symmetric(horizontal: 10),
+                visualDensity: VisualDensity.compact,
+                side: BorderSide(color: panelBorder),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              onPressed: () => Navigator.of(context).maybePop(),
+              child: Icon(
+                Icons.close_rounded,
+                size: 18,
+                color: textPrimary.withAlpha(220),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCurrencyStatusBanner({
+    required String text,
+    required Color color,
+    required bool canRetryNow,
+    required Color panelBg,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+      child: DecoratedBox(
+        key: ValueKey('tool_currency_status_${widget.tool.id}'),
+        decoration: BoxDecoration(
+          color: panelBg,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: color.withAlpha(170)),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                text,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: color,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              if (canRetryNow && widget.onRetryCurrencyNow != null) ...[
+                const SizedBox(height: 6),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: OutlinedButton.icon(
+                    key: ValueKey('tool_currency_retry_${widget.tool.id}'),
+                    onPressed: () async {
+                      final refreshingRatesLabel =
+                          DashboardCopy.refreshingRatesNotice(context);
+                      final refreshRatesFailedLabel =
+                          DashboardCopy.refreshRatesFailedNotice(context);
+                      try {
+                        await widget.onRetryCurrencyNow!.call();
+                        if (!mounted) return;
+                        _showNotice(
+                          refreshingRatesLabel,
+                          UnitanaNoticeKind.info,
+                        );
+                      } catch (_) {
+                        if (!mounted) return;
+                        _showNotice(
+                          refreshRatesFailedLabel,
+                          UnitanaNoticeKind.error,
+                        );
+                      }
+                    },
+                    icon: const Icon(Icons.refresh_rounded, size: 16),
+                    label: Text(DashboardCopy.retryRatesCta(context)),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHistorySection({
+    required List<ConversionRecord> history,
+    required Color textMuted,
+    required Color panelBg,
+    required Color panelBorder,
+  }) {
+    return Column(
+      children: [
+        const SizedBox(height: 12),
+        const Divider(height: 1),
+        const SizedBox(height: 12),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: Wrap(
+            spacing: 10,
+            runSpacing: 4,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              Text(
+                DashboardCopy.historyTitle(context),
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w800,
+                  color: _ToolModalThemePolicy.headingTone(context),
+                ),
+              ),
+              Text(
+                DashboardCopy.historyCopyHint(context),
+                style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                  fontStyle: FontStyle.italic,
+                  color: textMuted,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 8),
+        SizedBox(
+          height: math.min(MediaQuery.sizeOf(context).height * 0.28, 280.0),
+          child: Container(
+            decoration: BoxDecoration(
+              color: panelBg,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: panelBorder),
+            ),
+            child: history.isEmpty
+                ? const _EmptyHistory()
+                : ListView.builder(
+                    key: ValueKey('tool_history_list_${widget.tool.id}'),
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    itemCount: history.length,
+                    itemBuilder: (context, index) {
+                      final r = history[index];
+                      final isMostRecent = index == 0;
+
+                      final inputLabel = r.inputLabel;
+                      final outputLabel = r.outputLabel;
+                      final timestamp = r.timestamp
+                          .toLocal()
+                          .toIso8601String()
+                          .substring(11, 19);
+
+                      return InkWell(
+                        key: ValueKey('tool_history_${widget.tool.id}_$index'),
+                        onTap: () async {
+                          final toCopy = _stripKnownUnitSuffix(r.outputLabel);
+                          await Clipboard.setData(ClipboardData(text: toCopy));
+                          if (!mounted) return;
+                          _showNotice(
+                            'Copied result',
+                            UnitanaNoticeKind.success,
+                          );
+                        },
+                        onLongPress: () async {
+                          final preservedText = _controller.text;
+
+                          final raw = _stripKnownUnitSuffix(r.inputLabel);
+                          final toCopy = _trimTrailingZerosForClipboard(raw);
+                          await Clipboard.setData(ClipboardData(text: toCopy));
+                          if (!mounted) return;
+
+                          // Guard against accidental "restore/edit" regressions.
+                          if (_controller.text != preservedText) {
+                            _controller
+                              ..text = preservedText
+                              ..selection = TextSelection.collapsed(
+                                offset: preservedText.length,
+                              );
+                          }
+                          _showNotice(
+                            'Copied input',
+                            UnitanaNoticeKind.success,
+                          );
+                        },
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    _TerminalLine(
+                                      prompt: '>',
+                                      input: inputLabel,
+                                      output: outputLabel,
+                                      emphasize: isMostRecent,
+                                      arrowColor: isMostRecent
+                                          ? _ToolModalThemePolicy.headingTone(
+                                              context,
+                                            )
+                                          : _ToolModalThemePolicy.textMuted(
+                                              context,
+                                            ),
+                                    ),
+                                    const SizedBox(height: 6),
+                                    Text(
+                                      timestamp,
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .labelSmall
+                                          ?.copyWith(color: textMuted),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Icon(
+                                Icons.copy_rounded,
+                                size: 16,
+                                color: textMuted.withAlpha(200),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+          ),
+        ),
+        const SizedBox(height: 6),
+        Align(
+          alignment: Alignment.centerRight,
+          child: TextButton(
+            onPressed: history.isEmpty
+                ? null
+                : () async {
+                    final historyClearedLabel =
+                        DashboardCopy.historyClearedNotice(context);
+                    final ok = await _confirmClearHistory(context);
+                    if (!ok || !mounted) return;
+
+                    widget.session.clearHistory(widget.tool.id);
+                    setState(() {
+                      _controller.clear();
+                      _resultLine = null;
+                    });
+                    _showNotice(historyClearedLabel, UnitanaNoticeKind.success);
+                  },
+            style: TextButton.styleFrom(
+              padding: EdgeInsets.zero,
+              minimumSize: const Size(0, 0),
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              foregroundColor: _ToolModalThemePolicy.warningTone(context),
+            ),
+            child: Text(
+              DashboardCopy.clearHistoryButtonLabel(context),
+              style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                color: _ToolModalThemePolicy.warningTone(context),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDefaultPostConversionSection({
+    required Color accent,
+    required List<ConversionRecord> history,
+    required Color textMuted,
+    required Color panelBg,
+    required Color panelBorder,
+  }) {
+    final disclaimer = _toolDisclaimerCopy(context);
+    return Column(
+      children: [
+        const SizedBox(height: 12),
+        _ResultCard(
+          toolId: widget.tool.id,
+          lensId: widget.tool.lensId,
+          line: _resultLine,
+        ),
+        if (widget.tool.id == 'pace') ...[
+          const SizedBox(height: 10),
+          _buildPaceInsightsCard(context, accent),
+        ],
+        if (widget.tool.id == 'energy') ...[
+          const SizedBox(height: 10),
+          _buildEnergyPlannerCard(context, accent),
+        ],
+        if (disclaimer != null) ...[
+          const SizedBox(height: 10),
+          _buildDisclaimerCard(
+            context,
+            key: ValueKey('tool_disclaimer_${widget.tool.id}'),
+            text: disclaimer,
+          ),
+        ],
+        _buildHistorySection(
+          history: history,
+          textMuted: textMuted,
+          panelBg: panelBg,
+          panelBorder: panelBorder,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDefaultCalculatorSection({
+    required Color accent,
+    required Color textMuted,
+    required Color panelBorder,
+    required NumericInputPolicy numericPolicy,
+  }) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // The smallest supported test surface (320px wide) can overflow if we
+        // force the Convert button to live on the same row as the input.
+        final isNarrow = constraints.maxWidth <= 340;
+
+        final helperText = _toolInputCoachCopy(context);
+        final inputBlock = Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              DashboardCopy.editValueLabel(context),
+              style: Theme.of(
+                context,
+              ).textTheme.labelLarge?.copyWith(color: textMuted),
+            ),
+            const SizedBox(height: 6),
+            TextField(
+              key: ValueKey('tool_input_${widget.tool.id}'),
+              controller: _controller,
+              keyboardType: _requiresFreeformInput
+                  ? TextInputType.text
+                  : TextInputType.numberWithOptions(
+                      decimal: numericPolicy.allowDecimal,
+                      signed: numericPolicy.allowNegative,
+                    ),
+              inputFormatters: _requiresFreeformInput
+                  ? const <TextInputFormatter>[]
+                  : <TextInputFormatter>[
+                      NumericTextInputFormatter(policy: numericPolicy),
+                    ],
+              decoration: InputDecoration(hintText: _toolInputHint(context)),
+              onSubmitted: (_) => _runConversion(),
+            ),
+            if (helperText != null) ...[
+              const SizedBox(height: 6),
+              Text(
+                helperText,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: textMuted,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+            const SizedBox(height: 8),
+            LayoutBuilder(
+              builder: (context, _) {
+                final canAdd =
+                    widget.canAddWidget && widget.onAddWidget != null;
+
+                Widget buildUnitsAndSwap() {
+                  final Widget unitsWidget = _supportsUnitPicker
+                      ? Column(
+                          key: ValueKey('tool_units_${widget.tool.id}'),
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                OutlinedButton(
+                                  key: ValueKey(
+                                    'tool_unit_from_${widget.tool.id}',
+                                  ),
+                                  style: OutlinedButton.styleFrom(
+                                    minimumSize: const Size(0, 34),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 10,
+                                      vertical: 0,
+                                    ),
+                                    visualDensity: VisualDensity.compact,
+                                    side: BorderSide(color: panelBorder),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(999),
+                                    ),
+                                  ),
+                                  onPressed: () => _pickUnit(isFrom: true),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        _fromUnit,
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .titleMedium
+                                            ?.copyWith(
+                                              fontWeight: FontWeight.w800,
+                                              color: accent,
+                                            ),
+                                      ),
+                                      Icon(
+                                        Icons.arrow_drop_down_rounded,
+                                        color: accent.withAlpha(220),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                  ),
+                                  child: Text(
+                                    '→',
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .titleLarge
+                                        ?.copyWith(
+                                          fontWeight: FontWeight.w900,
+                                          color: accent,
+                                        ),
+                                  ),
+                                ),
+                                OutlinedButton(
+                                  key: ValueKey(
+                                    'tool_unit_to_${widget.tool.id}',
+                                  ),
+                                  style: OutlinedButton.styleFrom(
+                                    minimumSize: const Size(0, 34),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 10,
+                                      vertical: 0,
+                                    ),
+                                    visualDensity: VisualDensity.compact,
+                                    side: BorderSide(color: panelBorder),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(999),
+                                    ),
+                                  ),
+                                  onPressed: () => _pickUnit(isFrom: false),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        _toUnit,
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .titleMedium
+                                            ?.copyWith(
+                                              fontWeight: FontWeight.w800,
+                                              color: accent,
+                                            ),
+                                      ),
+                                      Icon(
+                                        Icons.arrow_drop_down_rounded,
+                                        color: accent.withAlpha(220),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                            if (widget.tool.id == 'baking')
+                              Padding(
+                                padding: const EdgeInsets.only(top: 4, left: 4),
+                                child: Text(
+                                  '$_fromUnit → $_toUnit',
+                                  style: Theme.of(context).textTheme.bodySmall
+                                      ?.copyWith(
+                                        color: accent.withAlpha(230),
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                ),
+                              ),
+                          ],
+                        )
+                      : Text(
+                          '$_fromUnit → $_toUnit',
+                          key: ValueKey('tool_units_${widget.tool.id}'),
+                          style: Theme.of(context).textTheme.titleLarge
+                              ?.copyWith(
+                                fontWeight: FontWeight.w800,
+                                color: accent,
+                              ),
+                          overflow: TextOverflow.visible,
+                          softWrap: false,
+                        );
+
+                  final swapButton = OutlinedButton(
+                    key: ValueKey('tool_swap_${widget.tool.id}'),
+                    style: OutlinedButton.styleFrom(
+                      minimumSize: const Size(34, 34),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 0,
+                      ),
+                      visualDensity: VisualDensity.compact,
+                      side: BorderSide(color: panelBorder),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    onPressed: _swapUnits,
+                    child: PulseSwapIcon(
+                      color: accent.withAlpha(220),
+                      size: 18,
+                    ),
+                  );
+
+                  return Row(
+                    key: ValueKey('tool_units_row_${widget.tool.id}'),
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Expanded(
+                        child: Align(
+                          alignment: Alignment.centerLeft,
+                          child: SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            child: unitsWidget,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Align(alignment: Alignment.center, child: swapButton),
+                    ],
+                  );
+                }
+
+                Widget buildAddWidgetButton() {
+                  return OutlinedButton.icon(
+                    key: ValueKey('tool_add_widget_${widget.tool.id}'),
+                    style: OutlinedButton.styleFrom(
+                      minimumSize: const Size(0, 34),
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      visualDensity: VisualDensity.compact,
+                      side: BorderSide(color: panelBorder),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    onPressed: () async {
+                      final addedLabel = DashboardCopy.addedWidgetNotice(
+                        context,
+                        DashboardCopy.toolDisplayName(
+                          context,
+                          toolId: widget.tool.id,
+                          fallback: widget.tool.title,
+                        ),
+                      );
+                      final duplicateLabel =
+                          DashboardCopy.duplicateWidgetNotice(
+                            context,
+                            DashboardCopy.toolDisplayName(
+                              context,
+                              toolId: widget.tool.id,
+                              fallback: widget.tool.title,
+                            ),
+                          );
+                      final failedLabel = DashboardCopy.addWidgetFailedNotice(
+                        context,
+                      );
+                      try {
+                        await widget.onAddWidget!.call();
+                        if (!mounted) return;
+                        _showNotice(addedLabel, UnitanaNoticeKind.success);
+                      } on DuplicateDashboardWidgetException catch (_) {
+                        if (!mounted) return;
+                        _showNotice(duplicateLabel, UnitanaNoticeKind.info);
+                      } catch (_) {
+                        if (!mounted) return;
+                        _showNotice(failedLabel, UnitanaNoticeKind.error);
+                      }
+                    },
+                    icon: Icon(
+                      Icons.add_circle_outline,
+                      size: 18,
+                      color: accent,
+                    ),
+                    label: Text(
+                      DashboardCopy.addWidgetCta(context),
+                      maxLines: 1,
+                      softWrap: false,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: accent,
+                      ),
+                    ),
+                  );
+                }
+
+                Widget buildResetDefaultsButton() {
+                  return Align(
+                    alignment: Alignment.centerLeft,
+                    child: TextButton.icon(
+                      key: ValueKey('tool_units_reset_${widget.tool.id}'),
+                      style: TextButton.styleFrom(
+                        visualDensity: VisualDensity.compact,
+                        padding: const EdgeInsets.symmetric(horizontal: 4),
+                      ),
+                      onPressed: _hasCustomUnitSelection
+                          ? _resetUnitSelectionToDefaults
+                          : null,
+                      icon: const Icon(Icons.restart_alt_rounded, size: 18),
+                      label: const Text('Reset Defaults'),
+                    ),
+                  );
+                }
+
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (canAdd) ...[
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: buildAddWidgetButton(),
+                      ),
+                      const SizedBox(height: 8),
+                    ],
+                    buildUnitsAndSwap(),
+                    if (_supportsUnitPicker) ...[
+                      const SizedBox(height: 4),
+                      buildResetDefaultsButton(),
+                    ],
+                  ],
+                );
+              },
+            ),
+          ],
+        );
+
+        final convertButton = SizedBox(
+          height: 52,
+          child: FilledButton(
+            key: ValueKey('tool_run_${widget.tool.id}'),
+            style: FilledButton.styleFrom(minimumSize: const Size(0, 52)),
+            onPressed: _runConversion,
+            child: Text(DashboardCopy.convertCta(context)),
+          ),
+        );
+
+        if (isNarrow) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              inputBlock,
+              const SizedBox(height: 12),
+              Align(alignment: Alignment.centerRight, child: convertButton),
+            ],
+          );
+        }
+
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(child: inputBlock),
+            const SizedBox(width: 12),
+            Padding(
+              padding: const EdgeInsets.only(top: 26),
+              child: convertButton,
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildDefaultToolBody({
+    required Color accent,
+    required Color textMuted,
+    required Color panelBg,
+    required Color panelBorder,
+  }) {
+    final history = widget.session.historyFor(widget.tool.id);
+    final numericPolicy = ToolNumericPolicies.forToolId(widget.tool.id);
+    return ListView(
+      key: ValueKey('tool_scroll_${widget.tool.id}'),
+      // Cache more offscreen content so widget tests can locate history items
+      // reliably on small surfaces.
+      cacheExtent: 1200,
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+      children: [
+        _buildDefaultCalculatorSection(
+          accent: accent,
+          textMuted: textMuted,
+          panelBorder: panelBorder,
+          numericPolicy: numericPolicy,
+        ),
+        _buildDefaultPostConversionSection(
+          accent: accent,
+          history: history,
+          textMuted: textMuted,
+          panelBg: panelBg,
+          panelBorder: panelBorder,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildToolBody({
+    required Color accent,
+    required Color textMuted,
+    required Color panelBg,
+    required Color panelBorder,
+  }) {
+    if (_isTimeTool) return _buildTimeToolBody(context, accent);
+    if (_isLookupTool) return _buildLookupBody(context, accent);
+    if (_isUnitPriceTool) return _buildUnitPriceBody(context, accent);
+    if (_isHydrationTool) return _buildHydrationBody(context, accent);
+    if (_isTaxVatTool) return _buildTaxVatBody(context, accent);
+    if (_isTipHelperTool) return _buildTipHelperBody(context, accent);
+    return _buildDefaultToolBody(
+      accent: accent,
+      textMuted: textMuted,
+      panelBg: panelBg,
+      panelBorder: panelBorder,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
@@ -6522,8 +7291,6 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
           brightness: Theme.of(context).brightness,
         );
         final viewInsets = MediaQuery.of(context).viewInsets;
-        final history = widget.session.historyFor(widget.tool.id);
-        final numericPolicy = ToolNumericPolicies.forToolId(widget.tool.id);
         final currencyStatus = _currencyStatusBanner();
         final textPrimary = _ToolModalThemePolicy.textPrimary(context);
         final textMuted = _ToolModalThemePolicy.textMuted(context);
@@ -6538,75 +7305,10 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
               alignment: Alignment.bottomCenter,
               child: Column(
                 children: [
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-                    child: Row(
-                      children: [
-                        // Balance the trailing close action so the title reads centered.
-                        const SizedBox(width: 44),
-                        Expanded(
-                          child: Center(
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(widget.tool.icon, color: accent, size: 28),
-                                const SizedBox(width: 12),
-                                Flexible(
-                                  child: Text(
-                                    DashboardCopy.toolDisplayName(
-                                      context,
-                                      toolId: widget.tool.id,
-                                      fallback: widget.tool.title,
-                                    ),
-                                    key: ValueKey(
-                                      'tool_title_${widget.tool.id}',
-                                    ),
-                                    maxLines: 2,
-                                    softWrap: true,
-                                    overflow: TextOverflow.ellipsis,
-                                    textAlign: TextAlign.center,
-                                    style:
-                                        (Theme.of(
-                                                  context,
-                                                ).textTheme.headlineSmall ??
-                                                const TextStyle())
-                                            .merge(
-                                              GoogleFonts.robotoSlab(
-                                                fontWeight: FontWeight.w800,
-                                                color: textPrimary,
-                                              ),
-                                            ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                        Tooltip(
-                          message: DashboardCopy.closeToolTooltip(context),
-                          child: OutlinedButton(
-                            key: ValueKey('tool_close_${widget.tool.id}'),
-                            style: OutlinedButton.styleFrom(
-                              minimumSize: const Size(44, 34),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 10,
-                              ),
-                              visualDensity: VisualDensity.compact,
-                              side: BorderSide(color: panelBorder),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                            onPressed: () => Navigator.of(context).maybePop(),
-                            child: Icon(
-                              Icons.close_rounded,
-                              size: 18,
-                              color: textPrimary.withAlpha(220),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
+                  _buildSheetHeader(
+                    accent: accent,
+                    textPrimary: textPrimary,
+                    panelBorder: panelBorder,
                   ),
 
                   AnimatedSwitcher(
@@ -6629,897 +7331,21 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                   ),
 
                   if (currencyStatus != null)
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
-                      child: DecoratedBox(
-                        key: ValueKey('tool_currency_status_${widget.tool.id}'),
-                        decoration: BoxDecoration(
-                          color: panelBg,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: currencyStatus.$2.withAlpha(170),
-                          ),
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                currencyStatus.$1,
-                                style: Theme.of(context).textTheme.bodySmall
-                                    ?.copyWith(
-                                      color: currencyStatus.$2,
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                              ),
-                              if (currencyStatus.$3 &&
-                                  widget.onRetryCurrencyNow != null) ...[
-                                const SizedBox(height: 6),
-                                Align(
-                                  alignment: Alignment.centerRight,
-                                  child: OutlinedButton.icon(
-                                    key: ValueKey(
-                                      'tool_currency_retry_${widget.tool.id}',
-                                    ),
-                                    onPressed: () async {
-                                      final refreshingRatesLabel =
-                                          DashboardCopy.refreshingRatesNotice(
-                                            context,
-                                          );
-                                      final refreshRatesFailedLabel =
-                                          DashboardCopy.refreshRatesFailedNotice(
-                                            context,
-                                          );
-                                      try {
-                                        await widget.onRetryCurrencyNow!.call();
-                                        if (!mounted) return;
-                                        _showNotice(
-                                          refreshingRatesLabel,
-                                          UnitanaNoticeKind.info,
-                                        );
-                                      } catch (_) {
-                                        if (!mounted) return;
-                                        _showNotice(
-                                          refreshRatesFailedLabel,
-                                          UnitanaNoticeKind.error,
-                                        );
-                                      }
-                                    },
-                                    icon: const Icon(
-                                      Icons.refresh_rounded,
-                                      size: 16,
-                                    ),
-                                    label: Text(
-                                      DashboardCopy.retryRatesCta(context),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ],
-                          ),
-                        ),
-                      ),
+                    _buildCurrencyStatusBanner(
+                      text: currencyStatus.$1,
+                      color: currencyStatus.$2,
+                      canRetryNow: currencyStatus.$3,
+                      panelBg: panelBg,
                     ),
 
-                  // Body (scrollable to prevent overflow on smallest sizes)
+                  // Body (scrollable on tight surfaces).
                   Expanded(
-                    child: _isTimeTool
-                        ? _buildTimeToolBody(context, accent)
-                        : _isLookupTool
-                        ? _buildLookupBody(context, accent)
-                        : _isUnitPriceTool
-                        ? _buildUnitPriceBody(context, accent)
-                        : _isHydrationTool
-                        ? _buildHydrationBody(context, accent)
-                        : _isTaxVatTool
-                        ? _buildTaxVatBody(context, accent)
-                        : _isTipHelperTool
-                        ? _buildTipHelperBody(context, accent)
-                        : ListView(
-                            key: ValueKey('tool_scroll_${widget.tool.id}'),
-                            // Cache more offscreen content so widget tests can locate
-                            // history items reliably on small surfaces.
-                            cacheExtent: 1200,
-                            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                            children: [
-                              // Calculator (top half)
-                              LayoutBuilder(
-                                builder: (context, constraints) {
-                                  // The smallest supported test surface (320px wide) can
-                                  // overflow if we force the Convert button to live on
-                                  // the same row as the input. When tight, stack Convert
-                                  // below the editor to keep the layout green.
-                                  final isNarrow = constraints.maxWidth <= 340;
-
-                                  final helperText = _toolInputCoachCopy(
-                                    context,
-                                  );
-                                  final inputBlock = Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        DashboardCopy.editValueLabel(context),
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .labelLarge
-                                            ?.copyWith(color: textMuted),
-                                      ),
-                                      const SizedBox(height: 6),
-                                      TextField(
-                                        key: ValueKey(
-                                          'tool_input_${widget.tool.id}',
-                                        ),
-                                        controller: _controller,
-                                        keyboardType: _requiresFreeformInput
-                                            ? TextInputType.text
-                                            : TextInputType.numberWithOptions(
-                                                decimal:
-                                                    numericPolicy.allowDecimal,
-                                                signed:
-                                                    numericPolicy.allowNegative,
-                                              ),
-                                        inputFormatters: _requiresFreeformInput
-                                            ? const <TextInputFormatter>[]
-                                            : <TextInputFormatter>[
-                                                NumericTextInputFormatter(
-                                                  policy: numericPolicy,
-                                                ),
-                                              ],
-                                        decoration: InputDecoration(
-                                          hintText: _toolInputHint(context),
-                                        ),
-                                        onSubmitted: (_) => _runConversion(),
-                                      ),
-                                      if (helperText != null) ...[
-                                        const SizedBox(height: 6),
-                                        Text(
-                                          helperText,
-                                          style: Theme.of(context)
-                                              .textTheme
-                                              .bodySmall
-                                              ?.copyWith(
-                                                color: textMuted,
-                                                fontWeight: FontWeight.w700,
-                                              ),
-                                        ),
-                                      ],
-                                      const SizedBox(height: 8),
-                                      LayoutBuilder(
-                                        builder: (context, _) {
-                                          final canAdd =
-                                              widget.canAddWidget &&
-                                              widget.onAddWidget != null;
-
-                                          Widget buildUnitsAndSwap() {
-                                            final Widget unitsWidget =
-                                                _supportsUnitPicker
-                                                ? Column(
-                                                    key: ValueKey(
-                                                      'tool_units_${widget.tool.id}',
-                                                    ),
-                                                    crossAxisAlignment:
-                                                        CrossAxisAlignment
-                                                            .start,
-                                                    mainAxisSize:
-                                                        MainAxisSize.min,
-                                                    children: [
-                                                      Row(
-                                                        mainAxisSize:
-                                                            MainAxisSize.min,
-                                                        children: [
-                                                          OutlinedButton(
-                                                            key: ValueKey(
-                                                              'tool_unit_from_${widget.tool.id}',
-                                                            ),
-                                                            style: OutlinedButton.styleFrom(
-                                                              minimumSize:
-                                                                  const Size(
-                                                                    0,
-                                                                    34,
-                                                                  ),
-                                                              padding:
-                                                                  const EdgeInsets.symmetric(
-                                                                    horizontal:
-                                                                        10,
-                                                                    vertical: 0,
-                                                                  ),
-                                                              visualDensity:
-                                                                  VisualDensity
-                                                                      .compact,
-                                                              side: BorderSide(
-                                                                color:
-                                                                    panelBorder,
-                                                              ),
-                                                              shape: RoundedRectangleBorder(
-                                                                borderRadius:
-                                                                    BorderRadius.circular(
-                                                                      999,
-                                                                    ),
-                                                              ),
-                                                            ),
-                                                            onPressed: () =>
-                                                                _pickUnit(
-                                                                  isFrom: true,
-                                                                ),
-                                                            child: Row(
-                                                              mainAxisSize:
-                                                                  MainAxisSize
-                                                                      .min,
-                                                              children: [
-                                                                Text(
-                                                                  _fromUnit,
-                                                                  style: Theme.of(context)
-                                                                      .textTheme
-                                                                      .titleMedium
-                                                                      ?.copyWith(
-                                                                        fontWeight:
-                                                                            FontWeight.w800,
-                                                                        color:
-                                                                            accent,
-                                                                      ),
-                                                                ),
-                                                                Icon(
-                                                                  Icons
-                                                                      .arrow_drop_down_rounded,
-                                                                  color: accent
-                                                                      .withAlpha(
-                                                                        220,
-                                                                      ),
-                                                                ),
-                                                              ],
-                                                            ),
-                                                          ),
-                                                          Padding(
-                                                            padding:
-                                                                const EdgeInsets.symmetric(
-                                                                  horizontal: 8,
-                                                                ),
-                                                            child: Text(
-                                                              '→',
-                                                              style: Theme.of(context)
-                                                                  .textTheme
-                                                                  .titleLarge
-                                                                  ?.copyWith(
-                                                                    fontWeight:
-                                                                        FontWeight
-                                                                            .w900,
-                                                                    color:
-                                                                        accent,
-                                                                  ),
-                                                            ),
-                                                          ),
-                                                          OutlinedButton(
-                                                            key: ValueKey(
-                                                              'tool_unit_to_${widget.tool.id}',
-                                                            ),
-                                                            style: OutlinedButton.styleFrom(
-                                                              minimumSize:
-                                                                  const Size(
-                                                                    0,
-                                                                    34,
-                                                                  ),
-                                                              padding:
-                                                                  const EdgeInsets.symmetric(
-                                                                    horizontal:
-                                                                        10,
-                                                                    vertical: 0,
-                                                                  ),
-                                                              visualDensity:
-                                                                  VisualDensity
-                                                                      .compact,
-                                                              side: BorderSide(
-                                                                color:
-                                                                    panelBorder,
-                                                              ),
-                                                              shape: RoundedRectangleBorder(
-                                                                borderRadius:
-                                                                    BorderRadius.circular(
-                                                                      999,
-                                                                    ),
-                                                              ),
-                                                            ),
-                                                            onPressed: () =>
-                                                                _pickUnit(
-                                                                  isFrom: false,
-                                                                ),
-                                                            child: Row(
-                                                              mainAxisSize:
-                                                                  MainAxisSize
-                                                                      .min,
-                                                              children: [
-                                                                Text(
-                                                                  _toUnit,
-                                                                  style: Theme.of(context)
-                                                                      .textTheme
-                                                                      .titleMedium
-                                                                      ?.copyWith(
-                                                                        fontWeight:
-                                                                            FontWeight.w800,
-                                                                        color:
-                                                                            accent,
-                                                                      ),
-                                                                ),
-                                                                Icon(
-                                                                  Icons
-                                                                      .arrow_drop_down_rounded,
-                                                                  color: accent
-                                                                      .withAlpha(
-                                                                        220,
-                                                                      ),
-                                                                ),
-                                                              ],
-                                                            ),
-                                                          ),
-                                                        ],
-                                                      ),
-                                                      if (widget.tool.id ==
-                                                          'baking')
-                                                        Padding(
-                                                          padding:
-                                                              const EdgeInsets.only(
-                                                                top: 4,
-                                                                left: 4,
-                                                              ),
-                                                          child: Text(
-                                                            '$_fromUnit → $_toUnit',
-                                                            style: Theme.of(context)
-                                                                .textTheme
-                                                                .bodySmall
-                                                                ?.copyWith(
-                                                                  color: accent
-                                                                      .withAlpha(
-                                                                        230,
-                                                                      ),
-                                                                  fontWeight:
-                                                                      FontWeight
-                                                                          .w700,
-                                                                ),
-                                                          ),
-                                                        ),
-                                                    ],
-                                                  )
-                                                : Text(
-                                                    '$_fromUnit → $_toUnit',
-                                                    key: ValueKey(
-                                                      'tool_units_${widget.tool.id}',
-                                                    ),
-                                                    style: Theme.of(context)
-                                                        .textTheme
-                                                        .titleLarge
-                                                        ?.copyWith(
-                                                          fontWeight:
-                                                              FontWeight.w800,
-                                                          color: accent,
-                                                        ),
-                                                    overflow:
-                                                        TextOverflow.visible,
-                                                    softWrap: false,
-                                                  );
-
-                                            final swapButton = OutlinedButton(
-                                              key: ValueKey(
-                                                'tool_swap_${widget.tool.id}',
-                                              ),
-                                              style: OutlinedButton.styleFrom(
-                                                minimumSize: const Size(34, 34),
-                                                padding:
-                                                    const EdgeInsets.symmetric(
-                                                      horizontal: 8,
-                                                      vertical: 0,
-                                                    ),
-                                                visualDensity:
-                                                    VisualDensity.compact,
-                                                side: BorderSide(
-                                                  color: panelBorder,
-                                                ),
-                                                shape: RoundedRectangleBorder(
-                                                  borderRadius:
-                                                      BorderRadius.circular(12),
-                                                ),
-                                              ),
-                                              onPressed: _swapUnits,
-                                              child: PulseSwapIcon(
-                                                color: accent.withAlpha(220),
-                                                size: 18,
-                                              ),
-                                            );
-
-                                            return Row(
-                                              key: ValueKey(
-                                                'tool_units_row_${widget.tool.id}',
-                                              ),
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.center,
-                                              children: [
-                                                Expanded(
-                                                  child: Align(
-                                                    alignment:
-                                                        Alignment.centerLeft,
-                                                    child:
-                                                        SingleChildScrollView(
-                                                          scrollDirection:
-                                                              Axis.horizontal,
-                                                          child: unitsWidget,
-                                                        ),
-                                                  ),
-                                                ),
-                                                const SizedBox(width: 10),
-                                                Align(
-                                                  alignment: Alignment.center,
-                                                  child: swapButton,
-                                                ),
-                                              ],
-                                            );
-                                          }
-
-                                          Widget buildAddWidgetButton() {
-                                            return OutlinedButton.icon(
-                                              key: ValueKey(
-                                                'tool_add_widget_${widget.tool.id}',
-                                              ),
-                                              style: OutlinedButton.styleFrom(
-                                                minimumSize: const Size(0, 34),
-                                                padding:
-                                                    const EdgeInsets.symmetric(
-                                                      horizontal: 12,
-                                                    ),
-                                                visualDensity:
-                                                    VisualDensity.compact,
-                                                side: BorderSide(
-                                                  color: panelBorder,
-                                                ),
-                                                shape: RoundedRectangleBorder(
-                                                  borderRadius:
-                                                      BorderRadius.circular(12),
-                                                ),
-                                              ),
-                                              onPressed: () async {
-                                                final addedLabel =
-                                                    DashboardCopy.addedWidgetNotice(
-                                                      context,
-                                                      DashboardCopy.toolDisplayName(
-                                                        context,
-                                                        toolId: widget.tool.id,
-                                                        fallback:
-                                                            widget.tool.title,
-                                                      ),
-                                                    );
-                                                final duplicateLabel =
-                                                    DashboardCopy.duplicateWidgetNotice(
-                                                      context,
-                                                      DashboardCopy.toolDisplayName(
-                                                        context,
-                                                        toolId: widget.tool.id,
-                                                        fallback:
-                                                            widget.tool.title,
-                                                      ),
-                                                    );
-                                                final failedLabel =
-                                                    DashboardCopy.addWidgetFailedNotice(
-                                                      context,
-                                                    );
-                                                try {
-                                                  await widget.onAddWidget!
-                                                      .call();
-                                                  if (!mounted) return;
-                                                  _showNotice(
-                                                    addedLabel,
-                                                    UnitanaNoticeKind.success,
-                                                  );
-                                                } on DuplicateDashboardWidgetException catch (
-                                                  _
-                                                ) {
-                                                  if (!mounted) return;
-                                                  _showNotice(
-                                                    duplicateLabel,
-                                                    UnitanaNoticeKind.info,
-                                                  );
-                                                } catch (_) {
-                                                  if (!mounted) return;
-                                                  _showNotice(
-                                                    failedLabel,
-                                                    UnitanaNoticeKind.error,
-                                                  );
-                                                }
-                                              },
-                                              icon: Icon(
-                                                Icons.add_circle_outline,
-                                                size: 18,
-                                                color: accent,
-                                              ),
-                                              label: Text(
-                                                DashboardCopy.addWidgetCta(
-                                                  context,
-                                                ),
-                                                maxLines: 1,
-                                                softWrap: false,
-                                                overflow: TextOverflow.ellipsis,
-                                                style: Theme.of(context)
-                                                    .textTheme
-                                                    .labelLarge
-                                                    ?.copyWith(
-                                                      fontWeight:
-                                                          FontWeight.w700,
-                                                      color: accent,
-                                                    ),
-                                              ),
-                                            );
-                                          }
-
-                                          Widget buildResetDefaultsButton() {
-                                            return Align(
-                                              alignment: Alignment.centerLeft,
-                                              child: TextButton.icon(
-                                                key: ValueKey(
-                                                  'tool_units_reset_${widget.tool.id}',
-                                                ),
-                                                style: TextButton.styleFrom(
-                                                  visualDensity:
-                                                      VisualDensity.compact,
-                                                  padding:
-                                                      const EdgeInsets.symmetric(
-                                                        horizontal: 4,
-                                                      ),
-                                                ),
-                                                onPressed:
-                                                    _hasCustomUnitSelection
-                                                    ? _resetUnitSelectionToDefaults
-                                                    : null,
-                                                icon: const Icon(
-                                                  Icons.restart_alt_rounded,
-                                                  size: 18,
-                                                ),
-                                                label: const Text(
-                                                  'Reset Defaults',
-                                                ),
-                                              ),
-                                            );
-                                          }
-
-                                          return Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: [
-                                              if (canAdd) ...[
-                                                Align(
-                                                  alignment:
-                                                      Alignment.centerLeft,
-                                                  child: buildAddWidgetButton(),
-                                                ),
-                                                const SizedBox(height: 8),
-                                              ],
-                                              buildUnitsAndSwap(),
-                                              if (_supportsUnitPicker) ...[
-                                                const SizedBox(height: 4),
-                                                buildResetDefaultsButton(),
-                                              ],
-                                            ],
-                                          );
-                                        },
-                                      ),
-                                    ],
-                                  );
-
-                                  final convertButton = SizedBox(
-                                    height: 52,
-                                    child: FilledButton(
-                                      key: ValueKey(
-                                        'tool_run_${widget.tool.id}',
-                                      ),
-                                      style: FilledButton.styleFrom(
-                                        minimumSize: const Size(0, 52),
-                                      ),
-                                      onPressed: _runConversion,
-                                      child: Text(
-                                        DashboardCopy.convertCta(context),
-                                      ),
-                                    ),
-                                  );
-
-                                  if (isNarrow) {
-                                    return Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.stretch,
-                                      children: [
-                                        inputBlock,
-                                        const SizedBox(height: 12),
-                                        Align(
-                                          alignment: Alignment.centerRight,
-                                          child: convertButton,
-                                        ),
-                                      ],
-                                    );
-                                  }
-
-                                  return Row(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Expanded(child: inputBlock),
-                                      const SizedBox(width: 12),
-                                      Padding(
-                                        padding: const EdgeInsets.only(top: 26),
-                                        child: convertButton,
-                                      ),
-                                    ],
-                                  );
-                                },
-                              ),
-
-                              const SizedBox(height: 12),
-
-                              _ResultCard(
-                                toolId: widget.tool.id,
-                                lensId: widget.tool.lensId,
-                                line: _resultLine,
-                              ),
-                              if (widget.tool.id == 'pace') ...[
-                                const SizedBox(height: 10),
-                                _buildPaceInsightsCard(context, accent),
-                              ],
-                              if (widget.tool.id == 'energy') ...[
-                                const SizedBox(height: 10),
-                                _buildEnergyPlannerCard(context, accent),
-                              ],
-                              if (_toolDisclaimerCopy(context) != null) ...[
-                                const SizedBox(height: 10),
-                                _buildDisclaimerCard(
-                                  context,
-                                  key: ValueKey(
-                                    'tool_disclaimer_${widget.tool.id}',
-                                  ),
-                                  text: _toolDisclaimerCopy(context)!,
-                                ),
-                              ],
-
-                              const SizedBox(height: 12),
-                              const Divider(height: 1),
-                              const SizedBox(height: 12),
-
-                              Align(
-                                alignment: Alignment.centerLeft,
-                                child: Wrap(
-                                  spacing: 10,
-                                  runSpacing: 4,
-                                  crossAxisAlignment: WrapCrossAlignment.center,
-                                  children: [
-                                    Text(
-                                      DashboardCopy.historyTitle(context),
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .titleMedium
-                                          ?.copyWith(
-                                            fontWeight: FontWeight.w800,
-                                            color:
-                                                _ToolModalThemePolicy.headingTone(
-                                                  context,
-                                                ),
-                                          ),
-                                    ),
-                                    Text(
-                                      DashboardCopy.historyCopyHint(context),
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .labelMedium
-                                          ?.copyWith(
-                                            fontStyle: FontStyle.italic,
-                                            color: textMuted,
-                                          ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-
-                              SizedBox(
-                                height: math.min(
-                                  MediaQuery.sizeOf(context).height * 0.28,
-                                  280.0,
-                                ),
-                                child: Container(
-                                  decoration: BoxDecoration(
-                                    color: panelBg,
-                                    borderRadius: BorderRadius.circular(14),
-                                    border: Border.all(color: panelBorder),
-                                  ),
-                                  child: history.isEmpty
-                                      ? const _EmptyHistory()
-                                      : ListView.builder(
-                                          key: ValueKey(
-                                            'tool_history_list_${widget.tool.id}',
-                                          ),
-                                          padding: const EdgeInsets.symmetric(
-                                            vertical: 4,
-                                          ),
-                                          itemCount: history.length,
-                                          itemBuilder: (context, index) {
-                                            final r = history[index];
-                                            final isMostRecent = index == 0;
-
-                                            final inputLabel = r.inputLabel;
-                                            final outputLabel = r.outputLabel;
-                                            final timestamp = r.timestamp
-                                                .toLocal()
-                                                .toIso8601String()
-                                                .substring(11, 19);
-
-                                            return InkWell(
-                                              key: ValueKey(
-                                                'tool_history_${widget.tool.id}_$index',
-                                              ),
-                                              onTap: () async {
-                                                final toCopy =
-                                                    _stripKnownUnitSuffix(
-                                                      r.outputLabel,
-                                                    );
-                                                await Clipboard.setData(
-                                                  ClipboardData(text: toCopy),
-                                                );
-                                                if (!mounted) return;
-                                                _showNotice(
-                                                  'Copied result',
-                                                  UnitanaNoticeKind.success,
-                                                );
-                                              },
-                                              onLongPress: () async {
-                                                final preservedText =
-                                                    _controller.text;
-
-                                                final raw =
-                                                    _stripKnownUnitSuffix(
-                                                      r.inputLabel,
-                                                    );
-                                                final toCopy =
-                                                    _trimTrailingZerosForClipboard(
-                                                      raw,
-                                                    );
-                                                await Clipboard.setData(
-                                                  ClipboardData(text: toCopy),
-                                                );
-                                                if (!mounted) return;
-
-                                                // Guard against accidental "restore/edit" regressions.
-                                                if (_controller.text !=
-                                                    preservedText) {
-                                                  _controller
-                                                    ..text = preservedText
-                                                    ..selection =
-                                                        TextSelection.collapsed(
-                                                          offset: preservedText
-                                                              .length,
-                                                        );
-                                                }
-                                                _showNotice(
-                                                  'Copied input',
-                                                  UnitanaNoticeKind.success,
-                                                );
-                                              },
-                                              child: Padding(
-                                                padding:
-                                                    const EdgeInsets.fromLTRB(
-                                                      12,
-                                                      10,
-                                                      12,
-                                                      10,
-                                                    ),
-                                                child: Row(
-                                                  crossAxisAlignment:
-                                                      CrossAxisAlignment.start,
-                                                  children: [
-                                                    Expanded(
-                                                      child: Column(
-                                                        crossAxisAlignment:
-                                                            CrossAxisAlignment
-                                                                .start,
-                                                        children: [
-                                                          _TerminalLine(
-                                                            prompt: '>',
-                                                            input: inputLabel,
-                                                            output: outputLabel,
-                                                            emphasize:
-                                                                isMostRecent,
-                                                            arrowColor:
-                                                                isMostRecent
-                                                                ? _ToolModalThemePolicy.headingTone(
-                                                                    context,
-                                                                  )
-                                                                : _ToolModalThemePolicy.textMuted(
-                                                                    context,
-                                                                  ),
-                                                          ),
-                                                          const SizedBox(
-                                                            height: 6,
-                                                          ),
-                                                          Text(
-                                                            timestamp,
-                                                            style:
-                                                                Theme.of(
-                                                                      context,
-                                                                    )
-                                                                    .textTheme
-                                                                    .labelSmall
-                                                                    ?.copyWith(
-                                                                      color:
-                                                                          textMuted,
-                                                                    ),
-                                                          ),
-                                                        ],
-                                                      ),
-                                                    ),
-                                                    const SizedBox(width: 8),
-                                                    Icon(
-                                                      Icons.copy_rounded,
-                                                      size: 16,
-                                                      color: textMuted
-                                                          .withAlpha(200),
-                                                    ),
-                                                  ],
-                                                ),
-                                              ),
-                                            );
-                                          },
-                                        ),
-                                ),
-                              ),
-
-                              const SizedBox(height: 6),
-                              Align(
-                                alignment: Alignment.centerRight,
-                                child: TextButton(
-                                  onPressed: history.isEmpty
-                                      ? null
-                                      : () async {
-                                          final historyClearedLabel =
-                                              DashboardCopy.historyClearedNotice(
-                                                context,
-                                              );
-                                          final ok = await _confirmClearHistory(
-                                            context,
-                                          );
-                                          if (!ok || !mounted) return;
-
-                                          widget.session.clearHistory(
-                                            widget.tool.id,
-                                          );
-                                          setState(() {
-                                            _controller.clear();
-                                            _resultLine = null;
-                                          });
-                                          _showNotice(
-                                            historyClearedLabel,
-                                            UnitanaNoticeKind.success,
-                                          );
-                                        },
-                                  style: TextButton.styleFrom(
-                                    padding: EdgeInsets.zero,
-                                    minimumSize: const Size(0, 0),
-                                    tapTargetSize:
-                                        MaterialTapTargetSize.shrinkWrap,
-                                    foregroundColor:
-                                        _ToolModalThemePolicy.warningTone(
-                                          context,
-                                        ),
-                                  ),
-                                  child: Text(
-                                    DashboardCopy.clearHistoryButtonLabel(
-                                      context,
-                                    ),
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .labelLarge
-                                        ?.copyWith(
-                                          color:
-                                              _ToolModalThemePolicy.warningTone(
-                                                context,
-                                              ),
-                                        ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
+                    child: _buildToolBody(
+                      accent: accent,
+                      textMuted: textMuted,
+                      panelBg: panelBg,
+                      panelBorder: panelBorder,
+                    ),
                   ),
                 ],
               ),

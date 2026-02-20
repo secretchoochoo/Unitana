@@ -15,12 +15,13 @@ This folder is the project knowledge base. It is organized so a new engineer can
 ## Start here
 
 - `../README.md` (repo overview)
-- `ai/NEXT_CHAT_PROMPT.md` (continuation prompt)
+- `00-mvp-truth.md` (product truth baseline)
+- `ai/handoff/CURRENT_HANDOFF.md` (current operational handoff)
+- `ai/prompts/NEXT_CHAT_PROMPT.md` (continuation prompt)
 - `ai/context_db.json` (stable context database)
+- `ai/reference/REFERENCE_INDEX.md` (canonical reference ownership map)
 - `testing.md` (how to run and write regression tests)
 
-## Revision history convention
+## Current Gap
 
-Prefer a small revision block at the bottom of docs that are expected to change.
-
-See `docs/ai/REVISION_HISTORY_CONVENTION.md`.
+Docs are under active realignment to match current runtime behavior and shipped XL slices. Use the AI handoff + reference index as source-of-truth when documents disagree.
