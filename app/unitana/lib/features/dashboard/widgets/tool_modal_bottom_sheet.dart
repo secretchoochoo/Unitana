@@ -6461,50 +6461,70 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
     if (!_isCurrencyTool) return null;
     if (!widget.currencyNetworkEnabled) {
       return (
-        'Using cached rates. Live refresh is disabled in this build.',
+        'Live rates are turned off in this build. Conversions use saved rates.',
         _ToolModalThemePolicy.textMuted(context),
         false,
       );
     }
+
     final errorAt = widget.currencyLastErrorAt;
     if (!widget.currencyIsStale && errorAt == null) return null;
+
+    final refreshedAt = widget.currencyLastRefreshedAt;
+    final cadenceHours = widget.currencyRefreshCadence.inHours;
+    final lastSavedLabel = refreshedAt == null
+        ? null
+        : FreshnessCopy.relativeAgeShort(
+            now: DateTime.now(),
+            then: refreshedAt,
+          );
 
     if (errorAt != null) {
       final ageLabel = FreshnessCopy.relativeAgeShort(
         now: DateTime.now(),
         then: errorAt,
       );
-      if (widget.currencyShouldRetryNow) {
+      final canRetryNow = widget.currencyShouldRetryNow;
+      if (lastSavedLabel != null) {
+        if (canRetryNow) {
+          return (
+            'Live refresh hit an issue ($ageLabel). Using saved rates from $lastSavedLabel. You can retry now.',
+            _ToolModalThemePolicy.infoTone(context),
+            true,
+          );
+        }
         return (
-          DashboardCopy.currencyStaleRetryNow(context, ageLabel),
+          'Live refresh hit an issue ($ageLabel). Using saved rates from $lastSavedLabel. Auto-retry is on.',
+          _ToolModalThemePolicy.textMuted(context),
+          false,
+        );
+      }
+
+      if (canRetryNow) {
+        return (
+          'Live rates are temporarily unavailable ($ageLabel). You can retry now.',
           _ToolModalThemePolicy.warningTone(context),
           true,
         );
       }
       return (
-        DashboardCopy.currencyStaleRetrySoon(context, ageLabel),
-        _ToolModalThemePolicy.textMuted(context),
-        false,
-      );
-    }
-
-    final refreshedAt = widget.currencyLastRefreshedAt;
-    final cadenceHours = widget.currencyRefreshCadence.inHours;
-    if (refreshedAt != null) {
-      final updatedLabel = FreshnessCopy.relativeAgeShort(
-        now: DateTime.now(),
-        then: refreshedAt,
-      );
-      return (
-        'Using cached rates from $updatedLabel. Auto-refresh target: every $cadenceHours hours.',
+        'Live rates are temporarily unavailable ($ageLabel). Auto-retry is on.',
         _ToolModalThemePolicy.warningTone(context),
         false,
       );
     }
 
+    if (refreshedAt != null) {
+      return (
+        'Using saved rates from $lastSavedLabel. Auto-refresh target: every $cadenceHours hours.',
+        _ToolModalThemePolicy.textMuted(context),
+        false,
+      );
+    }
+
     return (
-      'Using cached rates. Refresh target: every $cadenceHours hours.',
-      _ToolModalThemePolicy.warningTone(context),
+      'Using saved rates. Auto-refresh target: every $cadenceHours hours.',
+      _ToolModalThemePolicy.textMuted(context),
       false,
     );
   }

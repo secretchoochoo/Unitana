@@ -34,6 +34,7 @@ void main() {
     required bool isStale,
     required bool shouldRetryNow,
     DateTime? errorAt,
+    DateTime? refreshedAt,
     Future<void> Function()? onRetryCurrencyNow,
   }) async {
     await tester.pumpWidget(
@@ -49,6 +50,7 @@ void main() {
             currencyIsStale: isStale,
             currencyShouldRetryNow: shouldRetryNow,
             currencyLastErrorAt: errorAt,
+            currencyLastRefreshedAt: refreshedAt,
             onRetryCurrencyNow: onRetryCurrencyNow,
           ),
         ),
@@ -72,7 +74,10 @@ void main() {
         const ValueKey('tool_currency_status_currency_convert'),
       );
       expect(banner, findsOneWidget);
-      expect(find.textContaining('Rates are stale'), findsOneWidget);
+      expect(
+        find.textContaining('Live rates are temporarily unavailable'),
+        findsOneWidget,
+      );
     },
   );
 
@@ -129,7 +134,7 @@ void main() {
         errorAt: errorAt,
       );
 
-      expect(find.textContaining('Retrying in a moment.'), findsOneWidget);
+      expect(find.textContaining('Auto-retry is on.'), findsOneWidget);
       expect(
         find.byKey(const ValueKey('tool_currency_retry_currency_convert')),
         findsNothing,
@@ -147,6 +152,6 @@ void main() {
       errorAt: null,
     );
 
-    expect(find.textContaining('Using cached rates'), findsOneWidget);
+    expect(find.textContaining('Using saved rates'), findsOneWidget);
   });
 }
