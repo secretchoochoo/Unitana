@@ -17,12 +17,16 @@ class CityPicker extends StatefulWidget {
 }
 
 class _CityPickerState extends State<CityPicker> {
+  static const int _kSyncIndexThreshold = 350;
+
   final TextEditingController _searchController = TextEditingController();
   late final Set<String> _curatedIds;
-  late List<CityPickerEngineEntry<City>> _indexedCities;
-  late List<City> _defaultTopCities;
+  List<CityPickerEngineEntry<City>> _indexedCities = const [];
+  List<City> _defaultTopCities = const [];
 
   String _query = '';
+  bool _indexReady = false;
+  int _indexEpoch = 0;
 
   @override
   void initState() {
@@ -121,6 +125,26 @@ class _CityPickerState extends State<CityPicker> {
                 ),
               ),
               const SizedBox(height: 6),
+              if (!_indexReady)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Row(
+                    children: [
+                      const SizedBox(
+                        width: 14,
+                        height: 14,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Preparing city list…',
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               Expanded(
                 child: cities.isEmpty
                     ? Align(
@@ -189,6 +213,9 @@ class _CityPickerState extends State<CityPicker> {
   }
 
   List<City> _filter(List<City> all, String queryRaw) {
+    if (!_indexReady) {
+      return _fallbackFilter(all, queryRaw);
+    }
     final sw = PickerPerfTrace.start('wizard_city_filter');
     final q = CityPickerEngine.normalizeQuery(queryRaw);
     if (q.isEmpty) {
@@ -220,9 +247,37 @@ class _CityPickerState extends State<CityPicker> {
   }
 
   void _rebuildIndex() {
+    if (widget.cities.length <= _kSyncIndexThreshold) {
+      final (indexed, defaults) = _buildIndexData(widget.cities);
+      _indexedCities = indexed;
+      _defaultTopCities = defaults;
+      _indexReady = true;
+      return;
+    }
+
+    final epochAtStart = ++_indexEpoch;
+    setState(() {
+      _indexReady = false;
+      _defaultTopCities = _fallbackFilter(widget.cities, '');
+    });
+
+    Future<void>(() {
+      final (indexed, defaults) = _buildIndexData(widget.cities);
+      if (!mounted || epochAtStart != _indexEpoch) return;
+      setState(() {
+        _indexedCities = indexed;
+        _defaultTopCities = defaults;
+        _indexReady = true;
+      });
+    });
+  }
+
+  (List<CityPickerEngineEntry<City>>, List<City>) _buildIndexData(
+    List<City> source,
+  ) {
     final sw = PickerPerfTrace.start('wizard_city_index');
-    _indexedCities = CityPickerEngine.buildEntries<City>(
-      items: widget.cities,
+    var indexed = CityPickerEngine.buildEntries<City>(
+      items: source,
       keyOf: (c) => c.id,
       cityNameOf: (c) => c.cityName,
       countryCodeOf: (c) => c.countryCode,
@@ -270,24 +325,54 @@ class _CityPickerState extends State<CityPicker> {
         ],
       ],
     );
-    _indexedCities = CityPickerEngine.sortByBaseScore(_indexedCities);
-    _defaultTopCities = _buildDefaultTopCities();
+    indexed = CityPickerEngine.sortByBaseScore(indexed);
+    final defaults = _buildDefaultTopCities(indexed);
     PickerPerfTrace.logElapsed(
       'wizard_city_index',
       sw,
-      extra: 'cities=${widget.cities.length} top=${_defaultTopCities.length}',
+      extra: 'cities=${source.length} top=${defaults.length}',
       minMs: 4,
     );
+    return (indexed, defaults);
   }
 
-  List<City> _buildDefaultTopCities() {
+  List<City> _buildDefaultTopCities(List<CityPickerEngineEntry<City>> indexed) {
     final top = CityPickerEngine.topEntries(
-      rankedEntries: _indexedCities,
+      rankedEntries: indexed,
       limit: 24,
       dedupeByTimeZone: true,
       dedupeByCityToken: true,
     );
     return top.map((e) => e.value).toList(growable: false);
+  }
+
+  List<City> _fallbackFilter(List<City> all, String queryRaw) {
+    final q = CityPickerEngine.normalizeQuery(queryRaw);
+    if (q.isEmpty) {
+      final out = <City>[];
+      final seen = <String>{};
+      for (final city in all) {
+        final key = '${city.cityName}|${city.countryCode}';
+        if (!seen.add(key)) continue;
+        out.add(city);
+        if (out.length >= 24) break;
+      }
+      return out;
+    }
+
+    final out = <City>[];
+    final seen = <String>{};
+    for (final city in all) {
+      final hay = CityPickerEngine.normalizeQuery(
+        '${city.cityName} ${city.countryName ?? ''} ${city.countryCode} ${city.timeZoneId}',
+      );
+      if (!hay.contains(q)) continue;
+      final key = '${city.cityName}|${city.countryCode}';
+      if (!seen.add(key)) continue;
+      out.add(city);
+      if (out.length >= 80) break;
+    }
+    return out;
   }
 }
 

@@ -84,6 +84,7 @@ class _FirstRunScreenState extends State<FirstRunScreen> {
   late final DashboardLiveDataController _previewLiveData;
 
   bool _previewRefreshPending = false;
+  bool _cityPickerOpening = false;
 
   bool get _hasBothCities => _homeCity != null && _destCity != null;
 
@@ -312,11 +313,15 @@ class _FirstRunScreenState extends State<FirstRunScreen> {
   }
 
   Future<void> _pickCity({required bool home}) async {
+    if (_cityPickerOpening) return;
+    setState(() => _cityPickerOpening = true);
     final selected = await showCityPicker(
       context: context,
       cities: _cities,
       initial: home ? _homeCity : _destCity,
     );
+    if (!mounted) return;
+    setState(() => _cityPickerOpening = false);
     if (selected == null) return;
     setState(() {
       if (home) {
@@ -795,7 +800,9 @@ class _FirstRunScreenState extends State<FirstRunScreen> {
                     _cityPickButton(
                       context,
                       key: const Key('first_run_home_city_button'),
-                      onPressed: () => _pickCity(home: true),
+                      onPressed: _cityPickerOpening
+                          ? null
+                          : () => _pickCity(home: true),
                       icon: Icons.home,
                       label:
                           _homeCity?.display ??
@@ -820,7 +827,9 @@ class _FirstRunScreenState extends State<FirstRunScreen> {
                     _cityPickButton(
                       context,
                       key: const Key('first_run_dest_city_button'),
-                      onPressed: () => _pickCity(home: false),
+                      onPressed: _cityPickerOpening
+                          ? null
+                          : () => _pickCity(home: false),
                       icon: Icons.flight_takeoff,
                       label:
                           _destCity?.display ??
@@ -1195,7 +1204,7 @@ class _FirstRunScreenState extends State<FirstRunScreen> {
   Widget _cityPickButton(
     BuildContext context, {
     required Key key,
-    required VoidCallback onPressed,
+    required VoidCallback? onPressed,
     required IconData icon,
     required String label,
   }) {
