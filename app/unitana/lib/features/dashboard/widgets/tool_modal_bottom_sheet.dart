@@ -4916,6 +4916,19 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
     final destination = widget.destination;
     final options = _timeZoneOptions();
     final fallback = options.isEmpty ? 'UTC' : options.first.id;
+    final validZoneIds = options.map((o) => o.id).toSet();
+    final savedSelection = widget.session.timeZoneSelectionFor(widget.tool.id);
+
+    if (savedSelection != null &&
+        validZoneIds.contains(savedSelection.fromZoneId) &&
+        validZoneIds.contains(savedSelection.toZoneId) &&
+        savedSelection.fromZoneId != savedSelection.toZoneId) {
+      _timeFromZoneId = savedSelection.fromZoneId;
+      _timeToZoneId = savedSelection.toZoneId;
+      _timeFromDisplayLabel = _displayLabelForZone(_timeFromZoneId!, options);
+      _timeToDisplayLabel = _displayLabelForZone(_timeToZoneId!, options);
+      return;
+    }
 
     if (_isJetLagDeltaTool) {
       // Jet Lag is a travel-planning tool. Keep defaults stable as
@@ -4937,12 +4950,29 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
     }
     _timeFromDisplayLabel = _displayLabelForZone(_timeFromZoneId!, options);
     _timeToDisplayLabel = _displayLabelForZone(_timeToZoneId!, options);
+    _persistTimeZoneSelection();
   }
 
   String _displayLabelForZone(String zoneId, List<TimeZoneOption> options) {
     final match = options.where((o) => o.id == zoneId);
     if (match.isNotEmpty) return match.first.label;
     return zoneId;
+  }
+
+  void _persistTimeZoneSelection() {
+    final fromId = _timeFromZoneId?.trim();
+    final toId = _timeToZoneId?.trim();
+    if (fromId == null || toId == null || fromId.isEmpty || toId.isEmpty) {
+      return;
+    }
+    if (fromId == toId) return;
+    unawaited(
+      widget.session.setTimeZoneSelection(
+        toolId: widget.tool.id,
+        fromZoneId: fromId,
+        toZoneId: toId,
+      ),
+    );
   }
 
   void _swapTimeZones() {
@@ -4964,6 +4994,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
         );
       }
     });
+    _persistTimeZoneSelection();
   }
 
   void _seedTimeConverterInput() {
@@ -5501,6 +5532,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
         );
       }
     });
+    _persistTimeZoneSelection();
   }
 
   Widget _buildTimeToolBody(BuildContext context, Color accent) {

@@ -17,6 +17,7 @@ import '../models/dashboard_session_controller.dart';
 import '../models/flight_time_estimator.dart';
 import '../models/jet_lag_planner.dart';
 import '../models/place_geo_lookup.dart';
+import '../models/time_zone_catalog.dart';
 import '../models/tool_definitions.dart';
 import '../models/activity_lenses.dart';
 import '../models/tool_registry.dart';
@@ -781,39 +782,123 @@ class _DashboardBoardState extends State<DashboardBoard>
       return (plan.tilePrimaryLabel, secondary);
     }
 
+    String compactHoursLabel(double value) {
+      final rounded = value.roundToDouble();
+      final sign = value >= 0 ? '+' : '';
+      if ((value - rounded).abs() < 0.01) {
+        return '$sign${rounded.toInt()}';
+      }
+      return '$sign${value.toStringAsFixed(1)}';
+    }
+
+    String offsetLabel(double hours) => 'UTC${compactHoursLabel(hours)}';
+
+    String cityLabelFromZone(String zoneId) {
+      final parts = zoneId.split('/');
+      final leaf = parts.isEmpty ? zoneId : parts.last;
+      return leaf.replaceAll('_', ' ').trim();
+    }
+
+    String cityLabelFromDisplay(String raw, String fallback) {
+      final cleaned = raw
+          .replaceFirst(RegExp(r'^\s*(Home|Destination)\s*·\s*'), '')
+          .trim();
+      final comma = cleaned.indexOf(',');
+      if (comma <= 0) return cleaned.isEmpty ? fallback : cleaned;
+      final city = cleaned.substring(0, comma).trim();
+      return city.isEmpty ? fallback : city;
+    }
+
+    ({
+      String fromZoneId,
+      String toZoneId,
+      String fromCity,
+      String toCity,
+      DateTime fromLocal,
+      DateTime toLocal,
+      double fromOffsetHours,
+      double toOffsetHours,
+    })
+    resolvedTimePairForTool({required String toolId}) {
+      final options = TimeZoneCatalog.options(home: home, destination: destination);
+      final validZoneIds = options.map((o) => o.id).toSet();
+      String alternateZoneFor(String zoneId) {
+        for (final option in options) {
+          if (option.id != zoneId) return option.id;
+        }
+        return zoneId == 'UTC' ? 'Europe/London' : 'UTC';
+      }
+      String labelFor(String zoneId) {
+        for (final option in options) {
+          if (option.id == zoneId) return option.label;
+        }
+        return zoneId;
+      }
+
+      final fallbackFrom =
+          activePlace?.timeZoneId ??
+          home?.timeZoneId ??
+          destination?.timeZoneId ??
+          (options.isEmpty ? 'UTC' : options.first.id);
+      String fallbackTo =
+          secondaryPlace?.timeZoneId ??
+          destination?.timeZoneId ??
+          home?.timeZoneId ??
+          (options.length > 1 ? options[1].id : 'UTC');
+      if (fallbackFrom == fallbackTo) {
+        fallbackTo = alternateZoneFor(fallbackFrom);
+      }
+
+      final saved = widget.session.timeZoneSelectionFor(toolId);
+      final fromZoneId =
+          saved != null && validZoneIds.contains(saved.fromZoneId)
+          ? saved.fromZoneId
+          : fallbackFrom;
+      String toZoneId =
+          saved != null && validZoneIds.contains(saved.toZoneId)
+          ? saved.toZoneId
+          : fallbackTo;
+      if (fromZoneId == toZoneId) {
+        toZoneId = alternateZoneFor(fromZoneId);
+      }
+
+      final nowUtc = DateTime.now().toUtc();
+      final fromNow = TimezoneUtils.nowInZone(fromZoneId, nowUtc: nowUtc);
+      final toNow = TimezoneUtils.nowInZone(toZoneId, nowUtc: nowUtc);
+      final fromFallback = cityLabelFromZone(fromZoneId);
+      final toFallback = cityLabelFromZone(toZoneId);
+      final fromCity = cityLabelFromDisplay(labelFor(fromZoneId), fromFallback);
+      final toCity = cityLabelFromDisplay(labelFor(toZoneId), toFallback);
+      return (
+        fromZoneId: fromZoneId,
+        toZoneId: toZoneId,
+        fromCity: fromCity,
+        toCity: toCity,
+        fromLocal: fromNow.local,
+        toLocal: toNow.local,
+        fromOffsetHours: fromNow.offsetMinutes / 60.0,
+        toOffsetHours: toNow.offsetMinutes / 60.0,
+      );
+    }
+
     (String, String) worldTimeMapPreviewLabels({
-      required Place? fromPlace,
-      required Place? toPlace,
+      required String fromCity,
+      required String toCity,
+      required double fromOffsetHours,
+      required double toOffsetHours,
     }) {
-      if (fromPlace == null || toPlace == null) {
+      if (fromCity.trim().isEmpty || toCity.trim().isEmpty) {
         return (tool.defaultPrimary, tool.defaultSecondary);
       }
-      final nowUtc = DateTime.now().toUtc();
-      final fromNow = TimezoneUtils.nowInZone(
-        fromPlace.timeZoneId,
-        nowUtc: nowUtc,
-      );
-      final toNow = TimezoneUtils.nowInZone(toPlace.timeZoneId, nowUtc: nowUtc);
-      final fromOffsetHours = fromNow.offsetMinutes / 60.0;
-      final toOffsetHours = toNow.offsetMinutes / 60.0;
       final deltaHours = toOffsetHours - fromOffsetHours;
-
-      String compactHoursLabel(double value) {
-        final rounded = value.roundToDouble();
-        final sign = value >= 0 ? '+' : '';
-        if ((value - rounded).abs() < 0.01) {
-          return '$sign${rounded.toInt()}';
-        }
-        return '$sign${value.toStringAsFixed(1)}';
-      }
-
-      String offsetLabel(double hours) => 'UTC${compactHoursLabel(hours)}';
-
       final primary = 'Δ ${compactHoursLabel(deltaHours)}h';
       final secondary =
-          '${fromPlace.cityName} ${offsetLabel(fromOffsetHours)} • ${toPlace.cityName} ${offsetLabel(toOffsetHours)}';
+          '$fromCity ${offsetLabel(fromOffsetHours)} • $toCity ${offsetLabel(toOffsetHours)}';
       return (primary, secondary);
     }
+
+    final worldClockPair = resolvedTimePairForTool(toolId: 'world_clock_delta');
+    final timeToolPair = resolvedTimePairForTool(toolId: 'time');
 
     final isCurrency = tool.id == 'currency_convert';
     final bool currencyLabelsLookBroken =
@@ -837,8 +922,10 @@ class _DashboardBoardState extends State<DashboardBoard>
         ? jetLagPreviewLabels(homePlace: home, destinationPlace: destination)
         : tool.id == 'world_clock_delta'
         ? worldTimeMapPreviewLabels(
-            fromPlace: activePlace,
-            toPlace: secondaryPlace,
+            fromCity: worldClockPair.fromCity,
+            toCity: worldClockPair.toCity,
+            fromOffsetHours: worldClockPair.fromOffsetHours,
+            toOffsetHours: worldClockPair.toOffsetHours,
           )
         : (isCurrency &&
               (latest == null ||
@@ -869,6 +956,25 @@ class _DashboardBoardState extends State<DashboardBoard>
 
     final isDefaultTile = _isDefaultToolTile(item);
     final canEdit = item.userAdded || isDefaultTile;
+    final customBody =
+        !widget.isEditing && tool.id == 'world_clock_delta'
+        ? _DashboardWorldTimeMiniMap(
+            fromOffsetHours: worldClockPair.fromOffsetHours,
+            toOffsetHours: worldClockPair.toOffsetHours,
+            fromCity: worldClockPair.fromCity,
+            toCity: worldClockPair.toCity,
+          )
+        : (!widget.isEditing && tool.id == 'time')
+        ? _DashboardTimeMiniClocks(
+            fromCity: timeToolPair.fromCity,
+            toCity: timeToolPair.toCity,
+            fromLocal: timeToolPair.fromLocal,
+            toLocal: timeToolPair.toLocal,
+            fromOffsetHours: timeToolPair.fromOffsetHours,
+            toOffsetHours: timeToolPair.toOffsetHours,
+            use24h: prefer24h,
+          )
+        : null;
 
     final tile = UnitanaTile(
       interactionKey: ValueKey('dashboard_item_${item.id}'),
@@ -885,6 +991,7 @@ class _DashboardBoardState extends State<DashboardBoard>
       primary: primary,
       secondary: secondary,
       footer: footerLabel,
+      body: customBody,
       primaryDeemphasizedPrefix: null,
       compactValues: widget.isEditing,
       valuesTopInset: widget.isEditing ? 22 : 0,
@@ -960,6 +1067,7 @@ class _DashboardBoardState extends State<DashboardBoard>
       primary: primary,
       secondary: secondary,
       footer: '',
+      body: null,
       primaryDeemphasizedPrefix: null,
       compactValues: true,
       valuesTopInset: 22,
@@ -1509,6 +1617,411 @@ class _DashboardBoardState extends State<DashboardBoard>
     });
 
     return placed;
+  }
+}
+
+class _DashboardWorldTimeMiniMap extends StatelessWidget {
+  final double fromOffsetHours;
+  final double toOffsetHours;
+  final String fromCity;
+  final String toCity;
+
+  const _DashboardWorldTimeMiniMap({
+    required this.fromOffsetHours,
+    required this.toOffsetHours,
+    required this.fromCity,
+    required this.toCity,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final bands = List<int>.generate(27, (index) => index - 12);
+    int nearestBand(double offset) {
+      var best = bands.first;
+      var bestDiff = (bands.first - offset).abs();
+      for (final band in bands.skip(1)) {
+        final diff = (band - offset).abs();
+        if (diff < bestDiff) {
+          best = band;
+          bestDiff = diff;
+        }
+      }
+      return best;
+    }
+
+    final fromBand = nearestBand(fromOffsetHours);
+    final toBand = nearestBand(toOffsetHours);
+
+    Color bandColor(int band) {
+      final isFrom = band == fromBand;
+      final isTo = band == toBand;
+      if (isFrom && isTo) {
+        return Color.lerp(scheme.tertiary, scheme.primary, 0.5)!.withAlpha(155);
+      }
+      if (isFrom) return scheme.tertiary.withAlpha(145);
+      if (isTo) return scheme.primary.withAlpha(145);
+      return scheme.surfaceContainerHighest.withAlpha(86);
+    }
+
+    String offsetLabel(double hours) {
+      final rounded = hours.roundToDouble();
+      final sign = hours >= 0 ? '+' : '';
+      if ((hours - rounded).abs() < 0.01) {
+        return 'UTC$sign${rounded.toInt()}';
+      }
+      return 'UTC$sign${hours.toStringAsFixed(1)}';
+    }
+
+    Widget legend({
+      required String city,
+      required double offset,
+      required Color tone,
+      required TextAlign align,
+    }) {
+      return FittedBox(
+        fit: BoxFit.scaleDown,
+        alignment: align == TextAlign.right
+            ? Alignment.centerRight
+            : Alignment.centerLeft,
+        child: Text(
+          '$city ${offsetLabel(offset)}',
+          textAlign: align,
+          maxLines: 1,
+          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+            color: tone.withAlpha(235),
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+      );
+    }
+
+    String compactHours(double value) {
+      final rounded = value.roundToDouble();
+      final sign = value >= 0 ? '+' : '';
+      if ((value - rounded).abs() < 0.01) {
+        return '$sign${rounded.toInt()}';
+      }
+      return '$sign${value.toStringAsFixed(1)}';
+    }
+
+    final deltaLabel = 'Δ ${compactHours(toOffsetHours - fromOffsetHours)}h';
+    final summaryLabel =
+        '$fromCity ${offsetLabel(fromOffsetHours)} • $toCity ${offsetLabel(toOffsetHours)}';
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final compact = constraints.maxHeight < 76 || constraints.maxWidth < 170;
+        if (compact) {
+          return Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  deltaLabel,
+                  maxLines: 1,
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    color: scheme.onSurface,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 4),
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  summaryLabel,
+                  maxLines: 1,
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    color: scheme.onSurfaceVariant,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
+          );
+        }
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Expanded(
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    Opacity(
+                      opacity: 0.45,
+                      child: ColorFiltered(
+                        colorFilter: ColorFilter.mode(
+                          scheme.onSurfaceVariant.withAlpha(205),
+                          BlendMode.modulate,
+                        ),
+                        child: Image.asset(
+                          'assets/maps/world_outline.png',
+                          fit: BoxFit.cover,
+                          alignment: const Alignment(0.06, -0.08),
+                        ),
+                      ),
+                    ),
+                    CustomPaint(
+                      painter: _DashboardWorldBackdropPainter(
+                        color: scheme.onSurfaceVariant.withAlpha(56),
+                      ),
+                    ),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        for (final band in bands)
+                          Expanded(child: ColoredBox(color: bandColor(band))),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 6),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                deltaLabel,
+                maxLines: 1,
+                style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                  color: scheme.onSurface,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ),
+            const SizedBox(height: 3),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                summaryLabel,
+                maxLines: 1,
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  color: scheme.onSurfaceVariant,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+            const SizedBox(height: 3),
+            Row(
+              children: [
+                Expanded(
+                  child: legend(
+                    city: fromCity,
+                    offset: fromOffsetHours,
+                    tone: scheme.tertiary,
+                    align: TextAlign.left,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: legend(
+                    city: toCity,
+                    offset: toOffsetHours,
+                    tone: scheme.primary,
+                    align: TextAlign.right,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _DashboardWorldBackdropPainter extends CustomPainter {
+  final Color color;
+
+  const _DashboardWorldBackdropPainter({required this.color});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final stroke = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 0.75;
+    for (var i = 1; i <= 5; i++) {
+      final y = size.height * (i / 6);
+      canvas.drawLine(Offset(0, y), Offset(size.width, y), stroke);
+    }
+    for (var i = 1; i <= 23; i++) {
+      final x = size.width * (i / 24);
+      canvas.drawLine(Offset(x, 0), Offset(x, size.height), stroke);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _DashboardWorldBackdropPainter oldDelegate) {
+    return oldDelegate.color != color;
+  }
+}
+
+class _DashboardTimeMiniClocks extends StatelessWidget {
+  final String fromCity;
+  final String toCity;
+  final DateTime fromLocal;
+  final DateTime toLocal;
+  final double fromOffsetHours;
+  final double toOffsetHours;
+  final bool use24h;
+
+  const _DashboardTimeMiniClocks({
+    required this.fromCity,
+    required this.toCity,
+    required this.fromLocal,
+    required this.toLocal,
+    required this.fromOffsetHours,
+    required this.toOffsetHours,
+    required this.use24h,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
+    String two(int value) => value.toString().padLeft(2, '0');
+
+    String formatClock(DateTime dt) {
+      if (use24h) {
+        return '${two(dt.hour)}:${two(dt.minute)}';
+      }
+      final hour = dt.hour % 12 == 0 ? 12 : dt.hour % 12;
+      final suffix = dt.hour >= 12 ? 'PM' : 'AM';
+      return '$hour:${two(dt.minute)} $suffix';
+    }
+
+    String compactHours(double value) {
+      final rounded = value.roundToDouble();
+      final sign = value >= 0 ? '+' : '';
+      if ((value - rounded).abs() < 0.01) {
+        return '$sign${rounded.toInt()}';
+      }
+      return '$sign${value.toStringAsFixed(1)}';
+    }
+
+    final delta = toOffsetHours - fromOffsetHours;
+    final deltaLabel = 'Δ ${compactHours(delta)}h';
+
+    Widget clockPill({
+      required String city,
+      required DateTime local,
+      required Color tone,
+      required TextAlign align,
+    }) {
+      return Container(
+        padding: const EdgeInsets.fromLTRB(8, 6, 8, 6),
+        decoration: BoxDecoration(
+          color: scheme.surfaceContainerHighest.withAlpha(52),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: tone.withAlpha(130)),
+        ),
+        child: Column(
+          crossAxisAlignment: align == TextAlign.right
+              ? CrossAxisAlignment.end
+              : CrossAxisAlignment.start,
+          children: [
+            Text(
+              city,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: align,
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                color: tone.withAlpha(235),
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              formatClock(local),
+              maxLines: 1,
+              textAlign: align,
+              style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                color: scheme.onSurface,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final compact = constraints.maxHeight < 76 || constraints.maxWidth < 170;
+        if (compact) {
+          return Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  '${formatClock(fromLocal)} • ${formatClock(toLocal)}',
+                  maxLines: 1,
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    color: scheme.onSurface,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 4),
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  '$fromCity • $toCity • $deltaLabel',
+                  maxLines: 1,
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    color: scheme.onSurfaceVariant,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
+          );
+        }
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: clockPill(
+                    city: fromCity,
+                    local: fromLocal,
+                    tone: scheme.tertiary,
+                    align: TextAlign.left,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: clockPill(
+                    city: toCity,
+                    local: toLocal,
+                    tone: scheme.primary,
+                    align: TextAlign.right,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Center(
+              child: Text(
+                deltaLabel,
+                maxLines: 1,
+                style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                  color: scheme.onSurfaceVariant,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
   }
 }
 

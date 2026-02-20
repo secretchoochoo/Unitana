@@ -100,6 +100,31 @@ class MatrixWidgetSelection {
   }
 }
 
+@immutable
+class TimeZoneWidgetSelection {
+  final String fromZoneId;
+  final String toZoneId;
+
+  const TimeZoneWidgetSelection({
+    required this.fromZoneId,
+    required this.toZoneId,
+  });
+
+  Map<String, Object?> toJson() => <String, Object?>{
+    'fromZoneId': fromZoneId,
+    'toZoneId': toZoneId,
+  };
+
+  static TimeZoneWidgetSelection? fromJson(Object? raw) {
+    final map = raw is Map ? raw : null;
+    if (map == null) return null;
+    final fromZoneId = map['fromZoneId']?.toString().trim() ?? '';
+    final toZoneId = map['toZoneId']?.toString().trim() ?? '';
+    if (fromZoneId.isEmpty || toZoneId.isEmpty) return null;
+    return TimeZoneWidgetSelection(fromZoneId: fromZoneId, toZoneId: toZoneId);
+  }
+}
+
 /// Session-scoped state for the dashboard page.
 ///
 /// - selected reality: drives hero + tools
@@ -142,6 +167,8 @@ class DashboardSessionController extends ChangeNotifier {
   HeroEnvPillMode _heroEnvPillMode = HeroEnvPillMode.aqi;
   Map<String, MatrixWidgetSelection> _matrixWidgetSelectionByTool =
       const <String, MatrixWidgetSelection>{};
+  Map<String, TimeZoneWidgetSelection> _timeZoneSelectionByTool =
+      const <String, TimeZoneWidgetSelection>{};
 
   /// Best-effort load of persisted env pill mode.
   ///
@@ -254,6 +281,12 @@ class DashboardSessionController extends ChangeNotifier {
     return _matrixWidgetSelectionByTool[key];
   }
 
+  TimeZoneWidgetSelection? timeZoneSelectionFor(String toolId) {
+    final key = toolId.trim();
+    if (key.isEmpty) return null;
+    return _timeZoneSelectionByTool[key];
+  }
+
   Future<void> setMatrixWidgetSelection({
     required String toolId,
     required String rowKey,
@@ -287,6 +320,37 @@ class DashboardSessionController extends ChangeNotifier {
       normalizedToolId: selection,
     };
     await _persistMatrixWidgetSelections();
+    notifyListeners();
+  }
+
+  Future<void> setTimeZoneSelection({
+    required String toolId,
+    required String fromZoneId,
+    required String toZoneId,
+  }) async {
+    final normalizedToolId = toolId.trim();
+    final normalizedFrom = fromZoneId.trim();
+    final normalizedTo = toZoneId.trim();
+    if (normalizedToolId.isEmpty ||
+        normalizedFrom.isEmpty ||
+        normalizedTo.isEmpty) {
+      return;
+    }
+    if (normalizedFrom == normalizedTo) return;
+    final next = TimeZoneWidgetSelection(
+      fromZoneId: normalizedFrom,
+      toZoneId: normalizedTo,
+    );
+    final current = _timeZoneSelectionByTool[normalizedToolId];
+    if (current != null &&
+        current.fromZoneId == next.fromZoneId &&
+        current.toZoneId == next.toZoneId) {
+      return;
+    }
+    _timeZoneSelectionByTool = <String, TimeZoneWidgetSelection>{
+      ..._timeZoneSelectionByTool,
+      normalizedToolId: next,
+    };
     notifyListeners();
   }
 

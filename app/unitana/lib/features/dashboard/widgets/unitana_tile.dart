@@ -24,6 +24,7 @@ class UnitanaTile extends StatelessWidget {
   final Color? accentColor;
   final bool compactValues;
   final double valuesTopInset;
+  final Widget? body;
 
   const UnitanaTile({
     super.key,
@@ -41,6 +42,7 @@ class UnitanaTile extends StatelessWidget {
     this.interactionKey,
     this.compactValues = false,
     this.valuesTopInset = 0,
+    this.body,
   });
 
   @override
@@ -122,6 +124,7 @@ class UnitanaTile extends StatelessWidget {
 
           final hasSecondary = safeSecondary.trim().isNotEmpty && !isMicro;
           final hasFooter = safeFooter.trim().isNotEmpty;
+          final hasCustomBody = body != null;
 
           final boundedWidth = constraints.maxWidth.isFinite
               ? constraints.maxWidth
@@ -336,6 +339,23 @@ class UnitanaTile extends StatelessWidget {
                             ? math.min(9.0, math.max(3.0, mainH * 0.11))
                             : 0.0;
 
+                        if (hasCustomBody) {
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              SizedBox(
+                                height: mainH,
+                                child: ClipRect(child: body!),
+                              ),
+                              if (hasFooter)
+                                SizedBox(
+                                  height: footerH,
+                                  child: Center(child: buildFooter()),
+                                ),
+                            ],
+                          );
+                        }
+
                         return Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
@@ -384,8 +404,8 @@ class UnitanaTile extends StatelessWidget {
                     ),
                   )
                 else ...[
-                  buildPrimary(),
-                  if (hasSecondary) ...[
+                  if (hasCustomBody) body! else buildPrimary(),
+                  if (!hasCustomBody && hasSecondary) ...[
                     SizedBox(height: midGap),
                     buildSecondary(),
                   ],
