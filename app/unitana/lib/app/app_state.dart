@@ -22,9 +22,6 @@ class UnitanaAppState extends ChangeNotifier {
   Map<String, int> _profileLastActivatedEpochById = const <String, int>{};
   bool _lofiAudioEnabled = false;
   double _lofiAudioVolume = 0.25;
-  bool _tutorialDismissed = true;
-  bool _tutorialReplayRequested = false;
-  Set<String> _completedTutorialSurfaces = <String>{};
 
   UnitanaAppState(this.storage);
 
@@ -50,11 +47,6 @@ class UnitanaAppState extends ChangeNotifier {
   String? get autoSuggestedProfileId => _autoSuggestedProfileId;
   bool get lofiAudioEnabled => _lofiAudioEnabled;
   double get lofiAudioVolume => _lofiAudioVolume;
-  bool get tutorialDismissed => _tutorialDismissed;
-  bool get tutorialReplayRequested => _tutorialReplayRequested;
-  Set<String> get completedTutorialSurfaces =>
-      Set<String>.unmodifiable(_completedTutorialSurfaces);
-  bool get shouldShowTutorial => false;
   Locale? get appLocale {
     switch (_preferredLanguageCode) {
       case 'en':
@@ -141,9 +133,6 @@ class UnitanaAppState extends ChangeNotifier {
         .loadProfileLastActivatedAtById();
     _lofiAudioEnabled = await storage.loadLofiAudioEnabled();
     _lofiAudioVolume = await storage.loadLofiAudioVolume();
-    _tutorialDismissed = await storage.loadTutorialDismissed();
-    _tutorialReplayRequested = await storage.loadTutorialReplayRequested();
-    _completedTutorialSurfaces = await storage.loadTutorialCompletedSurfaces();
 
     final loadedProfiles = await storage.loadProfiles();
     final loadedActiveId = await storage.loadActiveProfileId();
@@ -242,12 +231,6 @@ class UnitanaAppState extends ChangeNotifier {
   Future<void> _persistAudioState() async {
     await storage.saveLofiAudioEnabled(_lofiAudioEnabled);
     await storage.saveLofiAudioVolume(_lofiAudioVolume);
-  }
-
-  Future<void> _persistTutorialState() async {
-    await storage.saveTutorialDismissed(_tutorialDismissed);
-    await storage.saveTutorialReplayRequested(_tutorialReplayRequested);
-    await storage.saveTutorialCompletedSurfaces(_completedTutorialSurfaces);
   }
 
   Future<void> setPreferredLanguageCode(String code) async {
@@ -409,44 +392,6 @@ class UnitanaAppState extends ChangeNotifier {
     _profileLastActivatedEpochById = const <String, int>{};
     _lofiAudioEnabled = false;
     _lofiAudioVolume = 0.25;
-    _tutorialDismissed = true;
-    _tutorialReplayRequested = false;
-    notifyListeners();
-  }
-
-  Future<void> markTutorialDismissed() async {
-    _tutorialDismissed = true;
-    _tutorialReplayRequested = false;
-    await _persistTutorialState();
-    notifyListeners();
-  }
-
-  Future<void> requestTutorialReplay() async {
-    _tutorialReplayRequested = false;
-    await _persistTutorialState();
-    notifyListeners();
-  }
-
-  bool hasCompletedTutorialSurface(String surfaceId) {
-    final id = surfaceId.trim();
-    if (id.isEmpty) return false;
-    return _completedTutorialSurfaces.contains(id);
-  }
-
-  Future<void> markTutorialSurfaceCompleted(String surfaceId) async {
-    final id = surfaceId.trim();
-    if (id.isEmpty) return;
-    if (_completedTutorialSurfaces.contains(id)) return;
-    _completedTutorialSurfaces = <String>{..._completedTutorialSurfaces, id};
-    await _persistTutorialState();
-    notifyListeners();
-  }
-
-  Future<void> resetTutorialSurfaces() async {
-    _tutorialDismissed = false;
-    _tutorialReplayRequested = false;
-    _completedTutorialSurfaces = <String>{};
-    await _persistTutorialState();
     notifyListeners();
   }
 

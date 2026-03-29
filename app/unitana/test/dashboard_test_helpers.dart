@@ -113,3 +113,16 @@ Future<void> ensureVisibleAligned(
   await tester.pump();
   await tester.pump(const Duration(milliseconds: 50));
 }
+
+/// Pumps fixed frames until [finder] appears, without depending on global settle.
+Future<void> pumpUntilFound(
+  WidgetTester tester,
+  Finder finder, {
+  int maxPumps = 12,
+  Duration step = const Duration(milliseconds: 100),
+}) async {
+  for (var i = 0; i < maxPumps; i += 1) {
+    if (finder.evaluate().isNotEmpty) return;
+    await tester.pump(step);
+  }
+}

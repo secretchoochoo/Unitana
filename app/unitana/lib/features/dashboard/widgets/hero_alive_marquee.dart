@@ -59,7 +59,7 @@ class _HeroAliveMarqueeState extends State<HeroAliveMarquee>
   void _syncAnimation() {
     final disableAnimations =
         MediaQuery.maybeOf(context)?.disableAnimations ?? false;
-    final tickerEnabled = TickerMode.of(context);
+    final tickerEnabled = TickerMode.valuesOf(context).enabled;
     final shouldAnimate = !_isTest && !disableAnimations && tickerEnabled;
 
     if (shouldAnimate) {
@@ -105,7 +105,7 @@ class _HeroAliveMarqueeState extends State<HeroAliveMarquee>
     // Use repaint to avoid widget rebuilds per frame (cheap, semantics-safe).
     final disableAnimations =
         MediaQuery.maybeOf(context)?.disableAnimations ?? false;
-    final tickerEnabled = TickerMode.of(context);
+    final tickerEnabled = TickerMode.valuesOf(context).enabled;
     final shouldAnimate = !_isTest && !disableAnimations && tickerEnabled;
 
     final Animation<double> repaint = shouldAnimate

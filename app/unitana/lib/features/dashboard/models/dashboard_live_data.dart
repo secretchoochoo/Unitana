@@ -907,7 +907,13 @@ class DashboardLiveDataController extends ChangeNotifier {
   final Map<String, double> _eurBaseRates = <String, double>{'EUR': 1.0};
   bool _isRefreshing = false;
   Object? _lastError;
+  Object? _lastWeatherError;
+  DateTime? _lastWeatherErrorAt;
+  Object? _lastEnvError;
+  DateTime? _lastEnvErrorAt;
   DateTime? _lastRefreshedAt;
+  int _refreshGeneration = 0;
+  String _activePlacesSignature = '';
 
   Timer? _debounce;
 
@@ -943,6 +949,10 @@ class DashboardLiveDataController extends ChangeNotifier {
 
   bool get isRefreshing => _isRefreshing;
   Object? get lastError => _lastError;
+  Object? get lastWeatherError => _lastWeatherError;
+  DateTime? get lastWeatherErrorAt => _lastWeatherErrorAt;
+  Object? get lastEnvError => _lastEnvError;
+  DateTime? get lastEnvErrorAt => _lastEnvErrorAt;
   DateTime? get lastRefreshedAt => _lastRefreshedAt;
 
   /// Test hook for deterministic stale/fresh rendering contracts.
@@ -1553,7 +1563,80 @@ class DashboardLiveDataController extends ChangeNotifier {
         name.contains('AutomatedTestWidgetsFlutterBinding');
   }
 
+  void invalidateForPlaces({required List<Place> places}) {
+    _activePlacesSignature = _placesSignature(places);
+    _refreshGeneration += 1;
+    _debounce?.cancel();
+    _isRefreshing = false;
+    _clearPlaceSnapshots();
+    _lastRefreshedAt = null;
+    _notify();
+  }
+
+  bool _isCurrentRefresh(int generation) =>
+      !_isDisposed && generation == _refreshGeneration;
+
+  String _placesSignature(List<Place> places) {
+    return places
+        .map(
+          (p) => [
+            p.id,
+            p.type.name,
+            p.cityName,
+            p.countryCode,
+            p.timeZoneId,
+            p.unitSystem,
+            p.use24h ? '24h' : '12h',
+          ].join(':'),
+        )
+        .join('|');
+  }
+
+  void _clearPlaceSnapshots() {
+    _weatherByPlaceId.clear();
+    _sunByPlaceId.clear();
+    _envByPlaceId.clear();
+    _forecastByPlaceId.clear();
+  }
+
+  void _recordRefreshError({
+    required Object error,
+    required StackTrace stackTrace,
+    required String contextLabel,
+    bool weather = false,
+    bool env = false,
+  }) {
+    final now = DateTime.now();
+    _lastError = error;
+    if (weather) {
+      _lastWeatherError = error;
+      _lastWeatherErrorAt = now;
+    }
+    if (env) {
+      _lastEnvError = error;
+      _lastEnvErrorAt = now;
+    }
+    FlutterError.reportError(
+      FlutterErrorDetails(
+        exception: error,
+        stack: stackTrace,
+        library: 'dashboard_live_data',
+        context: ErrorDescription(contextLabel),
+      ),
+    );
+  }
+
   Future<void> refreshAll({required List<Place> places}) async {
+    final scopeSignature = _placesSignature(places);
+    final scopeChanged = scopeSignature != _activePlacesSignature;
+    _activePlacesSignature = scopeSignature;
+    final requestGeneration = ++_refreshGeneration;
+    if (scopeChanged) {
+      _clearPlaceSnapshots();
+      _lastRefreshedAt = null;
+      _notify();
+    }
+
     // Widget tests frequently enable a dev weather backend to validate UI
     // layout and overflow contracts. Do not schedule debounce timers or
     // simulate network latency in that environment, otherwise tests end with
@@ -1575,6 +1658,9 @@ class DashboardLiveDataController extends ChangeNotifier {
     final completer = Completer<void>();
     _debounce = Timer(refreshDebounceDuration, () async {
       try {
+        if (!_isCurrentRefresh(requestGeneration)) {
+          return;
+        }
         _isRefreshing = true;
         _lastError = null;
         _notify();
@@ -1583,11 +1669,20 @@ class DashboardLiveDataController extends ChangeNotifier {
 
         // Simulate a short network latency.
         await Future<void>.delayed(simulatedNetworkLatency);
+        if (!_isCurrentRefresh(requestGeneration)) {
+          return;
+        }
         if (_useWeatherApi || _useOpenMeteo) {
           // Load city metadata (lat/lon) once for best-effort query precision.
           await _cityRepository.load();
+          if (!_isCurrentRefresh(requestGeneration)) {
+            return;
+          }
 
           for (final p in places) {
+            if (!_isCurrentRefresh(requestGeneration)) {
+              return;
+            }
             try {
               final city = _cityRepository.byPlace(
                 p.cityName,
@@ -1604,6 +1699,9 @@ class DashboardLiveDataController extends ChangeNotifier {
 
               if (_useWeatherApi) {
                 final api = await _weatherApi.fetchTodayForecast(query: query);
+                if (!_isCurrentRefresh(requestGeneration)) {
+                  return;
+                }
 
                 final SceneKey sceneKey;
                 final String conditionText;
@@ -1653,7 +1751,11 @@ class DashboardLiveDataController extends ChangeNotifier {
                   place: p,
                   latitude: lat,
                   longitude: lon,
+                  refreshGeneration: requestGeneration,
                 );
+                if (!_isCurrentRefresh(requestGeneration)) {
+                  return;
+                }
                 _envByPlaceId.putIfAbsent(p.id, () => _seedEnv(p));
               } else {
                 if (lat == null || lon == null) {
@@ -1671,6 +1773,9 @@ class DashboardLiveDataController extends ChangeNotifier {
                   latitude: lat,
                   longitude: lon,
                 );
+                if (!_isCurrentRefresh(requestGeneration)) {
+                  return;
+                }
 
                 final effectiveOverride = override is WeatherDebugOverrideCoarse
                     ? override
@@ -1715,10 +1820,23 @@ class DashboardLiveDataController extends ChangeNotifier {
                   place: p,
                   latitude: lat,
                   longitude: lon,
+                  refreshGeneration: requestGeneration,
                 );
+                if (!_isCurrentRefresh(requestGeneration)) {
+                  return;
+                }
                 _envByPlaceId.putIfAbsent(p.id, () => _seedEnv(p));
               }
-            } catch (_) {
+            } catch (error, stackTrace) {
+              if (!_isCurrentRefresh(requestGeneration)) {
+                return;
+              }
+              _recordRefreshError(
+                error: error,
+                stackTrace: stackTrace,
+                contextLabel: 'while refreshing weather for ${p.id}',
+                weather: true,
+              );
               // Keep last stable values when present; otherwise seed
               // deterministic fallbacks so no critical pill goes blank.
               _ensureFallbackSnapshotsForPlace(
@@ -1731,6 +1849,9 @@ class DashboardLiveDataController extends ChangeNotifier {
           // Mock mode (no API key): deterministic drift for demo + tests.
           final nowUtc = DateTime.now().toUtc();
           for (final p in places) {
+            if (!_isCurrentRefresh(requestGeneration)) {
+              return;
+            }
             _weatherByPlaceId[p.id] = _refreshWeather(p);
             // In mock mode we still populate Env + SunTimes so the hero never
             // shows placeholders for AQI/Pollen or Sunrise/Sunset.
@@ -1740,7 +1861,12 @@ class DashboardLiveDataController extends ChangeNotifier {
           }
           didApplyAnyLiveWeatherUpdate = true;
         }
-        final didRefreshCurrency = await _maybeRefreshCurrency();
+        final didRefreshCurrency = await _maybeRefreshCurrency(
+          refreshGeneration: requestGeneration,
+        );
+        if (!_isCurrentRefresh(requestGeneration)) {
+          return;
+        }
         final now = DateTime.now();
         if (didApplyAnyLiveWeatherUpdate || didRefreshCurrency) {
           _lastRefreshedAt = now;
@@ -1750,11 +1876,19 @@ class DashboardLiveDataController extends ChangeNotifier {
           _eurToUsd = 1.10;
           _eurBaseRates['USD'] = _eurToUsd;
         }
-      } catch (e) {
-        _lastError = e;
+      } catch (error, stackTrace) {
+        if (_isCurrentRefresh(requestGeneration)) {
+          _recordRefreshError(
+            error: error,
+            stackTrace: stackTrace,
+            contextLabel: 'while refreshing dashboard live data',
+          );
+        }
       } finally {
-        _isRefreshing = false;
-        _notify();
+        if (_isCurrentRefresh(requestGeneration)) {
+          _isRefreshing = false;
+          _notify();
+        }
         completer.complete();
       }
     });
@@ -1827,6 +1961,7 @@ class DashboardLiveDataController extends ChangeNotifier {
     required Place place,
     required double? latitude,
     required double? longitude,
+    required int refreshGeneration,
   }) async {
     if (!weatherNetworkEnabled) return;
     if (latitude == null || longitude == null) return;
@@ -1835,6 +1970,9 @@ class DashboardLiveDataController extends ChangeNotifier {
         latitude: latitude,
         longitude: longitude,
       );
+      if (!_isCurrentRefresh(refreshGeneration)) {
+        return;
+      }
       final prev = _envByPlaceId[place.id];
       final seeded = _seedEnv(place);
       final pollenGrains = current.maxPollenGrains();
@@ -1846,13 +1984,22 @@ class DashboardLiveDataController extends ChangeNotifier {
         usAqi: current.usAqi ?? prev?.usAqi ?? seeded.usAqi,
         pollenIndex: pollenIndex,
       );
-    } catch (_) {
+    } catch (error, stackTrace) {
+      if (!_isCurrentRefresh(refreshGeneration)) {
+        return;
+      }
+      _recordRefreshError(
+        error: error,
+        stackTrace: stackTrace,
+        contextLabel: 'while refreshing air quality for ${place.id}',
+        env: true,
+      );
       // Best-effort only. Keep the last stable values, or seed if missing.
       _envByPlaceId.putIfAbsent(place.id, () => _seedEnv(place));
     }
   }
 
-  Future<bool> _maybeRefreshCurrency() async {
+  Future<bool> _maybeRefreshCurrency({required int refreshGeneration}) async {
     if (!currencyNetworkEnabled) return false;
 
     final now = DateTime.now();
@@ -1872,10 +2019,16 @@ class DashboardLiveDataController extends ChangeNotifier {
           final frankfurterRates = await _frankfurter.fetchLatestRates(
             base: 'EUR',
           );
+          if (!_isCurrentRefresh(refreshGeneration)) {
+            return false;
+          }
           if (frankfurterRates != null && frankfurterRates.isNotEmpty) {
             normalizedRates = _normalizeEurBaseRates(frankfurterRates);
           } else {
             final openErRates = await _openErApi.fetchLatestRates(base: 'EUR');
+            if (!_isCurrentRefresh(refreshGeneration)) {
+              return false;
+            }
             if (openErRates != null && openErRates.isNotEmpty) {
               normalizedRates = _normalizeEurBaseRates(openErRates);
             }
@@ -1884,8 +2037,14 @@ class DashboardLiveDataController extends ChangeNotifier {
           rate = normalizedRates?['USD'];
           if (rate == null || rate <= 0) {
             rate = await _frankfurter.fetchEurToUsd();
+            if (!_isCurrentRefresh(refreshGeneration)) {
+              return false;
+            }
             if ((rate == null || rate <= 0)) {
               rate = await _openErApi.fetchEurToUsd();
+              if (!_isCurrentRefresh(refreshGeneration)) {
+                return false;
+              }
             }
             if (rate != null && rate > 0) {
               normalizedRates ??= <String, double>{'EUR': 1.0};
@@ -1896,6 +2055,9 @@ class DashboardLiveDataController extends ChangeNotifier {
         case CurrencyBackend.mock:
           rate = null;
           break;
+      }
+      if (!_isCurrentRefresh(refreshGeneration)) {
+        return false;
       }
 
       if (normalizedRates != null && normalizedRates.isNotEmpty) {
@@ -1919,9 +2081,17 @@ class DashboardLiveDataController extends ChangeNotifier {
       await prefs.setDouble(_kCachedEurToUsdRate, rate);
       await prefs.setInt(_kCachedEurToUsdUpdatedAt, now.millisecondsSinceEpoch);
       return true;
-    } catch (e) {
+    } catch (error, stackTrace) {
+      if (!_isCurrentRefresh(refreshGeneration)) {
+        return false;
+      }
+      _recordRefreshError(
+        error: error,
+        stackTrace: stackTrace,
+        contextLabel: 'while refreshing currency rates',
+      );
       // Best-effort only. Keep the last stable value.
-      _lastCurrencyError = e;
+      _lastCurrencyError = error;
       _lastCurrencyErrorAt = now;
       return false;
     }

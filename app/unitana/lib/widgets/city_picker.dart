@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../common/debug/picker_perf_trace.dart';
@@ -18,6 +20,7 @@ class CityPicker extends StatefulWidget {
 
 class _CityPickerState extends State<CityPicker> {
   static const int _kSyncIndexThreshold = 350;
+  static const Duration _kSearchDebounce = Duration(milliseconds: 225);
 
   final TextEditingController _searchController = TextEditingController();
   late final Set<String> _curatedIds;
@@ -27,15 +30,20 @@ class _CityPickerState extends State<CityPicker> {
   String _query = '';
   bool _indexReady = false;
   int _indexEpoch = 0;
+  Timer? _searchDebounce;
+
+  bool get _isTest {
+    if (bool.fromEnvironment('FLUTTER_TEST')) return true;
+    final binding = WidgetsBinding.instance;
+    return binding.runtimeType.toString().contains('TestWidgetsFlutterBinding');
+  }
 
   @override
   void initState() {
     super.initState();
     _curatedIds = {for (final c in kCuratedCities) c.id};
     _rebuildIndex();
-    _searchController.addListener(() {
-      setState(() => _query = _searchController.text);
-    });
+    _searchController.addListener(_handleSearchChanged);
   }
 
   @override
@@ -48,8 +56,25 @@ class _CityPickerState extends State<CityPicker> {
 
   @override
   void dispose() {
+    _searchDebounce?.cancel();
+    _searchController.removeListener(_handleSearchChanged);
     _searchController.dispose();
     super.dispose();
+  }
+
+  void _handleSearchChanged() {
+    final nextQuery = _searchController.text;
+    if (_isTest) {
+      if (_query == nextQuery) return;
+      setState(() => _query = nextQuery);
+      return;
+    }
+
+    _searchDebounce?.cancel();
+    _searchDebounce = Timer(_kSearchDebounce, () {
+      if (!mounted || _query == nextQuery) return;
+      setState(() => _query = nextQuery);
+    });
   }
 
   @override
@@ -206,7 +231,7 @@ class _CityPickerState extends State<CityPicker> {
     // Add quick timezone hint without making the line too long.
     final tz = city.timeZoneId;
     if (tz.isNotEmpty) {
-      parts.add(tz);
+      parts.add(CityLabelUtils.cleanTimeZoneLabel(tz));
     }
 
     return parts.join(' • ');

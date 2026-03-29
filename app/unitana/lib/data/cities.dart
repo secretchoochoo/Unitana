@@ -7,6 +7,7 @@
 import 'dart:math' as math;
 
 import 'city_schema_validator.dart';
+import 'time_zone_label_utils.dart';
 
 /// Currency symbols used for display.
 ///
@@ -138,7 +139,8 @@ class City {
   }
 
   /// Secondary label used in lists. Example: "America/Denver · $ USD"
-  String get secondaryLabel => '$timeZoneId · $currencyLabel';
+  String get secondaryLabel =>
+      '${TimeZoneLabelUtils.clean(timeZoneId)} · $currencyLabel';
 
   String get countryLabel => countryCode.toUpperCase();
 

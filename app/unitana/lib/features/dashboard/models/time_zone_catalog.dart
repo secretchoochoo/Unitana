@@ -131,7 +131,7 @@ class TimeZoneCatalog {
         zoneId: home.timeZoneId,
         label:
             '${CityLabelUtils.cleanCityName(home.cityName)}, ${home.countryCode.toUpperCase()}',
-        subtitle: home.timeZoneId,
+        subtitle: CityLabelUtils.cleanTimeZoneLabel(home.timeZoneId),
         countryCode: home.countryCode,
       );
     }
@@ -142,7 +142,7 @@ class TimeZoneCatalog {
         zoneId: destination.timeZoneId,
         label:
             '${CityLabelUtils.cleanCityName(destination.cityName)}, ${destination.countryCode.toUpperCase()}',
-        subtitle: destination.timeZoneId,
+        subtitle: CityLabelUtils.cleanTimeZoneLabel(destination.timeZoneId),
         countryCode: destination.countryCode,
       );
     }
@@ -256,7 +256,7 @@ class TimeZoneCatalog {
           return (
             id: zone,
             label: '${city.cityName}, ${_cityCountryLabel(city)}',
-            subtitle: zone,
+            subtitle: CityLabelUtils.cleanTimeZoneLabel(zone),
           );
         })
         .toList(growable: false);
@@ -304,7 +304,7 @@ class TimeZoneCatalog {
             timeZoneId: entry.value.timeZoneId.trim(),
             label:
                 '${CityLabelUtils.cleanCityName(entry.value.cityName)}, ${_cityCountryLabel(entry.value)}',
-            subtitle: entry.value.timeZoneId,
+            subtitle: CityLabelUtils.cleanTimeZoneLabel(entry.value.timeZoneId),
             countryCode: entry.value.countryCode,
           ),
         )
@@ -318,7 +318,9 @@ class TimeZoneCatalog {
   static String _friendlyFallbackLabel(String zone) {
     if (zone == 'UTC') return 'UTC';
     final pieces = zone.split('/');
-    final tail = pieces.isEmpty ? zone : pieces.last.replaceAll('_', ' ');
+    final tail = pieces.isEmpty
+        ? CityLabelUtils.cleanTimeZoneLabel(zone)
+        : CityLabelUtils.cleanTimeZoneLabel(pieces.last);
     return '$tail ($zone)';
   }
 }

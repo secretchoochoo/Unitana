@@ -63,12 +63,24 @@ class DashboardCopy {
       DashboardLocalizations.of(
         context,
       ).text('dashboard.tool.history.clearButton', fallback: 'Clear History');
+  static String historyEmptyLabel(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.tool.history.empty', fallback: 'No history yet');
   static String copiedNotice(BuildContext context, String label) =>
       DashboardLocalizations.of(context).text(
         'dashboard.tool.notice.copied',
         params: <String, String>{'label': label},
         fallback: 'Copied $label',
       );
+  static String copiedResultNotice(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.tool.notice.copiedResult', fallback: 'Copied result');
+  static String copiedInputNotice(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.tool.notice.copiedInput', fallback: 'Copied input');
   static String addedWidgetNotice(BuildContext context, String title) =>
       DashboardLocalizations.of(context).text(
         'dashboard.tool.notice.addedWidget',
@@ -168,11 +180,47 @@ class DashboardCopy {
       DashboardLocalizations.of(
         context,
       ).text('dashboard.time.converter.cta', fallback: 'Convert Time');
+  static String resultPlaceholderInput(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.tool.result.placeholderInput', fallback: 'Result');
+  static String resultPlaceholderOutput(BuildContext context) =>
+      DashboardLocalizations.of(context).text(
+        'dashboard.tool.result.placeholderOutput',
+        fallback: 'Run Convert',
+      );
   static String timeConverterInputHint(BuildContext context) =>
       DashboardLocalizations.of(context).text(
         'dashboard.time.converter.inputHint',
         fallback: '2026-02-06 18:30',
       );
+  static String worldTimeZonesTitle(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.time.world.title', fallback: 'World Time Zones');
+  static String worldTimeSameZoneSummary(
+    BuildContext context, {
+    required String fromCity,
+    required String toCity,
+  }) => DashboardLocalizations.of(context).text(
+    'dashboard.time.world.sameZone',
+    params: <String, String>{'fromCity': fromCity, 'toCity': toCity},
+    fallback: '$fromCity and $toCity are in the same UTC band right now.',
+  );
+  static String worldTimeOffsetSummary(
+    BuildContext context, {
+    required String fromCity,
+    required String toCity,
+    required String deltaHours,
+  }) => DashboardLocalizations.of(context).text(
+    'dashboard.time.world.offsetSummary',
+    params: <String, String>{
+      'fromCity': fromCity,
+      'toCity': toCity,
+      'deltaHours': deltaHours,
+    },
+    fallback: '$toCity is $deltaHours hours from $fromCity.',
+  );
 
   static String factsTitle(BuildContext context, {required bool isJetLagTool}) {
     final key = isJetLagTool
@@ -1120,7 +1168,7 @@ class DashboardCopy {
   static String unitPriceCompareToggle(BuildContext context) =>
       DashboardLocalizations.of(context).text(
         'dashboard.unitPrice.compareToggle',
-        fallback: 'Compare with another product',
+        fallback: 'Compare with Product B',
       );
   static String unitPriceInvalidProductA(BuildContext context) =>
       DashboardLocalizations.of(context).text(

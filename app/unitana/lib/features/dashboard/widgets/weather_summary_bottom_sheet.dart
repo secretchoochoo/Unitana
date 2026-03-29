@@ -122,10 +122,7 @@ class WeatherSummaryBottomSheet extends StatelessWidget {
               );
         final refreshedLabel = '$refreshedLabelBase$staleSuffix';
 
-        final places = <Place>[
-          if (destination != null) destination!,
-          if (home != null) home!,
-        ];
+        final places = <Place>[?destination, ?home];
 
         Future<void> refreshNow() async {
           if (liveData.isRefreshing || places.isEmpty) return;

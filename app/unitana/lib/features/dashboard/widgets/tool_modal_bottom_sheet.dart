@@ -27,11 +27,17 @@ import '../models/lens_accents.dart';
 import '../models/numeric_input_policy.dart';
 import '../models/place_geo_lookup.dart';
 import '../models/time_zone_catalog.dart';
+import '../models/tool_helper_calculators.dart';
+import '../models/tool_lookup_catalog.dart';
+import '../models/tool_pace_energy_helpers.dart';
+import '../models/tool_time_helpers.dart';
 import '../models/tool_definitions.dart';
 import '../models/canonical_tools.dart';
 
 import 'destructive_confirmation_sheet.dart';
-import 'pulse_swap_icon.dart';
+import 'tool_default_surface.dart';
+import 'tool_lookup_surface.dart';
+import 'tool_time_surface.dart';
 
 /// Bottom sheet calculator for tool tiles.
 ///
@@ -250,25 +256,7 @@ class _TerminalLine extends StatelessWidget {
   }
 }
 
-class _LookupEntry {
-  final String keyId;
-  final String label;
-  final Map<String, String> valuesBySystem;
-  final String? note;
-  final bool approximate;
-
-  const _LookupEntry({
-    required this.keyId,
-    required this.label,
-    required this.valuesBySystem,
-    this.note,
-    this.approximate = false,
-  });
-}
-
 typedef _TimeZonePickerSelection = ({String zoneId, String displayLabel});
-
-enum _PaceMode { running, rowing }
 
 class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
   // MVP: Currency tool supports EUR ↔ USD, using a live/demo EUR→USD rate.
@@ -344,7 +332,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
   int _jetLagWakeMinutes = 7 * 60;
   bool _jetLagOverlapExpanded = false;
   double _paceGoalDistanceKm = 5.0;
-  _PaceMode _paceMode = _PaceMode.running;
+  PaceActivityMode _paceMode = PaceActivityMode.running;
   String _paceBuilderDistanceUnit = 'km';
   String _energyWeightUnit = 'kg';
   String _energyActivity = 'moderate';
@@ -686,680 +674,10 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
     }
   }
 
-  List<String> _lookupSystemsForTool() {
-    switch (widget.tool.canonicalToolId) {
-      case CanonicalToolId.shoeSizes:
-        return const <String>[
-          'US Men',
-          'US Women',
-          'EU',
-          'UK',
-          'AU',
-          'JP (cm)',
-        ];
-      case CanonicalToolId.paperSizes:
-        return const <String>['ISO', 'US', 'JIS', 'ANSI/ARCH'];
-      case CanonicalToolId.clothingSizes:
-        return const <String>['US', 'EU', 'UK', 'JP'];
-      case CanonicalToolId.mattressSizes:
-        return const <String>['US', 'EU', 'UK', 'AU', 'JP'];
-      case CanonicalToolId.cupsGramsEstimates:
-        return const <String>['Cup', 'Tbsp', 'Tsp', 'Weight'];
-      default:
-        return const <String>[];
-    }
-  }
+  List<ToolLookupEntry> _lookupEntriesForTool() =>
+      toolLookupEntriesFor(widget.tool.canonicalToolId);
 
-  List<_LookupEntry> _lookupEntriesForTool() {
-    switch (widget.tool.canonicalToolId) {
-      case CanonicalToolId.shoeSizes:
-        return const <_LookupEntry>[
-          _LookupEntry(
-            keyId: 'shoe_2',
-            label: '20.0',
-            valuesBySystem: <String, String>{
-              'US Men': '2',
-              'US Women': '3.5',
-              'EU': '34',
-              'UK': '1',
-              'AU': '1',
-              'JP (cm)': '20.0 cm',
-            },
-          ),
-          _LookupEntry(
-            keyId: 'shoe_3',
-            label: '21.0',
-            valuesBySystem: <String, String>{
-              'US Men': '3',
-              'US Women': '4.5',
-              'EU': '35',
-              'UK': '2',
-              'AU': '2',
-              'JP (cm)': '21.0 cm',
-            },
-          ),
-          _LookupEntry(
-            keyId: 'shoe_4',
-            label: '22.0',
-            valuesBySystem: <String, String>{
-              'US Men': '4',
-              'US Women': '5.5',
-              'EU': '36',
-              'UK': '3.5',
-              'AU': '3.5',
-              'JP (cm)': '22.0 cm',
-            },
-          ),
-          _LookupEntry(
-            keyId: 'shoe_4_5',
-            label: '22.5',
-            valuesBySystem: <String, String>{
-              'US Men': '4.5',
-              'US Women': '6',
-              'EU': '36.5',
-              'UK': '4',
-              'AU': '4',
-              'JP (cm)': '22.5 cm',
-            },
-          ),
-          _LookupEntry(
-            keyId: 'shoe_5',
-            label: '23.0',
-            valuesBySystem: <String, String>{
-              'US Men': '5',
-              'US Women': '6.5',
-              'EU': '37',
-              'UK': '4.5',
-              'AU': '4.5',
-              'JP (cm)': '23.0 cm',
-            },
-          ),
-          _LookupEntry(
-            keyId: 'shoe_5_5',
-            label: '23.5',
-            valuesBySystem: <String, String>{
-              'US Men': '5.5',
-              'US Women': '7',
-              'EU': '37.5',
-              'UK': '5',
-              'AU': '5',
-              'JP (cm)': '23.5 cm',
-            },
-          ),
-          _LookupEntry(
-            keyId: 'shoe_6',
-            label: '24.0',
-            valuesBySystem: <String, String>{
-              'US Men': '6',
-              'US Women': '7.5',
-              'EU': '38',
-              'UK': '5.5',
-              'AU': '5.5',
-              'JP (cm)': '24.0 cm',
-            },
-          ),
-          _LookupEntry(
-            keyId: 'shoe_6_5',
-            label: '24.5',
-            valuesBySystem: <String, String>{
-              'US Men': '6.5',
-              'US Women': '8',
-              'EU': '39',
-              'UK': '5.5',
-              'AU': '5.5',
-              'JP (cm)': '24.5 cm',
-            },
-          ),
-          _LookupEntry(
-            keyId: 'shoe_7',
-            label: '25.0',
-            valuesBySystem: <String, String>{
-              'US Men': '7',
-              'US Women': '8.5',
-              'EU': '40',
-              'UK': '6',
-              'AU': '6',
-              'JP (cm)': '25.0 cm',
-            },
-          ),
-          _LookupEntry(
-            keyId: 'shoe_8',
-            label: '26.0',
-            valuesBySystem: <String, String>{
-              'US Men': '8',
-              'US Women': '9.5',
-              'EU': '41',
-              'UK': '7',
-              'AU': '7',
-              'JP (cm)': '26.0 cm',
-            },
-          ),
-          _LookupEntry(
-            keyId: 'shoe_9',
-            label: '27.0',
-            valuesBySystem: <String, String>{
-              'US Men': '9',
-              'US Women': '10.5',
-              'EU': '42',
-              'UK': '8',
-              'AU': '8',
-              'JP (cm)': '27.0 cm',
-            },
-          ),
-          _LookupEntry(
-            keyId: 'shoe_10',
-            label: '28.0',
-            valuesBySystem: <String, String>{
-              'US Men': '10',
-              'US Women': '11.5',
-              'EU': '43',
-              'UK': '9',
-              'AU': '9',
-              'JP (cm)': '28.0 cm',
-            },
-          ),
-          _LookupEntry(
-            keyId: 'shoe_11',
-            label: '29.0',
-            valuesBySystem: <String, String>{
-              'US Men': '11',
-              'US Women': '12.5',
-              'EU': '44.5',
-              'UK': '10',
-              'AU': '10',
-              'JP (cm)': '29.0 cm',
-            },
-          ),
-          _LookupEntry(
-            keyId: 'shoe_12',
-            label: '30.0',
-            valuesBySystem: <String, String>{
-              'US Men': '12',
-              'US Women': '13.5',
-              'EU': '46',
-              'UK': '11',
-              'AU': '11',
-              'JP (cm)': '30.0 cm',
-            },
-          ),
-          _LookupEntry(
-            keyId: 'shoe_13',
-            label: '31.0',
-            valuesBySystem: <String, String>{
-              'US Men': '13',
-              'US Women': '14.5',
-              'EU': '47',
-              'UK': '12',
-              'AU': '12',
-              'JP (cm)': '31.0 cm',
-            },
-          ),
-          _LookupEntry(
-            keyId: 'shoe_14',
-            label: '32.0',
-            valuesBySystem: <String, String>{
-              'US Men': '14',
-              'US Women': '15.5',
-              'EU': '48',
-              'UK': '13',
-              'AU': '13',
-              'JP (cm)': '32.0 cm',
-            },
-          ),
-          _LookupEntry(
-            keyId: 'shoe_14_5',
-            label: '32.5',
-            valuesBySystem: <String, String>{
-              'US Men': '14.5',
-              'US Women': '16',
-              'EU': '49',
-              'UK': '13.5',
-              'AU': '13.5',
-              'JP (cm)': '32.5 cm',
-            },
-          ),
-          _LookupEntry(
-            keyId: 'shoe_15',
-            label: '33.0',
-            valuesBySystem: <String, String>{
-              'US Men': '15',
-              'US Women': '16.5',
-              'EU': '50',
-              'UK': '14',
-              'AU': '14',
-              'JP (cm)': '33.0 cm',
-            },
-          ),
-          _LookupEntry(
-            keyId: 'shoe_16',
-            label: '34.0',
-            valuesBySystem: <String, String>{
-              'US Men': '16',
-              'US Women': '17.5',
-              'EU': '51',
-              'UK': '15',
-              'AU': '15',
-              'JP (cm)': '34.0 cm',
-            },
-          ),
-          _LookupEntry(
-            keyId: 'shoe_17',
-            label: '35.0',
-            valuesBySystem: <String, String>{
-              'US Men': '17',
-              'US Women': '18.5',
-              'EU': '52',
-              'UK': '16',
-              'AU': '16',
-              'JP (cm)': '35.0 cm',
-            },
-          ),
-        ];
-      case CanonicalToolId.clothingSizes:
-        return const <_LookupEntry>[
-          _LookupEntry(
-            keyId: 'cloth_w_tops_xs',
-            label: 'Women Tops • XS',
-            valuesBySystem: <String, String>{
-              'US': '2',
-              'EU': '34',
-              'UK': '6',
-              'JP': '5',
-            },
-            note:
-                'Approximate reference only • Source: public standards + retailer aggregate.',
-            approximate: true,
-          ),
-          _LookupEntry(
-            keyId: 'cloth_w_tops_s',
-            label: 'Women Tops • S',
-            valuesBySystem: <String, String>{
-              'US': '4-6',
-              'EU': '36-38',
-              'UK': '8-10',
-              'JP': '7-9',
-            },
-            note:
-                'Approximate reference only • Source: public standards + retailer aggregate.',
-            approximate: true,
-          ),
-          _LookupEntry(
-            keyId: 'cloth_w_bottoms_6',
-            label: 'Women Bottoms • US 6',
-            valuesBySystem: <String, String>{
-              'US': '6',
-              'EU': '38',
-              'UK': '10',
-              'JP': '9',
-            },
-            note:
-                'Approximate reference only • Source: public standards + retailer aggregate.',
-            approximate: true,
-          ),
-          _LookupEntry(
-            keyId: 'cloth_w_bottoms_10',
-            label: 'Women Bottoms • US 10',
-            valuesBySystem: <String, String>{
-              'US': '10',
-              'EU': '42',
-              'UK': '14',
-              'JP': '13',
-            },
-            note:
-                'Approximate reference only • Source: public standards + retailer aggregate.',
-            approximate: true,
-          ),
-          _LookupEntry(
-            keyId: 'cloth_m_tops_m',
-            label: 'Men Tops • M',
-            valuesBySystem: <String, String>{
-              'US': 'M',
-              'EU': '48',
-              'UK': 'M',
-              'JP': 'L',
-            },
-            note:
-                'Approximate reference only • Source: public standards + retailer aggregate.',
-            approximate: true,
-          ),
-          _LookupEntry(
-            keyId: 'cloth_m_tops_l',
-            label: 'Men Tops • L',
-            valuesBySystem: <String, String>{
-              'US': 'L',
-              'EU': '50',
-              'UK': 'L',
-              'JP': 'LL',
-            },
-            note:
-                'Approximate reference only • Source: public standards + retailer aggregate.',
-            approximate: true,
-          ),
-          _LookupEntry(
-            keyId: 'cloth_m_bottoms_32',
-            label: 'Men Bottoms • Waist 32',
-            valuesBySystem: <String, String>{
-              'US': '32',
-              'EU': '48',
-              'UK': '32',
-              'JP': '82',
-            },
-            note:
-                'Approximate reference only • Source: public standards + retailer aggregate.',
-            approximate: true,
-          ),
-          _LookupEntry(
-            keyId: 'cloth_m_bottoms_34',
-            label: 'Men Bottoms • Waist 34',
-            valuesBySystem: <String, String>{
-              'US': '34',
-              'EU': '50',
-              'UK': '34',
-              'JP': '86',
-            },
-            note:
-                'Approximate reference only • Source: public standards + retailer aggregate.',
-            approximate: true,
-          ),
-          _LookupEntry(
-            keyId: 'cloth_outer_unisex_m',
-            label: 'Outerwear (Unisex) • M',
-            valuesBySystem: <String, String>{
-              'US': 'M',
-              'EU': '48',
-              'UK': 'M',
-              'JP': 'L',
-            },
-            note:
-                'Approximate reference only • Source: public standards + retailer aggregate.',
-            approximate: true,
-          ),
-          _LookupEntry(
-            keyId: 'cloth_outer_unisex_xl',
-            label: 'Outerwear (Unisex) • XL',
-            valuesBySystem: <String, String>{
-              'US': 'XL',
-              'EU': '54',
-              'UK': 'XL',
-            },
-            note:
-                'Approximate reference only • Source: public standards + retailer aggregate.',
-            approximate: true,
-          ),
-        ];
-      case CanonicalToolId.paperSizes:
-        return const <_LookupEntry>[
-          _LookupEntry(
-            keyId: 'paper_a5',
-            label: 'A5',
-            valuesBySystem: <String, String>{
-              'ISO': 'A5 (148 x 210 mm)',
-              'US': 'Half Letter (5.5 x 8.5 in)',
-              'JIS': 'B6 (128 x 182 mm)',
-              'ANSI/ARCH': 'ANSI A (8.5 x 11 in)',
-            },
-            note: 'Closest common equivalents by region.',
-            approximate: true,
-          ),
-          _LookupEntry(
-            keyId: 'paper_a4',
-            label: 'A4',
-            valuesBySystem: <String, String>{
-              'ISO': 'A4 (210 x 297 mm)',
-              'US': 'Letter (8.5 x 11 in)',
-              'JIS': 'B5 (182 x 257 mm)',
-              'ANSI/ARCH': 'ANSI A (8.5 x 11 in)',
-            },
-            note: 'Closest common equivalents by region.',
-            approximate: true,
-          ),
-          _LookupEntry(
-            keyId: 'paper_a3',
-            label: 'A3',
-            valuesBySystem: <String, String>{
-              'ISO': 'A3 (297 x 420 mm)',
-              'US': 'Tabloid (11 x 17 in)',
-              'JIS': 'B4 (257 x 364 mm)',
-              'ANSI/ARCH': 'ANSI B (11 x 17 in)',
-            },
-            note: 'Closest common equivalents by region.',
-            approximate: true,
-          ),
-          _LookupEntry(
-            keyId: 'paper_b5',
-            label: 'B5',
-            valuesBySystem: <String, String>{
-              'ISO': 'B5 (176 x 250 mm)',
-              'US': 'Statement (5.5 x 8.5 in)',
-              'JIS': 'B5 (182 x 257 mm)',
-              'ANSI/ARCH': 'ANSI A (8.5 x 11 in)',
-            },
-            note: 'ISO B-series and JIS B-series are different dimensions.',
-            approximate: true,
-          ),
-          _LookupEntry(
-            keyId: 'paper_b4',
-            label: 'B4',
-            valuesBySystem: <String, String>{
-              'ISO': 'B4 (250 x 353 mm)',
-              'US': 'Legal (8.5 x 14 in)',
-              'JIS': 'B4 (257 x 364 mm)',
-              'ANSI/ARCH': 'ANSI B (11 x 17 in)',
-            },
-            note: 'ISO B-series and JIS B-series are different dimensions.',
-            approximate: true,
-          ),
-          _LookupEntry(
-            keyId: 'paper_letter',
-            label: 'Letter',
-            valuesBySystem: <String, String>{
-              'ISO': 'A4 (210 x 297 mm)',
-              'US': '216 x 279 mm (8.5 x 11 in)',
-              'JIS': 'B5 (182 x 257 mm)',
-              'ANSI/ARCH': 'ANSI A (8.5 x 11 in)',
-            },
-            note: 'Closest common equivalents by region.',
-            approximate: true,
-          ),
-          _LookupEntry(
-            keyId: 'paper_legal',
-            label: 'Legal',
-            valuesBySystem: <String, String>{
-              'ISO': 'B4 (250 x 353 mm)',
-              'US': '216 x 356 mm (8.5 x 14 in)',
-              'JIS': 'B4 (257 x 364 mm)',
-              'ANSI/ARCH': 'ANSI B (11 x 17 in)',
-            },
-            note: 'Closest common equivalents by region.',
-            approximate: true,
-          ),
-          _LookupEntry(
-            keyId: 'paper_arch_d',
-            label: 'ARCH D',
-            valuesBySystem: <String, String>{
-              'ISO': 'A1 (594 x 841 mm)',
-              'US': 'ARCH D (24 x 36 in)',
-              'JIS': 'B2 (515 x 728 mm)',
-              'ANSI/ARCH': 'ARCH D (24 x 36 in)',
-            },
-            note: 'Architecture/engineering sheet equivalents.',
-            approximate: true,
-          ),
-        ];
-      case CanonicalToolId.mattressSizes:
-        return const <_LookupEntry>[
-          _LookupEntry(
-            keyId: 'matt_twin',
-            label: 'Twin',
-            valuesBySystem: <String, String>{
-              'US': 'Twin (38 x 75 in)',
-              'EU': 'Single (90 x 200 cm)',
-              'UK': 'Single (90 x 190 cm)',
-              'AU': 'Single (92 x 188 cm)',
-              'JP': 'Single (97 x 195 cm)',
-            },
-            note: 'Regional naming varies by vendor.',
-            approximate: true,
-          ),
-          _LookupEntry(
-            keyId: 'matt_single_xl',
-            label: 'Twin XL / Long Single',
-            valuesBySystem: <String, String>{
-              'US': 'Twin XL (38 x 80 in)',
-              'EU': 'Single XL (90 x 210 cm)',
-              'UK': 'Long Single (90 x 200 cm)',
-              'AU': 'Long Single (92 x 203 cm)',
-              'JP': 'Semi-double (120 x 195 cm)',
-            },
-            note: 'Useful for dorm and split-king setups.',
-            approximate: true,
-          ),
-          _LookupEntry(
-            keyId: 'matt_full',
-            label: 'Full / Double',
-            valuesBySystem: <String, String>{
-              'US': 'Full (54 x 75 in)',
-              'EU': 'Double (140 x 200 cm)',
-              'UK': 'Double (135 x 190 cm)',
-              'AU': 'Double (138 x 188 cm)',
-              'JP': 'Double (140 x 195 cm)',
-            },
-            note: 'Regional naming varies by vendor.',
-            approximate: true,
-          ),
-          _LookupEntry(
-            keyId: 'matt_queen',
-            label: 'Queen',
-            valuesBySystem: <String, String>{
-              'US': 'Queen (60 x 80 in)',
-              'EU': 'King (160 x 200 cm)',
-              'UK': 'King (150 x 200 cm)',
-              'AU': 'Queen (153 x 203 cm)',
-              'JP': 'Queen (160 x 195 cm)',
-            },
-            note: 'Approximate cross-region equivalent.',
-            approximate: true,
-          ),
-          _LookupEntry(
-            keyId: 'matt_king',
-            label: 'King',
-            valuesBySystem: <String, String>{
-              'US': 'King (76 x 80 in)',
-              'EU': 'Super King (180 x 200 cm)',
-              'UK': 'Super King (180 x 200 cm)',
-              'AU': 'King (183 x 203 cm)',
-              'JP': 'King (180 x 195 cm)',
-            },
-            note: 'Approximate cross-region equivalent.',
-            approximate: true,
-          ),
-          _LookupEntry(
-            keyId: 'matt_super_king_us',
-            label: 'California King',
-            valuesBySystem: <String, String>{
-              'US': 'California King (72 x 84 in)',
-              'EU': 'Super King (180 x 210 cm)',
-              'UK': 'Super King (180 x 200 cm)',
-              'AU': 'Super King (203 x 203 cm)',
-              'JP': 'Wide King (200 x 200 cm)',
-            },
-            note: 'Cross-region equivalence is approximate by shape and area.',
-            approximate: true,
-          ),
-        ];
-      case CanonicalToolId.cupsGramsEstimates:
-        return const <_LookupEntry>[
-          _LookupEntry(
-            keyId: 'cupsgrams_flour',
-            label: 'Flour (all-purpose)',
-            valuesBySystem: <String, String>{
-              'Cup': '1 cup',
-              'Tbsp': '16 tbsp',
-              'Tsp': '48 tsp',
-              'Weight': '120 g',
-            },
-            note: 'Approximate scoop-and-level reference.',
-            approximate: true,
-          ),
-          _LookupEntry(
-            keyId: 'cupsgrams_sugar',
-            label: 'Sugar (granulated)',
-            valuesBySystem: <String, String>{
-              'Cup': '1 cup',
-              'Tbsp': '16 tbsp',
-              'Tsp': '48 tsp',
-              'Weight': '200 g',
-            },
-            note: 'Pack density varies by crystal size and humidity.',
-            approximate: true,
-          ),
-          _LookupEntry(
-            keyId: 'cupsgrams_brown_sugar',
-            label: 'Brown sugar (packed)',
-            valuesBySystem: <String, String>{
-              'Cup': '1 cup packed',
-              'Tbsp': '16 tbsp packed',
-              'Tsp': '48 tsp packed',
-              'Weight': '220 g',
-            },
-            note: 'Assumes packed cup measurement.',
-            approximate: true,
-          ),
-          _LookupEntry(
-            keyId: 'cupsgrams_butter',
-            label: 'Butter',
-            valuesBySystem: <String, String>{
-              'Cup': '1 cup / 2 sticks',
-              'Tbsp': '16 tbsp',
-              'Tsp': '48 tsp',
-              'Weight': '227 g',
-            },
-            note: 'Equivalent to 2 US sticks.',
-            approximate: true,
-          ),
-          _LookupEntry(
-            keyId: 'cupsgrams_rice',
-            label: 'Rice (uncooked white)',
-            valuesBySystem: <String, String>{
-              'Cup': '1 cup',
-              'Tbsp': '16 tbsp',
-              'Tsp': '48 tsp',
-              'Weight': '185 g',
-            },
-            note: 'Estimate before cooking.',
-            approximate: true,
-          ),
-          _LookupEntry(
-            keyId: 'cupsgrams_oats',
-            label: 'Oats (rolled)',
-            valuesBySystem: <String, String>{
-              'Cup': '1 cup',
-              'Tbsp': '16 tbsp',
-              'Tsp': '48 tsp',
-              'Weight': '90 g',
-            },
-            note: 'Rolled oats are lighter by volume than flour.',
-            approximate: true,
-          ),
-          _LookupEntry(
-            keyId: 'cupsgrams_honey',
-            label: 'Honey',
-            valuesBySystem: <String, String>{
-              'Cup': '1 cup',
-              'Tbsp': '16 tbsp',
-              'Tsp': '48 tsp',
-              'Weight': '340 g',
-            },
-            note: 'Dense liquid; weight is significantly higher per cup.',
-            approximate: true,
-          ),
-        ];
-      default:
-        return const <_LookupEntry>[];
-    }
-  }
-
-  _LookupEntry? _activeLookupEntry() {
+  ToolLookupEntry? _activeLookupEntry() {
     final rows = _lookupEntriesForTool();
     if (rows.isEmpty) return null;
     final key = _lookupEntryKey;
@@ -1370,48 +688,20 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
     return rows.first;
   }
 
-  String _lookupValue({required _LookupEntry row, required String system}) {
+  String _lookupValue({required ToolLookupEntry row, required String system}) {
     return row.valuesBySystem[system] ?? '—';
   }
 
   void _seedLookupDefaults() {
-    switch (widget.tool.canonicalToolId) {
-      case CanonicalToolId.shoeSizes:
-        _lookupFromSystem = 'US Men';
-        _lookupToSystem = 'EU';
-        _lookupEntryKey = 'shoe_9';
-        return;
-      case CanonicalToolId.paperSizes:
-        _lookupFromSystem = 'ISO';
-        _lookupToSystem = 'US';
-        _lookupEntryKey = 'paper_a4';
-        return;
-      case CanonicalToolId.clothingSizes:
-        _lookupFromSystem = 'US';
-        _lookupToSystem = 'EU';
-        _lookupEntryKey = 'cloth_w_tops_s';
-        return;
-      case CanonicalToolId.mattressSizes:
-        _lookupFromSystem = 'US';
-        _lookupToSystem = 'EU';
-        _lookupEntryKey = 'matt_queen';
-        return;
-      case CanonicalToolId.cupsGramsEstimates:
-        _lookupFromSystem = 'Cup';
-        _lookupToSystem = 'Weight';
-        _lookupEntryKey = 'cupsgrams_flour';
-        return;
-      default:
-        _lookupFromSystem = null;
-        _lookupToSystem = null;
-        _lookupEntryKey = null;
-        return;
-    }
+    final defaults = toolLookupDefaultsFor(widget.tool.canonicalToolId);
+    _lookupFromSystem = defaults?.fromSystem;
+    _lookupToSystem = defaults?.toSystem;
+    _lookupEntryKey = defaults?.entryKey;
   }
 
   void _seedTipHelperDefaults() {
     final countryCode = _activeTipCountryCode();
-    _tipPresetPercents = _tipPresetsForCountry(countryCode);
+    _tipPresetPercents = tipPresetsForCountry(countryCode);
     _tipPercent = _tipPresetPercents.contains(15)
         ? 15
         : _tipPresetPercents[(_tipPresetPercents.length / 2).floor()];
@@ -1424,7 +714,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
 
   void _seedTaxVatDefaults() {
     final countryCode = _activeTipCountryCode();
-    _taxPresetPercents = _taxPresetsForCountry(countryCode);
+    _taxPresetPercents = taxPresetsForCountry(countryCode);
     _taxPercent = _taxPresetPercents.contains(8)
         ? 8
         : _taxPresetPercents[(_taxPresetPercents.length / 2).floor()];
@@ -1483,44 +773,6 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
         .toUpperCase();
   }
 
-  List<int> _tipPresetsForCountry(String countryCode) {
-    switch (countryCode) {
-      case 'US':
-      case 'CA':
-        return const <int>[15, 18, 20];
-      case 'JP':
-      case 'KR':
-        return const <int>[0, 5, 10];
-      case 'PT':
-      case 'ES':
-      case 'IT':
-      case 'FR':
-      case 'DE':
-        return const <int>[5, 10, 15];
-      default:
-        return const <int>[10, 15, 20];
-    }
-  }
-
-  List<int> _taxPresetsForCountry(String countryCode) {
-    switch (countryCode) {
-      case 'US':
-        return const <int>[6, 8, 10];
-      case 'CA':
-        return const <int>[5, 13, 15];
-      case 'GB':
-      case 'FR':
-      case 'DE':
-      case 'IT':
-      case 'ES':
-        return const <int>[5, 10, 20];
-      case 'JP':
-        return const <int>[8, 10];
-      default:
-        return const <int>[5, 8, 10];
-    }
-  }
-
   String _tipCurrencyCode() {
     final cc = _activeTipCountryCode();
     final code = kCountryToCurrencyCode[cc];
@@ -1546,33 +798,6 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
     return parsed;
   }
 
-  static const Map<String, double> _unitPriceMassToG = <String, double>{
-    'g': 1.0,
-    'kg': 1000.0,
-    'oz': 28.349523125,
-    'lb': 453.59237,
-  };
-  static const Map<String, double> _unitPriceVolumeToMl = <String, double>{
-    'mL': 1.0,
-    'L': 1000.0,
-    'fl oz': 29.5735295625,
-  };
-
-  bool _isUnitPriceMassUnit(String unit) => _unitPriceMassToG.containsKey(unit);
-  bool _isUnitPriceVolumeUnit(String unit) =>
-      _unitPriceVolumeToMl.containsKey(unit);
-
-  bool _sameUnitPriceFamily(String a, String b) {
-    return (_isUnitPriceMassUnit(a) && _isUnitPriceMassUnit(b)) ||
-        (_isUnitPriceVolumeUnit(a) && _isUnitPriceVolumeUnit(b));
-  }
-
-  String _defaultFamilyUnitFor(String unit) {
-    if (_isUnitPriceMassUnit(unit)) return 'g';
-    if (_isUnitPriceVolumeUnit(unit)) return 'mL';
-    return 'g';
-  }
-
   void _handleUnitPriceUnitSelected({
     required bool forProductA,
     required String unit,
@@ -1581,28 +806,18 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
       if (forProductA) {
         _unitPriceUnitA = unit;
         if (_unitPriceCompareEnabled &&
-            !_sameUnitPriceFamily(_unitPriceUnitA, _unitPriceUnitB)) {
-          _unitPriceUnitB = _defaultFamilyUnitFor(unit);
+            !unitPriceSameFamily(_unitPriceUnitA, _unitPriceUnitB)) {
+          _unitPriceUnitB = unitPriceDefaultFamilyUnitFor(unit);
         }
       } else {
         _unitPriceUnitB = unit;
         if (_unitPriceCompareEnabled &&
-            !_sameUnitPriceFamily(_unitPriceUnitA, _unitPriceUnitB)) {
-          _unitPriceUnitA = _defaultFamilyUnitFor(unit);
+            !unitPriceSameFamily(_unitPriceUnitA, _unitPriceUnitB)) {
+          _unitPriceUnitA = unitPriceDefaultFamilyUnitFor(unit);
         }
       }
     });
   }
-
-  List<String> get _unitPriceUnits => const <String>[
-    'g',
-    'kg',
-    'oz',
-    'lb',
-    'mL',
-    'L',
-    'fl oz',
-  ];
 
   double? _parsePositiveText(String raw) {
     final trimmed = raw.trim();
@@ -1612,17 +827,6 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
       return null;
     }
     return parsed;
-  }
-
-  double? _unitPriceToBaseAmount({
-    required double quantity,
-    required String unit,
-  }) {
-    final massFactor = _unitPriceMassToG[unit];
-    if (massFactor != null) return quantity * massFactor;
-    final volumeFactor = _unitPriceVolumeToMl[unit];
-    if (volumeFactor != null) return quantity * volumeFactor;
-    return null;
   }
 
   String _unitPricePrimaryCurrencyCode() {
@@ -1669,20 +873,6 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
     return null;
   }
 
-  double _applyTipRounding(double value) {
-    switch (_tipRoundingMode) {
-      case 'nearest':
-        return value.roundToDouble();
-      case 'up':
-        return value.ceilToDouble();
-      case 'down':
-        return value.floorToDouble();
-      case 'none':
-      default:
-        return value;
-    }
-  }
-
   String _moneyWithCode(double amount) {
     final code = _tipCurrencyCode();
     final symbol = _currencySymbol(code);
@@ -1710,36 +900,15 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
     return parsed;
   }
 
-  double _hydrationClimateLitersBonus() {
-    switch (_hydrationClimateBand) {
-      case 'cool':
-        return 0.0;
-      case 'warm':
-        return 0.35;
-      case 'hot':
-        return 0.7;
-      case 'temperate':
-      default:
-        return 0.15;
-    }
-  }
-
   Widget _buildHydrationBody(BuildContext context, Color accent) {
     final panelBg = _ToolModalThemePolicy.panelBg(context);
     final panelBorder = _ToolModalThemePolicy.panelBorder(context);
     final textMuted = _ToolModalThemePolicy.textMuted(context);
-    final weightKg = _parseHydrationWeightKg();
-    final exerciseMinutes = _parseHydrationExerciseMinutes();
-
-    final baseLiters = weightKg == null ? null : (weightKg * 0.033);
-    final exerciseLiters = exerciseMinutes == null
-        ? null
-        : (exerciseMinutes * 0.006);
-    final climateLiters = _hydrationClimateLitersBonus();
-    final totalLiters = (baseLiters == null || exerciseLiters == null)
-        ? null
-        : math.max(1.0, baseLiters + exerciseLiters + climateLiters);
-    final totalOz = totalLiters == null ? null : totalLiters * 33.814;
+    final estimate = computeHydrationEstimate(
+      weightKg: _parseHydrationWeightKg(),
+      exerciseMinutes: _parseHydrationExerciseMinutes(),
+      climateBand: _hydrationClimateBand,
+    );
 
     String climateLabel(String band) {
       switch (band) {
@@ -1827,7 +996,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
             borderRadius: BorderRadius.circular(14),
             border: Border.all(color: panelBorder),
           ),
-          child: (totalLiters == null || totalOz == null)
+          child: estimate == null
               ? Text(
                   'Enter valid weight and exercise minutes.',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
@@ -1842,7 +1011,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                       prompt: '>',
                       input: 'Daily fluid estimate',
                       output:
-                          '${totalLiters.toStringAsFixed(1)} L (${totalOz.toStringAsFixed(0)} fl oz)',
+                          '${estimate.totalLiters.toStringAsFixed(1)} L (${estimate.totalFluidOunces.toStringAsFixed(0)} fl oz)',
                       emphasize: true,
                       arrowColor: accent,
                     ),
@@ -1865,16 +1034,12 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
     final panelBg = _ToolModalThemePolicy.panelBg(context);
     final panelBorder = _ToolModalThemePolicy.panelBorder(context);
     final textMuted = _ToolModalThemePolicy.textMuted(context);
-    final amount = _parseTipAmount();
-    final tipRaw = amount == null ? null : amount * (_tipPercent / 100.0);
-    final totalRaw = amount == null ? null : amount + tipRaw!;
-    final totalRounded = totalRaw == null ? null : _applyTipRounding(totalRaw);
-    final perPerson = totalRounded == null
-        ? null
-        : totalRounded / _tipSplitCount;
-    final roundDelta = (totalRounded != null && totalRaw != null)
-        ? (totalRounded - totalRaw)
-        : null;
+    final tip = computeTip(
+      amount: _parseTipAmount(),
+      tipPercent: _tipPercent,
+      splitCount: _tipSplitCount,
+      roundingMode: _tipRoundingMode,
+    );
 
     return ListView(
       key: ValueKey('tool_tip_scroll_${widget.tool.id}'),
@@ -1975,7 +1140,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
             borderRadius: BorderRadius.circular(14),
             border: Border.all(color: panelBorder),
           ),
-          child: amount == null
+          child: tip == null
               ? Text(
                   DashboardCopy.tipInvalidAmount(context),
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
@@ -1989,7 +1154,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                     _TerminalLine(
                       prompt: '>',
                       input: DashboardCopy.tipLineLabel(context, _tipPercent),
-                      output: _moneyWithCode(tipRaw!),
+                      output: _moneyWithCode(tip.tipAmount),
                       emphasize: true,
                       arrowColor: accent,
                     ),
@@ -1997,7 +1162,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                     _TerminalLine(
                       prompt: '>',
                       input: DashboardCopy.tipTotalLabel(context),
-                      output: _moneyWithCode(totalRounded!),
+                      output: _moneyWithCode(tip.totalAmount),
                       emphasize: true,
                       arrowColor: accent,
                     ),
@@ -2008,20 +1173,21 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                         context,
                         _tipSplitCount,
                       ),
-                      output: _moneyWithCode(perPerson!),
+                      output: _moneyWithCode(tip.perPersonAmount),
                       emphasize: false,
                       arrowColor: accent,
                     ),
-                    if (roundDelta != null && roundDelta.abs() >= 0.005) ...[
+                    if (tip.roundDelta.abs() >= 0.005) ...[
                       const SizedBox(height: 8),
                       Text(
                         DashboardCopy.tipRoundingAdjustment(
                           context,
-                          sign: roundDelta > 0 ? '+' : '',
-                          deltaAmount: _moneyWithCode(roundDelta).replaceFirst(
-                            _currencySymbol(_tipCurrencyCode()),
-                            '',
-                          ),
+                          sign: tip.roundDelta > 0 ? '+' : '',
+                          deltaAmount: _moneyWithCode(tip.roundDelta)
+                              .replaceFirst(
+                                _currencySymbol(_tipCurrencyCode()),
+                                '',
+                              ),
                         ),
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: textMuted,
@@ -2040,16 +1206,12 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
     final panelBg = _ToolModalThemePolicy.panelBg(context);
     final panelBorder = _ToolModalThemePolicy.panelBorder(context);
     final textMuted = _ToolModalThemePolicy.textMuted(context);
-    final amount = _parseTaxVatAmount();
-    final rate = _taxPercent / 100.0;
     final isAddOn = _taxMode == 'add_on';
-    final subtotal = amount == null
-        ? null
-        : (isAddOn ? amount : amount / (1.0 + rate));
-    final tax = amount == null
-        ? null
-        : (isAddOn ? amount * rate : amount - subtotal!);
-    final total = amount == null ? null : (isAddOn ? amount + tax! : amount);
+    final breakdown = computeTaxBreakdown(
+      amount: _parseTaxVatAmount(),
+      taxPercent: _taxPercent,
+      isAddOn: isAddOn,
+    );
 
     return ListView(
       key: ValueKey('tool_tax_scroll_${widget.tool.id}'),
@@ -2117,7 +1279,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
             borderRadius: BorderRadius.circular(14),
             border: Border.all(color: panelBorder),
           ),
-          child: amount == null
+          child: breakdown == null
               ? Text(
                   DashboardCopy.taxInvalidAmount(context),
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
@@ -2131,7 +1293,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                     _TerminalLine(
                       prompt: '>',
                       input: DashboardCopy.taxSubtotalLine(context),
-                      output: _moneyWithCode(subtotal!),
+                      output: _moneyWithCode(breakdown.subtotal),
                       emphasize: true,
                       arrowColor: accent,
                     ),
@@ -2139,7 +1301,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                     _TerminalLine(
                       prompt: '>',
                       input: DashboardCopy.taxLineLabel(context, _taxPercent),
-                      output: _moneyWithCode(tax!),
+                      output: _moneyWithCode(breakdown.taxAmount),
                       emphasize: false,
                       arrowColor: accent,
                     ),
@@ -2147,7 +1309,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                     _TerminalLine(
                       prompt: '>',
                       input: DashboardCopy.taxTotalLine(context),
-                      output: _moneyWithCode(total!),
+                      output: _moneyWithCode(breakdown.totalAmount),
                       emphasize: true,
                       arrowColor: accent,
                     ),
@@ -2185,28 +1347,14 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
         DashboardCopy.weatherCityNotSet(context);
     final priceA = _parsePositiveText(_unitPriceAController.text);
     final qtyA = _parsePositiveText(_unitQtyAController.text);
-    final baseA = (priceA == null || qtyA == null)
-        ? null
-        : _unitPriceToBaseAmount(quantity: qtyA, unit: _unitPriceUnitA);
-    final perBaseA = (baseA == null || baseA <= 0) ? null : priceA! / baseA;
-
-    final aMass = _isUnitPriceMassUnit(_unitPriceUnitA);
-    final aVolume = _isUnitPriceVolumeUnit(_unitPriceUnitA);
-
-    final per100A = perBaseA == null
-        ? null
-        : aMass
-        ? perBaseA * 100.0
-        : aVolume
-        ? perBaseA * 100.0
-        : null;
-    final per1kA = perBaseA == null
-        ? null
-        : aMass
-        ? perBaseA * 1000.0
-        : aVolume
-        ? perBaseA * 1000.0
-        : null;
+    final metricsA = computeUnitPriceMetrics(
+      price: priceA,
+      quantity: qtyA,
+      unit: _unitPriceUnitA,
+    );
+    final perBaseA = metricsA?.perBaseAmount;
+    final per100A = metricsA?.per100Amount;
+    final per1kA = metricsA?.per1000Amount;
     final per100ASecondary = (per100A != null && secondaryCurrencyCode != null)
         ? _convertCurrencyAmount(
             amount: per100A,
@@ -2224,26 +1372,13 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
 
     final priceB = _parsePositiveText(_unitPriceBController.text);
     final qtyB = _parsePositiveText(_unitQtyBController.text);
-    final baseB = (priceB == null || qtyB == null)
-        ? null
-        : _unitPriceToBaseAmount(quantity: qtyB, unit: _unitPriceUnitB);
-    final perBaseB = (baseB == null || baseB <= 0) ? null : priceB! / baseB;
-    final bMass = _isUnitPriceMassUnit(_unitPriceUnitB);
-    final bVolume = _isUnitPriceVolumeUnit(_unitPriceUnitB);
-    final per100B = perBaseB == null
-        ? null
-        : bMass
-        ? perBaseB * 100.0
-        : bVolume
-        ? perBaseB * 100.0
-        : null;
-    final per1kB = perBaseB == null
-        ? null
-        : bMass
-        ? perBaseB * 1000.0
-        : bVolume
-        ? perBaseB * 1000.0
-        : null;
+    final metricsB = computeUnitPriceMetrics(
+      price: priceB,
+      quantity: qtyB,
+      unit: _unitPriceUnitB,
+    );
+    final per100B = metricsB?.per100Amount;
+    final per1kB = metricsB?.per1000Amount;
     final per100BSecondary = (per100B != null && secondaryCurrencyCode != null)
         ? _convertCurrencyAmount(
             amount: per100B,
@@ -2259,33 +1394,26 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
           )
         : null;
 
-    final comparable =
-        _unitPriceCompareEnabled &&
-        perBaseA != null &&
-        perBaseB != null &&
-        ((_isUnitPriceMassUnit(_unitPriceUnitA) &&
-                _isUnitPriceMassUnit(_unitPriceUnitB)) ||
-            (_isUnitPriceVolumeUnit(_unitPriceUnitA) &&
-                _isUnitPriceVolumeUnit(_unitPriceUnitB)));
+    final comparison = computeUnitPriceComparison(
+      compareEnabled: _unitPriceCompareEnabled,
+      productA: metricsA,
+      productB: metricsB,
+    );
+    final comparable = comparison?.comparable ?? false;
 
     String? compareText;
-    if (_unitPriceCompareEnabled && !comparable) {
+    if (_unitPriceCompareEnabled &&
+        comparison != null &&
+        !comparison.comparable) {
       compareText = DashboardCopy.unitPriceCompareInvalid(context);
-    } else if (comparable) {
-      final delta = (perBaseA - perBaseB).abs();
-      final pct = (delta / math.min(perBaseA, perBaseB)) * 100.0;
-      if (perBaseA < perBaseB) {
-        compareText = DashboardCopy.unitPriceCompareA(
-          context,
-          pct.toStringAsFixed(1),
-        );
-      } else if (perBaseB < perBaseA) {
-        compareText = DashboardCopy.unitPriceCompareB(
-          context,
-          pct.toStringAsFixed(1),
-        );
-      } else {
+    } else if (comparable && comparison != null) {
+      final pct = comparison.percentDifference?.toStringAsFixed(1) ?? '0.0';
+      if (comparison.equalPrice) {
         compareText = DashboardCopy.unitPriceCompareEqual(context);
+      } else if (comparison.cheaperProduct == 'a') {
+        compareText = DashboardCopy.unitPriceCompareA(context, pct);
+      } else if (comparison.cheaperProduct == 'b') {
+        compareText = DashboardCopy.unitPriceCompareB(context, pct);
       }
     }
 
@@ -2381,7 +1509,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                             child: ListView(
                               shrinkWrap: true,
                               children: [
-                                for (final unit in _unitPriceUnits)
+                                for (final unit in kUnitPriceUnits)
                                   ListTile(
                                     title: Text(unit),
                                     trailing: unit == selectedUnit
@@ -2408,21 +1536,9 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
       );
     }
 
-    final normalizedTarget = aMass
-        ? '1 kg'
-        : aVolume
-        ? '1 L'
-        : '1 base';
-    final benchmarkShort = aMass
-        ? '100g'
-        : aVolume
-        ? '100mL'
-        : 'base unit';
-    final benchmarkLong = aMass
-        ? '1 kg'
-        : aVolume
-        ? '1 L'
-        : '1 base unit';
+    final normalizedTarget = metricsA?.normalizedTargetLabel ?? '1 base';
+    final benchmarkShort = metricsA?.benchmarkShortLabel ?? 'base unit';
+    final benchmarkLong = metricsA?.benchmarkLongLabel ?? '1 base unit';
 
     Widget quickStep(String text, IconData icon) {
       return Padding(
@@ -2581,8 +1697,10 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
             setState(() {
               _unitPriceCompareEnabled = v;
               if (_unitPriceCompareEnabled &&
-                  !_sameUnitPriceFamily(_unitPriceUnitA, _unitPriceUnitB)) {
-                _unitPriceUnitB = _defaultFamilyUnitFor(_unitPriceUnitA);
+                  !unitPriceSameFamily(_unitPriceUnitA, _unitPriceUnitB)) {
+                _unitPriceUnitB = unitPriceDefaultFamilyUnitFor(
+                  _unitPriceUnitA,
+                );
               }
             });
           },
@@ -2668,8 +1786,8 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                       const SizedBox(height: 6),
                       Text(
                         'Cost for $normalizedTarget: '
-                        '${_moneyWithCurrency(perBaseA * 1000, primaryCurrencyCode)} vs '
-                        '${_moneyWithCurrency(perBaseB * 1000, primaryCurrencyCode)}',
+                        '${_moneyWithCurrency(per1kA!, primaryCurrencyCode)} vs '
+                        '${_moneyWithCurrency(per1kB!, primaryCurrencyCode)}',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: textMuted,
                           fontWeight: FontWeight.w700,
@@ -2709,27 +1827,14 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
   }
 
   bool get _hasCustomLookupSelection {
-    final defaults = () {
-      switch (widget.tool.canonicalToolId) {
-        case CanonicalToolId.shoeSizes:
-          return ('US Men', 'EU', 'shoe_9');
-        case CanonicalToolId.paperSizes:
-          return ('ISO', 'US', 'paper_a4');
-        case CanonicalToolId.mattressSizes:
-          return ('US', 'EU', 'matt_queen');
-        case CanonicalToolId.cupsGramsEstimates:
-          return ('Cup', 'Weight', 'cupsgrams_flour');
-        default:
-          return ('', '', '');
-      }
-    }();
-    return _lookupFromSystem != defaults.$1 ||
-        _lookupToSystem != defaults.$2 ||
-        _lookupEntryKey != defaults.$3;
+    final defaults = toolLookupDefaultsFor(widget.tool.canonicalToolId);
+    return _lookupFromSystem != (defaults?.fromSystem ?? '') ||
+        _lookupToSystem != (defaults?.toSystem ?? '') ||
+        _lookupEntryKey != (defaults?.entryKey ?? '');
   }
 
   Future<void> _pickLookupSystem({required bool isFrom}) async {
-    final choices = _lookupSystemsForTool();
+    final choices = toolLookupSystemsFor(widget.tool.canonicalToolId);
     if (choices.isEmpty) return;
     final current = isFrom ? _lookupFromSystem : _lookupToSystem;
     final selected = await showModalBottomSheet<String>(
@@ -3367,77 +2472,20 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
     return null;
   }
 
-  double? _parsePaceMinutesValue(String raw) {
-    final cleaned = raw.trim();
-    if (cleaned.isEmpty) return null;
-    final mmss = RegExp(r'^(\d{1,2}):([0-5]\d)$').firstMatch(cleaned);
-    if (mmss != null) {
-      final min = int.parse(mmss.group(1)!);
-      final sec = int.parse(mmss.group(2)!);
-      return min + (sec / 60.0);
-    }
-    final asDouble = double.tryParse(cleaned);
-    if (asDouble == null || asDouble <= 0) return null;
-    return asDouble;
-  }
-
   double? _currentPaceMinutes() {
-    final fromInput = _parsePaceMinutesValue(_controller.text);
+    final fromInput = parsePaceMinutesValue(_controller.text);
     if (fromInput != null) return fromInput;
     final latest = widget.session.latestFor(widget.tool.id);
     if (latest == null) return null;
-    return _parsePaceMinutesValue(_stripKnownUnitSuffix(latest.inputLabel));
+    return parsePaceMinutesValue(_stripKnownUnitSuffix(latest.inputLabel));
   }
 
   double? _currentPacePerKmMinutes() {
     if (widget.tool.id != 'pace') return null;
-    final input = _currentPaceMinutes();
-    if (input == null || input <= 0) return null;
-    return _fromUnit == 'min/mi' ? (input / 1.609344) : input;
-  }
-
-  String _formatPace(double minutes) {
-    final whole = minutes.floor();
-    final sec = ((minutes - whole) * 60).round().clamp(0, 59);
-    return '$whole:${sec.toString().padLeft(2, '0')}';
-  }
-
-  String _formatDurationMinutes(double minutes) {
-    final totalSeconds = (minutes * 60).round();
-    final hours = totalSeconds ~/ 3600;
-    final mins = (totalSeconds % 3600) ~/ 60;
-    final secs = totalSeconds % 60;
-    if (hours > 0) {
-      return '$hours:${mins.toString().padLeft(2, '0')}:${secs.toString().padLeft(2, '0')}';
-    }
-    return '${mins.toString().padLeft(2, '0')}:${secs.toString().padLeft(2, '0')}';
-  }
-
-  double? _parseDurationMinutesValue(String raw) {
-    final cleaned = raw.trim();
-    if (cleaned.isEmpty) return null;
-    final hhmmss = RegExp(
-      r'^(\d{1,2}):([0-5]\d):([0-5]\d)$',
-    ).firstMatch(cleaned);
-    if (hhmmss != null) {
-      final hh = int.parse(hhmmss.group(1)!);
-      final mm = int.parse(hhmmss.group(2)!);
-      final ss = int.parse(hhmmss.group(3)!);
-      return (hh * 60) + mm + (ss / 60.0);
-    }
-    final mmss = RegExp(r'^(\d{1,3}):([0-5]\d)$').firstMatch(cleaned);
-    if (mmss != null) {
-      final mm = int.parse(mmss.group(1)!);
-      final ss = int.parse(mmss.group(2)!);
-      return mm + (ss / 60.0);
-    }
-    return null;
-  }
-
-  double? _parsePositiveDouble(String raw) {
-    final value = double.tryParse(raw.trim());
-    if (value == null || value <= 0) return null;
-    return value;
+    return normalizePaceToPerKmMinutes(
+      inputMinutes: _currentPaceMinutes(),
+      fromUnit: _fromUnit,
+    );
   }
 
   String? _toolDisclaimerCopy(BuildContext context) {
@@ -3489,26 +2537,6 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
     );
   }
 
-  List<({String label, double minutes})> _goalCheckpointPlan({
-    required double goalDurationMinutes,
-    required double goalDistanceKm,
-  }) {
-    const checkpoints = <double>[0.25, 0.50, 0.75, 1.0];
-    return checkpoints
-        .map((fraction) {
-          final km = goalDistanceKm * fraction;
-          final minutesAtCheckpoint = goalDurationMinutes * fraction;
-          final kmLabel = km >= 10
-              ? km.toStringAsFixed(1)
-              : km.toStringAsFixed(2);
-          return (
-            label: '${(fraction * 100).round()}% • ${kmLabel}km',
-            minutes: minutesAtCheckpoint,
-          );
-        })
-        .toList(growable: false);
-  }
-
   Widget _buildPaceInsightsCard(BuildContext context, Color accent) {
     final perKm = _currentPacePerKmMinutes();
     final panelBg = _ToolModalThemePolicy.panelBg(context);
@@ -3522,55 +2550,20 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
     final kmh = 60 / perKm;
     final mph = kmh / 1.609344;
     final perMi = perKm * 1.609344;
-    final goalDuration = _parseDurationMinutesValue(
-      _paceGoalTimeController.text,
+    final goalResult = computePaceGoalResult(
+      goalDurationMinutes: parseDurationMinutesValue(
+        _paceGoalTimeController.text,
+      ),
+      goalDistanceKm: _paceGoalDistanceKm,
     );
-    final goalPerKm = (goalDuration != null && goalDuration > 0)
-        ? (goalDuration / _paceGoalDistanceKm)
-        : null;
-    final goalPerMi = goalPerKm == null ? null : (goalPerKm * 1.609344);
-    final checkpoints = goalDuration == null
-        ? const <({String label, double minutes})>[]
-        : _goalCheckpointPlan(
-            goalDurationMinutes: goalDuration,
-            goalDistanceKm: _paceGoalDistanceKm,
-          );
-    final runTargets = <({String label, double km})>[
-      (label: '5K', km: 5.0),
-      (label: '10K', km: 10.0),
-      (label: 'Half', km: 21.0975),
-      (label: 'Marathon', km: 42.195),
-    ];
-    final rowTargets = <({String label, double km})>[
-      (label: '500m', km: 0.5),
-      (label: '2K', km: 2.0),
-      (label: '5K', km: 5.0),
-      (label: '10K', km: 10.0),
-    ];
-    final raceTargets = _paceMode == _PaceMode.rowing ? rowTargets : runTargets;
-    final builderDistanceRaw = _parsePositiveDouble(
-      _paceBuilderDistanceController.text,
+    final raceTargets = paceProjectionTargetsForMode(_paceMode);
+    final builderResult = computePaceBuilderResult(
+      distance: parsePositiveDouble(_paceBuilderDistanceController.text),
+      distanceUnit: _paceBuilderDistanceUnit,
+      durationMinutes: parseDurationMinutesValue(
+        _paceBuilderTimeController.text,
+      ),
     );
-    final builderDuration = _parseDurationMinutesValue(
-      _paceBuilderTimeController.text,
-    );
-    final builderDistanceKm = switch (_paceBuilderDistanceUnit) {
-      'km' => builderDistanceRaw,
-      'mi' => builderDistanceRaw == null ? null : builderDistanceRaw * 1.609344,
-      'm' => builderDistanceRaw == null ? null : builderDistanceRaw / 1000.0,
-      _ => builderDistanceRaw,
-    };
-    final builderPerKm =
-        (builderDistanceKm != null &&
-            builderDistanceKm > 0 &&
-            builderDuration != null &&
-            builderDuration > 0)
-        ? (builderDuration / builderDistanceKm)
-        : null;
-    final builderPerMi = builderPerKm == null
-        ? null
-        : (builderPerKm * 1.609344);
-    final builderSplit500 = builderPerKm == null ? null : (builderPerKm / 2.0);
 
     return Container(
       key: const ValueKey('tool_pace_insights_card'),
@@ -3592,7 +2585,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
           ),
           const SizedBox(height: 4),
           Text(
-            '${_formatPace(perKm)} min/km • ${_formatPace(perMi)} min/mi',
+            '${formatPace(perKm)} min/km • ${formatPace(perMi)} min/mi',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
               color: accent,
               fontWeight: FontWeight.w800,
@@ -3607,21 +2600,27 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
             ),
           ),
           const SizedBox(height: 8),
-          SegmentedButton<_PaceMode>(
+          SegmentedButton<PaceActivityMode>(
             key: const ValueKey('tool_pace_mode'),
             segments: const [
-              ButtonSegment(value: _PaceMode.running, label: Text('Run')),
-              ButtonSegment(value: _PaceMode.rowing, label: Text('Row')),
+              ButtonSegment(
+                value: PaceActivityMode.running,
+                label: Text('Run'),
+              ),
+              ButtonSegment(value: PaceActivityMode.rowing, label: Text('Row')),
             ],
             selected: {_paceMode},
             onSelectionChanged: (selection) {
               final next = selection.isEmpty
-                  ? _PaceMode.running
+                  ? PaceActivityMode.running
                   : selection.first;
               setState(() {
                 _paceMode = next;
-                if (_paceMode == _PaceMode.rowing && _paceGoalDistanceKm > 10) {
-                  _paceGoalDistanceKm = 2.0;
+                if (_paceMode == PaceActivityMode.rowing &&
+                    _paceGoalDistanceKm > 10) {
+                  _paceGoalDistanceKm = defaultPaceGoalDistanceKmForMode(
+                    _paceMode,
+                  );
                 }
               });
             },
@@ -3641,7 +2640,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(8, 6, 8, 6),
                     child: Text(
-                      '${target.label} ${_formatDurationMinutes(perKm * target.km)}',
+                      '${target.label} ${formatDurationMinutes(perKm * target.km)}',
                       style: Theme.of(context).textTheme.labelMedium?.copyWith(
                         color: _ToolModalThemePolicy.textPrimary(context),
                         fontWeight: FontWeight.w800,
@@ -3672,7 +2671,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                     decimal: true,
                   ),
                   decoration: InputDecoration(
-                    hintText: _paceMode == _PaceMode.rowing ? '2000' : '5',
+                    hintText: paceBuilderDistanceHint(_paceMode),
                     labelText: 'Distance',
                   ),
                   onChanged: (_) => setState(() {}),
@@ -3682,10 +2681,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
               Wrap(
                 spacing: 6,
                 children: [
-                  for (final unit
-                      in _paceMode == _PaceMode.rowing
-                          ? const <String>['m', 'km']
-                          : const <String>['km', 'mi'])
+                  for (final unit in paceBuilderDistanceUnits(_paceMode))
                     ChoiceChip(
                       key: ValueKey('tool_pace_builder_unit_$unit'),
                       label: Text(unit),
@@ -3710,11 +2706,11 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
             ),
             onChanged: (_) => setState(() {}),
           ),
-          if (builderPerKm != null && builderPerMi != null) ...[
+          if (builderResult != null) ...[
             const SizedBox(height: 8),
             Text(
-              'Derived pace: ${_formatPace(builderPerKm)} min/km • ${_formatPace(builderPerMi)} min/mi'
-              '${builderSplit500 == null ? '' : ' • ${_formatPace(builderSplit500)} /500m'}',
+              'Derived pace: ${formatPace(builderResult.perKmMinutes)} min/km • ${formatPace(builderResult.perMiMinutes)} min/mi'
+              ' • ${formatPace(builderResult.split500Minutes)} /500m',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                 color: accent,
                 fontWeight: FontWeight.w800,
@@ -3726,11 +2722,10 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
               child: TextButton.icon(
                 key: const ValueKey('tool_pace_builder_apply'),
                 onPressed: () {
-                  final minutesForFromUnit = _fromUnit == 'min/mi'
-                      ? builderPerMi
-                      : builderPerKm;
                   setState(() {
-                    _controller.text = _formatPace(minutesForFromUnit);
+                    _controller.text = formatPace(
+                      builderResult.minutesForInputUnit(_fromUnit),
+                    );
                   });
                 },
                 icon: const Icon(Icons.input_rounded, size: 16),
@@ -3753,23 +2748,17 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
             spacing: 8,
             runSpacing: 6,
             children: [
-              for (final item in const <({String label, double km})>[
-                (label: '5K', km: 5.0),
-                (label: '10K', km: 10.0),
-                (label: 'Half', km: 21.0975),
-                (label: 'Marathon', km: 42.195),
-              ])
-                if (_paceMode == _PaceMode.running || item.km <= 10.0)
-                  ChoiceChip(
-                    key: ValueKey('tool_pace_goal_dist_${item.label}'),
-                    label: Text(item.label),
-                    selected: _paceGoalDistanceKm == item.km,
-                    onSelected: (_) {
-                      setState(() {
-                        _paceGoalDistanceKm = item.km;
-                      });
-                    },
-                  ),
+              for (final item in paceGoalTargetsForMode(_paceMode))
+                ChoiceChip(
+                  key: ValueKey('tool_pace_goal_dist_${item.label}'),
+                  label: Text(item.label),
+                  selected: _paceGoalDistanceKm == item.km,
+                  onSelected: (_) {
+                    setState(() {
+                      _paceGoalDistanceKm = item.km;
+                    });
+                  },
+                ),
             ],
           ),
           const SizedBox(height: 8),
@@ -3782,12 +2771,12 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
             ),
             onChanged: (_) => setState(() {}),
           ),
-          if (goalPerKm != null) ...[
+          if (goalResult != null) ...[
             const SizedBox(height: 8),
             Text(
-              _paceMode == _PaceMode.rowing
-                  ? 'Required split: ${_formatPace(goalPerKm / 2.0)} /500m • ${_formatPace(goalPerKm)} min/km'
-                  : 'Required pace: ${_formatPace(goalPerKm)} min/km • ${_formatPace(goalPerMi!)} min/mi',
+              _paceMode == PaceActivityMode.rowing
+                  ? 'Required split: ${formatPace(goalResult.split500Minutes)} /500m • ${formatPace(goalResult.perKmMinutes)} min/km'
+                  : 'Required pace: ${formatPace(goalResult.perKmMinutes)} min/km • ${formatPace(goalResult.perMiMinutes)} min/mi',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                 color: accent,
                 fontWeight: FontWeight.w800,
@@ -3797,7 +2786,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
             SizedBox(
               height: 90,
               child: _PaceCheckpointBarChart(
-                checkpoints: checkpoints,
+                checkpoints: goalResult.checkpoints,
                 accent: accent,
                 textColor: _ToolModalThemePolicy.textPrimary(context),
               ),
@@ -3807,7 +2796,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
               spacing: 8,
               runSpacing: 6,
               children: [
-                for (final cp in checkpoints)
+                for (final cp in goalResult.checkpoints)
                   DecoratedBox(
                     decoration: BoxDecoration(
                       color: panelBg.withAlpha(216),
@@ -3817,7 +2806,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                     child: Padding(
                       padding: const EdgeInsets.fromLTRB(8, 6, 8, 6),
                       child: Text(
-                        '${cp.label} ${_formatDurationMinutes(cp.minutes)}',
+                        '${cp.label} ${formatDurationMinutes(cp.minutes)}',
                         style: Theme.of(context).textTheme.labelSmall?.copyWith(
                           color: _ToolModalThemePolicy.textPrimary(context),
                           fontWeight: FontWeight.w700,
@@ -3847,23 +2836,11 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
     final panelBorder = _ToolModalThemePolicy.panelBorder(context);
     final textMuted = _ToolModalThemePolicy.textMuted(context);
     final headingTone = _ToolModalThemePolicy.headingTone(context);
-    final weightRaw = _parsePositiveDouble(_energyWeightController.text);
-    final weightKg = switch (_energyWeightUnit) {
-      'lb' => weightRaw == null ? null : weightRaw * 0.453592,
-      _ => weightRaw,
-    };
-    final activityFactor = switch (_energyActivity) {
-      'light' => 0.95,
-      'high' => 1.22,
-      _ => 1.08,
-    };
-    final maintenance = weightKg == null
-        ? null
-        : (weightKg * 33.0 * activityFactor);
-    final cutTarget = maintenance == null
-        ? null
-        : math.max(1000.0, maintenance - 350);
-    final gainTarget = maintenance == null ? null : maintenance + 250;
+    final energySnapshot = computeEnergySnapshot(
+      weightRaw: parsePositiveDouble(_energyWeightController.text),
+      weightUnit: _energyWeightUnit,
+      activityLevel: _energyActivity,
+    );
 
     return Container(
       key: const ValueKey('tool_energy_planner_card'),
@@ -3952,10 +2929,10 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
             ],
           ),
           const SizedBox(height: 8),
-          if (maintenance != null && cutTarget != null && gainTarget != null)
+          if (energySnapshot != null)
             Text(
-              'Maintain: ${maintenance.round()} cal (${(maintenance * 4.184).round()} kJ)\n'
-              'Cut: ${cutTarget.round()} cal • Gain: ${gainTarget.round()} cal',
+              'Maintain: ${energySnapshot.maintenanceCalories.round()} cal (${energySnapshot.maintenanceKilojoules.round()} kJ)\n'
+              'Cut: ${energySnapshot.cutCalories.round()} cal • Gain: ${energySnapshot.gainCalories.round()} cal',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                 color: accent,
                 fontWeight: FontWeight.w800,
@@ -4049,49 +3026,12 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
     return '$whole.$trimmed';
   }
 
-  String _lookupReferenceLabel(_LookupEntry row) {
-    return switch (widget.tool.canonicalToolId) {
-      CanonicalToolId.shoeSizes => row.valuesBySystem['JP (cm)'] ?? row.label,
-      CanonicalToolId.clothingSizes => row.label,
-      CanonicalToolId.paperSizes => row.label,
-      CanonicalToolId.mattressSizes => row.label,
-      _ => row.label,
-    };
-  }
-
-  String _lookupReferenceHeader() {
-    return switch (widget.tool.canonicalToolId) {
-      CanonicalToolId.shoeSizes => 'Foot (cm)',
-      CanonicalToolId.clothingSizes => 'Category',
-      _ => 'Reference',
-    };
-  }
-
-  String _lookupMatrixHeaderLabel(String system) {
-    if (widget.tool.canonicalToolId != CanonicalToolId.shoeSizes) {
-      return system;
-    }
-    return switch (system) {
-      'US Men' => 'US M',
-      'US Women' => 'US W',
-      _ => system,
-    };
-  }
-
-  List<String> _lookupMatrixValueSystems() {
-    final systems = _lookupSystemsForTool();
-    return widget.tool.canonicalToolId == CanonicalToolId.shoeSizes
-        ? systems.where((s) => s != 'JP (cm)').toList(growable: false)
-        : systems;
-  }
-
   Widget _buildLookupBody(BuildContext context, Color accent) {
     final panelBg = _ToolModalThemePolicy.panelBg(context);
     final panelBorder = _ToolModalThemePolicy.panelBorder(context);
     final textPrimary = _ToolModalThemePolicy.textPrimary(context);
     final textMuted = _ToolModalThemePolicy.textMuted(context);
     final headingTone = _ToolModalThemePolicy.headingTone(context);
-    final selectedTone = _ToolModalThemePolicy.dangerTone(context);
     final row = _activeLookupEntry();
     final from = _lookupFromSystem;
     final to = _lookupToSystem;
@@ -4102,7 +3042,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
     Future<void> copyLookupCell({
       required String value,
       required String label,
-      _LookupEntry? row,
+      ToolLookupEntry? row,
       String? system,
     }) async {
       final copiedLabel = DashboardCopy.copiedNotice(context, label);
@@ -4110,681 +3050,92 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
       await Clipboard.setData(ClipboardData(text: normalized));
       if (row != null &&
           system != null &&
-          (widget.tool.canonicalToolId == CanonicalToolId.shoeSizes ||
-              widget.tool.canonicalToolId == CanonicalToolId.clothingSizes ||
-              widget.tool.canonicalToolId == CanonicalToolId.paperSizes ||
-              widget.tool.canonicalToolId == CanonicalToolId.mattressSizes)) {
+          toolLookupShouldPersistMatrixSelection(widget.tool.canonicalToolId)) {
         await widget.session.setMatrixWidgetSelection(
           toolId: widget.tool.id,
           rowKey: row.keyId,
           system: system,
           value: normalized,
-          referenceLabel: _lookupReferenceLabel(row),
+          referenceLabel: toolLookupReferenceLabel(
+            canonicalToolId: widget.tool.canonicalToolId,
+            row: row,
+          ),
           primaryLabel: normalized,
-          secondaryLabel: '$system • ${_lookupReferenceLabel(row)}',
+          secondaryLabel:
+              '$system • ${toolLookupReferenceLabel(canonicalToolId: widget.tool.canonicalToolId, row: row)}',
         );
       }
       if (!mounted) return;
       _showNotice(copiedLabel, UnitanaNoticeKind.info);
     }
 
-    if (_isFullMatrixLookupTool) {
-      final systems = _lookupMatrixValueSystems();
-      final rows = _lookupEntriesForTool();
-      const pageSize = 2;
-      final pageCount = (systems.length / pageSize).ceil().clamp(1, 999);
-      final pageIndex = _lookupMatrixPageIndex.clamp(0, pageCount - 1);
-      final pageStart = pageIndex * pageSize;
-      final visibleSystems = systems
-          .skip(pageStart)
-          .take(pageSize)
-          .toList(growable: false);
-      final visibleLabel = visibleSystems.join(' • ');
-
-      Widget headerCell(
-        String text, {
-        required double width,
-        required Alignment alignment,
-      }) {
-        return SizedBox(
-          width: width,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
-            child: Align(
-              alignment: alignment,
-              child: Text(
-                text,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: textMuted,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-            ),
-          ),
-        );
-      }
-
-      Widget valueCell({
-        required String keySuffix,
-        required String text,
-        required String copyLabel,
-        required String rowKey,
-        required _LookupEntry row,
-        required String system,
-        required double width,
-        required bool selected,
-        Alignment alignment = Alignment.center,
-      }) {
-        return SizedBox(
-          width: width,
-          child: InkWell(
-            key: ValueKey(
-              'tool_lookup_matrix_cell_${widget.tool.id}_$keySuffix',
-            ),
-            borderRadius: BorderRadius.circular(8),
-            onTap: () async {
-              setState(() {
-                _lookupEntryKey = rowKey;
-              });
-              await copyLookupCell(
-                value: text,
-                label: copyLabel,
-                row: row,
-                system: system,
-              );
-            },
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
-              child: Align(
-                alignment: alignment,
-                child: Text(
-                  text,
-                  textAlign: alignment == Alignment.centerLeft
-                      ? TextAlign.left
-                      : TextAlign.center,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: textPrimary,
-                    fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
-                  ),
-                ),
-              ),
-            ),
-          ),
-        );
-      }
-
-      return Padding(
-        key: ValueKey('tool_lookup_scroll_${widget.tool.id}'),
-        padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              DashboardCopy.lookupSizeMatrix(context),
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w800,
-                color: headingTone,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              DashboardCopy.lookupMatrixHelp(context),
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: textMuted,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            if (_isClothingLookupTool) ...[
-              const SizedBox(height: 8),
-              Container(
-                key: const ValueKey('tool_lookup_disclaimer_clothing_sizes'),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 10,
-                ),
-                decoration: BoxDecoration(
-                  color: panelBg,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: panelBorder),
-                ),
-                child: Text(
-                  'Sizes vary by brand and cut. Use this as a reference and check retailer size charts.',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: textMuted,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-            ],
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                IconButton(
-                  key: ValueKey('tool_lookup_matrix_prev_${widget.tool.id}'),
-                  onPressed: pageIndex > 0
-                      ? () {
-                          setState(() {
-                            _lookupMatrixPageIndex = pageIndex - 1;
-                          });
-                        }
-                      : null,
-                  icon: const Icon(Icons.chevron_left_rounded),
-                ),
-                Expanded(
-                  child: Text(
-                    'Page ${pageIndex + 1} / $pageCount • $visibleLabel',
-                    key: ValueKey(
-                      'tool_lookup_matrix_page_label_${widget.tool.id}',
-                    ),
-                    textAlign: TextAlign.center,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                      color: textPrimary,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-                IconButton(
-                  key: ValueKey('tool_lookup_matrix_next_${widget.tool.id}'),
-                  onPressed: pageIndex < pageCount - 1
-                      ? () {
-                          setState(() {
-                            _lookupMatrixPageIndex = pageIndex + 1;
-                          });
-                        }
-                      : null,
-                  icon: const Icon(Icons.chevron_right_rounded),
-                ),
-              ],
-            ),
-            Text(
-              'Swipe left/right to change table pages.',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: textMuted,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Expanded(
-              child: Container(
-                key: ValueKey('tool_lookup_matrix_${widget.tool.id}'),
-                decoration: BoxDecoration(
-                  color: panelBg,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: panelBorder),
-                ),
-                child: GestureDetector(
-                  onHorizontalDragEnd: (details) {
-                    final velocity = details.primaryVelocity ?? 0;
-                    if (velocity <= -200 && pageIndex < pageCount - 1) {
-                      setState(() {
-                        _lookupMatrixPageIndex = pageIndex + 1;
-                      });
-                    } else if (velocity >= 200 && pageIndex > 0) {
-                      setState(() {
-                        _lookupMatrixPageIndex = pageIndex - 1;
-                      });
-                    }
-                  },
-                  child: LayoutBuilder(
-                    builder: (context, constraints) {
-                      final sizeColWidth = _isClothingLookupTool ? 150.0 : 94.0;
-                      final valueColWidth =
-                          ((constraints.maxWidth - sizeColWidth) /
-                                  visibleSystems.length)
-                              .clamp(98.0, 170.0);
-                      final fullWidth =
-                          sizeColWidth +
-                          (visibleSystems.length * valueColWidth);
-
-                      return SizedBox(
-                        width: constraints.maxWidth,
-                        child: Column(
-                          children: [
-                            Row(
-                              children: [
-                                headerCell(
-                                  _lookupReferenceHeader(),
-                                  width: sizeColWidth,
-                                  alignment: Alignment.centerLeft,
-                                ),
-                                for (final system in visibleSystems)
-                                  headerCell(
-                                    _lookupMatrixHeaderLabel(system),
-                                    width: valueColWidth,
-                                    alignment: Alignment.center,
-                                  ),
-                              ],
-                            ),
-                            Divider(height: 1, color: textMuted.withAlpha(90)),
-                            Expanded(
-                              child: ListView.builder(
-                                itemCount: rows.length,
-                                itemBuilder: (context, i) {
-                                  final entry = rows[i];
-                                  final selected =
-                                      entry.keyId == _lookupEntryKey;
-                                  return Column(
-                                    children: [
-                                      Container(
-                                        key: ValueKey(
-                                          'tool_lookup_matrix_row_${widget.tool.id}_${entry.keyId}',
-                                        ),
-                                        width: fullWidth,
-                                        decoration: BoxDecoration(
-                                          color: selected
-                                              ? accent.withAlpha(36)
-                                              : Colors.transparent,
-                                        ),
-                                        child: Row(
-                                          children: [
-                                            SizedBox(
-                                              width: sizeColWidth,
-                                              child: InkWell(
-                                                key: ValueKey(
-                                                  'tool_lookup_matrix_size_${widget.tool.id}_${entry.keyId}',
-                                                ),
-                                                borderRadius:
-                                                    BorderRadius.circular(8),
-                                                onTap: () {
-                                                  setState(() {
-                                                    _lookupEntryKey =
-                                                        entry.keyId;
-                                                  });
-                                                },
-                                                child: Padding(
-                                                  padding:
-                                                      const EdgeInsets.symmetric(
-                                                        horizontal: 4,
-                                                        vertical: 8,
-                                                      ),
-                                                  child: Align(
-                                                    alignment:
-                                                        Alignment.centerLeft,
-                                                    child: Text(
-                                                      _lookupReferenceLabel(
-                                                        entry,
-                                                      ),
-                                                      maxLines:
-                                                          _isClothingLookupTool
-                                                          ? 2
-                                                          : 1,
-                                                      overflow:
-                                                          TextOverflow.ellipsis,
-                                                      style: Theme.of(context)
-                                                          .textTheme
-                                                          .bodySmall
-                                                          ?.copyWith(
-                                                            color: selected
-                                                                ? selectedTone
-                                                                : textPrimary,
-                                                            fontWeight: selected
-                                                                ? FontWeight
-                                                                      .w800
-                                                                : FontWeight
-                                                                      .w700,
-                                                          ),
-                                                    ),
-                                                  ),
-                                                ),
-                                              ),
-                                            ),
-                                            for (final system in visibleSystems)
-                                              valueCell(
-                                                keySuffix:
-                                                    '${entry.keyId}_${_sanitizeUnitKey(system)}',
-                                                text: _lookupValue(
-                                                  row: entry,
-                                                  system: system,
-                                                ),
-                                                copyLabel: '$system value',
-                                                rowKey: entry.keyId,
-                                                row: entry,
-                                                system: system,
-                                                width: valueColWidth,
-                                                selected: selected,
-                                              ),
-                                          ],
-                                        ),
-                                      ),
-                                      if (_isClothingLookupTool &&
-                                          entry.note != null &&
-                                          entry.note!.trim().isNotEmpty)
-                                        Padding(
-                                          padding: const EdgeInsets.fromLTRB(
-                                            8,
-                                            0,
-                                            8,
-                                            8,
-                                          ),
-                                          child: Align(
-                                            alignment: Alignment.centerLeft,
-                                            child: Text(
-                                              entry.note!,
-                                              maxLines: 2,
-                                              overflow: TextOverflow.ellipsis,
-                                              style: Theme.of(context)
-                                                  .textTheme
-                                                  .labelSmall
-                                                  ?.copyWith(
-                                                    color: textMuted,
-                                                    fontWeight: FontWeight.w700,
-                                                  ),
-                                            ),
-                                          ),
-                                        ),
-                                      if (i != rows.length - 1)
-                                        Divider(
-                                          height: 1,
-                                          color: textMuted.withAlpha(70),
-                                        ),
-                                    ],
-                                  );
-                                },
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              ),
-            ),
-          ],
+    return ToolLookupSurface(
+      toolId: widget.tool.id,
+      canonicalToolId: widget.tool.canonicalToolId,
+      isFullMatrix: _isFullMatrixLookupTool,
+      isClothingLookupTool: _isClothingLookupTool,
+      hasCustomSelection: _hasCustomLookupSelection,
+      selectedRow: row,
+      rows: _lookupEntriesForTool(),
+      fromSystem: from,
+      toSystem: to,
+      matrixPageIndex: _lookupMatrixPageIndex,
+      theme: ToolLookupSurfaceTheme(
+        accent: accent,
+        panelBg: panelBg,
+        panelBorder: panelBorder,
+        textPrimary: textPrimary,
+        textMuted: textMuted,
+        headingTone: headingTone,
+        selectedTone: _ToolModalThemePolicy.dangerTone(context),
+      ),
+      resultWidget: Container(
+        key: ValueKey('tool_lookup_result_${widget.tool.id}'),
+        padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
+        decoration: BoxDecoration(
+          color: panelBg,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: panelBorder),
         ),
-      );
-    }
-
-    final fromValue = _lookupValue(row: row, system: from);
-    final toValue = _lookupValue(row: row, system: to);
-    final rows = _lookupEntriesForTool();
-    final idx = rows.indexWhere((r) => r.keyId == row.keyId);
-    final proximityRows = <_LookupEntry>[
-      if (idx > 0) rows[idx - 1],
-      row,
-      if (idx >= 0 && idx < rows.length - 1) rows[idx + 1],
-    ];
-
-    Widget matrixHeaderCell(String text, {required Alignment alignment}) {
-      return Expanded(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-          child: Align(
-            alignment: alignment,
-            child: Text(
-              text,
-              textAlign: alignment == Alignment.centerLeft
-                  ? TextAlign.left
-                  : TextAlign.center,
-              style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                color: textMuted,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-          ),
+        child: _TerminalLine(
+          prompt: '>',
+          input: '$from: ${_lookupValue(row: row, system: from)}',
+          output: '$to: ${_lookupValue(row: row, system: to)}',
+          emphasize: true,
+          arrowColor: accent,
         ),
-      );
-    }
-
-    Widget matrixValueCell({
-      required String keySuffix,
-      required String text,
-      required bool isSelected,
-      required String copyLabel,
-      required String system,
-      required _LookupEntry rowEntry,
-      Alignment alignment = Alignment.center,
-    }) {
-      return Expanded(
-        child: InkWell(
-          key: ValueKey('tool_lookup_matrix_cell_${widget.tool.id}_$keySuffix'),
-          borderRadius: BorderRadius.circular(8),
-          onTap: () => copyLookupCell(
-            value: text,
-            label: copyLabel,
-            row: rowEntry,
-            system: system,
-          ),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 9),
-            child: Align(
-              alignment: alignment,
-              child: Text(
-                text,
-                textAlign: alignment == Alignment.centerLeft
-                    ? TextAlign.left
-                    : TextAlign.center,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: textPrimary,
-                  fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-                ),
-              ),
-            ),
-          ),
-        ),
-      );
-    }
-
-    return ListView(
-      key: ValueKey('tool_lookup_scroll_${widget.tool.id}'),
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: OutlinedButton(
-                key: ValueKey('tool_lookup_from_${widget.tool.id}'),
-                onPressed: () => _pickLookupSystem(isFrom: true),
-                child: Text(DashboardCopy.lookupFromLabel(context, from)),
-              ),
-            ),
-            const SizedBox(width: 8),
-            OutlinedButton(
-              key: ValueKey('tool_lookup_swap_${widget.tool.id}'),
-              onPressed: _swapLookupSystems,
-              child: const Icon(Icons.swap_horiz_rounded),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: OutlinedButton(
-                key: ValueKey('tool_lookup_to_${widget.tool.id}'),
-                onPressed: () => _pickLookupSystem(isFrom: false),
-                child: Text(DashboardCopy.lookupToLabel(context, to)),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 10),
-        OutlinedButton(
-          key: ValueKey('tool_lookup_size_${widget.tool.id}'),
-          onPressed: _pickLookupEntry,
-          child: Align(
-            alignment: Alignment.centerLeft,
-            child: Text(DashboardCopy.lookupSizeLabel(context, row.label)),
-          ),
-        ),
-        const SizedBox(height: 8),
-        Align(
-          alignment: Alignment.centerLeft,
-          child: TextButton.icon(
-            key: ValueKey('tool_units_reset_${widget.tool.id}'),
-            style: TextButton.styleFrom(
-              visualDensity: VisualDensity.compact,
-              padding: const EdgeInsets.symmetric(horizontal: 4),
-            ),
-            onPressed: _hasCustomUnitSelection
-                ? _resetUnitSelectionToDefaults
-                : null,
-            icon: const Icon(Icons.restart_alt_rounded, size: 18),
-            label: Text(DashboardCopy.lookupResetDefaults(context)),
-          ),
-        ),
-        const SizedBox(height: 8),
-        Container(
-          key: ValueKey('tool_lookup_result_${widget.tool.id}'),
-          padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
-          decoration: BoxDecoration(
-            color: panelBg,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: panelBorder),
-          ),
-          child: _TerminalLine(
-            prompt: '>',
-            input: '$from: $fromValue',
-            output: '$to: $toValue',
-            emphasize: true,
-            arrowColor: accent,
-          ),
-        ),
-        if (row.note != null) ...[
-          const SizedBox(height: 8),
-          Text(
-            row.approximate
-                ? DashboardCopy.lookupApproximate(context, row.note!)
-                : row.note!,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: textMuted,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
-        if (proximityRows.isNotEmpty) ...[
-          const SizedBox(height: 12),
-          Text(
-            DashboardCopy.lookupSizeMatrix(context),
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w800,
-              color: headingTone,
-            ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            DashboardCopy.lookupMatrixHelp(context),
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: textMuted,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Container(
-            key: ValueKey('tool_lookup_matrix_${widget.tool.id}'),
-            decoration: BoxDecoration(
-              color: panelBg,
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: panelBorder),
-            ),
-            child: Column(
-              children: [
-                Row(
-                  children: [
-                    matrixHeaderCell(
-                      _lookupReferenceHeader(),
-                      alignment: Alignment.centerLeft,
-                    ),
-                    matrixHeaderCell(from, alignment: Alignment.center),
-                    matrixHeaderCell(to, alignment: Alignment.center),
-                  ],
-                ),
-                Divider(height: 1, color: textMuted.withAlpha(90)),
-                for (var i = 0; i < proximityRows.length; i++) ...[
-                  Builder(
-                    builder: (context) {
-                      final n = proximityRows[i];
-                      final isSelected = n.keyId == row.keyId;
-                      return Container(
-                        key: ValueKey(
-                          'tool_lookup_matrix_row_${widget.tool.id}_${n.keyId}',
-                        ),
-                        decoration: BoxDecoration(
-                          color: isSelected
-                              ? accent.withAlpha(36)
-                              : Colors.transparent,
-                          border: isSelected
-                              ? Border(
-                                  left: BorderSide(
-                                    color: accent.withAlpha(220),
-                                    width: 3,
-                                  ),
-                                )
-                              : null,
-                        ),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: InkWell(
-                                key: ValueKey(
-                                  'tool_lookup_matrix_size_${widget.tool.id}_${n.keyId}',
-                                ),
-                                borderRadius: BorderRadius.circular(8),
-                                onTap: () {
-                                  setState(() {
-                                    _lookupEntryKey = n.keyId;
-                                  });
-                                },
-                                child: Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                    vertical: 9,
-                                  ),
-                                  child: Align(
-                                    alignment: Alignment.centerLeft,
-                                    child: Text(
-                                      _lookupReferenceLabel(n),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .bodyMedium
-                                          ?.copyWith(
-                                            color: isSelected
-                                                ? selectedTone
-                                                : textPrimary,
-                                            fontWeight: isSelected
-                                                ? FontWeight.w800
-                                                : FontWeight.w700,
-                                          ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                            matrixValueCell(
-                              keySuffix: '${n.keyId}_from',
-                              text: _lookupValue(row: n, system: from),
-                              isSelected: isSelected,
-                              copyLabel: '$from value',
-                              system: from,
-                              rowEntry: n,
-                            ),
-                            matrixValueCell(
-                              keySuffix: '${n.keyId}_to',
-                              text: _lookupValue(row: n, system: to),
-                              isSelected: isSelected,
-                              copyLabel: '$to value',
-                              system: to,
-                              rowEntry: n,
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
-                  if (i != proximityRows.length - 1)
-                    Divider(height: 1, color: textMuted.withAlpha(70)),
-                ],
-              ],
-            ),
-          ),
-        ],
-      ],
+      ),
+      onPickFromSystem: () => _pickLookupSystem(isFrom: true),
+      onPickToSystem: () => _pickLookupSystem(isFrom: false),
+      onSwapSystems: _swapLookupSystems,
+      onPickEntry: _pickLookupEntry,
+      onResetSelection: _resetUnitSelectionToDefaults,
+      onMatrixPageChanged: (pageIndex) {
+        setState(() {
+          _lookupMatrixPageIndex = pageIndex;
+        });
+      },
+      onSelectEntry: (entryKey) {
+        setState(() {
+          _lookupEntryKey = entryKey;
+        });
+      },
+      onCopyValue:
+          ({
+            required String value,
+            required String label,
+            required ToolLookupEntry row,
+            required String system,
+          }) {
+            return copyLookupCell(
+              value: value,
+              label: label,
+              row: row,
+              system: system,
+            );
+          },
+      lookupValue: (row, system) => _lookupValue(row: row, system: system),
+      sanitizeUnitKey: _sanitizeUnitKey,
     );
   }
 
@@ -4793,41 +3144,6 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
       home: widget.home,
       destination: widget.destination,
     );
-  }
-
-  static const Map<String, List<String>> _tzAbbrevAliases =
-      <String, List<String>>{
-        'UTC': <String>['UTC'],
-        'GMT': <String>['UTC', 'Europe/London'],
-        'EST': <String>['America/New_York'],
-        'EDT': <String>['America/New_York'],
-        'CST': <String>['America/Chicago'],
-        'CDT': <String>['America/Chicago'],
-        'MST': <String>['America/Denver'],
-        'MDT': <String>['America/Denver'],
-        'PST': <String>['America/Los_Angeles'],
-        'PDT': <String>['America/Los_Angeles'],
-        'CET': <String>['Europe/Paris', 'Europe/Berlin', 'Europe/Madrid'],
-        'CEST': <String>['Europe/Paris', 'Europe/Berlin', 'Europe/Madrid'],
-        'IST': <String>['Asia/Kolkata'],
-        'JST': <String>['Asia/Tokyo'],
-      };
-
-  List<TimeZoneCityOption> _featuredCityOptions({
-    required List<TimeZoneCityOption> cityOptions,
-  }) {
-    if (cityOptions.isEmpty) return const <TimeZoneCityOption>[];
-    return TimeZoneCatalog.mainstreamCityOptionsFromAll(
-      all: cityOptions,
-      home: widget.home,
-      destination: widget.destination,
-      limit: 24,
-    );
-  }
-
-  List<String> _aliasZonesForQuery(String rawQuery) {
-    final token = rawQuery.trim().toUpperCase();
-    return _tzAbbrevAliases[token] ?? const <String>[];
   }
 
   List<TimeZoneCityOption> _searchCityOptions({
@@ -4846,25 +3162,14 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
       );
       return featured;
     }
-    final aliasZones = _aliasZonesForQuery(rawQuery).toSet();
-    final preferredZones = <String>{
-      if (widget.home != null) widget.home!.timeZoneId,
-      if (widget.destination != null) widget.destination!.timeZoneId,
-    };
-    final sourceEntries = normalized.length < 3 ? featuredEntries : allEntries;
-    final out = CityPickerEngine.searchEntries(
-      entries: sourceEntries,
-      queryRaw: rawQuery,
-      preferredTimeZoneIds: preferredZones,
-      aliasTimeZoneIds: aliasZones,
-      maxCandidates: 260,
-      maxResults: 40,
-      shortQueryAllowsTimeZonePrefix: true,
-      dedupeByTimeZone: true,
-      dedupeByCityCountry: true,
-      allowTimeZoneOnlyMatches: true,
-      deprioritizeTimeZoneOnlyMatches: true,
-    ).map((entry) => entry.value).toList(growable: false);
+    final out = searchTimeZoneCityOptions(
+      rawQuery: rawQuery,
+      featured: featured,
+      allEntries: allEntries,
+      featuredEntries: featuredEntries,
+      home: widget.home,
+      destination: widget.destination,
+    );
     PickerPerfTrace.logElapsed(
       'time_city_filter',
       sw,
@@ -4885,23 +3190,12 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
       return const <TimeZoneOption>[];
     }
     final normalized = CityPickerEngine.normalizeQuery(query);
-    final aliasZones = _aliasZonesForQuery(query).toSet();
-    final preferredZones = <String>{
-      if (widget.home != null) widget.home!.timeZoneId,
-      if (widget.destination != null) widget.destination!.timeZoneId,
-    };
-    final out = CityPickerEngine.searchEntries(
+    final out = searchTimeZoneOptions(
+      rawQuery: query,
       entries: entries,
-      queryRaw: query,
-      preferredTimeZoneIds: preferredZones,
-      aliasTimeZoneIds: aliasZones,
-      maxCandidates: 180,
-      maxResults: 12,
-      shortQueryAllowsTimeZonePrefix: true,
-      dedupeByTimeZone: false,
-      allowTimeZoneOnlyMatches: true,
-      deprioritizeTimeZoneOnlyMatches: false,
-    ).map((entry) => entry.value).toList(growable: false);
+      home: widget.home,
+      destination: widget.destination,
+    );
     PickerPerfTrace.logElapsed(
       'time_zone_filter',
       sw,
@@ -4912,51 +3206,19 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
   }
 
   void _seedTimeToolDefaults() {
-    final home = widget.home;
-    final destination = widget.destination;
     final options = _timeZoneOptions();
-    final fallback = options.isEmpty ? 'UTC' : options.first.id;
-    final validZoneIds = options.map((o) => o.id).toSet();
-    final savedSelection = widget.session.timeZoneSelectionFor(widget.tool.id);
-
-    if (savedSelection != null &&
-        validZoneIds.contains(savedSelection.fromZoneId) &&
-        validZoneIds.contains(savedSelection.toZoneId) &&
-        savedSelection.fromZoneId != savedSelection.toZoneId) {
-      _timeFromZoneId = savedSelection.fromZoneId;
-      _timeToZoneId = savedSelection.toZoneId;
-      _timeFromDisplayLabel = _displayLabelForZone(_timeFromZoneId!, options);
-      _timeToDisplayLabel = _displayLabelForZone(_timeToZoneId!, options);
-      return;
-    }
-
-    if (_isJetLagDeltaTool) {
-      // Jet Lag is a travel-planning tool. Keep defaults stable as
-      // Home -> Destination regardless of the active hero reality.
-      _timeFromZoneId = home?.timeZoneId ?? fallback;
-      _timeToZoneId = destination?.timeZoneId ?? fallback;
-    } else if (widget.session.reality == DashboardReality.destination) {
-      _timeFromZoneId = destination?.timeZoneId ?? fallback;
-      _timeToZoneId = home?.timeZoneId ?? fallback;
-    } else {
-      _timeFromZoneId = home?.timeZoneId ?? fallback;
-      _timeToZoneId = destination?.timeZoneId ?? fallback;
-    }
-
-    if (_timeFromZoneId == _timeToZoneId) {
-      _timeToZoneId = options.where((o) => o.id != _timeFromZoneId).isNotEmpty
-          ? options.firstWhere((o) => o.id != _timeFromZoneId).id
-          : 'UTC';
-    }
-    _timeFromDisplayLabel = _displayLabelForZone(_timeFromZoneId!, options);
-    _timeToDisplayLabel = _displayLabelForZone(_timeToZoneId!, options);
-    _persistTimeZoneSelection();
-  }
-
-  String _displayLabelForZone(String zoneId, List<TimeZoneOption> options) {
-    final match = options.where((o) => o.id == zoneId);
-    if (match.isNotEmpty) return match.first.label;
-    return zoneId;
+    final defaults = resolveTimeToolDefaults(
+      options: options,
+      home: widget.home,
+      destination: widget.destination,
+      reality: widget.session.reality,
+      savedSelection: widget.session.timeZoneSelectionFor(widget.tool.id),
+      isJetLagTool: _isJetLagDeltaTool,
+    );
+    _timeFromZoneId = defaults.fromZoneId;
+    _timeToZoneId = defaults.toZoneId;
+    _timeFromDisplayLabel = defaults.fromDisplayLabel;
+    _timeToDisplayLabel = defaults.toDisplayLabel;
   }
 
   void _persistTimeZoneSelection() {
@@ -4988,10 +3250,16 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
       if (_isTimeZoneConverterTool &&
           oldFrom != null &&
           _timeFromZoneId != null) {
-        _rebaseTimeConverterInput(
+        final rebased = rebaseTimeConverterInput(
+          rawInput: _timeConvertController.text,
           oldFromZoneId: oldFrom,
           newFromZoneId: _timeFromZoneId!,
         );
+        if (rebased == null) {
+          _seedTimeConverterInput();
+        } else {
+          _timeConvertController.text = rebased;
+        }
       }
     });
     _persistTimeZoneSelection();
@@ -5001,60 +3269,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
     final fromId = _timeFromZoneId;
     if (fromId == null) return;
     final nowLocal = TimezoneUtils.nowInZone(fromId).local;
-    _timeConvertController.text = _formatLocalDateTime(nowLocal);
-  }
-
-  String _formatLocalDateTime(DateTime dt) {
-    final yyyy = dt.year.toString().padLeft(4, '0');
-    final mm = dt.month.toString().padLeft(2, '0');
-    final dd = dt.day.toString().padLeft(2, '0');
-    final hh = dt.hour.toString().padLeft(2, '0');
-    final min = dt.minute.toString().padLeft(2, '0');
-    return '$yyyy-$mm-$dd $hh:$min';
-  }
-
-  DateTime? _parseLocalDateTime(String raw) {
-    final trimmed = raw.trim();
-    final match = RegExp(
-      r'^(\d{4})-(\d{2})-(\d{2})[ T](\d{1,2}):(\d{2})$',
-    ).firstMatch(trimmed);
-    if (match == null) return null;
-    final year = int.tryParse(match.group(1)!);
-    final month = int.tryParse(match.group(2)!);
-    final day = int.tryParse(match.group(3)!);
-    final hour = int.tryParse(match.group(4)!);
-    final minute = int.tryParse(match.group(5)!);
-    if (year == null ||
-        month == null ||
-        day == null ||
-        hour == null ||
-        minute == null) {
-      return null;
-    }
-    if (hour < 0 || hour > 23 || minute < 0 || minute > 59) return null;
-    final dt = DateTime(year, month, day, hour, minute);
-    if (dt.year != year ||
-        dt.month != month ||
-        dt.day != day ||
-        dt.hour != hour ||
-        dt.minute != minute) {
-      return null;
-    }
-    return dt;
-  }
-
-  void _rebaseTimeConverterInput({
-    required String oldFromZoneId,
-    required String newFromZoneId,
-  }) {
-    final parsed = _parseLocalDateTime(_timeConvertController.text);
-    if (parsed == null) {
-      _seedTimeConverterInput();
-      return;
-    }
-    final utc = TimezoneUtils.localToUtc(oldFromZoneId, parsed);
-    final rebased = TimezoneUtils.nowInZone(newFromZoneId, nowUtc: utc).local;
-    _timeConvertController.text = _formatLocalDateTime(rebased);
+    _timeConvertController.text = formatLocalDateTime(nowLocal);
   }
 
   void _runTimeZoneConversion() {
@@ -5062,8 +3277,13 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
     final toId = _timeToZoneId;
     if (fromId == null || toId == null) return;
 
-    final localInput = _parseLocalDateTime(_timeConvertController.text);
-    if (localInput == null) {
+    final conversion = convertTimeZoneInput(
+      rawInput: _timeConvertController.text,
+      fromZoneId: fromId,
+      toZoneId: toId,
+      use24h: widget.prefer24h,
+    );
+    if (conversion == null) {
       _showNotice(
         DashboardCopy.timeConverterInputError(context),
         UnitanaNoticeKind.error,
@@ -5071,37 +3291,13 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
       return;
     }
 
-    final utc = TimezoneUtils.localToUtc(fromId, localInput);
-    final toLocal = TimezoneUtils.nowInZone(toId, nowUtc: utc).local;
-    final use24h = widget.prefer24h;
-    final outputClock = use24h
-        ? TimezoneUtils.formatClock(
-            ZoneTime(local: toLocal, offsetHours: 0, abbreviation: ''),
-            use24h: true,
-          )
-        : TimezoneUtils.formatClock(
-            ZoneTime(local: toLocal, offsetHours: 0, abbreviation: ''),
-            use24h: false,
-          );
-    final outputDate = _formatLocalDateTime(
-      DateTime(
-        toLocal.year,
-        toLocal.month,
-        toLocal.day,
-        toLocal.hour,
-        toLocal.minute,
-      ),
-    ).substring(0, 10);
-    final outputLabel = '$outputDate $outputClock';
-    final inputLabel = _formatLocalDateTime(localInput);
-
     final record = ConversionRecord(
       toolId: widget.tool.id,
       lensId: widget.tool.lensId,
       fromUnit: fromId,
       toUnit: toId,
-      inputLabel: '$inputLabel ($fromId)',
-      outputLabel: '$outputLabel ($toId)',
+      inputLabel: '${conversion.inputLabel} ($fromId)',
+      outputLabel: '${conversion.outputLabel} ($toId)',
       timestamp: DateTime.now(),
     );
     widget.session.addRecord(record);
@@ -5120,8 +3316,10 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
       home: widget.home,
       destination: widget.destination,
     );
-    final featuredCityOptions = _featuredCityOptions(
+    final featuredCityOptions = featuredTimeZoneCityOptions(
       cityOptions: allCityOptions,
+      home: widget.home,
+      destination: widget.destination,
     );
     final allCityEntries = CityPickerEngine.sortByBaseScore(
       CityPickerEngine.buildEntries<TimeZoneCityOption>(
@@ -5284,7 +3482,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                               ),
                               onTap: () => Navigator.of(context).pop((
                                 zoneId: 'America/New_York',
-                                displayLabel: _displayLabelForZone(
+                                displayLabel: displayLabelForZone(
                                   'America/New_York',
                                   zoneOptions,
                                 ),
@@ -5298,7 +3496,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                               ),
                               onTap: () => Navigator.of(context).pop((
                                 zoneId: 'America/Chicago',
-                                displayLabel: _displayLabelForZone(
+                                displayLabel: displayLabelForZone(
                                   'America/Chicago',
                                   zoneOptions,
                                 ),
@@ -5312,7 +3510,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                               ),
                               onTap: () => Navigator.of(context).pop((
                                 zoneId: 'America/Los_Angeles',
-                                displayLabel: _displayLabelForZone(
+                                displayLabel: displayLabelForZone(
                                   'America/Los_Angeles',
                                   zoneOptions,
                                 ),
@@ -5326,7 +3524,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                               ),
                               onTap: () => Navigator.of(context).pop((
                                 zoneId: 'UTC',
-                                displayLabel: _displayLabelForZone(
+                                displayLabel: displayLabelForZone(
                                   'UTC',
                                   zoneOptions,
                                 ),
@@ -5378,8 +3576,10 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                                     ),
                                     subtitle: Text(
                                       option.subtitle == option.timeZoneId
-                                          ? option.timeZoneId
-                                          : '${option.subtitle} · ${option.timeZoneId}',
+                                          ? CityLabelUtils.cleanTimeZoneLabel(
+                                              option.timeZoneId,
+                                            )
+                                          : '${option.subtitle} · ${CityLabelUtils.cleanTimeZoneLabel(option.timeZoneId)}',
                                     ),
                                     selected: isSelected,
                                     trailing: isSelected
@@ -5457,7 +3657,10 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                                       ),
                                       title: Text(option.label),
                                       subtitle: Text(
-                                        option.subtitle ?? option.id,
+                                        option.subtitle ??
+                                            CityLabelUtils.cleanTimeZoneLabel(
+                                              option.id,
+                                            ),
                                       ),
                                       selected: isSelected,
                                       trailing: isSelected
@@ -5515,10 +3718,10 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
             .id;
         if (isFrom) {
           _timeToZoneId = alt;
-          _timeToDisplayLabel = _displayLabelForZone(alt, zoneOptions);
+          _timeToDisplayLabel = displayLabelForZone(alt, zoneOptions);
         } else {
           _timeFromZoneId = alt;
-          _timeFromDisplayLabel = _displayLabelForZone(alt, zoneOptions);
+          _timeFromDisplayLabel = displayLabelForZone(alt, zoneOptions);
         }
       }
       _jetLagOverlapExpanded = false;
@@ -5526,10 +3729,16 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
           isFrom &&
           previousFrom != null &&
           _timeFromZoneId != null) {
-        _rebaseTimeConverterInput(
+        final rebased = rebaseTimeConverterInput(
+          rawInput: _timeConvertController.text,
           oldFromZoneId: previousFrom,
           newFromZoneId: _timeFromZoneId!,
         );
+        if (rebased == null) {
+          _seedTimeConverterInput();
+        } else {
+          _timeConvertController.text = rebased;
+        }
       }
     });
     _persistTimeZoneSelection();
@@ -5543,6 +3752,18 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
     final headingTone = _ToolModalThemePolicy.headingTone(context);
     final infoTone = _ToolModalThemePolicy.infoTone(context);
     final warningTone = _ToolModalThemePolicy.warningTone(context);
+    final theme = ToolTimeSurfaceTheme(
+      accent: accent,
+      panelBg: panelBg,
+      panelBorder: panelBorder,
+      textPrimary: textPrimary,
+      textMuted: textMuted,
+      headingTone: headingTone,
+      infoTone: infoTone,
+      warningTone: warningTone,
+      successTone: _ToolModalThemePolicy.successTone(context),
+      dangerTone: _ToolModalThemePolicy.dangerTone(context),
+    );
 
     final options = _timeZoneOptions();
     if (options.isEmpty) {
@@ -5591,38 +3812,6 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
       return 'UTC$sign$hh:$mm ${zt.abbreviation}';
     }
 
-    Future<void> addWidgetIfRequested() async {
-      if (!widget.canAddWidget || widget.onAddWidget == null) return;
-      final addedLabel = DashboardCopy.addedWidgetNotice(
-        context,
-        DashboardCopy.toolDisplayName(
-          context,
-          toolId: widget.tool.id,
-          fallback: widget.tool.title,
-        ),
-      );
-      final duplicateLabel = DashboardCopy.duplicateWidgetNotice(
-        context,
-        DashboardCopy.toolDisplayName(
-          context,
-          toolId: widget.tool.id,
-          fallback: widget.tool.title,
-        ),
-      );
-      final failedLabel = DashboardCopy.addWidgetFailedNotice(context);
-      try {
-        await widget.onAddWidget!.call();
-        if (!mounted) return;
-        _showNotice(addedLabel, UnitanaNoticeKind.success);
-      } on DuplicateDashboardWidgetException catch (_) {
-        if (!mounted) return;
-        _showNotice(duplicateLabel, UnitanaNoticeKind.info);
-      } catch (_) {
-        if (!mounted) return;
-        _showNotice(failedLabel, UnitanaNoticeKind.error);
-      }
-    }
-
     final timeConverterHistory = widget.session.historyFor(widget.tool.id);
     final deltaMetricLabel = jetLagPlan.deltaLabelForUi;
     final homeGeo = PlaceGeoLookup.forPlace(widget.home);
@@ -5633,55 +3822,62 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
       toLat: destinationGeo?.lat,
       toLon: destinationGeo?.lon,
     );
+    String cleanDisplayLabel(String raw, String fallback) {
+      final cleaned = raw
+          .replaceFirst(RegExp(r'^\s*(Home|Destination)\s*·\s*'), '')
+          .trim();
+      return cleaned.isEmpty ? fallback : cleaned;
+    }
 
-    Widget buildCurrentClocksCard() {
-      final factsTitle = DashboardCopy.factsTitle(
-        context,
-        isJetLagTool: _isJetLagDeltaTool,
-      );
+    String countryCodeFromLabel(String label) {
+      final parts = label.split(',');
+      if (parts.length < 2) return '';
+      final tail = parts.last.trim();
+      if (RegExp(r'^[A-Za-z]{2}$').hasMatch(tail)) return tail.toUpperCase();
+      return '';
+    }
+
+    String cityNameFromLabel(String label, String fallback) {
+      final pieces = label.split(',');
+      final city = pieces.first.trim();
+      return city.isEmpty ? fallback : city;
+    }
+
+    String cityFromLabel(String raw, String fallback) {
+      final cleaned = raw
+          .replaceFirst(RegExp(r'^\s*(Home|Destination)\s*·\s*'), '')
+          .trim();
+      final comma = cleaned.indexOf(',');
+      if (comma <= 0) return cleaned.isEmpty ? fallback : cleaned;
+      final city = cleaned.substring(0, comma).trim();
+      return city.isEmpty ? fallback : city;
+    }
+
+    final fromLabelRaw = cleanDisplayLabel(
+      _timeFromDisplayLabel ?? '',
+      labelFor(fromId),
+    );
+    final toLabelRaw = cleanDisplayLabel(
+      _timeToDisplayLabel ?? '',
+      labelFor(toId),
+    );
+    final fromCity = cityNameFromLabel(fromLabelRaw, labelFor(fromId));
+    final toCity = cityNameFromLabel(toLabelRaw, labelFor(toId));
+    final fromCountryCode = countryCodeFromLabel(fromLabelRaw);
+    final toCountryCode = countryCodeFromLabel(toLabelRaw);
+    final fromFlag = _countryFlag(fromCountryCode);
+    final toFlag = _countryFlag(toCountryCode);
+    final fromPrefix = fromFlag.isEmpty ? '' : '$fromFlag ';
+    final toPrefix = toFlag.isEmpty ? '' : '$toFlag ';
+
+    final sections = <Widget>[];
+
+    if (_isJetLagDeltaTool ||
+        (!_isWorldClockMapTool && !_isTimeZoneConverterTool)) {
       final dateImpact = JetLagPlanner.dateImpactLabel(
         fromLocal: fromNow.local,
         toLocal: toNow.local,
       );
-      String cleanDisplayLabel(String raw, String fallback) {
-        final cleaned = raw
-            .replaceFirst(RegExp(r'^\s*(Home|Destination)\s*·\s*'), '')
-            .trim();
-        return cleaned.isEmpty ? fallback : cleaned;
-      }
-
-      String countryCodeFromLabel(String label) {
-        final parts = label.split(',');
-        if (parts.length < 2) return '';
-        final tail = parts.last.trim();
-        if (RegExp(r'^[A-Za-z]{2}$').hasMatch(tail)) return tail.toUpperCase();
-        return '';
-      }
-
-      String cityNameFromLabel(String label, String fallback) {
-        final pieces = label.split(',');
-        final city = pieces.first.trim();
-        return city.isEmpty ? fallback : city;
-      }
-
-      final fromLabelRaw = cleanDisplayLabel(
-        _timeFromDisplayLabel ?? '',
-        labelFor(fromId),
-      );
-      final toLabelRaw = cleanDisplayLabel(
-        _timeToDisplayLabel ?? '',
-        labelFor(toId),
-      );
-      final fromCity = cityNameFromLabel(fromLabelRaw, labelFor(fromId));
-      final toCity = cityNameFromLabel(toLabelRaw, labelFor(toId));
-      final fromCountryCode = countryCodeFromLabel(fromLabelRaw);
-      final toCountryCode = countryCodeFromLabel(toLabelRaw);
-      final fromFlag = _countryFlag(fromCountryCode);
-      final toFlag = _countryFlag(toCountryCode);
-      final fromPrefix = fromFlag.isEmpty ? '' : '$fromFlag ';
-      final toPrefix = toFlag.isEmpty ? '' : '$toFlag ';
-      final fromOffsetLabel = '$fromPrefix$fromCity';
-      final toOffsetLabel = '$toPrefix$toCity';
       final directionCompact = DashboardCopy.timeDirection(
         context: context,
         direction: jetLagPlan.direction,
@@ -5692,173 +3888,51 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
       final dateImpactCompact = DashboardCopy.dateImpactTitleCase(
         dateImpactCompactRaw,
       );
-      final showDualAnalogClocks =
-          !_isJetLagDeltaTool && !_isTimeZoneConverterTool;
-      final fromDigitalHud =
-          '${clock(fromNow, use24h: widget.prefer24h)} ${fromNow.abbreviation}';
-      final toDigitalHud =
-          '${clock(toNow, use24h: widget.prefer24h)} ${toNow.abbreviation}';
-
-      Widget factsMetaLine({
-        required String label,
-        required String value,
-        Color? labelColor,
-        Color? valueColor,
-        bool italicValue = false,
-        bool breakValueLine = false,
-      }) {
-        return Text.rich(
-          TextSpan(
-            children: [
-              TextSpan(
-                text: breakValueLine ? '$label\n' : '$label ',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: labelColor ?? textMuted.withAlpha(222),
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              TextSpan(
-                text: value,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: valueColor ?? textPrimary,
-                  fontWeight: FontWeight.w700,
-                  fontStyle: italicValue ? FontStyle.italic : FontStyle.normal,
-                ),
-              ),
-            ],
+      sections.add(
+        ToolTimeFactsCard(
+          title: DashboardCopy.factsTitle(
+            context,
+            isJetLagTool: _isJetLagDeltaTool,
           ),
-        );
-      }
-
-      return Container(
-        key: const ValueKey('tool_time_now_card'),
-        padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
-        decoration: BoxDecoration(
-          color: panelBg,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: panelBorder),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              factsTitle,
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w800,
-                color: infoTone,
-              ),
-            ),
-            if (showDualAnalogClocks) ...[
-              const SizedBox(height: 10),
-              Row(
-                key: const ValueKey('tool_time_dual_analog_row'),
-                children: [
-                  Expanded(
-                    child: _TimeAnalogClockFace(
-                      key: const ValueKey('tool_time_analog_clock_home'),
-                      cityLabel: fromCity,
-                      flagPrefix: fromPrefix,
-                      localTime: fromNow.local,
-                      digitalHud: fromDigitalHud,
-                      accentColor: infoTone.withAlpha(232),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: _TimeAnalogClockFace(
-                      key: const ValueKey('tool_time_analog_clock_destination'),
-                      cityLabel: toCity,
-                      flagPrefix: toPrefix,
-                      localTime: toNow.local,
-                      digitalHud: toDigitalHud,
-                      accentColor: warningTone.withAlpha(232),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-            const SizedBox(height: 8),
-            Text.rich(
-              TextSpan(
-                children: [
-                  TextSpan(
-                    text: '$fromPrefix$fromCity:',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                  TextSpan(
-                    text:
-                        ' ${clock(fromNow, use24h: widget.prefer24h)} (${zoneMeta(fromNow)})',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text.rich(
-              TextSpan(
-                children: [
-                  TextSpan(
-                    text: '$toPrefix$toCity:',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                  TextSpan(
-                    text:
-                        ' ${clock(toNow, use24h: widget.prefer24h)} (${zoneMeta(toNow)})',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 8),
-            if (_isJetLagDeltaTool)
-              factsMetaLine(
-                label: DashboardCopy.timeFactsOffsetLabel(context),
-                value:
-                    '$toOffsetLabel vs $fromOffsetLabel: $deltaMetricLabel · $directionCompact',
-                valueColor: textPrimary,
-                breakValueLine: true,
-              )
-            else
-              factsMetaLine(
-                label: DashboardCopy.timeFactsOffsetLabel(context),
-                value: '$toOffsetLabel vs $fromOffsetLabel: $deltaMetricLabel',
-              ),
-            if (_isJetLagDeltaTool) ...[
-              const SizedBox(height: 4),
-              factsMetaLine(
-                label: DashboardCopy.timeFactsDateLabel(context),
-                value: dateImpactCompact,
-                labelColor: textMuted,
-                valueColor: textPrimary,
-              ),
-              if (flightEstimate != null) ...[
-                const SizedBox(height: 4),
-                factsMetaLine(
-                  label: DashboardCopy.timeFactsFlightLabel(context),
-                  value: flightEstimate.factsLabel.replaceFirst(
-                    'Estimated flight time: ',
-                    '',
-                  ),
-                  labelColor: infoTone.withAlpha(220),
-                  valueColor: infoTone.withAlpha(236),
-                  italicValue: true,
-                ),
-              ],
-            ],
-          ],
+          showDualAnalogClocks:
+              !_isJetLagDeltaTool && !_isTimeZoneConverterTool,
+          fromCity: fromCity,
+          toCity: toCity,
+          fromPrefix: fromPrefix,
+          toPrefix: toPrefix,
+          fromLocalTime: fromNow.local,
+          toLocalTime: toNow.local,
+          fromDigitalHud:
+              '${clock(fromNow, use24h: widget.prefer24h)} ${fromNow.abbreviation}',
+          toDigitalHud:
+              '${clock(toNow, use24h: widget.prefer24h)} ${toNow.abbreviation}',
+          fromClockLine:
+              '${clock(fromNow, use24h: widget.prefer24h)} (${zoneMeta(fromNow)})',
+          toClockLine:
+              '${clock(toNow, use24h: widget.prefer24h)} (${zoneMeta(toNow)})',
+          offsetLabel: DashboardCopy.timeFactsOffsetLabel(context),
+          offsetValue: _isJetLagDeltaTool
+              ? '$toPrefix$toCity vs $fromPrefix$fromCity: $deltaMetricLabel · $directionCompact'
+              : '$toPrefix$toCity vs $fromPrefix$fromCity: $deltaMetricLabel',
+          dateLabel: _isJetLagDeltaTool
+              ? DashboardCopy.timeFactsDateLabel(context)
+              : null,
+          dateValue: _isJetLagDeltaTool ? dateImpactCompact : null,
+          flightLabel: _isJetLagDeltaTool && flightEstimate != null
+              ? DashboardCopy.timeFactsFlightLabel(context)
+              : null,
+          flightValue: _isJetLagDeltaTool && flightEstimate != null
+              ? flightEstimate.factsLabel.replaceFirst(
+                  'Estimated flight time: ',
+                  '',
+                )
+              : null,
+          theme: theme,
         ),
       );
     }
 
-    Widget buildJetLagPlannerCard() {
+    if (_isJetLagDeltaTool) {
       final showOverlapHints = true;
       final gateOverlap = jetLagPlan.absDeltaHours <= 3;
       final showOverlapDetails =
@@ -5885,45 +3959,6 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
         _jetLagWakeMinutes,
         use24h: widget.prefer24h,
       );
-
-      TextSpan scheduleValueSpans({
-        required String sleepValue,
-        required String wakeValue,
-      }) {
-        return TextSpan(
-          children: [
-            TextSpan(
-              text: DashboardCopy.jetLagSleepPrefix(context),
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: textMuted.withAlpha(236),
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            TextSpan(
-              text: sleepValue,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: textPrimary.withAlpha(240),
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            TextSpan(
-              text: DashboardCopy.jetLagWakePrefix(context),
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: textMuted.withAlpha(236),
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            TextSpan(
-              text: wakeValue,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: textPrimary.withAlpha(240),
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ],
-        );
-      }
-
       String overlapFor({required int destHour, required int destMinute}) {
         final destLocal = DateTime(
           toNow.local.year,
@@ -5937,46 +3972,6 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
         return TimezoneUtils.formatClock(
           homeAtThatTime,
           use24h: widget.prefer24h,
-        );
-      }
-
-      final overlapMorning = overlapFor(destHour: 9, destMinute: 0);
-      final overlapEvening = overlapFor(destHour: 20, destMinute: 0);
-      final tipPool = _jetLagTipsForPlan(jetLagPlan, labelFor(toId));
-      final tipIndex = _jetLagTipsAutoRotateEnabled
-          ? _jetLagTipIndex % tipPool.length
-          : 0;
-      final tipText = tipPool[tipIndex];
-      final fromCity = widget.home?.cityName ?? labelFor(fromId);
-      final toCity = widget.destination?.cityName ?? labelFor(toId);
-
-      Widget planMetaLine({
-        required String label,
-        required String value,
-        Color? labelColor,
-        Color? valueColor,
-        bool italicValue = false,
-      }) {
-        return Text.rich(
-          TextSpan(
-            children: [
-              TextSpan(
-                text: '$label ',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: labelColor ?? warningTone.withAlpha(220),
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              TextSpan(
-                text: value,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: valueColor ?? textPrimary,
-                  fontWeight: FontWeight.w700,
-                  fontStyle: italicValue ? FontStyle.italic : FontStyle.normal,
-                ),
-              ),
-            ],
-          ),
         );
       }
 
@@ -5997,18 +3992,20 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
           color: textPrimary.withAlpha(248),
           fontWeight: FontWeight.w900,
         );
-
+        final planFromCity = widget.home?.cityName ?? labelFor(fromId);
+        final planToCity = widget.destination?.cityName ?? labelFor(toId);
         final timeMatches = RegExp(
           r'\b\d{1,2}:\d{2}\b',
         ).allMatches(line).toList();
-
         final spans = <InlineSpan>[];
         var cursor = 0;
         while (cursor < line.length) {
-          final toMatchAt = toCity.isEmpty ? -1 : line.indexOf(toCity, cursor);
-          final fromMatchAt = fromCity.isEmpty
+          final toMatchAt = planToCity.isEmpty
               ? -1
-              : line.indexOf(fromCity, cursor);
+              : line.indexOf(planToCity, cursor);
+          final fromMatchAt = planFromCity.isEmpty
+              ? -1
+              : line.indexOf(planFromCity, cursor);
           var timeMatchAt = -1;
           Match? nextTimeMatch;
           for (final match in timeMatches) {
@@ -6018,7 +4015,6 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
               break;
             }
           }
-
           final hasToMatch = toMatchAt >= 0;
           final hasFromMatch = fromMatchAt >= 0;
           final hasTimeMatch = timeMatchAt >= 0 && nextTimeMatch != null;
@@ -6026,7 +4022,6 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
             spans.add(TextSpan(text: line.substring(cursor), style: baseStyle));
             break;
           }
-
           var matchStart = -1;
           var matchToken = '';
           var matchStyle = baseStyle;
@@ -6039,14 +4034,13 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
           } else if (hasToMatch &&
               (!hasFromMatch || toMatchAt <= fromMatchAt)) {
             matchStart = toMatchAt;
-            matchToken = toCity;
+            matchToken = planToCity;
             matchStyle = toCityStyle;
           } else if (hasFromMatch) {
             matchStart = fromMatchAt;
-            matchToken = fromCity;
+            matchToken = planFromCity;
             matchStyle = fromCityStyle;
           }
-
           if (matchStart > cursor) {
             spans.add(
               TextSpan(
@@ -6058,538 +4052,184 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
           spans.add(TextSpan(text: matchToken, style: matchStyle));
           cursor = matchStart + matchToken.length;
         }
-
         return TextSpan(children: spans, style: baseStyle);
       }
 
-      return Container(
-        key: const ValueKey('tool_time_planner_card'),
-        padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
-        decoration: BoxDecoration(
-          color: panelBg,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: panelBorder),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              DashboardCopy.jetLagPlanTitle(context),
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w900,
-                color: warningTone,
-              ),
+      final overlapMorning = overlapFor(destHour: 9, destMinute: 0);
+      final overlapEvening = overlapFor(destHour: 20, destMinute: 0);
+      final tipPool = _jetLagTipsForPlan(jetLagPlan, labelFor(toId));
+      final tipIndex = _jetLagTipsAutoRotateEnabled
+          ? _jetLagTipIndex % tipPool.length
+          : 0;
+      final tipText = tipPool[tipIndex];
+      final fromCityPlan = widget.home?.cityName ?? labelFor(fromId);
+      final toCityPlan = widget.destination?.cityName ?? labelFor(toId);
+
+      sections.add(
+        ToolJetLagPlannerCard(
+          title: DashboardCopy.jetLagPlanTitle(context),
+          offsetLabel: DashboardCopy.timeFactsOffsetLabel(context),
+          bandLabelTitle: DashboardCopy.jetLagBandLabel(context),
+          dailyShiftLabelTitle: DashboardCopy.jetLagDailyShiftLabel(context),
+          deltaMetricLabel: deltaMetricLabel,
+          bandLabel: jetLagPlan.bandLabel,
+          adjustmentDays: jetLagPlan.adjustmentDays,
+          dailyShiftLabel: jetLagPlan.dailyShiftLabel,
+          bedtimeButtonLabel: DashboardCopy.jetLagBedtimeButton(
+            context,
+            _formatMinutesOfDay(
+              _jetLagBedtimeMinutes,
+              use24h: widget.prefer24h,
             ),
-            const SizedBox(height: 8),
-            planMetaLine(
-              label: DashboardCopy.timeFactsOffsetLabel(context),
-              value: deltaMetricLabel,
+          ),
+          wakeButtonLabel: DashboardCopy.jetLagWakeButton(
+            context,
+            _formatMinutesOfDay(_jetLagWakeMinutes, use24h: widget.prefer24h),
+          ),
+          tonightTargetLabel: DashboardCopy.jetLagTonightTargetLabel(context),
+          tonightScheduleText:
+              '${DashboardCopy.jetLagSleepPrefix(context)}$tonightSleep${DashboardCopy.jetLagWakePrefix(context)}$tonightWake',
+          baselineLabel: !jetLagPlan.isNoShift
+              ? DashboardCopy.jetLagBaselineLabel(context)
+              : null,
+          baselineScheduleText: !jetLagPlan.isNoShift
+              ? '${DashboardCopy.jetLagSleepPrefix(context)}$baselineSleep${DashboardCopy.jetLagWakePrefix(context)}$baselineWake'
+              : null,
+          quickTipsTitle: DashboardCopy.quickTipsTitle(context),
+          tipText: tipText,
+          tipKeySuffix: tipIndex,
+          callWindowsTitle: DashboardCopy.callWindowsTitle(context),
+          showOverlapHints: showOverlapHints,
+          showOverlapDetails: showOverlapDetails,
+          showOverlapExpandCta: gateOverlap && !_jetLagOverlapExpanded,
+          showCallWindowsLabel: DashboardCopy.showCallWindowsCta(context),
+          overlapIntro: DashboardCopy.overlapIntro(context),
+          overlapMorningLine: styledCallWindowLine(
+            DashboardCopy.jetLagCallWindowMorning(
+              context,
+              toCity: toCityPlan,
+              overlapMorning: overlapMorning,
+              fromCity: fromCityPlan,
             ),
-            const SizedBox(height: 4),
-            planMetaLine(
-              label: DashboardCopy.jetLagBandLabel(context),
-              value:
-                  '${jetLagPlan.bandLabel} · ~${jetLagPlan.adjustmentDays} days',
+          ),
+          overlapEveningLine: styledCallWindowLine(
+            DashboardCopy.jetLagCallWindowEvening(
+              context,
+              toCity: toCityPlan,
+              overlapEvening: overlapEvening,
+              fromCity: fromCityPlan,
             ),
-            const SizedBox(height: 4),
-            planMetaLine(
-              label: DashboardCopy.jetLagDailyShiftLabel(context),
-              value: jetLagPlan.dailyShiftLabel,
-            ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    key: const ValueKey('tool_jetlag_bedtime_button'),
-                    style: OutlinedButton.styleFrom(
-                      minimumSize: const Size(0, 38),
-                      padding: const EdgeInsets.symmetric(horizontal: 10),
-                      visualDensity: VisualDensity.compact,
-                    ),
-                    onPressed: () => _pickJetLagTime(bedtime: true),
-                    child: Text(
-                      DashboardCopy.jetLagBedtimeButton(
-                        context,
-                        _formatMinutesOfDay(
-                          _jetLagBedtimeMinutes,
-                          use24h: widget.prefer24h,
-                        ),
-                      ),
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        fontSize: 13.5,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: OutlinedButton(
-                    key: const ValueKey('tool_jetlag_wake_button'),
-                    style: OutlinedButton.styleFrom(
-                      minimumSize: const Size(0, 38),
-                      padding: const EdgeInsets.symmetric(horizontal: 10),
-                      visualDensity: VisualDensity.compact,
-                    ),
-                    onPressed: () => _pickJetLagTime(bedtime: false),
-                    child: Text(
-                      DashboardCopy.jetLagWakeButton(
-                        context,
-                        _formatMinutesOfDay(
-                          _jetLagWakeMinutes,
-                          use24h: widget.prefer24h,
-                        ),
-                      ),
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        fontSize: 13.5,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Text.rich(
-              key: const ValueKey('tool_jetlag_personalized_schedule'),
-              TextSpan(
-                children: [
-                  TextSpan(
-                    text: DashboardCopy.jetLagTonightTargetLabel(context),
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: warningTone.withAlpha(218),
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                  TextSpan(
-                    children: [
-                      scheduleValueSpans(
-                        sleepValue: tonightSleep,
-                        wakeValue: tonightWake,
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            if (!jetLagPlan.isNoShift) ...[
-              const SizedBox(height: 2),
-              Text.rich(
-                TextSpan(
-                  children: [
-                    TextSpan(
-                      text: DashboardCopy.jetLagBaselineLabel(context),
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: warningTone.withAlpha(218),
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    scheduleValueSpans(
-                      sleepValue: baselineSleep,
-                      wakeValue: baselineWake,
-                    ),
-                  ],
-                ),
-              ),
-            ],
-            const SizedBox(height: 8),
-            Text(
-              '💡 ${DashboardCopy.quickTipsTitle(context)}',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: warningTone,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-            const SizedBox(height: 4),
-            SizedBox(
-              height: 42,
-              child: Align(
-                alignment: Alignment.topLeft,
-                child: AnimatedSwitcher(
-                  key: const ValueKey('tool_jetlag_tip_rotator'),
-                  duration: const Duration(milliseconds: 350),
-                  switchInCurve: Curves.easeOut,
-                  switchOutCurve: Curves.easeIn,
-                  transitionBuilder: (child, animation) =>
-                      FadeTransition(opacity: animation, child: child),
-                  child: Text(
-                    tipText,
-                    key: ValueKey('tool_jetlag_tip_text_$tipIndex'),
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: textMuted.withAlpha(236),
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            if (showOverlapHints) ...[
-              const SizedBox(height: 8),
-              Text(
-                '📞 ${DashboardCopy.callWindowsTitle(context)}',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: warningTone,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              const SizedBox(height: 4),
-              if (gateOverlap && !_jetLagOverlapExpanded)
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: OutlinedButton(
-                    key: const ValueKey('tool_jetlag_overlap_toggle'),
-                    style: OutlinedButton.styleFrom(
-                      minimumSize: const Size(0, 32),
-                      visualDensity: VisualDensity.compact,
-                    ),
-                    onPressed: () {
-                      setState(() {
-                        _jetLagOverlapExpanded = true;
-                      });
-                    },
-                    child: Text(DashboardCopy.showCallWindowsCta(context)),
-                  ),
-                ),
-              if (showOverlapDetails)
-                Column(
-                  key: const ValueKey('tool_jetlag_overlap_panel'),
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      DashboardCopy.overlapIntro(context),
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        fontWeight: FontWeight.w700,
-                        color: textMuted.withAlpha(232),
-                        fontStyle: FontStyle.italic,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text.rich(
-                      styledCallWindowLine(
-                        DashboardCopy.jetLagCallWindowMorning(
-                          context,
-                          toCity: toCity,
-                          overlapMorning: overlapMorning,
-                          fromCity: fromCity,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text.rich(
-                      styledCallWindowLine(
-                        DashboardCopy.jetLagCallWindowEvening(
-                          context,
-                          toCity: toCity,
-                          overlapEvening: overlapEvening,
-                          fromCity: fromCity,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-            ],
-          ],
+          ),
+          theme: theme,
+          onPickBedtime: () => _pickJetLagTime(bedtime: true),
+          onPickWakeTime: () => _pickJetLagTime(bedtime: false),
+          onExpandOverlap: gateOverlap && !_jetLagOverlapExpanded
+              ? () {
+                  setState(() {
+                    _jetLagOverlapExpanded = true;
+                  });
+                }
+              : null,
         ),
       );
     }
 
-    Widget buildWorldTimeMapCard() {
-      String cityFromLabel(String raw, String fallback) {
-        final cleaned = raw
-            .replaceFirst(RegExp(r'^\s*(Home|Destination)\s*·\s*'), '')
-            .trim();
-        final comma = cleaned.indexOf(',');
-        if (comma <= 0) return cleaned.isEmpty ? fallback : cleaned;
-        final city = cleaned.substring(0, comma).trim();
-        return city.isEmpty ? fallback : city;
-      }
-
-      final fromCity = cityFromLabel(fromDisplayLabel, labelFor(fromId));
-      final toCity = cityFromLabel(toDisplayLabel, labelFor(toId));
+    if (_isWorldClockMapTool) {
+      final worldFromCity = cityFromLabel(fromDisplayLabel, labelFor(fromId));
+      final worldToCity = cityFromLabel(toDisplayLabel, labelFor(toId));
       final fromOffsetHours = fromNow.offsetMinutes / 60.0;
       final toOffsetHours = toNow.offsetMinutes / 60.0;
       final deltaHours = ((toNow.offsetMinutes - fromNow.offsetMinutes) / 60.0)
           .toStringAsFixed(1);
       final sameZone = fromNow.offsetMinutes == toNow.offsetMinutes;
-
-      return Container(
-        key: const ValueKey('tool_time_world_map_card'),
-        padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
-        decoration: BoxDecoration(
-          color: panelBg,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: panelBorder),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'World Time Zones',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w900,
-                color: headingTone,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              sameZone
-                  ? '$fromCity and $toCity are in the same UTC band right now.'
-                  : '$toCity is ${deltaHours.startsWith('-') ? '' : '+'}$deltaHours hours from $fromCity.',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: textMuted,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            const SizedBox(height: 8),
-            _WorldTimeZoneBandMap(
-              fromCity: fromCity,
-              toCity: toCity,
-              fromOffsetHours: fromOffsetHours,
-              toOffsetHours: toOffsetHours,
-            ),
-          ],
+      sections.add(
+        ToolWorldTimeMapCard(
+          title: DashboardCopy.worldTimeZonesTitle(context),
+          summary: sameZone
+              ? DashboardCopy.worldTimeSameZoneSummary(
+                  context,
+                  fromCity: worldFromCity,
+                  toCity: worldToCity,
+                )
+              : DashboardCopy.worldTimeOffsetSummary(
+                  context,
+                  fromCity: worldFromCity,
+                  toCity: worldToCity,
+                  deltaHours:
+                      '${deltaHours.startsWith('-') ? '' : '+'}$deltaHours',
+                ),
+          fromCity: worldFromCity,
+          toCity: worldToCity,
+          fromOffsetHours: fromOffsetHours,
+          toOffsetHours: toOffsetHours,
+          theme: theme,
         ),
       );
     }
 
-    return ListView(
-      key: const ValueKey('tool_time_scroll'),
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-      children: [
-        Container(
-          decoration: BoxDecoration(
-            color: panelBg,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: panelBorder),
+    if (_isTimeZoneConverterTool) {
+      sections.add(
+        ToolTimeConverterSection(
+          toolId: widget.tool.id,
+          title: DashboardCopy.convertLocalTimeTitle(context),
+          helperText: DashboardCopy.convertLocalTimeHelper(
+            context,
+            fromDisplayLabel,
           ),
-          child: Column(
-            children: [
-              ListTile(
-                key: const ValueKey('tool_time_from_zone'),
-                dense: true,
-                title: Text(
-                  DashboardCopy.timeFromZoneTitle(
-                    context,
-                    isJetLagTool: _isJetLagDeltaTool,
-                  ),
-                ),
-                subtitle: Text(fromDisplayLabel),
-                trailing: const Icon(Icons.arrow_drop_down_rounded),
-                onTap: () => _pickTimeZone(isFrom: true),
-              ),
-              Divider(color: textMuted.withAlpha(120), height: 1),
-              ListTile(
-                key: const ValueKey('tool_time_to_zone'),
-                dense: true,
-                title: Text(
-                  DashboardCopy.timeToZoneTitle(
-                    context,
-                    isJetLagTool: _isJetLagDeltaTool,
-                  ),
-                ),
-                subtitle: Text(toDisplayLabel),
-                trailing: const Icon(Icons.arrow_drop_down_rounded),
-                onTap: () => _pickTimeZone(isFrom: false),
-              ),
-            ],
+          inputHint: DashboardCopy.timeConverterInputHint(context),
+          convertLabel: DashboardCopy.convertTimeCta(context),
+          resultPlaceholderInput: DashboardCopy.resultPlaceholderInput(context),
+          resultPlaceholderOutput: DashboardCopy.resultPlaceholderOutput(
+            context,
           ),
+          controller: _timeConvertController,
+          resultLine: _resultLine,
+          theme: theme,
+          onRunConversion: _runTimeZoneConversion,
         ),
-        const SizedBox(height: 10),
-        Row(
-          key: const ValueKey('tool_time_action_row'),
-          children: [
-            Expanded(
-              child: (widget.canAddWidget && widget.onAddWidget != null)
-                  ? Align(
-                      alignment: Alignment.centerLeft,
-                      child: OutlinedButton.icon(
-                        key: const ValueKey('tool_add_widget_time'),
-                        style: OutlinedButton.styleFrom(
-                          minimumSize: const Size(0, 34),
-                          padding: const EdgeInsets.symmetric(horizontal: 12),
-                          visualDensity: VisualDensity.compact,
-                          side: BorderSide(color: panelBorder),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        onPressed: addWidgetIfRequested,
-                        icon: Icon(
-                          Icons.add_circle_outline,
-                          size: 18,
-                          color: accent,
-                        ),
-                        label: Text(
-                          DashboardCopy.addWidgetCta(context),
-                          style: Theme.of(context).textTheme.labelLarge
-                              ?.copyWith(
-                                fontWeight: FontWeight.w700,
-                                color: accent,
-                              ),
-                        ),
-                      ),
-                    )
-                  : const SizedBox.shrink(),
-            ),
-            Expanded(
-              child: Align(
-                alignment: Alignment.center,
-                child: OutlinedButton.icon(
-                  key: const ValueKey('tool_time_swap_zones'),
-                  onPressed: _swapTimeZones,
-                  icon: const Icon(Icons.swap_horiz_rounded, size: 18),
-                  label: Text(DashboardCopy.swapCta(context)),
-                ),
-              ),
-            ),
-            const Expanded(child: SizedBox.shrink()),
-          ],
+      );
+      sections.add(
+        ToolTimeHistorySection(
+          history: timeConverterHistory,
+          historyTitle: DashboardCopy.historyTitle(context),
+          clearLabel: DashboardCopy.clearCta(context),
+          emptyHistoryLabel: DashboardCopy.historyEmptyLabel(context),
+          theme: theme,
+          onClear: timeConverterHistory.isEmpty
+              ? null
+              : () async {
+                  final historyClearedLabel =
+                      DashboardCopy.historyClearedNotice(context);
+                  final confirmed = await _confirmClearHistory(context);
+                  if (!confirmed) return;
+                  widget.session.clearHistory(widget.tool.id);
+                  _showNotice(historyClearedLabel, UnitanaNoticeKind.success);
+                },
         ),
-        const SizedBox(height: 10),
-        if (_isJetLagDeltaTool) ...[
-          buildCurrentClocksCard(),
-          const SizedBox(height: 10),
-          buildJetLagPlannerCard(),
-        ],
-        if (!_isJetLagDeltaTool && !_isWorldClockMapTool)
-          buildCurrentClocksCard(),
-        if (_isWorldClockMapTool) ...[
-          const SizedBox(height: 10),
-          buildWorldTimeMapCard(),
-        ],
-        if (_isTimeZoneConverterTool) ...[
-          const SizedBox(height: 10),
-          Container(
-            key: const ValueKey('tool_time_converter_card'),
-            padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
-            decoration: BoxDecoration(
-              color: panelBg,
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: panelBorder),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  DashboardCopy.convertLocalTimeTitle(context),
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w800,
-                    color: headingTone,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  DashboardCopy.convertLocalTimeHelper(
-                    context,
-                    fromDisplayLabel,
-                  ),
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: textMuted,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                TextField(
-                  key: const ValueKey('tool_time_convert_input'),
-                  controller: _timeConvertController,
-                  keyboardType: TextInputType.datetime,
-                  decoration: InputDecoration(
-                    hintText: DashboardCopy.timeConverterInputHint(context),
-                  ),
-                  onSubmitted: (_) => _runTimeZoneConversion(),
-                ),
-                const SizedBox(height: 10),
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: FilledButton(
-                    key: const ValueKey('tool_time_convert_run'),
-                    onPressed: _runTimeZoneConversion,
-                    child: Text(DashboardCopy.convertTimeCta(context)),
-                  ),
-                ),
-                const SizedBox(height: 10),
-                _ResultCard(
-                  toolId: widget.tool.id,
-                  lensId: widget.tool.lensId,
-                  line: _resultLine,
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 10),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: Wrap(
-              spacing: 10,
-              runSpacing: 4,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              children: [
-                Text(
-                  DashboardCopy.historyTitle(context),
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w800,
-                    color: headingTone,
-                  ),
-                ),
-                OutlinedButton(
-                  key: const ValueKey('tool_time_history_clear'),
-                  onPressed: timeConverterHistory.isEmpty
-                      ? null
-                      : () async {
-                          final historyClearedLabel =
-                              DashboardCopy.historyClearedNotice(context);
-                          final confirmed = await _confirmClearHistory(context);
-                          if (!confirmed) return;
-                          widget.session.clearHistory(widget.tool.id);
-                          _showNotice(
-                            historyClearedLabel,
-                            UnitanaNoticeKind.success,
-                          );
-                        },
-                  child: Text(DashboardCopy.clearCta(context)),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 6),
-          Container(
-            key: const ValueKey('tool_time_history_container'),
-            decoration: BoxDecoration(
-              color: panelBg,
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: panelBorder),
-            ),
-            child: timeConverterHistory.isEmpty
-                ? const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 22),
-                    child: _EmptyHistory(),
-                  )
-                : ListView.builder(
-                    key: const ValueKey('tool_time_history_list'),
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: timeConverterHistory.length,
-                    itemBuilder: (context, index) {
-                      final record = timeConverterHistory[index];
-                      return ListTile(
-                        dense: true,
-                        title: Text(record.outputLabel),
-                        subtitle: Text(record.inputLabel),
-                        trailing: Text(
-                          record.timestamp
-                              .toLocal()
-                              .toIso8601String()
-                              .substring(11, 16),
-                          style: Theme.of(context).textTheme.labelSmall
-                              ?.copyWith(color: textMuted.withAlpha(200)),
-                        ),
-                      );
-                    },
-                  ),
-          ),
-        ],
-      ],
+      );
+    }
+
+    return ToolTimeSurface(
+      toolId: widget.tool.id,
+      fromZoneTitle: DashboardCopy.timeFromZoneTitle(
+        context,
+        isJetLagTool: _isJetLagDeltaTool,
+      ),
+      fromDisplayLabel: fromDisplayLabel,
+      toZoneTitle: DashboardCopy.timeToZoneTitle(
+        context,
+        isJetLagTool: _isJetLagDeltaTool,
+      ),
+      toDisplayLabel: toDisplayLabel,
+      showAddWidget: widget.canAddWidget && widget.onAddWidget != null,
+      addWidgetLabel: DashboardCopy.addWidgetCta(context),
+      swapLabel: DashboardCopy.swapCta(context),
+      theme: theme,
+      onPickFromZone: () => _pickTimeZone(isFrom: true),
+      onPickToZone: () => _pickTimeZone(isFrom: false),
+      onSwapZones: _swapTimeZones,
+      onAddWidget: _handleAddWidget,
+      sections: sections,
     );
   }
 
@@ -6673,6 +4313,80 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
       return hours == 1 ? 'hour' : '$hours hours';
     }
     return minutes == 1 ? 'minute' : '$minutes minutes';
+  }
+
+  Future<void> _handleAddWidget() async {
+    if (widget.onAddWidget == null) return;
+    final addedLabel = DashboardCopy.addedWidgetNotice(
+      context,
+      DashboardCopy.toolDisplayName(
+        context,
+        toolId: widget.tool.id,
+        fallback: widget.tool.title,
+      ),
+    );
+    final duplicateLabel = DashboardCopy.duplicateWidgetNotice(
+      context,
+      DashboardCopy.toolDisplayName(
+        context,
+        toolId: widget.tool.id,
+        fallback: widget.tool.title,
+      ),
+    );
+    final failedLabel = DashboardCopy.addWidgetFailedNotice(context);
+    try {
+      await widget.onAddWidget!.call();
+      if (!mounted) return;
+      _showNotice(addedLabel, UnitanaNoticeKind.success);
+    } on DuplicateDashboardWidgetException catch (_) {
+      if (!mounted) return;
+      _showNotice(duplicateLabel, UnitanaNoticeKind.info);
+    } catch (_) {
+      if (!mounted) return;
+      _showNotice(failedLabel, UnitanaNoticeKind.error);
+    }
+  }
+
+  Future<void> _copyHistoryResult(ConversionRecord record) async {
+    final toCopy = _stripKnownUnitSuffix(record.outputLabel);
+    await Clipboard.setData(ClipboardData(text: toCopy));
+    if (!mounted) return;
+    _showNotice(
+      DashboardCopy.copiedResultNotice(context),
+      UnitanaNoticeKind.success,
+    );
+  }
+
+  Future<void> _copyHistoryInput(ConversionRecord record) async {
+    final preservedText = _controller.text;
+    final raw = _stripKnownUnitSuffix(record.inputLabel);
+    final toCopy = _trimTrailingZerosForClipboard(raw);
+    await Clipboard.setData(ClipboardData(text: toCopy));
+    if (!mounted) return;
+
+    if (_controller.text != preservedText) {
+      _controller
+        ..text = preservedText
+        ..selection = TextSelection.collapsed(offset: preservedText.length);
+    }
+    _showNotice(
+      DashboardCopy.copiedInputNotice(context),
+      UnitanaNoticeKind.success,
+    );
+  }
+
+  Future<void> _clearToolHistory() async {
+    if (widget.session.historyFor(widget.tool.id).isEmpty) return;
+    final historyClearedLabel = DashboardCopy.historyClearedNotice(context);
+    final ok = await _confirmClearHistory(context);
+    if (!ok || !mounted) return;
+
+    widget.session.clearHistory(widget.tool.id);
+    setState(() {
+      _controller.clear();
+      _resultLine = null;
+    });
+    _showNotice(historyClearedLabel, UnitanaNoticeKind.success);
   }
 
   Widget _buildSheetHeader({
@@ -6811,585 +4525,18 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
     );
   }
 
-  Widget _buildHistorySection({
-    required List<ConversionRecord> history,
-    required Color textMuted,
-    required Color panelBg,
-    required Color panelBorder,
-  }) {
-    return Column(
-      children: [
-        const SizedBox(height: 12),
-        const Divider(height: 1),
-        const SizedBox(height: 12),
-        Align(
-          alignment: Alignment.centerLeft,
-          child: Wrap(
-            spacing: 10,
-            runSpacing: 4,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: [
-              Text(
-                DashboardCopy.historyTitle(context),
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w800,
-                  color: _ToolModalThemePolicy.headingTone(context),
-                ),
-              ),
-              Text(
-                DashboardCopy.historyCopyHint(context),
-                style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                  fontStyle: FontStyle.italic,
-                  color: textMuted,
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 8),
-        SizedBox(
-          height: math.min(MediaQuery.sizeOf(context).height * 0.28, 280.0),
-          child: Container(
-            decoration: BoxDecoration(
-              color: panelBg,
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: panelBorder),
-            ),
-            child: history.isEmpty
-                ? const _EmptyHistory()
-                : ListView.builder(
-                    key: ValueKey('tool_history_list_${widget.tool.id}'),
-                    padding: const EdgeInsets.symmetric(vertical: 4),
-                    itemCount: history.length,
-                    itemBuilder: (context, index) {
-                      final r = history[index];
-                      final isMostRecent = index == 0;
-
-                      final inputLabel = r.inputLabel;
-                      final outputLabel = r.outputLabel;
-                      final timestamp = r.timestamp
-                          .toLocal()
-                          .toIso8601String()
-                          .substring(11, 19);
-
-                      return InkWell(
-                        key: ValueKey('tool_history_${widget.tool.id}_$index'),
-                        onTap: () async {
-                          final toCopy = _stripKnownUnitSuffix(r.outputLabel);
-                          await Clipboard.setData(ClipboardData(text: toCopy));
-                          if (!mounted) return;
-                          _showNotice(
-                            'Copied result',
-                            UnitanaNoticeKind.success,
-                          );
-                        },
-                        onLongPress: () async {
-                          final preservedText = _controller.text;
-
-                          final raw = _stripKnownUnitSuffix(r.inputLabel);
-                          final toCopy = _trimTrailingZerosForClipboard(raw);
-                          await Clipboard.setData(ClipboardData(text: toCopy));
-                          if (!mounted) return;
-
-                          // Guard against accidental "restore/edit" regressions.
-                          if (_controller.text != preservedText) {
-                            _controller
-                              ..text = preservedText
-                              ..selection = TextSelection.collapsed(
-                                offset: preservedText.length,
-                              );
-                          }
-                          _showNotice(
-                            'Copied input',
-                            UnitanaNoticeKind.success,
-                          );
-                        },
-                        child: Padding(
-                          padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    _TerminalLine(
-                                      prompt: '>',
-                                      input: inputLabel,
-                                      output: outputLabel,
-                                      emphasize: isMostRecent,
-                                      arrowColor: isMostRecent
-                                          ? _ToolModalThemePolicy.headingTone(
-                                              context,
-                                            )
-                                          : _ToolModalThemePolicy.textMuted(
-                                              context,
-                                            ),
-                                    ),
-                                    const SizedBox(height: 6),
-                                    Text(
-                                      timestamp,
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .labelSmall
-                                          ?.copyWith(color: textMuted),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Icon(
-                                Icons.copy_rounded,
-                                size: 16,
-                                color: textMuted.withAlpha(200),
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-          ),
-        ),
-        const SizedBox(height: 6),
-        Align(
-          alignment: Alignment.centerRight,
-          child: TextButton(
-            onPressed: history.isEmpty
-                ? null
-                : () async {
-                    final historyClearedLabel =
-                        DashboardCopy.historyClearedNotice(context);
-                    final ok = await _confirmClearHistory(context);
-                    if (!ok || !mounted) return;
-
-                    widget.session.clearHistory(widget.tool.id);
-                    setState(() {
-                      _controller.clear();
-                      _resultLine = null;
-                    });
-                    _showNotice(historyClearedLabel, UnitanaNoticeKind.success);
-                  },
-            style: TextButton.styleFrom(
-              padding: EdgeInsets.zero,
-              minimumSize: const Size(0, 0),
-              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              foregroundColor: _ToolModalThemePolicy.warningTone(context),
-            ),
-            child: Text(
-              DashboardCopy.clearHistoryButtonLabel(context),
-              style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                color: _ToolModalThemePolicy.warningTone(context),
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildDefaultPostConversionSection({
-    required Color accent,
-    required List<ConversionRecord> history,
-    required Color textMuted,
-    required Color panelBg,
-    required Color panelBorder,
-  }) {
+  List<Widget> _defaultPostSections(Color accent) {
     final disclaimer = _toolDisclaimerCopy(context);
-    return Column(
-      children: [
-        const SizedBox(height: 12),
-        _ResultCard(
-          toolId: widget.tool.id,
-          lensId: widget.tool.lensId,
-          line: _resultLine,
+    return <Widget>[
+      if (widget.tool.id == 'pace') _buildPaceInsightsCard(context, accent),
+      if (widget.tool.id == 'energy') _buildEnergyPlannerCard(context, accent),
+      if (disclaimer != null)
+        _buildDisclaimerCard(
+          context,
+          key: ValueKey('tool_disclaimer_${widget.tool.id}'),
+          text: disclaimer,
         ),
-        if (widget.tool.id == 'pace') ...[
-          const SizedBox(height: 10),
-          _buildPaceInsightsCard(context, accent),
-        ],
-        if (widget.tool.id == 'energy') ...[
-          const SizedBox(height: 10),
-          _buildEnergyPlannerCard(context, accent),
-        ],
-        if (disclaimer != null) ...[
-          const SizedBox(height: 10),
-          _buildDisclaimerCard(
-            context,
-            key: ValueKey('tool_disclaimer_${widget.tool.id}'),
-            text: disclaimer,
-          ),
-        ],
-        _buildHistorySection(
-          history: history,
-          textMuted: textMuted,
-          panelBg: panelBg,
-          panelBorder: panelBorder,
-        ),
-      ],
-    );
-  }
-
-  Widget _buildDefaultCalculatorSection({
-    required Color accent,
-    required Color textMuted,
-    required Color panelBorder,
-    required NumericInputPolicy numericPolicy,
-  }) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        // The smallest supported test surface (320px wide) can overflow if we
-        // force the Convert button to live on the same row as the input.
-        final isNarrow = constraints.maxWidth <= 340;
-
-        final helperText = _toolInputCoachCopy(context);
-        final inputBlock = Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              DashboardCopy.editValueLabel(context),
-              style: Theme.of(
-                context,
-              ).textTheme.labelLarge?.copyWith(color: textMuted),
-            ),
-            const SizedBox(height: 6),
-            TextField(
-              key: ValueKey('tool_input_${widget.tool.id}'),
-              controller: _controller,
-              keyboardType: _requiresFreeformInput
-                  ? TextInputType.text
-                  : TextInputType.numberWithOptions(
-                      decimal: numericPolicy.allowDecimal,
-                      signed: numericPolicy.allowNegative,
-                    ),
-              inputFormatters: _requiresFreeformInput
-                  ? const <TextInputFormatter>[]
-                  : <TextInputFormatter>[
-                      NumericTextInputFormatter(policy: numericPolicy),
-                    ],
-              decoration: InputDecoration(hintText: _toolInputHint(context)),
-              onSubmitted: (_) => _runConversion(),
-            ),
-            if (helperText != null) ...[
-              const SizedBox(height: 6),
-              Text(
-                helperText,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: textMuted,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ],
-            const SizedBox(height: 8),
-            LayoutBuilder(
-              builder: (context, _) {
-                final canAdd =
-                    widget.canAddWidget && widget.onAddWidget != null;
-
-                Widget buildUnitsAndSwap() {
-                  final Widget unitsWidget = _supportsUnitPicker
-                      ? Column(
-                          key: ValueKey('tool_units_${widget.tool.id}'),
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                OutlinedButton(
-                                  key: ValueKey(
-                                    'tool_unit_from_${widget.tool.id}',
-                                  ),
-                                  style: OutlinedButton.styleFrom(
-                                    minimumSize: const Size(0, 34),
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 10,
-                                      vertical: 0,
-                                    ),
-                                    visualDensity: VisualDensity.compact,
-                                    side: BorderSide(color: panelBorder),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(999),
-                                    ),
-                                  ),
-                                  onPressed: () => _pickUnit(isFrom: true),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Text(
-                                        _fromUnit,
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .titleMedium
-                                            ?.copyWith(
-                                              fontWeight: FontWeight.w800,
-                                              color: accent,
-                                            ),
-                                      ),
-                                      Icon(
-                                        Icons.arrow_drop_down_rounded,
-                                        color: accent.withAlpha(220),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                  ),
-                                  child: Text(
-                                    '→',
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .titleLarge
-                                        ?.copyWith(
-                                          fontWeight: FontWeight.w900,
-                                          color: accent,
-                                        ),
-                                  ),
-                                ),
-                                OutlinedButton(
-                                  key: ValueKey(
-                                    'tool_unit_to_${widget.tool.id}',
-                                  ),
-                                  style: OutlinedButton.styleFrom(
-                                    minimumSize: const Size(0, 34),
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 10,
-                                      vertical: 0,
-                                    ),
-                                    visualDensity: VisualDensity.compact,
-                                    side: BorderSide(color: panelBorder),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(999),
-                                    ),
-                                  ),
-                                  onPressed: () => _pickUnit(isFrom: false),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Text(
-                                        _toUnit,
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .titleMedium
-                                            ?.copyWith(
-                                              fontWeight: FontWeight.w800,
-                                              color: accent,
-                                            ),
-                                      ),
-                                      Icon(
-                                        Icons.arrow_drop_down_rounded,
-                                        color: accent.withAlpha(220),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                            if (widget.tool.id == 'baking')
-                              Padding(
-                                padding: const EdgeInsets.only(top: 4, left: 4),
-                                child: Text(
-                                  '$_fromUnit → $_toUnit',
-                                  style: Theme.of(context).textTheme.bodySmall
-                                      ?.copyWith(
-                                        color: accent.withAlpha(230),
-                                        fontWeight: FontWeight.w700,
-                                      ),
-                                ),
-                              ),
-                          ],
-                        )
-                      : Text(
-                          '$_fromUnit → $_toUnit',
-                          key: ValueKey('tool_units_${widget.tool.id}'),
-                          style: Theme.of(context).textTheme.titleLarge
-                              ?.copyWith(
-                                fontWeight: FontWeight.w800,
-                                color: accent,
-                              ),
-                          overflow: TextOverflow.visible,
-                          softWrap: false,
-                        );
-
-                  final swapButton = OutlinedButton(
-                    key: ValueKey('tool_swap_${widget.tool.id}'),
-                    style: OutlinedButton.styleFrom(
-                      minimumSize: const Size(34, 34),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 0,
-                      ),
-                      visualDensity: VisualDensity.compact,
-                      side: BorderSide(color: panelBorder),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    onPressed: _swapUnits,
-                    child: PulseSwapIcon(
-                      color: accent.withAlpha(220),
-                      size: 18,
-                    ),
-                  );
-
-                  return Row(
-                    key: ValueKey('tool_units_row_${widget.tool.id}'),
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Expanded(
-                        child: Align(
-                          alignment: Alignment.centerLeft,
-                          child: SingleChildScrollView(
-                            scrollDirection: Axis.horizontal,
-                            child: unitsWidget,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Align(alignment: Alignment.center, child: swapButton),
-                    ],
-                  );
-                }
-
-                Widget buildAddWidgetButton() {
-                  return OutlinedButton.icon(
-                    key: ValueKey('tool_add_widget_${widget.tool.id}'),
-                    style: OutlinedButton.styleFrom(
-                      minimumSize: const Size(0, 34),
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                      visualDensity: VisualDensity.compact,
-                      side: BorderSide(color: panelBorder),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    onPressed: () async {
-                      final addedLabel = DashboardCopy.addedWidgetNotice(
-                        context,
-                        DashboardCopy.toolDisplayName(
-                          context,
-                          toolId: widget.tool.id,
-                          fallback: widget.tool.title,
-                        ),
-                      );
-                      final duplicateLabel =
-                          DashboardCopy.duplicateWidgetNotice(
-                            context,
-                            DashboardCopy.toolDisplayName(
-                              context,
-                              toolId: widget.tool.id,
-                              fallback: widget.tool.title,
-                            ),
-                          );
-                      final failedLabel = DashboardCopy.addWidgetFailedNotice(
-                        context,
-                      );
-                      try {
-                        await widget.onAddWidget!.call();
-                        if (!mounted) return;
-                        _showNotice(addedLabel, UnitanaNoticeKind.success);
-                      } on DuplicateDashboardWidgetException catch (_) {
-                        if (!mounted) return;
-                        _showNotice(duplicateLabel, UnitanaNoticeKind.info);
-                      } catch (_) {
-                        if (!mounted) return;
-                        _showNotice(failedLabel, UnitanaNoticeKind.error);
-                      }
-                    },
-                    icon: Icon(
-                      Icons.add_circle_outline,
-                      size: 18,
-                      color: accent,
-                    ),
-                    label: Text(
-                      DashboardCopy.addWidgetCta(context),
-                      maxLines: 1,
-                      softWrap: false,
-                      overflow: TextOverflow.ellipsis,
-                      style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                        fontWeight: FontWeight.w700,
-                        color: accent,
-                      ),
-                    ),
-                  );
-                }
-
-                Widget buildResetDefaultsButton() {
-                  return Align(
-                    alignment: Alignment.centerLeft,
-                    child: TextButton.icon(
-                      key: ValueKey('tool_units_reset_${widget.tool.id}'),
-                      style: TextButton.styleFrom(
-                        visualDensity: VisualDensity.compact,
-                        padding: const EdgeInsets.symmetric(horizontal: 4),
-                      ),
-                      onPressed: _hasCustomUnitSelection
-                          ? _resetUnitSelectionToDefaults
-                          : null,
-                      icon: const Icon(Icons.restart_alt_rounded, size: 18),
-                      label: const Text('Reset Defaults'),
-                    ),
-                  );
-                }
-
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    if (canAdd) ...[
-                      Align(
-                        alignment: Alignment.centerLeft,
-                        child: buildAddWidgetButton(),
-                      ),
-                      const SizedBox(height: 8),
-                    ],
-                    buildUnitsAndSwap(),
-                    if (_supportsUnitPicker) ...[
-                      const SizedBox(height: 4),
-                      buildResetDefaultsButton(),
-                    ],
-                  ],
-                );
-              },
-            ),
-          ],
-        );
-
-        final convertButton = SizedBox(
-          height: 52,
-          child: FilledButton(
-            key: ValueKey('tool_run_${widget.tool.id}'),
-            style: FilledButton.styleFrom(minimumSize: const Size(0, 52)),
-            onPressed: _runConversion,
-            child: Text(DashboardCopy.convertCta(context)),
-          ),
-        );
-
-        if (isNarrow) {
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              inputBlock,
-              const SizedBox(height: 12),
-              Align(alignment: Alignment.centerRight, child: convertButton),
-            ],
-          );
-        }
-
-        return Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(child: inputBlock),
-            const SizedBox(width: 12),
-            Padding(
-              padding: const EdgeInsets.only(top: 26),
-              child: convertButton,
-            ),
-          ],
-        );
-      },
-    );
+    ];
   }
 
   Widget _buildDefaultToolBody({
@@ -7400,27 +4547,56 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
   }) {
     final history = widget.session.historyFor(widget.tool.id);
     final numericPolicy = ToolNumericPolicies.forToolId(widget.tool.id);
-    return ListView(
-      key: ValueKey('tool_scroll_${widget.tool.id}'),
-      // Cache more offscreen content so widget tests can locate history items
-      // reliably on small surfaces.
-      cacheExtent: 1200,
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-      children: [
-        _buildDefaultCalculatorSection(
-          accent: accent,
-          textMuted: textMuted,
-          panelBorder: panelBorder,
-          numericPolicy: numericPolicy,
-        ),
-        _buildDefaultPostConversionSection(
-          accent: accent,
-          history: history,
-          textMuted: textMuted,
-          panelBg: panelBg,
-          panelBorder: panelBorder,
-        ),
-      ],
+    final theme = ToolDefaultSurfaceTheme(
+      accent: accent,
+      textPrimary: _ToolModalThemePolicy.textPrimary(context),
+      textMuted: textMuted,
+      panelBg: panelBg,
+      panelBorder: panelBorder,
+      headingTone: _ToolModalThemePolicy.headingTone(context),
+      warningTone: _ToolModalThemePolicy.warningTone(context),
+      successTone: _ToolModalThemePolicy.successTone(context),
+    );
+    return ToolDefaultSurface(
+      toolId: widget.tool.id,
+      controller: _controller,
+      requiresFreeformInput: _requiresFreeformInput,
+      numericPolicy: numericPolicy,
+      inputHint: _toolInputHint(context),
+      helperText: _toolInputCoachCopy(context),
+      supportsUnitPicker: _supportsUnitPicker,
+      fromUnit: _fromUnit,
+      toUnit: _toUnit,
+      showBakingHint: widget.tool.id == 'baking',
+      hasCustomUnitSelection: _hasCustomUnitSelection,
+      canAddWidget: widget.canAddWidget && widget.onAddWidget != null,
+      theme: theme,
+      editValueLabel: DashboardCopy.editValueLabel(context),
+      convertLabel: DashboardCopy.convertCta(context),
+      addWidgetLabel: DashboardCopy.addWidgetCta(context),
+      resetDefaultsLabel: DashboardCopy.lookupResetDefaults(context),
+      onRunConversion: _runConversion,
+      onSwapUnits: _swapUnits,
+      onPickFromUnit: () => _pickUnit(isFrom: true),
+      onPickToUnit: () => _pickUnit(isFrom: false),
+      onResetDefaults: _resetUnitSelectionToDefaults,
+      onAddWidget: _handleAddWidget,
+      postContent: ToolResultHistorySection(
+        toolId: widget.tool.id,
+        resultLine: _resultLine,
+        history: history,
+        theme: theme,
+        historyTitle: DashboardCopy.historyTitle(context),
+        historyCopyHint: DashboardCopy.historyCopyHint(context),
+        clearHistoryLabel: DashboardCopy.clearHistoryButtonLabel(context),
+        emptyHistoryLabel: DashboardCopy.historyEmptyLabel(context),
+        resultPlaceholderInput: DashboardCopy.resultPlaceholderInput(context),
+        resultPlaceholderOutput: DashboardCopy.resultPlaceholderOutput(context),
+        onCopyResult: _copyHistoryResult,
+        onCopyInput: _copyHistoryInput,
+        onClearHistory: _clearToolHistory,
+        extraSections: _defaultPostSections(accent),
+      ),
     );
   }
 
@@ -7523,61 +4699,6 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
   }
 }
 
-class _ResultCard extends StatelessWidget {
-  final String toolId;
-  final String? lensId;
-  final String? line;
-
-  const _ResultCard({
-    required this.toolId,
-    required this.lensId,
-    required this.line,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final accent = LensAccents.toolIconTintForBrightness(
-      toolId: toolId,
-      lensId: lensId,
-      brightness: Theme.of(context).brightness,
-    );
-    final panelBg = _ToolModalThemePolicy.panelBg(context);
-    final panelBorder = _ToolModalThemePolicy.panelBorder(context);
-
-    final resolved = line;
-    String input;
-    String output;
-    if (resolved == null || resolved.trim().isEmpty) {
-      input = 'Result';
-      output = 'Run Convert';
-    } else if (resolved.contains('→')) {
-      final parts = resolved.split('→');
-      input = parts.first.trim();
-      output = parts.sublist(1).join('→').trim();
-    } else {
-      input = resolved.trim();
-      output = '';
-    }
-
-    return Container(
-      key: ValueKey('tool_result_$toolId'),
-      padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
-      decoration: BoxDecoration(
-        color: panelBg,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: panelBorder),
-      ),
-      child: _TerminalLine(
-        prompt: '>',
-        input: input,
-        output: output,
-        emphasize: true,
-        arrowColor: accent,
-      ),
-    );
-  }
-}
-
 class _TimeZoneQuickChip extends StatelessWidget {
   final String label;
   final String detail;
@@ -7611,423 +4732,8 @@ class _TimeZoneQuickChip extends StatelessWidget {
   }
 }
 
-class _TimeAnalogClockFace extends StatelessWidget {
-  final String cityLabel;
-  final String flagPrefix;
-  final DateTime localTime;
-  final String digitalHud;
-  final Color accentColor;
-
-  const _TimeAnalogClockFace({
-    super.key,
-    required this.cityLabel,
-    required this.flagPrefix,
-    required this.localTime,
-    required this.digitalHud,
-    required this.accentColor,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final panelBg = _ToolModalThemePolicy.panelBgSoft(context);
-    final panelBorder = _ToolModalThemePolicy.panelBorder(context, alpha: 120);
-    final textPrimary = _ToolModalThemePolicy.textPrimary(context);
-    final isLight = _ToolModalThemePolicy.isLight(context);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Text(
-          '$flagPrefix$cityLabel',
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: Theme.of(context).textTheme.labelLarge?.copyWith(
-            color: textPrimary,
-            fontWeight: FontWeight.w800,
-          ),
-        ),
-        const SizedBox(height: 6),
-        AspectRatio(
-          aspectRatio: 1,
-          child: Stack(
-            children: [
-              Positioned.fill(
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: panelBg,
-                    border: Border.all(color: panelBorder, width: 1.2),
-                  ),
-                ),
-              ),
-              Positioned.fill(
-                child: CustomPaint(
-                  painter: _TimeAnalogClockPainter(
-                    localTime: localTime,
-                    accentColor: accentColor,
-                    tickColor: _ToolModalThemePolicy.textMuted(context),
-                    handColor: _ToolModalThemePolicy.textPrimary(context),
-                  ),
-                ),
-              ),
-              Align(
-                alignment: Alignment.bottomCenter,
-                child: Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: Container(
-                    key: ValueKey('tool_time_analog_hud_$cityLabel'),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 3,
-                    ),
-                    decoration: BoxDecoration(
-                      color: panelBg,
-                      borderRadius: BorderRadius.circular(9),
-                      border: Border.all(
-                        color:
-                            (isLight
-                                    ? Theme.of(context).colorScheme.outline
-                                    : accentColor)
-                                .withAlpha(165),
-                        width: 1,
-                      ),
-                    ),
-                    child: Text(
-                      digitalHud,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: textPrimary,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 0.2,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _TimeAnalogClockPainter extends CustomPainter {
-  final DateTime localTime;
-  final Color accentColor;
-  final Color tickColor;
-  final Color handColor;
-
-  const _TimeAnalogClockPainter({
-    required this.localTime,
-    required this.accentColor,
-    required this.tickColor,
-    required this.handColor,
-  });
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final center = Offset(size.width / 2, size.height / 2);
-    final radius = math.min(size.width, size.height) / 2;
-
-    final tickPaint = Paint()
-      ..color = tickColor.withAlpha(150)
-      ..strokeCap = StrokeCap.round
-      ..strokeWidth = 1.2;
-
-    for (var i = 0; i < 12; i++) {
-      final angle = (math.pi * 2 * (i / 12)) - (math.pi / 2);
-      final outer =
-          center + Offset(math.cos(angle), math.sin(angle)) * (radius - 8);
-      final inner =
-          center + Offset(math.cos(angle), math.sin(angle)) * (radius - 16);
-      canvas.drawLine(inner, outer, tickPaint);
-    }
-
-    final minutes = localTime.minute + (localTime.second / 60);
-    final hours = (localTime.hour % 12) + (minutes / 60);
-    final minuteAngle = (math.pi * 2 * (minutes / 60)) - (math.pi / 2);
-    final hourAngle = (math.pi * 2 * (hours / 12)) - (math.pi / 2);
-
-    final hourHandPaint = Paint()
-      ..color = handColor.withAlpha(242)
-      ..strokeCap = StrokeCap.round
-      ..strokeWidth = 3;
-    final minuteHandPaint = Paint()
-      ..color = accentColor
-      ..strokeCap = StrokeCap.round
-      ..strokeWidth = 2.1;
-
-    final hourEnd =
-        center +
-        Offset(math.cos(hourAngle), math.sin(hourAngle)) * (radius * 0.45);
-    final minuteEnd =
-        center +
-        Offset(math.cos(minuteAngle), math.sin(minuteAngle)) * (radius * 0.64);
-    canvas.drawLine(center, hourEnd, hourHandPaint);
-    canvas.drawLine(center, minuteEnd, minuteHandPaint);
-    canvas.drawCircle(center, 3.2, Paint()..color = accentColor.withAlpha(232));
-  }
-
-  @override
-  bool shouldRepaint(covariant _TimeAnalogClockPainter oldDelegate) {
-    return oldDelegate.localTime.minute != localTime.minute ||
-        oldDelegate.localTime.hour != localTime.hour ||
-        oldDelegate.accentColor != accentColor ||
-        oldDelegate.tickColor != tickColor ||
-        oldDelegate.handColor != handColor;
-  }
-}
-
-class _WorldTimeZoneBandMap extends StatelessWidget {
-  final String fromCity;
-  final String toCity;
-  final double fromOffsetHours;
-  final double toOffsetHours;
-
-  const _WorldTimeZoneBandMap({
-    required this.fromCity,
-    required this.toCity,
-    required this.fromOffsetHours,
-    required this.toOffsetHours,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final panelBg = _ToolModalThemePolicy.panelBgSoft(context);
-    final panelBorder = _ToolModalThemePolicy.panelBorder(context, alpha: 130);
-    final muted = _ToolModalThemePolicy.textMuted(context);
-    final infoTone = _ToolModalThemePolicy.infoTone(context);
-    final destTone = _ToolModalThemePolicy.dangerTone(context);
-    final style = Theme.of(context).textTheme;
-    final bands = List<int>.generate(27, (index) => index - 12);
-    int nearestBand(double offset) {
-      var best = bands.first;
-      var bestDiff = (bands.first - offset).abs();
-      for (final band in bands.skip(1)) {
-        final diff = (band - offset).abs();
-        if (diff < bestDiff) {
-          best = band;
-          bestDiff = diff;
-        }
-      }
-      return best;
-    }
-
-    final fromBand = nearestBand(fromOffsetHours);
-    final toBand = nearestBand(toOffsetHours);
-
-    Color bandColor(int band) {
-      final isHome = band == fromBand;
-      final isDest = band == toBand;
-      if (isHome && isDest) {
-        return Color.lerp(infoTone, destTone, 0.5)!.withAlpha(185);
-      }
-      if (isHome) return infoTone.withAlpha(195);
-      if (isDest) return destTone.withAlpha(195);
-      return panelBg.withAlpha(170);
-    }
-
-    Widget legendPill({
-      required String city,
-      required double offset,
-      required Color tone,
-      required TextAlign align,
-    }) {
-      final offsetText =
-          'UTC${offset >= 0 ? '+' : ''}${offset.toStringAsFixed(1)}';
-      return DecoratedBox(
-        decoration: BoxDecoration(
-          color: panelBg.withAlpha(210),
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: tone.withAlpha(170)),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(8, 5, 8, 5),
-          child: Column(
-            crossAxisAlignment: align == TextAlign.right
-                ? CrossAxisAlignment.end
-                : CrossAxisAlignment.start,
-            children: [
-              Text(
-                city,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                textAlign: align,
-                style: style.bodySmall?.copyWith(
-                  color: tone,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              Text(
-                offsetText,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                textAlign: align,
-                style: style.labelSmall?.copyWith(
-                  color: muted.withAlpha(230),
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
-    return Container(
-      key: const ValueKey('tool_time_world_map_bands'),
-      height: 150,
-      decoration: BoxDecoration(
-        color: panelBg,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: panelBorder),
-      ),
-      child: Column(
-        children: [
-          Expanded(
-            child: Stack(
-              children: [
-                Positioned.fill(
-                  child: Opacity(
-                    opacity: 0.5,
-                    child: ColorFiltered(
-                      colorFilter: ColorFilter.mode(
-                        muted.withAlpha(210),
-                        BlendMode.modulate,
-                      ),
-                      child: Image.asset(
-                        'assets/maps/world_outline.png',
-                        fit: BoxFit.cover,
-                        alignment: const Alignment(0.06, -0.08),
-                      ),
-                    ),
-                  ),
-                ),
-                Positioned.fill(
-                  child: IgnorePointer(
-                    child: CustomPaint(
-                      painter: _WorldTimeBackdropPainter(
-                        color: muted.withAlpha(60),
-                      ),
-                    ),
-                  ),
-                ),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    for (final band in bands)
-                      Expanded(
-                        child: Tooltip(
-                          message:
-                              'UTC${band >= 0 ? '+' : ''}$band${band == fromBand ? ' • Home' : ''}${band == toBand ? ' • Destination' : ''}',
-                          child: Container(
-                            decoration: BoxDecoration(
-                              color: bandColor(band),
-                              border: Border(
-                                right: BorderSide(
-                                  color: muted.withAlpha(78),
-                                  width: 0.8,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(8, 6, 8, 6),
-            child: Row(
-              children: [
-                Expanded(
-                  child: legendPill(
-                    city: fromCity,
-                    offset: fromOffsetHours,
-                    tone: infoTone,
-                    align: TextAlign.left,
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: legendPill(
-                    city: toCity,
-                    offset: toOffsetHours,
-                    tone: destTone,
-                    align: TextAlign.right,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _WorldTimeBackdropPainter extends CustomPainter {
-  final Color color;
-
-  const _WorldTimeBackdropPainter({required this.color});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final gridStroke = Paint()
-      ..color = color.withAlpha(56)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 0.75;
-    final latitudeStroke = Paint()
-      ..color = color.withAlpha(78)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 0.95;
-
-    // Light lat/long graticule over raster Earth map.
-    for (var i = 1; i <= 5; i++) {
-      final y = size.height * (i / 6);
-      canvas.drawLine(Offset(0, y), Offset(size.width, y), gridStroke);
-    }
-    for (var i = 1; i <= 23; i++) {
-      final x = size.width * (i / 24);
-      canvas.drawLine(Offset(x, 0), Offset(x, size.height), gridStroke);
-    }
-    final equatorY = size.height * 0.5;
-    final tropicNorthY = size.height * (1 / 3);
-    final tropicSouthY = size.height * (2 / 3);
-    final polarSouthY = size.height * 0.82;
-    canvas.drawLine(
-      Offset(0, equatorY),
-      Offset(size.width, equatorY),
-      latitudeStroke,
-    );
-    canvas.drawLine(
-      Offset(0, tropicNorthY),
-      Offset(size.width, tropicNorthY),
-      latitudeStroke,
-    );
-    canvas.drawLine(
-      Offset(0, tropicSouthY),
-      Offset(size.width, tropicSouthY),
-      latitudeStroke,
-    );
-    canvas.drawLine(
-      Offset(0, polarSouthY),
-      Offset(size.width, polarSouthY),
-      latitudeStroke,
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant _WorldTimeBackdropPainter oldDelegate) {
-    return oldDelegate.color != color;
-  }
-}
-
 class _PaceCheckpointBarChart extends StatelessWidget {
-  final List<({String label, double minutes})> checkpoints;
+  final List<PaceCheckpoint> checkpoints;
   final Color accent;
   final Color textColor;
 
@@ -8092,24 +4798,6 @@ class _PaceCheckpointBarChart extends StatelessWidget {
             ),
           ),
       ],
-    );
-  }
-}
-
-class _EmptyHistory extends StatelessWidget {
-  const _EmptyHistory();
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Text(
-        'No history yet',
-        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-          color: _ToolModalThemePolicy.textMuted(context),
-          fontWeight: FontWeight.w700,
-          fontFamily: 'monospace',
-        ),
-      ),
     );
   }
 }

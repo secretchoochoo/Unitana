@@ -217,44 +217,6 @@ class UnitanaStorage {
     await prefs.setDouble(_kLofiAudioVolume, normalized);
   }
 
-  Future<bool> loadTutorialDismissed() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getBool(_kTutorialDismissed) ?? false;
-  }
-
-  Future<void> saveTutorialDismissed(bool dismissed) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(_kTutorialDismissed, dismissed);
-  }
-
-  Future<bool> loadTutorialReplayRequested() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getBool(_kTutorialReplayRequested) ?? false;
-  }
-
-  Future<void> saveTutorialReplayRequested(bool requested) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(_kTutorialReplayRequested, requested);
-  }
-
-  Future<Set<String>> loadTutorialCompletedSurfaces() async {
-    final prefs = await SharedPreferences.getInstance();
-    final raw = prefs.getStringList(_kTutorialCompletedSurfaces) ?? const [];
-    return raw.map((e) => e.trim()).where((e) => e.isNotEmpty).toSet();
-  }
-
-  Future<void> saveTutorialCompletedSurfaces(Set<String> surfaces) async {
-    final prefs = await SharedPreferences.getInstance();
-    final sorted =
-        surfaces
-            .map((e) => e.trim())
-            .where((e) => e.isNotEmpty)
-            .toSet()
-            .toList(growable: false)
-          ..sort();
-    await prefs.setStringList(_kTutorialCompletedSurfaces, sorted);
-  }
-
   Future<void> clearAll() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_kPlaces);

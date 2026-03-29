@@ -11,12 +11,15 @@ void main() {
 
     // Open dashboard menu.
     await tester.tap(find.byKey(const Key('dashboard_menu_button')));
-    await tester.pumpAndSettle();
-
     final profilesTile = find.widgetWithText(ListTile, 'Profiles');
+    await pumpUntilFound(tester, profilesTile);
+
     await ensureVisibleAligned(tester, profilesTile);
     await tester.tap(profilesTile);
-    await tester.pumpAndSettle();
+    await pumpUntilFound(
+      tester,
+      find.byKey(const Key('profiles_board_screen')),
+    );
 
     expect(find.byKey(const Key('profiles_board_screen')), findsOneWidget);
     await tester.tap(find.byKey(const ValueKey('profiles_board_edit_mode')));

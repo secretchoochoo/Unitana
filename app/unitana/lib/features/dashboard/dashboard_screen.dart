@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../app/app_state.dart';
-import '../../common/tutorial/tutorial_overlay.dart';
 import '../../data/city_repository.dart';
 import '../../models/place.dart';
 import '../../common/feedback/unitana_toast.dart';
@@ -73,7 +72,6 @@ class _DashboardScreenState extends State<DashboardScreen>
     'UNITANA_DEVTOOLS_ENABLED',
     defaultValue: false,
   );
-  static const bool _kIsFlutterTest = bool.fromEnvironment('FLUTTER_TEST');
 
   late DashboardSessionController _session;
   late final DashboardLiveDataController _liveData;
@@ -88,14 +86,6 @@ class _DashboardScreenState extends State<DashboardScreen>
   bool _isEditingWidgets = false;
   String? _focusTileId;
   String? _focusToolTileId;
-  bool _showDashboardTutorial = false;
-  bool _showDashboardEditTutorial = false;
-
-  final GlobalKey _tutorialToolsButtonKey = GlobalKey();
-  final GlobalKey _tutorialMenuButtonKey = GlobalKey();
-  final GlobalKey _tutorialRefreshKey = GlobalKey();
-  final GlobalKey _tutorialWidgetsKey = GlobalKey();
-  final GlobalKey _tutorialEditDoneKey = GlobalKey();
 
   UnitanaAppState get state => widget.state;
 
@@ -191,29 +181,7 @@ class _DashboardScreenState extends State<DashboardScreen>
       if (pendingSuccess != null) {
         UnitanaToast.showSuccess(context, pendingSuccess);
       }
-      _maybeStartDashboardTutorial();
     });
-  }
-
-  void _maybeStartDashboardTutorial() {
-    if (_kIsFlutterTest) return;
-    if (state.tutorialDismissed && !state.tutorialReplayRequested) return;
-    if (_isEditingWidgets) return;
-    if (_showDashboardTutorial) return;
-    if (state.hasCompletedTutorialSurface('dashboard')) return;
-    setState(() => _showDashboardTutorial = true);
-  }
-
-  Future<void> _completeDashboardTutorial() async {
-    if (!mounted) return;
-    setState(() => _showDashboardTutorial = false);
-    await state.markTutorialSurfaceCompleted('dashboard');
-  }
-
-  Future<void> _completeDashboardEditTutorial() async {
-    if (!mounted) return;
-    setState(() => _showDashboardEditTutorial = false);
-    await state.markTutorialSurfaceCompleted('dashboard_edit');
   }
 
   @override
@@ -229,15 +197,6 @@ class _DashboardScreenState extends State<DashboardScreen>
   }
 
   void _onAppStateChanged() {
-    final dashboardCompleted = state.hasCompletedTutorialSurface('dashboard');
-    final editCompleted = state.hasCompletedTutorialSurface('dashboard_edit');
-    if ((_showDashboardTutorial && dashboardCompleted) ||
-        (_showDashboardEditTutorial && editCompleted)) {
-      setState(() {
-        if (dashboardCompleted) _showDashboardTutorial = false;
-        if (editCompleted) _showDashboardEditTutorial = false;
-      });
-    }
     _syncLofiAudioFromState();
   }
 
@@ -272,6 +231,7 @@ class _DashboardScreenState extends State<DashboardScreen>
   Future<void> _switchActiveProfileAndReload(String profileId) async {
     await state.switchToProfile(profileId);
     if (!mounted) return;
+    _liveData.invalidateForPlaces(places: state.places);
 
     _session.dispose();
     _layout.dispose();
@@ -1133,10 +1093,7 @@ class _DashboardScreenState extends State<DashboardScreen>
       currencyLastRefreshedAt: _liveData.lastCurrencyRefreshedAt,
       currencyNetworkEnabled: _liveData.currencyNetworkEnabled,
       onRetryCurrencyNow: () async {
-        final places = <Place>[
-          if (home != null) home,
-          if (destination != null) destination,
-        ];
+        final places = <Place>[?home, ?destination];
         if (places.isEmpty) return;
         await _liveData.refreshAll(places: places);
       },
@@ -1483,24 +1440,6 @@ class _DashboardScreenState extends State<DashboardScreen>
                         ),
                       ),
                       ListTile(
-                        key: const ValueKey('settings_option_reset_tutorials'),
-                        leading: const Icon(Icons.school_rounded),
-                        title: const Text('Reset tutorials'),
-                        subtitle: const Text(
-                          'Show tips again across wizard, dashboard, and profiles.',
-                        ),
-                        onTap: () async {
-                          await state.resetTutorialSurfaces();
-                          if (!sheetContext.mounted) return;
-                          UnitanaToast.showSuccess(
-                            sheetContext,
-                            'Tutorials reset.',
-                          );
-                          if (!mounted) return;
-                          setState(() => _showDashboardTutorial = true);
-                        },
-                      ),
-                      ListTile(
                         key: const ValueKey('settings_option_about'),
                         leading: const Icon(Icons.info_outline_rounded),
                         title: Text(DashboardCopy.settingsOptionAbout(context)),
@@ -1760,11 +1699,6 @@ class _DashboardScreenState extends State<DashboardScreen>
 
   Future<void> _openProfilesBoard() async {
     if (!mounted) return;
-    const isFlutterTest = bool.fromEnvironment('FLUTTER_TEST');
-    final showProfilesTutorial =
-        !isFlutterTest &&
-        (!state.tutorialDismissed || state.tutorialReplayRequested) &&
-        !state.hasCompletedTutorialSurface('profiles');
 
     await Navigator.of(context).push<void>(
       MaterialPageRoute(
@@ -1791,9 +1725,6 @@ class _DashboardScreenState extends State<DashboardScreen>
             }
             await _refreshAllNow();
           },
-          showTutorial: showProfilesTutorial,
-          onCompleteTutorial: () =>
-              state.markTutorialSurfaceCompleted('profiles'),
         ),
       ),
     );
@@ -1807,13 +1738,9 @@ class _DashboardScreenState extends State<DashboardScreen>
   void _enterEditWidgets({String? focusTileId}) {
     if (_isEditingWidgets) return;
     _layout.beginEdit();
-    final shouldShowEditTutorial = !state.hasCompletedTutorialSurface(
-      'dashboard_edit',
-    );
     setState(() {
       _isEditingWidgets = true;
       _focusTileId = focusTileId;
-      _showDashboardEditTutorial = shouldShowEditTutorial;
     });
   }
 
@@ -1979,14 +1906,11 @@ class _DashboardScreenState extends State<DashboardScreen>
             leadingWidth: 72,
             leading: Padding(
               padding: const EdgeInsets.only(left: 16),
-              child: KeyedSubtree(
-                key: _tutorialToolsButtonKey,
-                child: _HeaderIconButton(
-                  key: const Key('dashboard_tools_button'),
-                  tooltip: DashboardCopy.dashboardOpenToolsTooltip(context),
-                  icon: Icons.handyman_rounded,
-                  onTap: _openToolPickerFromMenu,
-                ),
+              child: _HeaderIconButton(
+                key: const Key('dashboard_tools_button'),
+                tooltip: DashboardCopy.dashboardOpenToolsTooltip(context),
+                icon: Icons.handyman_rounded,
+                onTap: _openToolPickerFromMenu,
               ),
             ),
             title: Text(
@@ -2017,35 +1941,29 @@ class _DashboardScreenState extends State<DashboardScreen>
                 ),
                 Padding(
                   padding: const EdgeInsets.only(right: 4),
-                  child: KeyedSubtree(
-                    key: _tutorialEditDoneKey,
-                    child: TextButton(
-                      key: const Key('dashboard_edit_done'),
-                      onPressed: _exitEditWidgetsDone,
-                      style: TextButton.styleFrom(
-                        visualDensity: VisualDensity.compact,
-                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        padding: const EdgeInsets.symmetric(horizontal: 6),
-                        minimumSize: const Size(0, 36),
-                      ),
-                      child: Text(
-                        DashboardCopy.dashboardEditDone(context),
-                        style: TextStyle(fontSize: _kEditAppBarActionFontSize),
-                      ),
+                  child: TextButton(
+                    key: const Key('dashboard_edit_done'),
+                    onPressed: _exitEditWidgetsDone,
+                    style: TextButton.styleFrom(
+                      visualDensity: VisualDensity.compact,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      padding: const EdgeInsets.symmetric(horizontal: 6),
+                      minimumSize: const Size(0, 36),
+                    ),
+                    child: Text(
+                      DashboardCopy.dashboardEditDone(context),
+                      style: TextStyle(fontSize: _kEditAppBarActionFontSize),
                     ),
                   ),
                 ),
               ] else
                 Padding(
                   padding: const EdgeInsets.only(right: 16),
-                  child: KeyedSubtree(
-                    key: _tutorialMenuButtonKey,
-                    child: _HeaderIconButton(
-                      key: const Key('dashboard_menu_button'),
-                      tooltip: DashboardCopy.dashboardOpenMenuTooltip(context),
-                      icon: Icons.menu_rounded,
-                      onTap: _openSettingsSheet,
-                    ),
+                  child: _HeaderIconButton(
+                    key: const Key('dashboard_menu_button'),
+                    tooltip: DashboardCopy.dashboardOpenMenuTooltip(context),
+                    icon: Icons.menu_rounded,
+                    onTap: _openSettingsSheet,
                   ),
                 ),
             ],
@@ -2079,10 +1997,7 @@ class _DashboardScreenState extends State<DashboardScreen>
 
                   // Seed deterministic demo/live data so the header does not show a
                   // one-frame placeholder during fast scroll.
-                  _liveData.ensureSeeded([
-                    if (home != null) home,
-                    if (destination != null) destination,
-                  ]);
+                  _liveData.ensureSeeded([?home, ?destination]);
 
                   return RefreshIndicator(
                     key: const ValueKey('dashboard_pull_to_refresh'),
@@ -2114,49 +2029,45 @@ class _DashboardScreenState extends State<DashboardScreen>
                                     ),
                                     child: Align(
                                       alignment: Alignment.center,
-                                      child: KeyedSubtree(
-                                        key: _tutorialRefreshKey,
-                                        child: FittedBox(
-                                          fit: BoxFit.scaleDown,
-                                          alignment: Alignment.center,
-                                          child: Row(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              DataRefreshStatusLabel(
-                                                key: const ValueKey(
-                                                  'dashboard_refresh_status_label',
-                                                ),
-                                                liveData: _liveData,
-                                                compact: true,
-                                                showBackground: false,
-                                                hideWhenUnavailable: false,
+                                      child: FittedBox(
+                                        fit: BoxFit.scaleDown,
+                                        alignment: Alignment.center,
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            DataRefreshStatusLabel(
+                                              key: const ValueKey(
+                                                'dashboard_refresh_status_label',
                                               ),
-                                              const SizedBox(width: 0),
-                                              IconButton(
-                                                tooltip:
-                                                    DashboardCopy.dashboardRefreshDataTooltip(
-                                                      context,
-                                                    ),
-                                                onPressed: _refreshAllNow,
-                                                icon: const Icon(
-                                                  Icons.refresh_rounded,
-                                                  size: 16,
-                                                ),
-                                                color: Theme.of(context)
-                                                    .colorScheme
-                                                    .primary
-                                                    .withAlpha(220),
-                                                padding: EdgeInsets.zero,
-                                                visualDensity:
-                                                    VisualDensity.compact,
-                                                constraints:
-                                                    const BoxConstraints(
-                                                      minWidth: 24,
-                                                      minHeight: 24,
-                                                    ),
+                                              liveData: _liveData,
+                                              compact: true,
+                                              showBackground: false,
+                                              hideWhenUnavailable: false,
+                                            ),
+                                            const SizedBox(width: 0),
+                                            IconButton(
+                                              tooltip:
+                                                  DashboardCopy.dashboardRefreshDataTooltip(
+                                                    context,
+                                                  ),
+                                              onPressed: _refreshAllNow,
+                                              icon: const Icon(
+                                                Icons.refresh_rounded,
+                                                size: 16,
                                               ),
-                                            ],
-                                          ),
+                                              color: Theme.of(context)
+                                                  .colorScheme
+                                                  .primary
+                                                  .withAlpha(220),
+                                              padding: EdgeInsets.zero,
+                                              visualDensity:
+                                                  VisualDensity.compact,
+                                              constraints: const BoxConstraints(
+                                                minWidth: 24,
+                                                minHeight: 24,
+                                              ),
+                                            ),
+                                          ],
                                         ),
                                       ),
                                     ),
@@ -2191,25 +2102,22 @@ class _DashboardScreenState extends State<DashboardScreen>
                             bottom: padding.bottom,
                           ),
                           sliver: SliverToBoxAdapter(
-                            child: KeyedSubtree(
-                              key: _tutorialWidgetsKey,
-                              child: DashboardBoard(
-                                state: state,
-                                session: _session,
-                                liveData: _liveData,
-                                layout: _layout,
-                                availableWidth: availableWidth,
-                                isEditing: _isEditingWidgets,
-                                includePlacesHero: false,
-                                focusActionTileId: _focusTileId,
-                                focusToolTileId: _focusToolTileId,
-                                onEnteredEditMode: (focusId) =>
-                                    _enterEditWidgets(focusTileId: focusId),
-                                onConsumedFocusTileId: () =>
-                                    setState(() => _focusTileId = null),
-                                onConsumedFocusToolTileId: () =>
-                                    setState(() => _focusToolTileId = null),
-                              ),
+                            child: DashboardBoard(
+                              state: state,
+                              session: _session,
+                              liveData: _liveData,
+                              layout: _layout,
+                              availableWidth: availableWidth,
+                              isEditing: _isEditingWidgets,
+                              includePlacesHero: false,
+                              focusActionTileId: _focusTileId,
+                              focusToolTileId: _focusToolTileId,
+                              onEnteredEditMode: (focusId) =>
+                                  _enterEditWidgets(focusTileId: focusId),
+                              onConsumedFocusTileId: () =>
+                                  setState(() => _focusTileId = null),
+                              onConsumedFocusToolTileId: () =>
+                                  setState(() => _focusToolTileId = null),
                             ),
                           ),
                         ),
@@ -2218,93 +2126,6 @@ class _DashboardScreenState extends State<DashboardScreen>
                   );
                 },
               ),
-              if (_showDashboardTutorial && !_isEditingWidgets)
-                TutorialOverlay(
-                  steps: [
-                    TutorialStep(
-                      title: 'Tools',
-                      body:
-                          'This is your tool belt. Tap the hammer + wrench to open tools, then pin your go-to picks.',
-                      targetKey: null,
-                      cardAlignment: const Alignment(-1, -0.84),
-                      targetAlignment: const Alignment(0, -1),
-                      showSpotlight: false,
-                      arrowAboveCard: true,
-                      arrowScale: 1.28,
-                      fallbackScreenTargetAlignment: const Alignment(
-                        -0.96,
-                        -0.98,
-                      ),
-                    ),
-                    TutorialStep(
-                      title: 'Menu',
-                      body:
-                          'This is your control room: switch profiles, tune your theme, and adjust settings.',
-                      targetKey: null,
-                      cardAlignment: const Alignment(1, -0.84),
-                      targetAlignment: const Alignment(0, -1),
-                      showSpotlight: false,
-                      arrowAboveCard: true,
-                      arrowScale: 1.28,
-                      fallbackScreenTargetAlignment: const Alignment(
-                        0.96,
-                        -0.98,
-                      ),
-                    ),
-                    TutorialStep(
-                      title: 'Refresh',
-                      body:
-                          'Need fresh data fast? Pull down on the page to refresh weather and currency. Tap the icon for a quick refresh too.',
-                      targetKey: _tutorialRefreshKey,
-                      cardAlignment: const Alignment(0, -0.86),
-                      arrowStyle: TutorialArrowStyle.pullDownBounce,
-                      showSpotlight: false,
-                      arrowScale: 1.72,
-                    ),
-                    TutorialStep(
-                      title: 'Widgets',
-                      body:
-                          'These are tool widgets. Each one shows your last result so key info is always one tap away.',
-                      targetKey: _tutorialWidgetsKey,
-                      cardAlignment: const Alignment(0, -0.84),
-                      targetAlignment: const Alignment(0, -1.45),
-                      arrowScale: 1.36,
-                    ),
-                  ],
-                  onSkip: _completeDashboardTutorial,
-                  onComplete: _completeDashboardTutorial,
-                ),
-              if (_showDashboardEditTutorial && _isEditingWidgets)
-                TutorialOverlay(
-                  steps: [
-                    TutorialStep(
-                      title: 'Move Widgets',
-                      body:
-                          'Long-press a tool widget, then drag it. Drop on a widget to swap, or drop on an empty slot to place it there.',
-                      targetKey: _tutorialWidgetsKey,
-                      cardAlignment: const Alignment(0, -0.84),
-                      targetAlignment: const Alignment(0, -1.45),
-                      arrowScale: 1.36,
-                    ),
-                    TutorialStep(
-                      title: 'Save Layout',
-                      body:
-                          'Tap Done to keep your layout. Tap Cancel to exit without saving.',
-                      targetKey: null,
-                      cardAlignment: const Alignment(1, -0.84),
-                      targetAlignment: const Alignment(0, -1),
-                      showSpotlight: false,
-                      arrowAboveCard: true,
-                      arrowScale: 1.25,
-                      fallbackScreenTargetAlignment: const Alignment(
-                        0.96,
-                        -0.98,
-                      ),
-                    ),
-                  ],
-                  onSkip: _completeDashboardEditTutorial,
-                  onComplete: _completeDashboardEditTutorial,
-                ),
             ],
           ),
         );

@@ -1,4 +1,5 @@
 import 'cities.dart';
+import 'time_zone_label_utils.dart';
 
 /// Shared city/country display cleanup used across pickers.
 class CityLabelUtils {
@@ -39,6 +40,10 @@ class CityLabelUtils {
     final name = (city.countryName ?? '').trim();
     if (name.isNotEmpty) return name;
     return city.countryCode.toUpperCase();
+  }
+
+  static String cleanTimeZoneLabel(String raw) {
+    return TimeZoneLabelUtils.clean(raw);
   }
 
   static String _titleCaseWords(String input) {

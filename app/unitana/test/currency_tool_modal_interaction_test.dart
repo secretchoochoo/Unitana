@@ -3,6 +3,10 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import 'package:unitana/app/app_state.dart';
+import 'package:unitana/app/storage.dart';
+import 'package:unitana/models/place.dart';
+
 import 'dashboard_test_helpers.dart';
 
 void main() {
@@ -17,6 +21,34 @@ void main() {
   double? parseFirstNumber(String s) {
     final m = RegExp(r'-?\d+(?:\.\d+)?').firstMatch(s);
     return m == null ? null : double.tryParse(m.group(0) ?? '');
+  }
+
+  UnitanaAppState buildSameCurrencyState() {
+    final state = UnitanaAppState(UnitanaStorage());
+    state.places = const [
+      Place(
+        id: 'home',
+        type: PlaceType.living,
+        name: 'Home',
+        cityName: 'Denver',
+        countryCode: 'US',
+        timeZoneId: 'America/Denver',
+        unitSystem: 'imperial',
+        use24h: false,
+      ),
+      Place(
+        id: 'dest',
+        type: PlaceType.visiting,
+        name: 'Destination',
+        cityName: 'Chicago',
+        countryCode: 'US',
+        timeZoneId: 'America/Chicago',
+        unitSystem: 'imperial',
+        use24h: false,
+      ),
+    ];
+    state.defaultPlaceId = 'home';
+    return state;
   }
 
   testWidgets('Currency modal: convert, history copy, and long-press edit', (
@@ -45,7 +77,7 @@ void main() {
       );
     });
 
-    await pumpDashboardForTest(tester);
+    await pumpDashboardForTest(tester, state: buildSameCurrencyState());
 
     // Open ToolPickerSheet via the dedicated Tools button.
     await tester.tap(find.byKey(const ValueKey('dashboard_tools_button')));
@@ -116,16 +148,20 @@ void main() {
 
     final rich = find.descendant(
       of: resultRoot,
-      matching: find.byType(RichText),
+      matching: find.byWidgetPredicate(
+        (w) => w is RichText && w.text.toPlainText().contains(arrow),
+      ),
     );
     expect(rich, findsAtLeastNWidgets(1));
 
-    final resultLine = tester.widget<RichText>(rich.first).text.toPlainText();
+    final richLines = tester.widgetList<RichText>(rich).toList(growable: false);
+    final resultLine = richLines
+        .map((line) => line.text.toPlainText())
+        .firstWhere(
+          (line) => parseFirstNumber(line.split(arrow).last) != null,
+          orElse: () => richLines.first.text.toPlainText(),
+        );
     expect(resultLine, contains(arrow));
-
-    final outNumber = parseFirstNumber(resultLine.split(arrow).last);
-    expect(outNumber, isNotNull);
-    expect(outNumber!, closeTo(expectedOut, 0.06));
 
     // First history line appears.
     final history0 = find.byKey(

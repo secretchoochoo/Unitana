@@ -48,7 +48,10 @@ class LocalizationSeed {
         'tap copies result; long-press copies input',
     'dashboard.tool.history.cleared': 'History cleared',
     'dashboard.tool.history.clearButton': 'Clear History',
+    'dashboard.tool.history.empty': 'No history yet',
     'dashboard.tool.notice.copied': 'Copied {label}',
+    'dashboard.tool.notice.copiedResult': 'Copied result',
+    'dashboard.tool.notice.copiedInput': 'Copied input',
     'dashboard.tool.notice.addedWidget': 'Added {title} to dashboard',
     'dashboard.tool.notice.duplicateWidget':
         '{title} is already on your dashboard',
@@ -115,7 +118,7 @@ class LocalizationSeed {
     'dashboard.unitPrice.label.quantity': 'Units',
     'dashboard.unitPrice.title.productA': 'Product A',
     'dashboard.unitPrice.title.productB': 'Product B',
-    'dashboard.unitPrice.compareToggle': 'Compare with another product',
+    'dashboard.unitPrice.compareToggle': 'Compare with Product B',
     'dashboard.unitPrice.inputHint.price': '4.99',
     'dashboard.unitPrice.inputHint.quantity': '500',
     'dashboard.unitPrice.invalidProductA':
@@ -306,8 +309,15 @@ class LocalizationSeed {
         'Enter as YYYY-MM-DD HH:MM in {fromDisplayLabel}',
     'dashboard.time.converter.inputHint': '2026-02-06 18:30',
     'dashboard.time.converter.cta': 'Convert Time',
+    'dashboard.tool.result.placeholderInput': 'Result',
+    'dashboard.tool.result.placeholderOutput': 'Run Convert',
     'dashboard.jetLag.facts.title': 'Travel Facts',
     'dashboard.time.currentClocks.title': 'Current Clocks',
+    'dashboard.time.world.title': 'World Time Zones',
+    'dashboard.time.world.sameZone':
+        '{fromCity} and {toCity} are in the same UTC band right now.',
+    'dashboard.time.world.offsetSummary':
+        '{toCity} is {deltaHours} hours from {fromCity}.',
     'dashboard.jetLag.plan.title': 'Jet Lag Plan',
     'dashboard.jetLag.tips.title': 'Quick Tips',
     'dashboard.jetLag.callWindows.title': 'Call Windows',

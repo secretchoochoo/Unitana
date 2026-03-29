@@ -17,6 +17,8 @@ void main() {
 
     expect(find.text('Top Cities'), findsOneWidget);
     expect(find.byType(ListTile), findsWidgets);
+    expect(find.textContaining('America/New York'), findsWidgets);
+    expect(find.textContaining('America/New_York'), findsNothing);
 
     await tester.enterText(find.byType(TextField), 'tokyo');
     await tester.pumpAndSettle();

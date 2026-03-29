@@ -404,10 +404,7 @@ class _DashboardBoardState extends State<DashboardBoard>
     final signature = '${home?.id ?? 'none'}|${dest?.id ?? 'none'}';
     if (_lastSeedSignature == signature) return;
     _lastSeedSignature = signature;
-    widget.liveData.ensureSeeded([
-      if (home != null) home,
-      if (dest != null) dest,
-    ]);
+    widget.liveData.ensureSeeded([?home, ?dest]);
   }
 
   @override
@@ -1049,10 +1046,7 @@ class _DashboardBoardState extends State<DashboardBoard>
                 currencyNetworkEnabled: widget.liveData.currencyNetworkEnabled,
                 currencyRefreshCadence: widget.liveData.currencyRefreshCadence,
                 onRetryCurrencyNow: () async {
-                  final places = <Place>[
-                    if (home != null) home,
-                    if (destination != null) destination,
-                  ];
+                  final places = <Place>[?home, ?destination];
                   if (places.isEmpty) return;
                   await widget.liveData.refreshAll(places: places);
                 },
