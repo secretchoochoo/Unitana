@@ -19,6 +19,7 @@ import '../models/jet_lag_planner.dart';
 import '../models/place_geo_lookup.dart';
 import '../models/time_zone_catalog.dart';
 import '../models/tool_definitions.dart';
+import '../models/tool_helper_calculators.dart';
 import '../models/activity_lenses.dart';
 import '../models/tool_registry.dart';
 import '../models/lens_accents.dart';
@@ -160,14 +161,23 @@ class _DashboardBoardState extends State<DashboardBoard>
     );
   }
 
-  Future<void> _setAnchorIndex(_DragTilePayload payload, int? index) async {
+  Future<void> _setAnchorIndex(
+    _DragTilePayload payload,
+    int? index, {
+    bool markDirty = true,
+  }) async {
     if (payload.isDefault) {
       await widget.layout.setDefaultToolAnchorIndex(
         payload.toolIdOrItemId,
         index,
+        markDirty: markDirty,
       );
     } else {
-      await widget.layout.setUserItemAnchorIndex(payload.toolIdOrItemId, index);
+      await widget.layout.setUserItemAnchorIndex(
+        payload.toolIdOrItemId,
+        index,
+        markDirty: markDirty,
+      );
     }
   }
 
@@ -252,7 +262,7 @@ class _DashboardBoardState extends State<DashboardBoard>
       if (item.toolId == null) continue;
       final index = p.row * cols + p.col;
       final payload = _payloadForToolTile(item: item, currentIndex: index);
-      await _setAnchorIndex(payload, index);
+      await _setAnchorIndex(payload, index, markDirty: false);
     }
 
     if (mounted) {
@@ -752,6 +762,28 @@ class _DashboardBoardState extends State<DashboardBoard>
       return (primary, secondary);
     }
 
+    (String, String) tipHelperPreviewLabels({required Place? place}) {
+      final countryCode = (place?.countryCode ?? 'US').trim().toUpperCase();
+      final currencyCode = currencyCodeForCountryCode(place?.countryCode);
+      final currencySymbol =
+          kCurrencySymbols[currencyCode.toUpperCase()] ??
+          currencyCode.toUpperCase();
+      final defaultPercent = defaultTipPercentForCountry(countryCode);
+      return ('${currencySymbol}100.00', '$defaultPercent% • Split 2');
+    }
+
+    (String, String) taxVatPreviewLabels({required Place? place}) {
+      final countryCode = (place?.countryCode ?? 'US').trim().toUpperCase();
+      final currencyCode = currencyCodeForCountryCode(place?.countryCode);
+      final currencySymbol =
+          kCurrencySymbols[currencyCode.toUpperCase()] ??
+          currencyCode.toUpperCase();
+      final defaultPercent = defaultTaxPercentForCountry(countryCode);
+      final isAddOn = defaultTaxModeAddOnForCountry(countryCode);
+      final modeLabel = isAddOn ? 'Add-on' : 'Included';
+      return ('${currencySymbol}100.00', '$defaultPercent% • $modeLabel');
+    }
+
     (String, String) jetLagPreviewLabels({
       required Place? homePlace,
       required Place? destinationPlace,
@@ -914,6 +946,8 @@ class _DashboardBoardState extends State<DashboardBoard>
     final timeToolPair = resolvedTimePairForTool(toolId: 'time');
 
     final isCurrency = tool.id == 'currency_convert';
+    final isTipHelper = tool.id == 'tip_helper';
+    final isTaxVatHelper = tool.id == 'tax_vat_helper';
     final bool currencyLabelsLookBroken =
         isCurrency &&
         latest != null &&
@@ -940,6 +974,10 @@ class _DashboardBoardState extends State<DashboardBoard>
             fromOffsetHours: worldClockPair.fromOffsetHours,
             toOffsetHours: worldClockPair.toOffsetHours,
           )
+        : isTipHelper
+        ? tipHelperPreviewLabels(place: activePlace)
+        : isTaxVatHelper
+        ? taxVatPreviewLabels(place: activePlace)
         : (isCurrency &&
               (latest == null ||
                   currencyLabelsLookBroken ||
@@ -1005,16 +1043,11 @@ class _DashboardBoardState extends State<DashboardBoard>
       footer: footerLabel,
       body: customBody,
       primaryDeemphasizedPrefix: null,
+      hint: DashboardCopy.dashboardTileSemanticsHint(context),
       compactValues: widget.isEditing,
       valuesTopInset: widget.isEditing ? 22 : 0,
       onLongPress: canEdit && !widget.isEditing
-          ? () {
-              if (!widget.isEditing) {
-                // Enter edit mode without triggering a second actions sheet.
-                widget.onEnteredEditMode(null);
-              }
-              _showTileActions(context, item, currentIndex: currentIndex);
-            }
+          ? () => _showTileActions(context, item, currentIndex: currentIndex)
           : null,
       onTap: widget.isEditing
           ? null
@@ -1057,12 +1090,39 @@ class _DashboardBoardState extends State<DashboardBoard>
     );
 
     if (!widget.isEditing || !canEdit) {
+      final child = !widget.isEditing && canEdit
+          ? Stack(
+              children: [
+                tile,
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: _CornerActionButton(
+                    key: ValueKey('dashboard_tile_more_${item.id}'),
+                    icon: Icons.more_horiz_rounded,
+                    tooltip: DashboardCopy.dashboardTileMoreActionsTooltip(
+                      context,
+                    ),
+                    onTap: () => _showTileActions(
+                      context,
+                      item,
+                      currentIndex: currentIndex,
+                    ),
+                  ),
+                ),
+              ],
+            )
+          : tile;
       // IMPORTANT: This key must sit on a RenderBox-backed widget so that
       // long-press interactions are hit-testable in widget tests.
       //
       // KeyedSubtree is not reliably hit-testable because it does not
       // necessarily introduce its own RenderObject.
-      return _wrapToolFocusFrame(itemId: item.id, toolId: tool.id, child: tile);
+      return _wrapToolFocusFrame(
+        itemId: item.id,
+        toolId: tool.id,
+        child: child,
+      );
     }
 
     final payload = _payloadForToolTile(item: item, currentIndex: currentIndex);
@@ -1130,6 +1190,10 @@ class _DashboardBoardState extends State<DashboardBoard>
                   if (!context.mounted) {
                     return;
                   }
+                  await _freezeVisibleAnchorsForEdit();
+                  if (!context.mounted) {
+                    return;
+                  }
                   if (isDefaultTile) {
                     await widget.layout.hideDefaultTool(tool.id);
                   } else {
@@ -1191,6 +1255,14 @@ class _DashboardBoardState extends State<DashboardBoard>
           top: false,
           child: Wrap(
             children: [
+              if (!widget.isEditing)
+                ListTile(
+                  key: ValueKey('dashboard_tile_action_edit_${item.id}'),
+                  leading: const Icon(Icons.edit_rounded),
+                  title: Text(DashboardCopy.dashboardMenuEditWidgets(context)),
+                  onTap: () =>
+                      Navigator.of(sheetContext).pop(_TileEditAction.editMode),
+                ),
               ListTile(
                 key: ValueKey('dashboard_tile_action_replace_${item.id}'),
                 leading: const Icon(Icons.swap_horiz),
@@ -1222,6 +1294,9 @@ class _DashboardBoardState extends State<DashboardBoard>
       return;
     }
     switch (action) {
+      case _TileEditAction.editMode:
+        widget.onEnteredEditMode(item.id);
+        return;
       case _TileEditAction.replace:
         final picked = await showModalBottomSheet<ToolDefinition>(
           context: context,
@@ -1281,6 +1356,10 @@ class _DashboardBoardState extends State<DashboardBoard>
         if (!ok) {
           return;
         }
+        if (!context.mounted) {
+          return;
+        }
+        await _freezeVisibleAnchorsForEdit();
         if (!context.mounted) {
           return;
         }
@@ -1491,15 +1570,40 @@ class _DashboardBoardState extends State<DashboardBoard>
     if (snap == null) {
       return ('—', 'No weather data');
     }
+    final presentation = widget.liveData.weatherPresentationFor(activePlace);
 
     final preferMetric = (activePlace.unitSystem == 'metric');
     final c = snap.temperatureC;
     final f = (c * 9 / 5) + 32;
     final primary = preferMetric ? '${c.round()}°C' : '${f.round()}°F';
-    final secondary = (snap.conditionText).trim().isEmpty
-        ? '—'
-        : (snap.conditionText).trim();
+    final forecast = widget.liveData.forecastFor(activePlace);
+    final precipChance = _primaryPrecipitationChance(forecast);
+    final baseSecondary = presentation == null
+        ? ((snap.conditionText).trim().isEmpty
+              ? '—'
+              : (snap.conditionText).trim())
+        : DashboardCopy.weatherPresentationLabel(
+            context,
+            presentation: presentation,
+          );
+    final secondary = precipChance != null && precipChance >= 15
+        ? '$baseSecondary • ${DashboardCopy.weatherPrecipChanceLabel(context, percent: precipChance)}'
+        : baseSecondary;
     return (primary, secondary);
+  }
+
+  int? _primaryPrecipitationChance(WeatherForecastSnapshot? forecast) {
+    if (forecast == null) return null;
+    for (final hourly in forecast.hourly) {
+      if (hourly.timeUtc.isBefore(widget.liveData.nowUtc)) continue;
+      final precip = hourly.precipitationChancePercent;
+      if (precip != null) return precip;
+    }
+    for (final daily in forecast.daily) {
+      final precip = daily.precipitationChancePercent;
+      if (precip != null) return precip;
+    }
+    return null;
   }
 
   bool _isMetricLabel(String toolId, String label) {
@@ -2391,10 +2495,6 @@ class _ToolPickerSheetState extends State<ToolPickerSheet> {
       return ToolDefinitions.jetLagDelta;
     }
 
-    if (tool.toolId == 'timezone_lookup') {
-      return ToolDefinitions.timeZoneConverter;
-    }
-
     return null;
   }
 
@@ -2805,6 +2905,47 @@ class _EditIconButton extends StatelessWidget {
   }
 }
 
+class _CornerActionButton extends StatelessWidget {
+  final IconData icon;
+  final String tooltip;
+  final VoidCallback onTap;
+
+  const _CornerActionButton({
+    super.key,
+    required this.icon,
+    required this.tooltip,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return FocusTraversalOrder(
+      order: NumericFocusOrder(2),
+      child: Semantics(
+        button: true,
+        label: tooltip,
+        child: Material(
+          color: scheme.surface.withAlpha(225),
+          shape: const CircleBorder(),
+          child: InkWell(
+            customBorder: const CircleBorder(),
+            onTap: onTap,
+            child: Tooltip(
+              message: tooltip,
+              child: SizedBox(
+                width: 40,
+                height: 40,
+                child: Icon(icon, size: 20),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _Placed {
   final DashboardBoardItem item;
   final int col;
@@ -2819,4 +2960,4 @@ class _Placed {
   });
 }
 
-enum _TileEditAction { replace, remove }
+enum _TileEditAction { editMode, replace, remove }

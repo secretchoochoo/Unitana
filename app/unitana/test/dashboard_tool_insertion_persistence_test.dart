@@ -226,10 +226,10 @@ void main() {
     }
     expect(areaEntry, isNotNull);
     final id = areaEntry!['id'] as String;
-
     // Long-press to open actions, then remove.
     final tile = find.byKey(ValueKey('dashboard_item_$id'));
     expect(tile, findsOneWidget);
+    final tileRectBeforeRemoval = tester.getRect(tile);
 
     await ensureVisibleAligned(tester, tile);
     await tester.pump(const Duration(milliseconds: 250));
@@ -271,8 +271,8 @@ void main() {
       await pumpFor(const Duration(milliseconds: 220));
     }
 
-    // Open actions sheet (retry once, because entering edit mode triggers a
-    // rebuild that can occasionally swallow the first post-gesture frame).
+    // Open actions sheet (retry once to tolerate small-surface hit-testing
+    // variance around the long-press point).
     await openActionsSheet();
 
     final removeKey = ValueKey('dashboard_tile_action_remove_$id');
@@ -314,12 +314,20 @@ void main() {
 
     // Area tile is removed.
     expect(find.text('Area'), findsNothing);
+    final addSlots = firstAddSlotFinder()
+        .evaluate()
+        .map((element) {
+          final box = element.renderObject! as RenderBox;
+          return box.localToGlobal(Offset.zero) & box.size;
+        })
+        .toList(growable: false);
+    expect(
+      addSlots.any((rect) => rect.topLeft == tileRectBeforeRemoval.topLeft),
+      isTrue,
+    );
 
-    // Commit edit mode so the removal persists.
-    final done = find.byKey(const ValueKey('dashboard_edit_done'));
-    expect(done, findsOneWidget);
-    await tester.tap(done);
-    await pumpFor(const Duration(milliseconds: 250));
+    // Quick actions should not force the dashboard into edit mode.
+    expect(find.byKey(const ValueKey('dashboard_edit_done')), findsNothing);
 
     // Rebuild and validate persistence.
     await tester.pumpWidget(const SizedBox.shrink());
@@ -344,7 +352,7 @@ void main() {
     // Baking is a default tile.
     expect(find.text('Baking'), findsOneWidget);
 
-    // Enter edit mode by long-pressing the Baking tile.
+    // Open quick actions by long-pressing the Baking tile.
     final bakingTile = find.text('Baking').first;
     await ensureVisibleAligned(tester, bakingTile);
     await tester.longPress(bakingTile, warnIfMissed: false);
@@ -366,11 +374,8 @@ void main() {
     await tester.tap(find.text('Remove'));
     await pumpFor(const Duration(milliseconds: 250));
 
-    // Commit edit mode so the hidden-default state persists.
-    final done = find.byKey(const ValueKey('dashboard_edit_done'));
-    expect(done, findsOneWidget);
-    await tester.tap(done, warnIfMissed: false);
-    await pumpFor(const Duration(milliseconds: 250));
+    // Quick actions should not leave the dashboard latched in edit mode.
+    expect(find.byKey(const ValueKey('dashboard_edit_done')), findsNothing);
 
     // Prove persistence: rebuild and expect Baking is gone.
     await tester.pumpWidget(const SizedBox.shrink());

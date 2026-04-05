@@ -66,20 +66,6 @@ void main() {
     await tester.pumpAndSettle(const Duration(milliseconds: 300));
   }
 
-  Future<void> openTimeZoneConverterTool(WidgetTester tester) async {
-    await tester.tap(find.byKey(const Key('dashboard_tools_button')));
-    await tester.pumpAndSettle(const Duration(milliseconds: 250));
-    await tester.enterText(
-      find.byKey(const ValueKey('toolpicker_search')),
-      'time zone converter',
-    );
-    await tester.pumpAndSettle(const Duration(milliseconds: 250));
-    await tester.tap(
-      find.byKey(const ValueKey('toolpicker_search_tool_timezone_lookup')),
-    );
-    await tester.pumpAndSettle(const Duration(milliseconds: 300));
-  }
-
   testWidgets('Time modal renders dedicated timezone workspace', (
     tester,
   ) async {
@@ -148,65 +134,6 @@ void main() {
     expect(fromDestination, findsOneWidget);
   });
 
-  testWidgets('Time Zone Converter opens from timezone lookup alias', (
-    tester,
-  ) async {
-    SharedPreferences.setMockInitialValues({});
-    await tester.binding.setSurfaceSize(const Size(390, 844));
-    addTearDown(() async => tester.binding.setSurfaceSize(null));
-
-    final state = buildSeededState();
-    await pumpDashboard(tester, state);
-    await openTimeZoneConverterTool(tester);
-
-    expect(
-      find.byKey(const ValueKey('tool_title_time_zone_converter')),
-      findsOneWidget,
-    );
-    expect(
-      find.byKey(const ValueKey('tool_time_converter_card')),
-      findsOneWidget,
-    );
-    expect(
-      find.byKey(const ValueKey('tool_time_convert_input')),
-      findsOneWidget,
-    );
-    expect(find.byKey(const ValueKey('tool_time_convert_run')), findsOneWidget);
-  });
-
-  testWidgets('Time Zone Converter converts and stores explicit history', (
-    tester,
-  ) async {
-    SharedPreferences.setMockInitialValues({});
-    await tester.binding.setSurfaceSize(const Size(390, 900));
-    addTearDown(() async => tester.binding.setSurfaceSize(null));
-
-    final state = buildSeededState();
-    await pumpDashboard(tester, state);
-    await openTimeZoneConverterTool(tester);
-
-    await tester.enterText(
-      find.byKey(const ValueKey('tool_time_convert_input')),
-      '2026-06-01 12:00',
-    );
-    tester.testTextInput.hide();
-    await tester.pumpAndSettle(const Duration(milliseconds: 150));
-    await tester.ensureVisible(
-      find.byKey(const ValueKey('tool_time_convert_run')),
-    );
-    await tester.tap(find.byKey(const ValueKey('tool_time_convert_run')));
-    await tester.pumpAndSettle(const Duration(milliseconds: 250));
-
-    expect(
-      find.byKey(const ValueKey('tool_result_time_zone_converter')),
-      findsOneWidget,
-    );
-    expect(
-      find.byKey(const ValueKey('tool_time_history_list')),
-      findsOneWidget,
-    );
-  });
-
   testWidgets('Time zone picker defaults to city-first search', (tester) async {
     SharedPreferences.setMockInitialValues({});
     await tester.binding.setSurfaceSize(const Size(390, 900));
@@ -214,7 +141,7 @@ void main() {
 
     final state = buildSeededState();
     await pumpDashboard(tester, state);
-    await openTimeZoneConverterTool(tester);
+    await openTimeTool(tester);
 
     await tester.tap(find.byKey(const ValueKey('tool_time_from_zone')));
     await tester.pumpAndSettle(const Duration(milliseconds: 250));
@@ -262,7 +189,7 @@ void main() {
 
     final state = buildSeededState();
     await pumpDashboard(tester, state);
-    await openTimeZoneConverterTool(tester);
+    await openTimeTool(tester);
 
     await tester.tap(find.byKey(const ValueKey('tool_time_from_zone')));
     await tester.pumpAndSettle(const Duration(milliseconds: 250));
@@ -298,7 +225,7 @@ void main() {
 
     final state = buildSeededState();
     await pumpDashboard(tester, state);
-    await openTimeZoneConverterTool(tester);
+    await openTimeTool(tester);
 
     await tester.tap(find.byKey(const ValueKey('tool_time_from_zone')));
     await tester.pumpAndSettle(const Duration(milliseconds: 250));
@@ -320,7 +247,7 @@ void main() {
 
       final state = buildSeededState();
       await pumpDashboard(tester, state);
-      await openTimeZoneConverterTool(tester);
+      await openTimeTool(tester);
 
       await tester.tap(find.byKey(const ValueKey('tool_time_from_zone')));
       await tester.pumpAndSettle(const Duration(milliseconds: 250));
@@ -343,7 +270,7 @@ void main() {
 
       final state = buildSeededState();
       await pumpDashboard(tester, state);
-      await openTimeZoneConverterTool(tester);
+      await openTimeTool(tester);
 
       await tester.tap(find.byKey(const ValueKey('tool_time_from_zone')));
       await tester.pumpAndSettle(const Duration(milliseconds: 250));

@@ -28,6 +28,7 @@ class _FixedOpenMeteoClient extends OpenMeteoClient {
           OpenMeteoHourlyForecastPoint(
             timeUtc: now.add(Duration(hours: i)),
             temperatureC: 11 + (i * 0.2),
+            precipitationChancePercent: 20 + i,
           ),
       ],
       daily: [
@@ -36,6 +37,7 @@ class _FixedOpenMeteoClient extends OpenMeteoClient {
             dayUtc: DateTime.utc(2026, 2, 6 + i),
             maxTemperatureC: 13 + i.toDouble(),
             minTemperatureC: 6 + i.toDouble(),
+            precipitationChancePercent: 30 + i,
           ),
       ],
     );

@@ -120,8 +120,8 @@ class ActivityLenses {
 
   static const ActivityLens oddUseful = ActivityLens(
     id: ActivityLensId.oddUseful,
-    name: 'Odd & Useful',
-    descriptor: 'Little lookups that save a trip to the web',
+    name: 'Reference',
+    descriptor: 'Reference tables, time conversions, and handy lookups',
     icon: Icons.auto_fix_high_rounded,
   );
 

@@ -7,14 +7,21 @@ import 'package:flutter/scheduler.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../../app/build_flags.dart';
 import '../../../data/city_repository.dart';
 import '../../../data/weather_api_client.dart';
 import '../../../data/open_meteo_client.dart';
 import '../../../data/open_meteo_air_quality_client.dart';
+import '../../../data/met_norway_client.dart';
 import '../../../data/frankfurter_client.dart';
 import '../../../data/open_er_api_client.dart';
 import '../../../models/place.dart';
 import '../../../utils/timezone_utils.dart';
+
+part 'dashboard_currency_domain.dart';
+part 'dashboard_env_domain.dart';
+part 'dashboard_weather_confidence.dart';
+part 'dashboard_weather_domain.dart';
 
 enum WeatherBackend {
   /// No network; deterministic demo drift.
@@ -803,12 +810,63 @@ class WeatherConditionSceneKeyMapper {
   }
 }
 
+class MetNorwaySceneKeyMapper {
+  const MetNorwaySceneKeyMapper._();
+
+  static SceneKey fromSymbolCode(String symbolCode) {
+    final normalized = symbolCode.trim().toLowerCase();
+    if (normalized.contains('thundersnow')) {
+      return SceneKey.thunderSnow;
+    }
+    if (normalized.contains('thunder')) {
+      return SceneKey.thunderRain;
+    }
+    if (normalized.contains('blizzard')) {
+      return SceneKey.blizzard;
+    }
+    if (normalized.contains('fog')) {
+      return SceneKey.fog;
+    }
+    if (normalized.contains('sleet')) {
+      return SceneKey.sleet;
+    }
+    if (normalized.contains('snow')) {
+      return normalized.contains('heavy')
+          ? SceneKey.snowHeavy
+          : SceneKey.snowModerate;
+    }
+    if (normalized.contains('freezingrain')) {
+      return SceneKey.freezingRain;
+    }
+    if (normalized.contains('drizzle')) {
+      return SceneKey.drizzle;
+    }
+    if (normalized.contains('rain') || normalized.contains('showers')) {
+      if (normalized.contains('heavy')) return SceneKey.rainHeavy;
+      if (normalized.contains('light')) return SceneKey.rainLight;
+      return SceneKey.rainModerate;
+    }
+    if (normalized.contains('partlycloudy') || normalized.contains('fair')) {
+      return SceneKey.partlyCloudy;
+    }
+    if (normalized.contains('cloudy')) {
+      return SceneKey.cloudy;
+    }
+    if (normalized.contains('clearsky')) {
+      return SceneKey.clear;
+    }
+    return SceneKey.cloudy;
+  }
+}
+
 @immutable
 class WeatherSnapshot {
   final double temperatureC;
   final double windKmh;
   final double gustKmh;
   final SceneKey sceneKey;
+  final int? cloudCoverPercent;
+  final double? visibilityKm;
 
   /// Provider-supplied condition text (e.g., "Light rain").
   ///
@@ -823,6 +881,8 @@ class WeatherSnapshot {
     required this.windKmh,
     required this.gustKmh,
     required this.sceneKey,
+    this.cloudCoverPercent,
+    this.visibilityKm,
     required this.conditionText,
     this.conditionCode,
   });
@@ -853,10 +913,12 @@ class EnvSnapshot {
 class HourlyForecastPoint {
   final DateTime timeUtc;
   final double temperatureC;
+  final int? precipitationChancePercent;
 
   const HourlyForecastPoint({
     required this.timeUtc,
     required this.temperatureC,
+    required this.precipitationChancePercent,
   });
 }
 
@@ -865,11 +927,13 @@ class DailyForecastPoint {
   final DateTime dayUtc;
   final double maxTemperatureC;
   final double minTemperatureC;
+  final int? precipitationChancePercent;
 
   const DailyForecastPoint({
     required this.dayUtc,
     required this.maxTemperatureC,
     required this.minTemperatureC,
+    required this.precipitationChancePercent,
   });
 }
 
@@ -893,24 +957,11 @@ class DashboardLiveDataController extends ChangeNotifier {
     super.notifyListeners();
   }
 
-  final Map<String, WeatherSnapshot> _weatherByPlaceId = {};
-  final Map<String, SunTimesSnapshot> _sunByPlaceId = {};
-  final Map<String, EnvSnapshot> _envByPlaceId = {};
-  final Map<String, WeatherForecastSnapshot> _forecastByPlaceId = {};
-  WeatherDebugOverride? _debugWeatherOverride;
-  WeatherEmergencySeverity? _debugEmergencySeverityOverride;
   Duration? _debugClockOffset;
 
   double? _debugEurToUsd;
-
-  double _eurToUsd = 1.10;
-  final Map<String, double> _eurBaseRates = <String, double>{'EUR': 1.0};
   bool _isRefreshing = false;
   Object? _lastError;
-  Object? _lastWeatherError;
-  DateTime? _lastWeatherErrorAt;
-  Object? _lastEnvError;
-  DateTime? _lastEnvErrorAt;
   DateTime? _lastRefreshedAt;
   int _refreshGeneration = 0;
   String _activePlacesSignature = '';
@@ -921,18 +972,23 @@ class DashboardLiveDataController extends ChangeNotifier {
   final WeatherApiClient _weatherApi;
   final OpenMeteoClient _openMeteo;
   final OpenMeteoAirQualityClient _openMeteoAirQuality;
+  final MetNorwayClient _metNorway;
   final FrankfurterClient _frankfurter;
   final OpenErApiClient _openErApi;
   final bool allowLiveRefreshInTestHarness;
   final Duration refreshDebounceDuration;
   final Duration simulatedNetworkLatency;
   final Duration currencyRetryBackoffDuration;
+  late final _DashboardCurrencyDomain _currencyDomain;
+  late final _DashboardEnvDomain _envDomain;
+  late final _DashboardWeatherDomain _weatherDomain;
 
   DashboardLiveDataController({
     CityRepository? cityRepository,
     WeatherApiClient? weatherApiClient,
     OpenMeteoClient? openMeteoClient,
     OpenMeteoAirQualityClient? openMeteoAirQualityClient,
+    MetNorwayClient? metNorwayClient,
     FrankfurterClient? frankfurterClient,
     OpenErApiClient? openErApiClient,
     this.allowLiveRefreshInTestHarness = false,
@@ -944,15 +1000,31 @@ class DashboardLiveDataController extends ChangeNotifier {
        _openMeteo = openMeteoClient ?? OpenMeteoClient(),
        _openMeteoAirQuality =
            openMeteoAirQualityClient ?? OpenMeteoAirQualityClient(),
+       _metNorway = metNorwayClient ?? MetNorwayClient(),
        _frankfurter = frankfurterClient ?? FrankfurterClient(),
-       _openErApi = openErApiClient ?? OpenErApiClient();
+       _openErApi = openErApiClient ?? OpenErApiClient() {
+    _currencyDomain = _DashboardCurrencyDomain(
+      frankfurterClient: _frankfurter,
+      openErApiClient: _openErApi,
+    );
+    _envDomain = _DashboardEnvDomain(
+      openMeteoAirQualityClient: _openMeteoAirQuality,
+    );
+    _weatherDomain = _DashboardWeatherDomain(
+      cityRepository: _cityRepository,
+      weatherApiClient: _weatherApi,
+      openMeteoClient: _openMeteo,
+      metNorwayClient: _metNorway,
+    );
+  }
 
   bool get isRefreshing => _isRefreshing;
   Object? get lastError => _lastError;
-  Object? get lastWeatherError => _lastWeatherError;
-  DateTime? get lastWeatherErrorAt => _lastWeatherErrorAt;
-  Object? get lastEnvError => _lastEnvError;
-  DateTime? get lastEnvErrorAt => _lastEnvErrorAt;
+  Object? get lastWeatherError => _weatherDomain.lastError;
+  DateTime? get lastWeatherErrorAt => _weatherDomain.lastErrorAt;
+  DateTime? get lastWeatherRefreshedAt => _weatherDomain.lastRefreshedAt;
+  Object? get lastEnvError => _envDomain.lastError;
+  DateTime? get lastEnvErrorAt => _envDomain.lastErrorAt;
   DateTime? get lastRefreshedAt => _lastRefreshedAt;
 
   /// Test hook for deterministic stale/fresh rendering contracts.
@@ -964,12 +1036,18 @@ class DashboardLiveDataController extends ChangeNotifier {
     _notify();
   }
 
+  @visibleForTesting
+  void debugSetLastWeatherRefreshedAt(DateTime? value) {
+    _weatherDomain.debugSetLastRefreshedAt(value);
+    _notify();
+  }
+
   /// Test hook for deterministic currency stale/fresh contracts.
   ///
   /// Production code should not call this.
   @visibleForTesting
   void debugSetLastCurrencyRefreshedAt(DateTime? value) {
-    _lastCurrencyRefreshedAt = value;
+    _currencyDomain.debugSetLastRefreshedAt(value);
     _notify();
   }
 
@@ -983,7 +1061,13 @@ class DashboardLiveDataController extends ChangeNotifier {
     return DateTime.now().difference(last) > const Duration(minutes: 10);
   }
 
-  double get eurToUsd => _debugEurToUsd ?? _eurToUsd;
+  bool get isWeatherStale {
+    final last = lastWeatherRefreshedAt;
+    if (last == null) return true;
+    return DateTime.now().difference(last) > const Duration(minutes: 10);
+  }
+
+  double get eurToUsd => _debugEurToUsd ?? _currencyDomain.eurToUsd;
 
   /// Returns the conversion rate for [fromCode] -> [toCode].
   ///
@@ -992,21 +1076,11 @@ class DashboardLiveDataController extends ChangeNotifier {
   /// - Uses live EUR-base rates when available.
   /// - Falls back to deterministic mock rates so currency UI never blanks.
   double? currencyRate({required String fromCode, required String toCode}) {
-    final from = fromCode.trim().toUpperCase();
-    final to = toCode.trim().toUpperCase();
-    if (from.isEmpty || to.isEmpty) return null;
-    if (from == to) return 1.0;
-
-    final rates = _effectiveEurBaseRates();
-    final canUseMockFallback =
-        !currencyNetworkEnabled || _lastCurrencyRefreshedAt != null;
-    final fromRate =
-        rates[from] ?? (canUseMockFallback ? _mockEurRateForCode(from) : null);
-    final toRate =
-        rates[to] ?? (canUseMockFallback ? _mockEurRateForCode(to) : null);
-    if (fromRate == null || toRate == null) return null;
-    if (fromRate <= 0 || toRate <= 0) return null;
-    return toRate / fromRate;
+    return _currencyDomain.currencyRate(
+      fromCode: fromCode,
+      toCode: toCode,
+      debugEurToUsd: _debugEurToUsd,
+    );
   }
 
   /// Effective UTC "now" used by the dashboard.
@@ -1048,7 +1122,6 @@ class DashboardLiveDataController extends ChangeNotifier {
     defaultValue: true,
   );
 
-  static const String _kDevWeatherBackend = 'dev_weather_backend_v1';
   // Currency backend selection.
   //
   // Contract:
@@ -1073,18 +1146,8 @@ class DashboardLiveDataController extends ChangeNotifier {
     'CURRENCY_NETWORK_ALLOWED',
     defaultValue: true,
   );
-  static const bool _devToolsEnabled = bool.fromEnvironment(
-    'UNITANA_ENABLE_DEVTOOLS',
-    defaultValue: false,
-  );
   static const bool _isFlutterTest = bool.fromEnvironment('FLUTTER_TEST');
 
-  static const String _kDevCurrencyBackend = 'dev_currency_backend_v1';
-  static const String _kCachedEurToUsdRate = 'currency_eur_to_usd_rate_v1';
-  static const String _kCachedEurToUsdUpdatedAt =
-      'currency_eur_to_usd_updated_at_v1';
-
-  static const Duration _currencyTtl = Duration(minutes: 10);
   static WeatherBackend _backendFromEnv() {
     if (!_envWeatherNetworkEnabled) return WeatherBackend.mock;
     switch (_envWeatherProvider.toLowerCase()) {
@@ -1097,156 +1160,62 @@ class DashboardLiveDataController extends ChangeNotifier {
     }
   }
 
-  static String _backendKey(WeatherBackend b) {
-    switch (b) {
-      case WeatherBackend.openMeteo:
-        return 'openmeteo';
-      case WeatherBackend.weatherApi:
-        return 'weatherapi';
-      case WeatherBackend.mock:
-        return 'mock';
-    }
-  }
-
-  static CurrencyBackend _currencyBackendFromEnv() {
-    if (!_envCurrencyNetworkEnabled) return CurrencyBackend.mock;
-    switch (_envCurrencyProvider.toLowerCase()) {
-      case 'frankfurter':
-        return CurrencyBackend.frankfurter;
-      default:
-        return CurrencyBackend.mock;
-    }
-  }
-
-  static String _currencyBackendKey(CurrencyBackend b) {
-    switch (b) {
-      case CurrencyBackend.frankfurter:
-        return 'frankfurter';
-      case CurrencyBackend.mock:
-        return 'mock';
-    }
-  }
-
-  WeatherBackend _weatherBackend = _backendFromEnv();
-  CurrencyBackend _currencyBackend = _currencyBackendFromEnv();
-  DateTime? _lastCurrencyRefreshedAt;
-  DateTime? _lastCurrencyErrorAt;
-  Object? _lastCurrencyError;
   bool _devSettingsLoaded = false;
-  WeatherBackend get weatherBackend => _weatherBackend;
+  WeatherBackend get weatherBackend => _weatherDomain.backend;
 
-  CurrencyBackend get currencyBackend => _currencyBackend;
+  CurrencyBackend get currencyBackend => _currencyDomain.backend;
 
   /// Whether live network currency is enabled (and allowed) for this build.
   bool get currencyNetworkEnabled =>
       !_isFlutterTest &&
       _currencyNetworkAllowed &&
-      _currencyBackend != CurrencyBackend.mock;
+      _currencyDomain.backend != CurrencyBackend.mock;
 
   bool get currencyNetworkAllowed => _currencyNetworkAllowed;
 
-  DateTime? get lastCurrencyRefreshedAt => _lastCurrencyRefreshedAt;
-  DateTime? get lastCurrencyErrorAt => _lastCurrencyErrorAt;
-  Object? get lastCurrencyError => _lastCurrencyError;
-  Duration get currencyRefreshCadence => _currencyTtl;
+  DateTime? get lastCurrencyRefreshedAt => _currencyDomain.lastRefreshedAt;
+  DateTime? get lastCurrencyErrorAt => _currencyDomain.lastErrorAt;
+  Object? get lastCurrencyError => _currencyDomain.lastError;
+  Duration get currencyRefreshCadence => _currencyDomain.refreshCadence;
 
-  bool get isCurrencyStale {
-    final last = _lastCurrencyRefreshedAt;
-    if (last == null) return true;
-    return DateTime.now().difference(last) > _currencyTtl;
-  }
+  bool get isCurrencyStale => _currencyDomain.isStale(now: DateTime.now());
 
-  bool get shouldRetryCurrencyNow {
-    if (!currencyNetworkEnabled) return false;
-    final errAt = _lastCurrencyErrorAt;
-    if (errAt == null) return isCurrencyStale;
-    return DateTime.now().difference(errAt) >= currencyRetryBackoffDuration;
-  }
+  bool get shouldRetryCurrencyNow => _currencyDomain.shouldRetryNow(
+    now: DateTime.now(),
+    currencyNetworkEnabled: currencyNetworkEnabled,
+    retryBackoffDuration: currencyRetryBackoffDuration,
+  );
 
   /// Whether live network weather is enabled (and allowed) for this build.
   bool get weatherNetworkEnabled =>
       !_isFlutterTest &&
       _weatherNetworkAllowed &&
-      _weatherBackend != WeatherBackend.mock;
+      _weatherDomain.backend != WeatherBackend.mock;
 
   bool get weatherNetworkAllowed => _weatherNetworkAllowed;
 
-  bool get canUseWeatherApi => _weatherApi.isConfigured;
-
-  bool get _useWeatherApi =>
-      weatherNetworkEnabled &&
-      _weatherBackend == WeatherBackend.weatherApi &&
-      _weatherApi.isConfigured;
-
-  bool get _useOpenMeteo =>
-      weatherNetworkEnabled && _weatherBackend == WeatherBackend.openMeteo;
+  bool get canUseWeatherApi => _weatherDomain.canUseWeatherApi;
   Future<void> loadDevSettings() async {
     if (_devSettingsLoaded) return;
     _devSettingsLoaded = true;
 
     final prefs = await SharedPreferences.getInstance();
 
-    final weatherRaw = prefs.getString(_kDevWeatherBackend);
-    if (_devToolsEnabled &&
-        weatherRaw != null &&
-        weatherRaw.trim().isNotEmpty) {
-      final norm = weatherRaw.trim().toLowerCase();
-      final WeatherBackend next;
-      if (norm == 'openmeteo' ||
-          norm == 'open_meteo' ||
-          norm == 'open-meteo' ||
-          norm == 'openmeto') {
-        next = WeatherBackend.openMeteo;
-      } else if (norm == 'weatherapi' ||
-          norm == 'weather_api' ||
-          norm == 'weather-api') {
-        next = WeatherBackend.weatherApi;
-      } else {
-        next = WeatherBackend.mock;
-      }
+    _weatherDomain.loadPersistedState(
+      prefs: prefs,
+      developerToolsEnabled: kDeveloperToolsEnabled,
+    );
 
-      // If the dev setting asks for WeatherAPI but the build isn't configured,
-      // silently fall back to Open-Meteo (or mock if network is disallowed).
-      if (next == WeatherBackend.weatherApi && !_weatherApi.isConfigured) {
-        _weatherBackend = WeatherBackend.openMeteo;
-      } else {
-        _weatherBackend = next;
-      }
-    }
-
-    final currencyRaw = prefs.getString(_kDevCurrencyBackend);
-    if (_devToolsEnabled &&
-        currencyRaw != null &&
-        currencyRaw.trim().isNotEmpty) {
-      final norm = currencyRaw.trim().toLowerCase();
-      final CurrencyBackend next;
-      if (norm == 'frankfurter') {
-        next = CurrencyBackend.frankfurter;
-      } else {
-        next = CurrencyBackend.mock;
-      }
-
-      if (!_currencyNetworkAllowed && next != CurrencyBackend.mock) {
-        _currencyBackend = CurrencyBackend.mock;
-      } else {
-        _currencyBackend = next;
-      }
-    }
-
-    final cachedRate = prefs.getDouble(_kCachedEurToUsdRate);
-    if (cachedRate != null && cachedRate > 0) {
-      _eurToUsd = cachedRate;
-      _eurBaseRates['USD'] = cachedRate;
-    }
-    final cachedAt = prefs.getInt(_kCachedEurToUsdUpdatedAt);
-    if (cachedAt != null && cachedAt > 0) {
-      _lastCurrencyRefreshedAt = DateTime.fromMillisecondsSinceEpoch(cachedAt);
-    }
+    _currencyDomain.loadPersistedState(
+      prefs: prefs,
+      developerToolsEnabled: kDeveloperToolsEnabled,
+      currencyNetworkAllowed: _currencyNetworkAllowed,
+    );
     _notify();
   }
 
   Future<void> setWeatherBackend(WeatherBackend backend) async {
-    if (!_devToolsEnabled) return;
+    if (!kDeveloperToolsEnabled) return;
     if (!_weatherNetworkAllowed && backend != WeatherBackend.mock) {
       _lastError = StateError('Network weather is disallowed for this build');
       _notify();
@@ -1261,28 +1230,28 @@ class DashboardLiveDataController extends ChangeNotifier {
       return;
     }
 
-    if (_weatherBackend == backend) return;
-    _weatherBackend = backend;
+    if (_weatherDomain.backend == backend) return;
+    _weatherDomain.setBackend(backend);
 
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_kDevWeatherBackend, _backendKey(backend));
+    await _weatherDomain.persistBackendPreference(prefs);
 
     _notify();
   }
 
   Future<void> setCurrencyBackend(CurrencyBackend backend) async {
-    if (!_devToolsEnabled) return;
+    if (!kDeveloperToolsEnabled) return;
     if (!_currencyNetworkAllowed && backend != CurrencyBackend.mock) {
       _lastError = StateError('Network currency is disallowed for this build');
       _notify();
       return;
     }
 
-    if (_currencyBackend == backend) return;
-    _currencyBackend = backend;
+    if (_currencyDomain.backend == backend) return;
+    _currencyDomain.setBackend(backend);
 
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_kDevCurrencyBackend, _currencyBackendKey(backend));
+    await _currencyDomain.persistBackendPreference(prefs);
 
     _notify();
   }
@@ -1306,7 +1275,8 @@ class DashboardLiveDataController extends ChangeNotifier {
   /// When set, the dashboard will continue to use live temperature/wind values,
   /// but will display the selected condition for hero scenes and any condition-
   /// driven UI.
-  WeatherDebugOverride? get debugWeatherOverride => _debugWeatherOverride;
+  WeatherDebugOverride? get debugWeatherOverride =>
+      _weatherDomain.debugWeatherOverride;
 
   /// Developer-only clock override.
   ///
@@ -1328,18 +1298,7 @@ class DashboardLiveDataController extends ChangeNotifier {
 
   /// Set/clear the weather override used for hero scene debugging.
   void setDebugWeatherOverride(WeatherDebugOverride? value) {
-    final next = value;
-
-    final prev = _debugWeatherOverride;
-    if (prev == null && next == null) return;
-    if (prev is WeatherDebugOverrideCoarse &&
-        next is WeatherDebugOverrideCoarse &&
-        prev.condition == next.condition &&
-        prev.isNightOverride == next.isNightOverride) {
-      return;
-    }
-
-    _debugWeatherOverride = next;
+    if (!_weatherDomain.setDebugWeatherOverride(value)) return;
     _notify();
   }
 
@@ -1347,11 +1306,10 @@ class DashboardLiveDataController extends ChangeNotifier {
   ///
   /// When non-null, `emergencyFor` returns this severity regardless of weather.
   WeatherEmergencySeverity? get debugEmergencySeverityOverride =>
-      _debugEmergencySeverityOverride;
+      _weatherDomain.debugEmergencySeverityOverride;
 
   void setDebugEmergencySeverityOverride(WeatherEmergencySeverity? value) {
-    if (_debugEmergencySeverityOverride == value) return;
-    _debugEmergencySeverityOverride = value;
+    if (!_weatherDomain.setDebugEmergencySeverityOverride(value)) return;
     _notify();
   }
 
@@ -1363,182 +1321,62 @@ class DashboardLiveDataController extends ChangeNotifier {
     required bool isNight,
     required String text,
   }) {
-    final next = WeatherDebugOverrideWeatherApi(
+    if (!_weatherDomain.setDebugWeatherApiOverride(
       code: code,
       isNight: isNight,
       text: text,
-    );
-
-    final prev = _debugWeatherOverride;
-    if (prev is WeatherDebugOverrideWeatherApi &&
-        prev.code == code &&
-        prev.isNight == isNight &&
-        prev.text == text) {
+    )) {
       return;
     }
-
-    _debugWeatherOverride = next;
     _notify();
   }
 
   WeatherSnapshot? weatherFor(Place? place) {
-    if (place == null) {
-      return null;
-    }
-
-    final snap = _weatherByPlaceId[place.id];
-    if (snap == null) {
-      return null;
-    }
-
-    final override = _debugWeatherOverride;
-    if (override == null) {
-      return snap;
-    }
-
-    if (override is WeatherDebugOverrideCoarse) {
-      return WeatherSnapshot(
-        temperatureC: snap.temperatureC,
-        windKmh: snap.windKmh,
-        gustKmh: snap.gustKmh,
-        sceneKey: WeatherConditionSceneKeyMapper.fromWeatherCondition(
-          override.condition,
-        ),
-        conditionText: _coarseLabelFor(override.condition),
-        conditionCode: snap.conditionCode,
-      );
-    }
-
-    final api = override as WeatherDebugOverrideWeatherApi;
-    return WeatherSnapshot(
-      temperatureC: snap.temperatureC,
-      windKmh: snap.windKmh,
-      gustKmh: snap.gustKmh,
-      sceneKey: WeatherApiSceneKeyMapper.fromWeatherApi(
-        code: api.code,
-        text: api.text,
-      ),
-      conditionText: api.text,
-      conditionCode: api.code,
-    );
-  }
-
-  static String _coarseLabelFor(WeatherCondition c) {
-    switch (c) {
-      case WeatherCondition.clear:
-        return 'Clear';
-      case WeatherCondition.partlyCloudy:
-        return 'Partly cloudy';
-      case WeatherCondition.cloudy:
-        return 'Cloudy';
-      case WeatherCondition.overcast:
-        return 'Overcast';
-      case WeatherCondition.drizzle:
-        return 'Drizzle';
-      case WeatherCondition.rain:
-        return 'Rain';
-      case WeatherCondition.thunderstorm:
-        return 'Thunderstorm';
-      case WeatherCondition.snow:
-        return 'Snow';
-      case WeatherCondition.sleet:
-        return 'Sleet';
-      case WeatherCondition.hail:
-        return 'Hail';
-      case WeatherCondition.fog:
-        return 'Fog';
-      case WeatherCondition.mist:
-        return 'Mist';
-      case WeatherCondition.haze:
-        return 'Haze';
-      case WeatherCondition.smoke:
-        return 'Smoke';
-      case WeatherCondition.dust:
-        return 'Dust';
-      case WeatherCondition.sand:
-        return 'Sand';
-      case WeatherCondition.ash:
-        return 'Ash';
-      case WeatherCondition.squall:
-        return 'Squall';
-      case WeatherCondition.tornado:
-        return 'Tornado';
-      case WeatherCondition.windy:
-        return 'Windy';
-    }
+    return _weatherDomain.weatherFor(place);
   }
 
   SunTimesSnapshot? sunFor(Place? place) {
-    if (place == null) {
-      return null;
-    }
-    return _sunByPlaceId[place.id];
+    return _weatherDomain.sunFor(place);
   }
 
   EnvSnapshot? envFor(Place? place) {
-    if (place == null) {
-      return null;
-    }
-    return _envByPlaceId[place.id];
+    return _envDomain.envFor(place);
   }
 
   WeatherForecastSnapshot? forecastFor(Place? place) {
-    if (place == null) {
-      return null;
-    }
-    return _forecastByPlaceId[place.id];
+    return _weatherDomain.forecastFor(place);
+  }
+
+  WeatherPresentation? weatherPresentationFor(Place? place) {
+    if (place == null) return null;
+    final weather = weatherFor(place);
+    if (weather == null) return null;
+    return WeatherConfidencePolicy.evaluate(
+      weather: weather,
+      forecast: forecastFor(place),
+      backend: weatherBackend,
+      now: DateTime.now(),
+      nowUtc: nowUtc,
+      lastWeatherRefreshedAt: lastWeatherRefreshedAt,
+      secondOpinion: _weatherDomain.secondOpinionFor(place),
+    );
   }
 
   WeatherEmergencyAssessment emergencyFor(Place? place) {
-    final forced = _debugEmergencySeverityOverride;
-    if (forced != null) {
-      return WeatherEmergencyAssessment(
-        severity: forced,
-        reasonKey: switch (forced) {
-          WeatherEmergencySeverity.none => 'none',
-          WeatherEmergencySeverity.advisory => 'provider_advisory',
-          WeatherEmergencySeverity.watch => 'provider_watch',
-          WeatherEmergencySeverity.warning => 'provider_warning',
-          WeatherEmergencySeverity.emergency => 'tornado',
-        },
-        source: 'debug',
-      );
-    }
-    if (place == null) {
-      return const WeatherEmergencyAssessment(
-        severity: WeatherEmergencySeverity.none,
-        reasonKey: 'none',
-        source: 'fallback',
-      );
-    }
-    return WeatherEmergencyTaxonomy.assess(
-      weather: weatherFor(place),
-      env: envFor(place),
-    );
+    return _weatherDomain.emergencyFor(place: place, env: envFor(place));
   }
 
   void ensureSeeded(List<Place> places) {
     var changed = false;
     final nowUtc = this.nowUtc;
-
-    for (final p in places) {
-      if (!_weatherByPlaceId.containsKey(p.id)) {
-        _weatherByPlaceId[p.id] = _seedWeather(p);
-        changed = true;
-      }
-      if (!_sunByPlaceId.containsKey(p.id)) {
-        _sunByPlaceId[p.id] = _seedSunTimes(p, nowUtc);
-        changed = true;
-      }
-      if (!_envByPlaceId.containsKey(p.id)) {
-        _envByPlaceId[p.id] = _seedEnv(p);
-        changed = true;
-      }
-      if (!_forecastByPlaceId.containsKey(p.id)) {
-        _forecastByPlaceId[p.id] = _seedForecast(p, nowUtc);
-        changed = true;
-      }
-    }
+    changed =
+        _weatherDomain.ensureSeeded(
+          places: places,
+          nowUtc: nowUtc,
+          weatherNetworkEnabled: weatherNetworkEnabled,
+          envDomain: _envDomain,
+        ) ||
+        changed;
 
     if (changed) {
       // Important: seeding is demo-only. Do not claim "last refreshed" for
@@ -1593,10 +1431,8 @@ class DashboardLiveDataController extends ChangeNotifier {
   }
 
   void _clearPlaceSnapshots() {
-    _weatherByPlaceId.clear();
-    _sunByPlaceId.clear();
-    _envByPlaceId.clear();
-    _forecastByPlaceId.clear();
+    _weatherDomain.clearPlaceSnapshots();
+    _envDomain.clearPlaceSnapshots();
   }
 
   void _recordRefreshError({
@@ -1604,17 +1440,11 @@ class DashboardLiveDataController extends ChangeNotifier {
     required StackTrace stackTrace,
     required String contextLabel,
     bool weather = false,
-    bool env = false,
   }) {
     final now = DateTime.now();
     _lastError = error;
     if (weather) {
-      _lastWeatherError = error;
-      _lastWeatherErrorAt = now;
-    }
-    if (env) {
-      _lastEnvError = error;
-      _lastEnvErrorAt = now;
+      _weatherDomain.recordLastError(error, now: now);
     }
     FlutterError.reportError(
       FlutterErrorDetails(
@@ -1647,6 +1477,11 @@ class DashboardLiveDataController extends ChangeNotifier {
       _lastError = null;
       _notify();
 
+      final nowUtc = this.nowUtc;
+      for (final place in places) {
+        _ensureFallbackSnapshotsForPlace(place, nowUtc: nowUtc);
+      }
+
       // Treat this as an immediate "refresh" for UI purposes.
       _lastRefreshedAt = DateTime.now();
       _isRefreshing = false;
@@ -1672,197 +1507,36 @@ class DashboardLiveDataController extends ChangeNotifier {
         if (!_isCurrentRefresh(requestGeneration)) {
           return;
         }
-        if (_useWeatherApi || _useOpenMeteo) {
-          // Load city metadata (lat/lon) once for best-effort query precision.
-          await _cityRepository.load();
-          if (!_isCurrentRefresh(requestGeneration)) {
-            return;
-          }
-
-          for (final p in places) {
-            if (!_isCurrentRefresh(requestGeneration)) {
-              return;
-            }
-            try {
-              final city = _cityRepository.byPlace(
-                p.cityName,
-                countryCode: p.countryCode,
-              );
-
-              final lat = city?.lat;
-              final lon = city?.lon;
-              final query = (lat != null && lon != null)
-                  ? '$lat,$lon'
-                  : '${p.cityName},${p.countryCode}';
-
-              final override = _debugWeatherOverride;
-
-              if (_useWeatherApi) {
-                final api = await _weatherApi.fetchTodayForecast(query: query);
-                if (!_isCurrentRefresh(requestGeneration)) {
-                  return;
-                }
-
-                final SceneKey sceneKey;
-                final String conditionText;
-                final int conditionCode;
-
-                if (override == null) {
-                  sceneKey = WeatherApiSceneKeyMapper.fromWeatherApi(
-                    code: api.conditionCode,
-                    text: api.conditionText,
-                  );
-                  conditionText = api.conditionText;
-                  conditionCode = api.conditionCode;
-                } else if (override is WeatherDebugOverrideCoarse) {
-                  sceneKey =
-                      WeatherConditionSceneKeyMapper.fromWeatherCondition(
-                        override.condition,
-                      );
-                  conditionText = _coarseLabelFor(override.condition);
-                  conditionCode = api.conditionCode;
-                } else {
-                  final w = override as WeatherDebugOverrideWeatherApi;
-                  sceneKey = WeatherApiSceneKeyMapper.fromWeatherApi(
-                    code: w.code,
-                    text: w.text,
-                  );
-                  conditionText = w.text;
-                  conditionCode = w.code;
-                }
-
-                _weatherByPlaceId[p.id] = WeatherSnapshot(
-                  temperatureC: api.temperatureC,
-                  windKmh: api.windKmh,
-                  gustKmh: api.gustKmh,
-                  sceneKey: sceneKey,
-                  conditionText: conditionText,
-                  conditionCode: conditionCode,
-                );
-
-                _sunByPlaceId[p.id] = SunTimesSnapshot(
-                  sunriseUtc: api.sunriseUtc,
-                  sunsetUtc: api.sunsetUtc,
-                );
-                _forecastByPlaceId[p.id] = _fromWeatherApiForecast(api);
-                didApplyAnyLiveWeatherUpdate = true;
-
-                await _maybeRefreshEnvForPlace(
-                  place: p,
-                  latitude: lat,
-                  longitude: lon,
-                  refreshGeneration: requestGeneration,
-                );
-                if (!_isCurrentRefresh(requestGeneration)) {
-                  return;
-                }
-                _envByPlaceId.putIfAbsent(p.id, () => _seedEnv(p));
-              } else {
-                if (lat == null || lon == null) {
-                  // Without coordinates, Open-Meteo cannot be queried.
-                  // Keep prior snapshots when present, or seed deterministic
-                  // fallbacks so critical hero states never go blank.
-                  _ensureFallbackSnapshotsForPlace(
-                    p,
-                    nowUtc: DateTime.now().toUtc(),
-                  );
-                  continue;
-                }
-
-                final om = await _openMeteo.fetchTodayForecast(
-                  latitude: lat,
-                  longitude: lon,
-                );
-                if (!_isCurrentRefresh(requestGeneration)) {
-                  return;
-                }
-
-                final effectiveOverride = override is WeatherDebugOverrideCoarse
-                    ? override
-                    : null;
-
-                final SceneKey sceneKey;
-                final String conditionText;
-                final int conditionCode = om.weatherCode;
-
-                if (effectiveOverride == null) {
-                  sceneKey = OpenMeteoSceneKeyMapper.fromWmoCode(
-                    om.weatherCode,
-                  );
-                  conditionText = OpenMeteoSceneKeyMapper.labelFor(
-                    om.weatherCode,
-                  );
-                } else {
-                  sceneKey =
-                      WeatherConditionSceneKeyMapper.fromWeatherCondition(
-                        effectiveOverride.condition,
-                      );
-                  conditionText = _coarseLabelFor(effectiveOverride.condition);
-                }
-
-                _weatherByPlaceId[p.id] = WeatherSnapshot(
-                  temperatureC: om.temperatureC,
-                  windKmh: om.windKmh,
-                  gustKmh: om.gustKmh,
-                  sceneKey: sceneKey,
-                  conditionText: conditionText,
-                  conditionCode: conditionCode,
-                );
-
-                _sunByPlaceId[p.id] = SunTimesSnapshot(
-                  sunriseUtc: om.sunriseUtc,
-                  sunsetUtc: om.sunsetUtc,
-                );
-                _forecastByPlaceId[p.id] = _fromOpenMeteoForecast(om);
-                didApplyAnyLiveWeatherUpdate = true;
-
-                await _maybeRefreshEnvForPlace(
-                  place: p,
-                  latitude: lat,
-                  longitude: lon,
-                  refreshGeneration: requestGeneration,
-                );
-                if (!_isCurrentRefresh(requestGeneration)) {
-                  return;
-                }
-                _envByPlaceId.putIfAbsent(p.id, () => _seedEnv(p));
-              }
-            } catch (error, stackTrace) {
-              if (!_isCurrentRefresh(requestGeneration)) {
-                return;
-              }
-              _recordRefreshError(
-                error: error,
-                stackTrace: stackTrace,
-                contextLabel: 'while refreshing weather for ${p.id}',
-                weather: true,
-              );
-              // Keep last stable values when present; otherwise seed
-              // deterministic fallbacks so no critical pill goes blank.
-              _ensureFallbackSnapshotsForPlace(
-                p,
-                nowUtc: DateTime.now().toUtc(),
-              );
-            }
-          }
-        } else {
-          // Mock mode (no API key): deterministic drift for demo + tests.
-          final nowUtc = DateTime.now().toUtc();
-          for (final p in places) {
-            if (!_isCurrentRefresh(requestGeneration)) {
-              return;
-            }
-            _weatherByPlaceId[p.id] = _refreshWeather(p);
-            // In mock mode we still populate Env + SunTimes so the hero never
-            // shows placeholders for AQI/Pollen or Sunrise/Sunset.
-            _envByPlaceId[p.id] = _seedEnv(p);
-            _sunByPlaceId[p.id] = _seedSunTimes(p, nowUtc);
-            _forecastByPlaceId[p.id] = _seedForecast(p, nowUtc);
-          }
-          didApplyAnyLiveWeatherUpdate = true;
-        }
-        final didRefreshCurrency = await _maybeRefreshCurrency(
+        didApplyAnyLiveWeatherUpdate = await _weatherDomain.refreshPlaces(
+          places: places,
           refreshGeneration: requestGeneration,
+          weatherNetworkEnabled: weatherNetworkEnabled,
+          envDomain: _envDomain,
+          isCurrentRefresh: _isCurrentRefresh,
+          recordRefreshError: (error, stackTrace, contextLabel) {
+            _recordRefreshError(
+              error: error,
+              stackTrace: stackTrace,
+              contextLabel: contextLabel,
+            );
+          },
+          nowUtc: nowUtc,
+        );
+        if (!_isCurrentRefresh(requestGeneration)) {
+          return;
+        }
+        final didRefreshCurrency = await _currencyDomain.maybeRefresh(
+          refreshGeneration: requestGeneration,
+          isCurrentRefresh: _isCurrentRefresh,
+          currencyNetworkEnabled: currencyNetworkEnabled,
+          retryBackoffDuration: currencyRetryBackoffDuration,
+          recordRefreshError: (error, stackTrace, contextLabel) {
+            _recordRefreshError(
+              error: error,
+              stackTrace: stackTrace,
+              contextLabel: contextLabel,
+            );
+          },
         );
         if (!_isCurrentRefresh(requestGeneration)) {
           return;
@@ -1873,8 +1547,7 @@ class DashboardLiveDataController extends ChangeNotifier {
         }
 
         if (!currencyNetworkEnabled) {
-          _eurToUsd = 1.10;
-          _eurBaseRates['USD'] = _eurToUsd;
+          _currencyDomain.restoreMockDefaults();
         }
       } catch (error, stackTrace) {
         if (_isCurrentRefresh(requestGeneration)) {
@@ -1896,434 +1569,11 @@ class DashboardLiveDataController extends ChangeNotifier {
   }
 
   void _ensureFallbackSnapshotsForPlace(Place p, {required DateTime nowUtc}) {
-    _weatherByPlaceId.putIfAbsent(p.id, () => _seedWeather(p));
-    _sunByPlaceId.putIfAbsent(p.id, () => _seedSunTimes(p, nowUtc));
-    _envByPlaceId.putIfAbsent(p.id, () => _seedEnv(p));
-    _forecastByPlaceId.putIfAbsent(p.id, () => _seedForecast(p, nowUtc));
-  }
-
-  WeatherForecastSnapshot _fromWeatherApiForecast(WeatherApiForecast f) {
-    return WeatherForecastSnapshot(
-      hourly: f.hourly
-          .map(
-            (h) => HourlyForecastPoint(
-              timeUtc: h.timeUtc,
-              temperatureC: h.temperatureC,
-            ),
-          )
-          .toList(),
-      daily: f.daily
-          .map(
-            (d) => DailyForecastPoint(
-              dayUtc: d.dayUtc,
-              maxTemperatureC: d.maxTemperatureC,
-              minTemperatureC: d.minTemperatureC,
-            ),
-          )
-          .toList(),
-    );
-  }
-
-  WeatherForecastSnapshot _fromOpenMeteoForecast(OpenMeteoTodayForecast f) {
-    return WeatherForecastSnapshot(
-      hourly: f.hourly
-          .map(
-            (h) => HourlyForecastPoint(
-              timeUtc: h.timeUtc,
-              temperatureC: h.temperatureC,
-            ),
-          )
-          .toList(),
-      daily: f.daily
-          .map(
-            (d) => DailyForecastPoint(
-              dayUtc: d.dayUtc,
-              maxTemperatureC: d.maxTemperatureC,
-              minTemperatureC: d.minTemperatureC,
-            ),
-          )
-          .toList(),
-    );
-  }
-
-  static double _pollenIndexFromGrains(double grains) {
-    // Heuristic bucketing to produce a small 0-5 value that fits in a pill.
-    // This is a lightweight UX affordance, not a medical claim.
-    if (grains <= 10) return 0.0;
-    if (grains <= 50) return 1.0;
-    if (grains <= 200) return 2.0;
-    if (grains <= 500) return 3.0;
-    if (grains <= 1000) return 4.0;
-    return 5.0;
-  }
-
-  Future<void> _maybeRefreshEnvForPlace({
-    required Place place,
-    required double? latitude,
-    required double? longitude,
-    required int refreshGeneration,
-  }) async {
-    if (!weatherNetworkEnabled) return;
-    if (latitude == null || longitude == null) return;
-    try {
-      final current = await _openMeteoAirQuality.fetchCurrent(
-        latitude: latitude,
-        longitude: longitude,
-      );
-      if (!_isCurrentRefresh(refreshGeneration)) {
-        return;
-      }
-      final prev = _envByPlaceId[place.id];
-      final seeded = _seedEnv(place);
-      final pollenGrains = current.maxPollenGrains();
-      final pollenIndex = pollenGrains == null
-          ? (prev?.pollenIndex ?? seeded.pollenIndex)
-          : _pollenIndexFromGrains(pollenGrains);
-
-      _envByPlaceId[place.id] = EnvSnapshot(
-        usAqi: current.usAqi ?? prev?.usAqi ?? seeded.usAqi,
-        pollenIndex: pollenIndex,
-      );
-    } catch (error, stackTrace) {
-      if (!_isCurrentRefresh(refreshGeneration)) {
-        return;
-      }
-      _recordRefreshError(
-        error: error,
-        stackTrace: stackTrace,
-        contextLabel: 'while refreshing air quality for ${place.id}',
-        env: true,
-      );
-      // Best-effort only. Keep the last stable values, or seed if missing.
-      _envByPlaceId.putIfAbsent(place.id, () => _seedEnv(place));
-    }
-  }
-
-  Future<bool> _maybeRefreshCurrency({required int refreshGeneration}) async {
-    if (!currencyNetworkEnabled) return false;
-
-    final now = DateTime.now();
-    final stale = isCurrencyStale;
-    if (!stale) return false;
-
-    final errAt = _lastCurrencyErrorAt;
-    if (errAt != null && now.difference(errAt) < currencyRetryBackoffDuration) {
-      return false;
-    }
-
-    try {
-      double? rate;
-      Map<String, double>? normalizedRates;
-      switch (_currencyBackend) {
-        case CurrencyBackend.frankfurter:
-          final frankfurterRates = await _frankfurter.fetchLatestRates(
-            base: 'EUR',
-          );
-          if (!_isCurrentRefresh(refreshGeneration)) {
-            return false;
-          }
-          if (frankfurterRates != null && frankfurterRates.isNotEmpty) {
-            normalizedRates = _normalizeEurBaseRates(frankfurterRates);
-          } else {
-            final openErRates = await _openErApi.fetchLatestRates(base: 'EUR');
-            if (!_isCurrentRefresh(refreshGeneration)) {
-              return false;
-            }
-            if (openErRates != null && openErRates.isNotEmpty) {
-              normalizedRates = _normalizeEurBaseRates(openErRates);
-            }
-          }
-
-          rate = normalizedRates?['USD'];
-          if (rate == null || rate <= 0) {
-            rate = await _frankfurter.fetchEurToUsd();
-            if (!_isCurrentRefresh(refreshGeneration)) {
-              return false;
-            }
-            if ((rate == null || rate <= 0)) {
-              rate = await _openErApi.fetchEurToUsd();
-              if (!_isCurrentRefresh(refreshGeneration)) {
-                return false;
-              }
-            }
-            if (rate != null && rate > 0) {
-              normalizedRates ??= <String, double>{'EUR': 1.0};
-              normalizedRates['USD'] = rate;
-            }
-          }
-          break;
-        case CurrencyBackend.mock:
-          rate = null;
-          break;
-      }
-      if (!_isCurrentRefresh(refreshGeneration)) {
-        return false;
-      }
-
-      if (normalizedRates != null && normalizedRates.isNotEmpty) {
-        _eurBaseRates.addAll(normalizedRates);
-      }
-      if (rate == null || rate <= 0) {
-        _lastCurrencyError = StateError(
-          'Currency payload missing EUR->USD rate',
-        );
-        _lastCurrencyErrorAt = now;
-        return false;
-      }
-
-      _eurToUsd = rate;
-      _eurBaseRates['USD'] = rate;
-      _lastCurrencyRefreshedAt = now;
-      _lastCurrencyError = null;
-      _lastCurrencyErrorAt = null;
-
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setDouble(_kCachedEurToUsdRate, rate);
-      await prefs.setInt(_kCachedEurToUsdUpdatedAt, now.millisecondsSinceEpoch);
-      return true;
-    } catch (error, stackTrace) {
-      if (!_isCurrentRefresh(refreshGeneration)) {
-        return false;
-      }
-      _recordRefreshError(
-        error: error,
-        stackTrace: stackTrace,
-        contextLabel: 'while refreshing currency rates',
-      );
-      // Best-effort only. Keep the last stable value.
-      _lastCurrencyError = error;
-      _lastCurrencyErrorAt = now;
-      return false;
-    }
-  }
-
-  static Map<String, double> _normalizeEurBaseRates(Map<String, double> raw) {
-    final out = <String, double>{'EUR': 1.0};
-    raw.forEach((code, value) {
-      final cc = code.trim().toUpperCase();
-      if (cc.isEmpty || !value.isFinite || value <= 0) return;
-      out[cc] = value;
-    });
-    return out;
-  }
-
-  Map<String, double> _effectiveEurBaseRates() {
-    final rates = <String, double>{..._eurBaseRates};
-    final debugRate = _debugEurToUsd;
-    if (debugRate != null && debugRate > 0) {
-      rates['USD'] = debugRate;
-    }
-    rates['EUR'] = 1.0;
-    return rates;
-  }
-
-  double _mockEurRateForCode(String code) {
-    switch (code) {
-      case 'USD':
-        return 1.10;
-      case 'JPY':
-        return 160.0;
-      case 'GBP':
-        return 0.86;
-      case 'CHF':
-        return 0.95;
-      case 'CAD':
-        return 1.48;
-      case 'AUD':
-        return 1.66;
-      case 'NZD':
-        return 1.80;
-      case 'CNY':
-        return 7.90;
-      case 'INR':
-        return 90.0;
-      case 'KRW':
-        return 1450.0;
-      case 'VND':
-        return 27000.0;
-      case 'IDR':
-        return 17000.0;
-      case 'BRL':
-        return 5.90;
-      case 'MXN':
-        return 19.0;
-      case 'RUB':
-        return 100.0;
-      case 'TRY':
-        return 37.0;
-      case 'ZAR':
-        return 21.0;
-      default:
-        // Deterministic fallback for less-common currencies.
-        final hash = code.codeUnits.fold<int>(
-          0,
-          (sum, u) => ((sum * 131) + u) & 0x7fffffff,
-        );
-        final scaled = 0.35 + ((hash % 9650) / 1000.0); // 0.35..9.999
-        return scaled;
-    }
-  }
-
-  WeatherSnapshot _seedWeather(Place p) {
-    // Canonical demo values that match the design mock.
-    if (p.cityName.toLowerCase() == 'lisbon') {
-      return const WeatherSnapshot(
-        temperatureC: 20.0,
-        windKmh: 7.0,
-        gustKmh: 11.0,
-        sceneKey: SceneKey.partlyCloudy,
-        conditionText: 'Partly cloudy',
-      );
-    }
-    if (p.cityName.toLowerCase() == 'denver') {
-      return const WeatherSnapshot(
-        temperatureC: 3.0,
-        windKmh: 22.0,
-        gustKmh: 34.0,
-        sceneKey: SceneKey.clear,
-        conditionText: 'Clear',
-      );
-    }
-
-    // Otherwise, produce a stable deterministic snapshot.
-    final seed = p.id.hashCode ^ p.cityName.hashCode;
-    final temp = 12.0 + ((seed % 180) / 10.0);
-    final wind = 4.0 + ((seed % 70) / 10.0);
-    return WeatherSnapshot(
-      temperatureC: temp,
-      windKmh: wind,
-      gustKmh: wind + 4.0,
-      sceneKey: SceneKey.partlyCloudy,
-      conditionText: 'Partly cloudy',
-    );
-  }
-
-  EnvSnapshot _seedEnv(Place p) {
-    final city = p.cityName.toLowerCase();
-    // Canonical demo values that match the intended UI examples.
-    if (city == 'lisbon') {
-      return const EnvSnapshot(usAqi: 42, pollenIndex: 3.2);
-    }
-    if (city == 'denver') {
-      return const EnvSnapshot(usAqi: 55, pollenIndex: 1.1);
-    }
-
-    final seed = p.id.hashCode ^ (p.cityName.hashCode << 2);
-    final aqi = 18 + (seed.abs() % 105); // 18..122
-    final pollen = ((seed.abs() % 51) / 10.0); // 0.0..5.0
-    return EnvSnapshot(usAqi: aqi, pollenIndex: pollen);
-  }
-
-  SunTimesSnapshot _seedSunTimes(Place p, DateTime nowUtc) {
-    // Anchor to the current *local* date for each place so sunrise/sunset display
-    // correctly when switching realities (timezone affects UTC).
-    //
-    // Important: we treat these values as *wall-clock* times for the place,
-    // not device-local times. We use DateTime.utc constructors to avoid the
-    // host device timezone leaking into demo data.
-    final localNow = TimezoneUtils.nowInZone(
-      p.timeZoneId,
+    _weatherDomain.ensureFallbackSnapshotsForPlace(
+      p,
       nowUtc: nowUtc,
-    ).local;
-    final localDay = DateTime.utc(localNow.year, localNow.month, localNow.day);
-
-    DateTime toUtc(DateTime localWallClock) =>
-        TimezoneUtils.localToUtc(p.timeZoneId, localWallClock);
-
-    DateTime wall(int h, int m) =>
-        DateTime.utc(localDay.year, localDay.month, localDay.day, h, m);
-
-    // Canonical demo values that match the design mock (local clock time).
-    final city = p.cityName.toLowerCase();
-    if (city == 'lisbon') {
-      return SunTimesSnapshot(
-        sunriseUtc: toUtc(wall(7, 52)),
-        sunsetUtc: toUtc(wall(17, 29)),
-      );
-    }
-    if (city == 'denver') {
-      return SunTimesSnapshot(
-        sunriseUtc: toUtc(wall(7, 5)),
-        sunsetUtc: toUtc(wall(17, 5)),
-      );
-    }
-
-    // Deterministic but plausible window for other places (local clock time).
-    final seed = p.id.hashCode ^ (p.cityName.hashCode << 1);
-    final sunriseMinutes = 360 + (seed.abs() % 150); // 06:00 to 08:29
-    final sunsetMinutes = 990 + (seed.abs() % 120); // 16:30 to 18:29
-
-    final sunriseLocal = localDay.add(Duration(minutes: sunriseMinutes));
-    final sunsetLocal = localDay.add(Duration(minutes: sunsetMinutes));
-
-    return SunTimesSnapshot(
-      sunriseUtc: toUtc(sunriseLocal),
-      sunsetUtc: toUtc(sunsetLocal),
+      envDomain: _envDomain,
     );
-  }
-
-  WeatherSnapshot _refreshWeather(Place p) {
-    final current = _weatherByPlaceId[p.id] ?? _seedWeather(p);
-    // Make per-place motion deterministic so toggling cities never looks
-    // “stuck” (avoid identical rounded values across places).
-    final nowMs = DateTime.now().millisecondsSinceEpoch;
-    final phase = (p.id.hashCode ^ (p.cityName.hashCode << 1)) % 900000;
-    final drift = math.sin((nowMs + phase) / 60000) * 0.8;
-    return WeatherSnapshot(
-      temperatureC: (current.temperatureC + drift).clamp(-30.0, 45.0),
-      windKmh: current.windKmh,
-      gustKmh: current.gustKmh,
-      sceneKey: current.sceneKey,
-      conditionText: current.conditionText,
-      conditionCode: current.conditionCode,
-    );
-  }
-
-  WeatherForecastSnapshot _seedForecast(Place p, DateTime nowUtc) {
-    final seed = (p.id.hashCode ^ p.cityName.hashCode).abs();
-    final base =
-        _weatherByPlaceId[p.id]?.temperatureC ?? _seedWeather(p).temperatureC;
-
-    final hourly = <HourlyForecastPoint>[];
-    for (var i = 1; i <= 24; i += 1) {
-      final temp =
-          base +
-          math.sin((i / 24.0) * math.pi * 2.0) * 3.5 +
-          ((seed % 7) - 3) * 0.1;
-      hourly.add(
-        HourlyForecastPoint(
-          timeUtc: nowUtc.add(Duration(hours: i)),
-          temperatureC: temp.clamp(-35.0, 48.0),
-        ),
-      );
-    }
-
-    final daily = <DailyForecastPoint>[];
-    for (var i = 0; i < 7; i += 1) {
-      final trend = (i - 3) * 0.6;
-      final max = (base + 4.0 + trend + ((seed + i) % 5) * 0.2).clamp(
-        -30.0,
-        50.0,
-      );
-      final min = (base - 4.0 + trend - ((seed + i) % 4) * 0.2).clamp(
-        -40.0,
-        42.0,
-      );
-      final day = DateTime.utc(
-        nowUtc.year,
-        nowUtc.month,
-        nowUtc.day,
-      ).add(Duration(days: i));
-      daily.add(
-        DailyForecastPoint(
-          dayUtc: day,
-          maxTemperatureC: max,
-          minTemperatureC: min,
-        ),
-      );
-    }
-
-    return WeatherForecastSnapshot(hourly: hourly, daily: daily);
   }
 
   @override

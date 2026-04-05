@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../app/app_state.dart';
+import '../../app/build_flags.dart';
 import '../../data/city_repository.dart';
 import '../../models/place.dart';
+import '../../common/debug/runtime_perf_trace.dart';
 import '../../common/feedback/unitana_toast.dart';
 import '../first_run/first_run_screen.dart';
 import 'models/dashboard_live_data.dart';
@@ -20,6 +22,7 @@ import 'widgets/profiles_board_screen.dart';
 import 'widgets/settings_licenses_page.dart';
 import 'widgets/tool_modal_bottom_sheet.dart';
 import 'widgets/destructive_confirmation_sheet.dart';
+import 'widgets/edit_session_discard_sheet.dart';
 import 'widgets/weather_summary_bottom_sheet.dart';
 
 /// Developer-only time-of-day override for weather scene previews.
@@ -38,11 +41,16 @@ enum _DevWeatherEmergencyMode {
 
 class DashboardScreen extends StatefulWidget {
   final UnitanaAppState state;
+  final DashboardLiveDataController? liveDataController;
 
   @visibleForTesting
   static bool debugForcePinnedHeroVisible = false;
 
-  const DashboardScreen({super.key, required this.state});
+  const DashboardScreen({
+    super.key,
+    required this.state,
+    this.liveDataController,
+  });
 
   @override
   State<DashboardScreen> createState() => _DashboardScreenState();
@@ -58,23 +66,19 @@ class _DashboardScreenState extends State<DashboardScreen>
   static const Duration _kWeatherAutoRefreshMinInterval = Duration(seconds: 30);
   static const String _kBuildVersion = String.fromEnvironment(
     'UNITANA_APP_VERSION',
-    defaultValue: '1.0.0',
+    defaultValue: '1.1.0',
   );
   static const String _kBuildNumber = String.fromEnvironment(
     'UNITANA_BUILD_NUMBER',
-    defaultValue: '100',
+    defaultValue: '2',
   );
   static const String _kBuildChannel = String.fromEnvironment(
     'UNITANA_BUILD_CHANNEL',
     defaultValue: 'Release',
   );
-  static const bool _kDeveloperToolsEnabled = bool.fromEnvironment(
-    'UNITANA_DEVTOOLS_ENABLED',
-    defaultValue: false,
-  );
-
   late DashboardSessionController _session;
   late final DashboardLiveDataController _liveData;
+  late final bool _ownsLiveDataController;
   late DashboardLayoutController _layout;
 
   late final ScrollController _scrollController;
@@ -82,6 +86,10 @@ class _DashboardScreenState extends State<DashboardScreen>
   bool _appIsInForeground = true;
 
   DateTime? _lastAutoWeatherRefreshAttemptAt;
+  String _lastSeededVisiblePlacesSignature = '';
+  bool _liveDataMaintenanceScheduled = false;
+  bool _liveDataMaintenanceNeedsForceRefresh = false;
+  Stopwatch? _startupPerfTrace;
 
   bool _isEditingWidgets = false;
   String? _focusTileId;
@@ -161,11 +169,14 @@ class _DashboardScreenState extends State<DashboardScreen>
     _appIsInForeground = _isLifecycleForeground(
       WidgetsBinding.instance.lifecycleState,
     );
-    _liveData = DashboardLiveDataController();
-    if (_kDeveloperToolsEnabled) {
+    _liveData = widget.liveDataController ?? DashboardLiveDataController();
+    _ownsLiveDataController = widget.liveDataController == null;
+    _startupPerfTrace = RuntimePerfTrace.start('dashboard.startup');
+    if (kDeveloperToolsEnabled) {
       _liveData.loadDevSettings();
     }
     _bindProfileScopedControllers();
+    _primeVisibleLiveData();
 
     _scrollController = ScrollController();
     _lofiAudioController = LofiAudioController();
@@ -175,7 +186,7 @@ class _DashboardScreenState extends State<DashboardScreen>
     // Kick off an initial refresh so the hero is never stuck showing placeholders.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _syncLofiAudioFromState();
-      _refreshAllNow();
+      _scheduleLiveDataMaintenance(forceRefresh: true);
       final pendingSuccess = state.consumePendingSuccessToast();
       if (!mounted) return;
       if (pendingSuccess != null) {
@@ -190,7 +201,9 @@ class _DashboardScreenState extends State<DashboardScreen>
     state.removeListener(_onAppStateChanged);
     _scrollController.dispose();
     _session.dispose();
-    _liveData.dispose();
+    if (_ownsLiveDataController) {
+      _liveData.dispose();
+    }
     _layout.dispose();
     _lofiAudioController.dispose();
     super.dispose();
@@ -198,6 +211,7 @@ class _DashboardScreenState extends State<DashboardScreen>
 
   void _onAppStateChanged() {
     _syncLofiAudioFromState();
+    _scheduleLiveDataMaintenance();
   }
 
   void _syncLofiAudioFromState() {
@@ -218,6 +232,9 @@ class _DashboardScreenState extends State<DashboardScreen>
     if (_appIsInForeground == nextIsForeground) return;
     _appIsInForeground = nextIsForeground;
     _syncLofiAudioFromState();
+    if (_appIsInForeground) {
+      _scheduleLiveDataMaintenance();
+    }
   }
 
   void _bindProfileScopedControllers() {
@@ -232,6 +249,7 @@ class _DashboardScreenState extends State<DashboardScreen>
     await state.switchToProfile(profileId);
     if (!mounted) return;
     _liveData.invalidateForPlaces(places: state.places);
+    _lastSeededVisiblePlacesSignature = '';
 
     _session.dispose();
     _layout.dispose();
@@ -555,7 +573,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                                 },
                               );
 
-                          final last = _liveData.lastRefreshedAt;
+                          final last = _liveData.lastWeatherRefreshedAt;
                           final line = _liveData.isRefreshing
                               ? '$src: ${DashboardCopy.updating(context)}'
                               : last == null
@@ -1051,16 +1069,28 @@ class _DashboardScreenState extends State<DashboardScreen>
   }
 
   Future<void> _openToolPickerAndRun(BuildContext context) async {
+    final pickerTrace = RuntimePerfTrace.start('dashboard.tool_picker.open');
+    var pickerLogged = false;
     final picked = await showModalBottomSheet<ToolDefinition>(
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
       showDragHandle: true,
       backgroundColor: Theme.of(context).colorScheme.surface,
-      builder: (ctx) => FractionallySizedBox(
-        heightFactor: 0.85,
-        child: ToolPickerSheet(session: _session),
-      ),
+      builder: (ctx) {
+        if (!pickerLogged) {
+          RuntimePerfTrace.logElapsed(
+            'dashboard.tool_picker.open',
+            pickerTrace,
+            minMs: 1,
+          );
+          pickerLogged = true;
+        }
+        return FractionallySizedBox(
+          heightFactor: 0.85,
+          child: ToolPickerSheet(session: _session),
+        );
+      },
     );
 
     if (picked == null) return;
@@ -1348,7 +1378,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                           Future.microtask(_resetDashboardDefaults);
                         },
                       ),
-                      if (_kDeveloperToolsEnabled)
+                      if (kDeveloperToolsEnabled)
                         ListTile(
                           key: const ValueKey('dashboard_menu_developer_tools'),
                           leading: const Icon(Icons.developer_mode),
@@ -1798,6 +1828,7 @@ class _DashboardScreenState extends State<DashboardScreen>
       _isEditingWidgets = false;
       _focusTileId = null;
     });
+    _lastSeededVisiblePlacesSignature = '';
     await _refreshAllNow();
   }
 
@@ -1811,6 +1842,13 @@ class _DashboardScreenState extends State<DashboardScreen>
 
   Future<void> _exitEditWidgetsCancel() async {
     if (!_isEditingWidgets) return;
+    if (_layout.hasPendingEditChanges) {
+      final discard = await showEditSessionDiscardSheet(
+        context,
+        message: DashboardCopy.dashboardEditDiscardMessage(context),
+      );
+      if (!discard) return;
+    }
     _layout.cancelEdit();
     if (!mounted) return;
     setState(() {
@@ -1839,7 +1877,7 @@ class _DashboardScreenState extends State<DashboardScreen>
     if (!weatherLive && !currencyLive) return;
     if (_liveData.isRefreshing) return;
 
-    final last = _liveData.lastRefreshedAt;
+    final last = _liveData.lastWeatherRefreshedAt;
     final now = DateTime.now();
     final weatherStale =
         weatherLive &&
@@ -1862,10 +1900,94 @@ class _DashboardScreenState extends State<DashboardScreen>
     });
   }
 
-  Future<void> _refreshAllNow() async {
+  List<Place> _visibleHeroPlaces() {
+    final places = <Place>[];
+    final home = _pickHome(state.places);
+    final destination = _pickDestination(state.places);
+    if (home != null) {
+      places.add(home);
+    }
+    if (destination != null) {
+      places.add(destination);
+    }
+    return places;
+  }
+
+  String _placesSignature(List<Place> places) {
+    return places
+        .map(
+          (p) => [
+            p.id,
+            p.cityName,
+            p.countryCode,
+            p.timeZoneId,
+            p.unitSystem,
+            p.use24h ? '24h' : '12h',
+          ].join(':'),
+        )
+        .join('|');
+  }
+
+  void _primeVisibleLiveData() {
+    final visiblePlaces = _visibleHeroPlaces();
+    final signature = _placesSignature(visiblePlaces);
+    if (signature == _lastSeededVisiblePlacesSignature) {
+      return;
+    }
+    _lastSeededVisiblePlacesSignature = signature;
+    if (visiblePlaces.isEmpty) {
+      return;
+    }
+    _liveData.ensureSeeded(visiblePlaces);
+  }
+
+  void _scheduleLiveDataMaintenance({bool forceRefresh = false}) {
+    _liveDataMaintenanceNeedsForceRefresh =
+        _liveDataMaintenanceNeedsForceRefresh || forceRefresh;
+    if (_liveDataMaintenanceScheduled) {
+      return;
+    }
+    _liveDataMaintenanceScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      _liveDataMaintenanceScheduled = false;
+      final shouldForceRefresh = _liveDataMaintenanceNeedsForceRefresh;
+      _liveDataMaintenanceNeedsForceRefresh = false;
+      if (!mounted) return;
+      if (shouldForceRefresh) {
+        await _refreshAllNow(reason: 'startup');
+        _logStartupPerfIfPending();
+        return;
+      }
+      _primeVisibleLiveData();
+      _maybeAutoRefreshWeather(state.places);
+      _logStartupPerfIfPending();
+    });
+  }
+
+  void _logStartupPerfIfPending() {
+    final trace = _startupPerfTrace;
+    if (trace == null) return;
+    _startupPerfTrace = null;
+    RuntimePerfTrace.logElapsed(
+      'dashboard.startup',
+      trace,
+      extra: 'places=${state.places.length}',
+      minMs: 1,
+    );
+  }
+
+  Future<void> _refreshAllNow({String reason = 'manual'}) async {
     if (!mounted) return;
+    _primeVisibleLiveData();
     final places = state.places;
+    final trace = RuntimePerfTrace.start('dashboard.refresh');
     await _liveData.refreshAll(places: places);
+    RuntimePerfTrace.logElapsed(
+      'dashboard.refresh',
+      trace,
+      extra: 'reason=$reason places=${places.length}',
+      minMs: 1,
+    );
   }
 
   /// Pick the current Home place from the app state.
@@ -1897,7 +2019,6 @@ class _DashboardScreenState extends State<DashboardScreen>
     return AnimatedBuilder(
       animation: Listenable.merge([_session, _liveData, _layout]),
       builder: (context, _) {
-        _maybeAutoRefreshWeather(state.places);
         return Scaffold(
           appBar: AppBar(
             centerTitle: true,
@@ -1994,10 +2115,6 @@ class _DashboardScreenState extends State<DashboardScreen>
 
                   final home = _pickHome(state.places);
                   final destination = _pickDestination(state.places);
-
-                  // Seed deterministic demo/live data so the header does not show a
-                  // one-frame placeholder during fast scroll.
-                  _liveData.ensureSeeded([?home, ?destination]);
 
                   return RefreshIndicator(
                     key: const ValueKey('dashboard_pull_to_refresh'),

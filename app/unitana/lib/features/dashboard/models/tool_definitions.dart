@@ -52,17 +52,25 @@ class ToolDefinitions {
     'temperature': 'Temp',
     'oven_temperature': 'Oven Temp',
     'body_weight': 'Body Wt',
-    'time_zone_converter': 'TZ Converter',
     'paper_sizes': 'Paper',
     'mattress_sizes': 'Mattress',
     'shoe_sizes': 'Shoes',
     'clothing_sizes': 'Clothing',
+    'cups_grams_estimates': 'Cups/Grams',
     'world_clock_delta': 'Time Map',
     'unit_price_helper': 'Price Compare',
   };
 
   static String widgetTitleFor(ToolDefinition tool) {
     return _widgetShortTitles[tool.id] ?? tool.title;
+  }
+
+  static String normalizeToolId(String toolId) {
+    final normalized = toolId.trim();
+    return switch (normalized) {
+      'time_zone_converter' || 'timezone_lookup' => 'time',
+      _ => normalized,
+    };
   }
 
   static const height = ToolDefinition(
@@ -109,7 +117,7 @@ class ToolDefinitions {
     id: 'cups_grams_estimates',
     canonicalToolId: CanonicalToolId.cupsGramsEstimates,
     lensId: ActivityLensId.foodCooking,
-    title: 'Cups ↔ Grams Estimates',
+    title: 'Cups to Grams',
     icon: Icons.restaurant_menu_rounded,
     defaultPrimary: 'Flour (all-purpose)',
     defaultSecondary: '1 cup ≈ 120 g',
@@ -203,16 +211,6 @@ class ToolDefinitions {
     icon: Icons.schedule_rounded,
     defaultPrimary: '18:30',
     defaultSecondary: '6:30 PM',
-  );
-
-  static const timeZoneConverter = ToolDefinition(
-    id: 'time_zone_converter',
-    canonicalToolId: CanonicalToolId.time,
-    lensId: ActivityLensId.weatherTime,
-    title: 'Time Zone Converter',
-    icon: Icons.travel_explore_rounded,
-    defaultPrimary: '2026-02-06 18:30',
-    defaultSecondary: '2026-02-06 10:30',
   );
 
   static const jetLagDelta = ToolDefinition(
@@ -354,7 +352,7 @@ class ToolDefinitions {
     id: 'tax_vat_helper',
     canonicalToolId: 'tax_vat_helper',
     lensId: ActivityLensId.moneyShopping,
-    title: 'Sales Tax / VAT Helper',
+    title: 'Tax / VAT',
     icon: Icons.calculate_rounded,
     defaultPrimary: '\$100.00',
     defaultSecondary: '8% • Add-on',
@@ -441,7 +439,6 @@ class ToolDefinitions {
     'oven_temperature': ovenTemperature,
     'time': time,
     'jet_lag_delta': jetLagDelta,
-    'time_zone_converter': timeZoneConverter,
     'data_storage': dataStorage,
     'energy': energy,
     'hydration': hydration,
@@ -459,7 +456,7 @@ class ToolDefinitions {
     'unit_price_helper': unitPriceHelper,
   };
 
-  static ToolDefinition? byId(String toolId) => _byId[toolId];
+  static ToolDefinition? byId(String toolId) => _byId[normalizeToolId(toolId)];
 }
 
 // Local data row for the shoe-size lookup table.

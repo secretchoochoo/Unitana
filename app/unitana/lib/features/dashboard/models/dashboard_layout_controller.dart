@@ -58,6 +58,7 @@ class DashboardLayoutController extends ChangeNotifier {
   final Set<String> _hiddenDefaultToolIds = <String>{};
   final Set<String> _draftHiddenDefaultBaseline = <String>{};
   bool _isEditing = false;
+  bool _hasPendingEditChanges = false;
   bool _loaded = false;
 
   // Monotonic token used to invalidate in-flight async work (notably [load])
@@ -68,11 +69,13 @@ class DashboardLayoutController extends ChangeNotifier {
 
   bool get isEditing => _isEditing;
 
+  bool get hasPendingEditChanges => _isEditing && _hasPendingEditChanges;
+
   List<DashboardBoardItem> get items =>
       List<DashboardBoardItem>.unmodifiable(_items);
 
   bool hasVisibleToolId(String toolId) {
-    final normalized = toolId.trim();
+    final normalized = ToolDefinitions.normalizeToolId(toolId);
     if (normalized.isEmpty) return false;
     final defaultVisible =
         ToolDefinitions.defaultTiles.any((t) => t.id == normalized) &&
@@ -88,22 +91,32 @@ class DashboardLayoutController extends ChangeNotifier {
 
   int? defaultToolAnchorIndex(String toolId) => _defaultToolAnchors[toolId];
 
-  Future<void> setDefaultToolAnchorIndex(String toolId, int? index) async {
+  Future<void> setDefaultToolAnchorIndex(
+    String toolId,
+    int? index, {
+    bool markDirty = true,
+  }) async {
     final trimmed = toolId.trim();
     if (trimmed.isEmpty) return;
     if (index == null) {
       if (_defaultToolAnchors.remove(trimmed) == null) return;
+      if (_isEditing && markDirty) _hasPendingEditChanges = true;
       notifyListeners();
       if (!_isEditing) await _persist();
       return;
     }
     if (_defaultToolAnchors[trimmed] == index) return;
     _defaultToolAnchors[trimmed] = index;
+    if (_isEditing && markDirty) _hasPendingEditChanges = true;
     notifyListeners();
     if (!_isEditing) await _persist();
   }
 
-  Future<void> setUserItemAnchorIndex(String itemId, int? index) async {
+  Future<void> setUserItemAnchorIndex(
+    String itemId,
+    int? index, {
+    bool markDirty = true,
+  }) async {
     final idx = _items.indexWhere((i) => i.id == itemId);
     if (idx < 0) return;
     final existing = _items[idx];
@@ -117,6 +130,7 @@ class DashboardLayoutController extends ChangeNotifier {
       anchor: nextAnchor,
       userAdded: existing.userAdded,
     );
+    if (_isEditing && markDirty) _hasPendingEditChanges = true;
     notifyListeners();
     if (!_isEditing) await _persist();
   }
@@ -143,6 +157,7 @@ class DashboardLayoutController extends ChangeNotifier {
       ..clear()
       ..addAll(_hiddenDefaultToolIds);
     _isEditing = true;
+    _hasPendingEditChanges = false;
     notifyListeners();
   }
 
@@ -164,6 +179,7 @@ class DashboardLayoutController extends ChangeNotifier {
     _draftHiddenDefaultBaseline.clear();
 
     _isEditing = false;
+    _hasPendingEditChanges = false;
     notifyListeners();
   }
 
@@ -173,6 +189,7 @@ class DashboardLayoutController extends ChangeNotifier {
     _draftDefaultToolAnchorsBaseline.clear();
     _draftHiddenDefaultBaseline.clear();
     _isEditing = false;
+    _hasPendingEditChanges = false;
     notifyListeners();
     await _persist();
   }
@@ -215,6 +232,7 @@ class DashboardLayoutController extends ChangeNotifier {
     _hiddenDefaultToolIds.clear();
     _draftHiddenDefaultBaseline.clear();
     _isEditing = false;
+    _hasPendingEditChanges = false;
 
     if (raw != null && raw.trim().isNotEmpty) {
       try {
@@ -377,6 +395,7 @@ class DashboardLayoutController extends ChangeNotifier {
     _hiddenDefaultToolIds.clear();
     _draftHiddenDefaultBaseline.clear();
     _isEditing = false;
+    _hasPendingEditChanges = false;
     notifyListeners();
   }
 
@@ -394,6 +413,7 @@ class DashboardLayoutController extends ChangeNotifier {
 
   Future<void> hideDefaultTool(String toolId) async {
     if (_hiddenDefaultToolIds.add(toolId)) {
+      if (_isEditing) _hasPendingEditChanges = true;
       notifyListeners();
       if (!_isEditing) await _persist();
     }
@@ -401,6 +421,7 @@ class DashboardLayoutController extends ChangeNotifier {
 
   Future<void> unhideDefaultTool(String toolId) async {
     if (_hiddenDefaultToolIds.remove(toolId)) {
+      if (_isEditing) _hasPendingEditChanges = true;
       notifyListeners();
       if (!_isEditing) await _persist();
     }
@@ -428,6 +449,7 @@ class DashboardLayoutController extends ChangeNotifier {
       ),
     );
 
+    if (_isEditing) _hasPendingEditChanges = true;
     notifyListeners();
     if (!_isEditing) await _persist();
   }
@@ -460,12 +482,16 @@ class DashboardLayoutController extends ChangeNotifier {
       userAdded: true,
     );
 
+    if (_isEditing) _hasPendingEditChanges = true;
     notifyListeners();
     if (!_isEditing) await _persist();
   }
 
   Future<void> removeItem(String itemId) async {
+    final before = _items.length;
     _items.removeWhere((i) => i.id == itemId);
+    if (_items.length == before) return;
+    if (_isEditing) _hasPendingEditChanges = true;
     notifyListeners();
     if (!_isEditing) await _persist();
   }
@@ -555,7 +581,7 @@ class DashboardLayoutController extends ChangeNotifier {
     // Prefer explicit tool id (new schema). Fall back to legacy kind mapping.
     final toolIdRaw = entry['toolId'];
     final toolId = toolIdRaw is String
-        ? toolIdRaw
+        ? ToolDefinitions.normalizeToolId(toolIdRaw)
         : _toolIdForLegacyKind(decodedKind);
 
     // Normalize tool tiles to the generic kind going forward.

@@ -15,10 +15,12 @@ import 'package:http/http.dart' as http;
 class OpenMeteoHourlyForecastPoint {
   final DateTime timeUtc;
   final double temperatureC;
+  final int? precipitationChancePercent;
 
   const OpenMeteoHourlyForecastPoint({
     required this.timeUtc,
     required this.temperatureC,
+    required this.precipitationChancePercent,
   });
 }
 
@@ -27,11 +29,13 @@ class OpenMeteoDailyForecastPoint {
   final DateTime dayUtc;
   final double maxTemperatureC;
   final double minTemperatureC;
+  final int? precipitationChancePercent;
 
   const OpenMeteoDailyForecastPoint({
     required this.dayUtc,
     required this.maxTemperatureC,
     required this.minTemperatureC,
+    required this.precipitationChancePercent,
   });
 }
 
@@ -41,6 +45,8 @@ class OpenMeteoTodayForecast {
   final double windKmh;
   final double gustKmh;
   final int weatherCode;
+  final int? cloudCoverPercent;
+  final double? visibilityKm;
   final bool isDay;
   final DateTime sunriseUtc;
   final DateTime sunsetUtc;
@@ -52,6 +58,8 @@ class OpenMeteoTodayForecast {
     required this.windKmh,
     required this.gustKmh,
     required this.weatherCode,
+    this.cloudCoverPercent,
+    this.visibilityKm,
     required this.isDay,
     required this.sunriseUtc,
     required this.sunsetUtc,
@@ -87,9 +95,10 @@ class OpenMeteoClient {
       'latitude': latitude.toStringAsFixed(6),
       'longitude': longitude.toStringAsFixed(6),
       'current':
-          'temperature_2m,wind_speed_10m,wind_gusts_10m,weather_code,is_day',
-      'hourly': 'temperature_2m',
-      'daily': 'sunrise,sunset,temperature_2m_max,temperature_2m_min',
+          'temperature_2m,wind_speed_10m,wind_gusts_10m,weather_code,is_day,cloud_cover,visibility',
+      'hourly': 'temperature_2m,precipitation_probability',
+      'daily':
+          'sunrise,sunset,temperature_2m_max,temperature_2m_min,precipitation_probability_max',
       'forecast_days': '7',
       'timezone': 'UTC',
       'timeformat': 'unixtime',
@@ -136,6 +145,8 @@ class OpenMeteoClient {
     final windKmh = (current['wind_speed_10m'] as num?)?.toDouble();
     final gustKmh = (current['wind_gusts_10m'] as num?)?.toDouble();
     final weatherCode = (current['weather_code'] as num?)?.toInt();
+    final cloudCoverPercent = (current['cloud_cover'] as num?)?.toInt();
+    final visibilityMeters = (current['visibility'] as num?)?.toDouble();
     final isDay = ((current['is_day'] as num?)?.toInt() ?? 0) == 1;
 
     if (temperatureC == null ||
@@ -149,10 +160,14 @@ class OpenMeteoClient {
         .cast<num?>();
     final hourlyTemps =
         ((hourly['temperature_2m'] as List?) ?? const <dynamic>[]).cast<num?>();
+    final hourlyPrecip =
+        ((hourly['precipitation_probability'] as List?) ?? const <dynamic>[])
+            .cast<num?>();
     final hourlyPoints = <OpenMeteoHourlyForecastPoint>[];
     for (var i = 0; i < hourlyTimes.length && i < hourlyTemps.length; i += 1) {
       final ts = hourlyTimes[i];
       final t = hourlyTemps[i];
+      final precip = i < hourlyPrecip.length ? hourlyPrecip[i] : null;
       if (ts == null || t == null) continue;
       hourlyPoints.add(
         OpenMeteoHourlyForecastPoint(
@@ -161,6 +176,7 @@ class OpenMeteoClient {
             isUtc: true,
           ),
           temperatureC: t.toDouble(),
+          precipitationChancePercent: precip?.toInt(),
         ),
       );
     }
@@ -173,11 +189,15 @@ class OpenMeteoClient {
     final dailyMin =
         ((daily['temperature_2m_min'] as List?) ?? const <dynamic>[])
             .cast<num?>();
+    final dailyPrecip =
+        ((daily['precipitation_probability_max'] as List?) ?? const <dynamic>[])
+            .cast<num?>();
     final dailyPoints = <OpenMeteoDailyForecastPoint>[];
     for (var i = 0; i < dailyTimes.length; i += 1) {
       final dayTs = dailyTimes[i];
       final max = i < dailyMax.length ? dailyMax[i] : null;
       final min = i < dailyMin.length ? dailyMin[i] : null;
+      final precip = i < dailyPrecip.length ? dailyPrecip[i] : null;
       if (dayTs == null || max == null || min == null) continue;
       dailyPoints.add(
         OpenMeteoDailyForecastPoint(
@@ -187,6 +207,7 @@ class OpenMeteoClient {
           ),
           maxTemperatureC: max.toDouble(),
           minTemperatureC: min.toDouble(),
+          precipitationChancePercent: precip?.toInt(),
         ),
       );
     }
@@ -196,6 +217,8 @@ class OpenMeteoClient {
       windKmh: windKmh,
       gustKmh: gustKmh,
       weatherCode: weatherCode,
+      cloudCoverPercent: cloudCoverPercent,
+      visibilityKm: visibilityMeters == null ? null : visibilityMeters / 1000.0,
       isDay: isDay,
       sunriseUtc: DateTime.fromMillisecondsSinceEpoch(
         sunrise.toInt() * 1000,

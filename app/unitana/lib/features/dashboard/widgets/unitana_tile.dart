@@ -418,8 +418,15 @@ class UnitanaTile extends StatelessWidget {
       ),
     );
 
+    final labelParts = <String>[
+      safeTitle,
+      if (safePrimary.isNotEmpty) safePrimary,
+      if (safeSecondary.isNotEmpty) safeSecondary,
+      if (safeFooter.isNotEmpty) safeFooter,
+    ];
+
     return Semantics(
-      label: safeTitle,
+      label: labelParts.join('. '),
       hint: safeHint,
       button: onTap != null,
       child: Material(

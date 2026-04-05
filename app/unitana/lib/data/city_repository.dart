@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/services.dart' show rootBundle;
 
+import '../common/debug/runtime_perf_trace.dart';
 import 'cities.dart';
 
 /// Loads the city dataset from assets and caches it in memory.
@@ -31,6 +32,7 @@ class CityRepository {
   Future<List<City>> load() async {
     if (_loaded) return _cities;
 
+    final trace = RuntimePerfTrace.start('city_repository.load');
     final raw = await rootBundle.loadString(assetPath);
     final decoded = json.decode(raw);
 
@@ -54,6 +56,12 @@ class CityRepository {
     _cities = loaded;
     _byId = {for (final c in loaded) c.id: c};
     _loaded = true;
+    RuntimePerfTrace.logElapsed(
+      'city_repository.load',
+      trace,
+      extra: 'cities=${loaded.length}',
+      minMs: 1,
+    );
     return _cities;
   }
 

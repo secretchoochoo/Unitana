@@ -226,7 +226,7 @@ class CanonicalTools {
 
   static const CanonicalTool cupsGramsEstimates = CanonicalTool(
     id: CanonicalToolId.cupsGramsEstimates,
-    name: 'Cups ↔ Grams Estimates',
+    name: 'Cups to Grams',
     descriptor: 'Common ingredient estimate lookup',
     icon: Icons.restaurant_menu_rounded,
   );

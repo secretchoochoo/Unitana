@@ -9,6 +9,7 @@ import '../../../common/feedback/unitana_toast.dart';
 import '../../../models/place.dart';
 import '../models/dashboard_copy.dart';
 import 'destructive_confirmation_sheet.dart';
+import 'edit_session_discard_sheet.dart';
 
 class ProfilesBoardScreen extends StatefulWidget {
   final UnitanaAppState state;
@@ -41,6 +42,9 @@ class _ProfilesBoardScreenState extends State<ProfilesBoardScreen>
   bool _editMode = false;
   List<String> _orderedIds = const <String>[];
   List<String?> _editSlots = const <String?>[];
+  List<String> _editBaselineOrderedIds = const <String>[];
+  bool _editDirty = false;
+  final Set<int> _preservedAddSlots = <int>{};
   String? _draggingId;
   late final AnimationController _wiggle;
 
@@ -62,9 +66,49 @@ class _ProfilesBoardScreenState extends State<ProfilesBoardScreen>
 
   void _syncOrderFromState() {
     final ids = widget.state.profiles.map((p) => p.id).toList(growable: false);
-    if (_orderedIds.isEmpty || !_sameItems(_orderedIds, ids)) {
+    if (_orderedIds.isEmpty || !_sameOrderedItems(_orderedIds, ids)) {
       _orderedIds = ids;
     }
+  }
+
+  List<int> _sortedPreservedAddSlots(int profileCount) {
+    final maxIndex = profileCount + _addTileCountFor(profileCount);
+    final slots =
+        _preservedAddSlots
+            .where((index) => index >= 0 && index <= maxIndex)
+            .toList(growable: false)
+          ..sort();
+    return slots;
+  }
+
+  int _profileIndexForVisibleSlot({
+    required int visibleSlotIndex,
+    required List<int> preservedAddSlots,
+  }) {
+    var offset = 0;
+    for (final slot in preservedAddSlots) {
+      if (slot > visibleSlotIndex) break;
+      offset += 1;
+    }
+    return visibleSlotIndex - offset;
+  }
+
+  int? _visibleSlotIndexForProfileId(
+    String profileId, {
+    required List<UnitanaProfile> orderedProfiles,
+  }) {
+    final profileIndex = orderedProfiles.indexWhere((p) => p.id == profileId);
+    if (profileIndex < 0) return null;
+    final preservedAddSlots = _sortedPreservedAddSlots(orderedProfiles.length);
+    var visibleIndex = profileIndex;
+    for (final slot in preservedAddSlots) {
+      if (slot <= visibleIndex) {
+        visibleIndex += 1;
+      } else {
+        break;
+      }
+    }
+    return visibleIndex;
   }
 
   void _ensureEditSlots(List<String> orderedIds, int addTileCount) {
@@ -85,13 +129,16 @@ class _ProfilesBoardScreenState extends State<ProfilesBoardScreen>
 
   void _commitEditSlots() {
     final nextOrdered = _editSlots.whereType<String>().toList(growable: false);
-    if (_sameItems(nextOrdered, _orderedIds) &&
-        nextOrdered.length == _orderedIds.length) {
+    if (_sameOrderedItems(nextOrdered, _orderedIds)) {
       _orderedIds = nextOrdered;
       return;
     }
     _orderedIds = nextOrdered;
     unawaited(widget.state.reorderProfiles(nextOrdered));
+  }
+
+  bool get _hasPendingEditChanges {
+    return _editMode && _editDirty;
   }
 
   void _swapDraggedIntoSlot({
@@ -107,6 +154,7 @@ class _ProfilesBoardScreenState extends State<ProfilesBoardScreen>
     next[from] = tmp;
     setState(() {
       _editSlots = next;
+      _editDirty = true;
     });
   }
 
@@ -120,10 +168,14 @@ class _ProfilesBoardScreenState extends State<ProfilesBoardScreen>
       _editMode = enabled;
       if (enabled) {
         final ids = orderedIds ?? _orderedIds;
+        _editBaselineOrderedIds = List<String>.from(ids);
+        _editDirty = false;
         final add = addTileCount ?? _addTileCountFor(ids.length);
         _ensureEditSlots(ids, add);
       } else {
         _editSlots = const <String?>[];
+        _editBaselineOrderedIds = const <String>[];
+        _editDirty = false;
       }
     });
     if (enabled) {
@@ -155,9 +207,12 @@ class _ProfilesBoardScreenState extends State<ProfilesBoardScreen>
     );
   }
 
-  bool _sameItems(List<String> a, List<String> b) {
+  bool _sameOrderedItems(List<String> a, List<String> b) {
     if (a.length != b.length) return false;
-    return a.toSet().containsAll(b) && b.toSet().containsAll(a);
+    for (var i = 0; i < a.length; i++) {
+      if (a[i] != b[i]) return false;
+    }
+    return true;
   }
 
   int _addTileCountFor(int profileCount) {
@@ -189,6 +244,7 @@ class _ProfilesBoardScreenState extends State<ProfilesBoardScreen>
 
     setState(() {
       _orderedIds = next;
+      _editDirty = true;
     });
 
     unawaited(widget.state.reorderProfiles(next));
@@ -196,6 +252,19 @@ class _ProfilesBoardScreenState extends State<ProfilesBoardScreen>
 
   Future<void> _confirmDelete(UnitanaProfile profile) async {
     if (widget.state.profiles.length <= 1) return;
+    final orderedProfiles = _orderedIds
+        .map(
+          (id) => widget.state.profiles.cast<UnitanaProfile?>().firstWhere(
+            (profile) => profile?.id == id,
+            orElse: () => null,
+          ),
+        )
+        .whereType<UnitanaProfile>()
+        .toList(growable: false);
+    final removedSlotIndex = _visibleSlotIndexForProfileId(
+      profile.id,
+      orderedProfiles: orderedProfiles,
+    );
     final approved = await showDestructiveConfirmationSheet(
       context,
       title: DashboardCopy.profilesBoardDeleteTitle(context),
@@ -205,9 +274,231 @@ class _ProfilesBoardScreenState extends State<ProfilesBoardScreen>
     if (approved != true) return;
     await widget.onDeleteProfile(profile.id);
     if (!mounted) return;
+    if (removedSlotIndex != null) {
+      setState(() {
+        _preservedAddSlots.add(removedSlotIndex);
+      });
+    }
     UnitanaToast.showSuccess(
       context,
       DashboardCopy.profilesBoardDeleted(context),
+    );
+  }
+
+  Future<void> _handleAddProfile({required int slotIndex}) async {
+    final beforeCount = widget.state.profiles.length;
+    await widget.onAddProfile(slotIndex: slotIndex);
+    if (!mounted) return;
+    if (widget.state.profiles.length > beforeCount) {
+      setState(() {
+        _preservedAddSlots.remove(slotIndex);
+      });
+    }
+  }
+
+  Future<void> _showProfileActions(UnitanaProfile profile) async {
+    final action = await showModalBottomSheet<_ProfileTileAction>(
+      context: context,
+      showDragHandle: true,
+      useSafeArea: true,
+      builder: (sheetContext) {
+        final scheme = Theme.of(sheetContext).colorScheme;
+        return SafeArea(
+          top: false,
+          child: Wrap(
+            children: [
+              if (!_editMode)
+                ListTile(
+                  key: ValueKey('profiles_board_action_reorder_${profile.id}'),
+                  leading: const Icon(Icons.reorder_rounded),
+                  title: Text(
+                    DashboardCopy.profilesBoardActionReorder(context),
+                  ),
+                  onTap: () => Navigator.of(
+                    sheetContext,
+                  ).pop(_ProfileTileAction.reorder),
+                ),
+              ListTile(
+                key: ValueKey('profiles_board_action_rename_${profile.id}'),
+                leading: const Icon(Icons.drive_file_rename_outline_rounded),
+                title: Text(DashboardCopy.profilesBoardActionRename(context)),
+                onTap: () =>
+                    Navigator.of(sheetContext).pop(_ProfileTileAction.rename),
+              ),
+              ListTile(
+                key: ValueKey('profiles_board_action_edit_${profile.id}'),
+                leading: const Icon(Icons.edit_rounded),
+                title: Text(DashboardCopy.profilesBoardTooltipEdit(context)),
+                onTap: () =>
+                    Navigator.of(sheetContext).pop(_ProfileTileAction.edit),
+              ),
+              if (widget.state.profiles.length > 1)
+                ListTile(
+                  key: ValueKey('profiles_board_action_delete_${profile.id}'),
+                  leading: Icon(
+                    Icons.delete_outline_rounded,
+                    color: scheme.error,
+                  ),
+                  title: Text(
+                    DashboardCopy.profilesBoardTooltipDelete(context),
+                    style: TextStyle(color: scheme.error),
+                  ),
+                  onTap: () =>
+                      Navigator.of(sheetContext).pop(_ProfileTileAction.delete),
+                ),
+              const SizedBox(height: 8),
+            ],
+          ),
+        );
+      },
+    );
+    if (action == null || !mounted) return;
+    switch (action) {
+      case _ProfileTileAction.reorder:
+        _setEditMode(
+          true,
+          orderedIds: _orderedIds,
+          addTileCount: _addTileCountFor(_orderedIds.length),
+        );
+        return;
+      case _ProfileTileAction.rename:
+        await _renameProfile(profile);
+        return;
+      case _ProfileTileAction.edit:
+        await widget.onEditProfile(profile.id);
+        return;
+      case _ProfileTileAction.delete:
+        await _confirmDelete(profile);
+        return;
+    }
+  }
+
+  Future<void> _renameProfile(UnitanaProfile profile) async {
+    var draftName = profile.name;
+    final renamed = await showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      useSafeArea: true,
+      builder: (sheetContext) {
+        return StatefulBuilder(
+          builder: (sheetContext, setSheetState) {
+            final inset = MediaQuery.viewInsetsOf(sheetContext).bottom;
+            final nextName = draftName.trim();
+            return SafeArea(
+              top: false,
+              child: SingleChildScrollView(
+                padding: EdgeInsets.fromLTRB(16, 8, 16, 16 + inset),
+                child: Column(
+                  key: const Key('profiles_board_rename_sheet'),
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      DashboardCopy.profilesBoardRenameTitle(sheetContext),
+                      style: Theme.of(sheetContext).textTheme.titleMedium
+                          ?.copyWith(fontWeight: FontWeight.w800),
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      key: const Key('profiles_board_rename_input'),
+                      initialValue: draftName,
+                      autofocus: true,
+                      textInputAction: TextInputAction.done,
+                      textCapitalization: TextCapitalization.words,
+                      decoration: InputDecoration(
+                        labelText: DashboardCopy.profilesBoardRenameLabel(
+                          sheetContext,
+                        ),
+                        hintText: DashboardCopy.profilesBoardRenameHint(
+                          sheetContext,
+                        ),
+                      ),
+                      onChanged: (value) {
+                        setSheetState(() {
+                          draftName = value;
+                        });
+                      },
+                      onFieldSubmitted: (submitted) {
+                        final normalized = submitted.trim();
+                        if (normalized.isEmpty) return;
+                        Navigator.of(sheetContext).pop(normalized);
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        TextButton(
+                          key: const Key('profiles_board_rename_cancel'),
+                          onPressed: () => Navigator.of(sheetContext).pop(),
+                          child: Text(
+                            DashboardCopy.profilesBoardRenameCancel(
+                              sheetContext,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        FilledButton(
+                          key: const Key('profiles_board_rename_save'),
+                          onPressed: nextName.isEmpty
+                              ? null
+                              : () => Navigator.of(sheetContext).pop(nextName),
+                          child: Text(
+                            DashboardCopy.profilesBoardRenameSave(sheetContext),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+
+    if (!mounted || renamed == null) return;
+    final normalized = renamed.trim();
+    if (normalized.isEmpty) {
+      UnitanaToast.showError(
+        context,
+        DashboardCopy.profilesBoardRenameInvalid(context),
+      );
+      return;
+    }
+    if (normalized == profile.name.trim()) return;
+
+    await widget.state.updateProfile(profile.copyWith(name: normalized));
+    if (!mounted) return;
+    UnitanaToast.showSuccess(
+      context,
+      DashboardCopy.profilesBoardRenamed(context),
+    );
+  }
+
+  Future<void> _cancelEditMode() async {
+    if (!_editMode) return;
+    if (_hasPendingEditChanges) {
+      final discard = await showEditSessionDiscardSheet(
+        context,
+        message: DashboardCopy.profilesEditDiscardMessage(context),
+      );
+      if (!discard) return;
+    }
+    setState(() {
+      _orderedIds = List<String>.from(_editBaselineOrderedIds);
+    });
+    _setEditMode(false);
+  }
+
+  void _doneEditMode() {
+    _commitEditSlots();
+    _setEditMode(false);
+    UnitanaToast.showSuccess(
+      context,
+      DashboardCopy.profilesBoardUpdated(context),
     );
   }
 
@@ -301,7 +592,7 @@ class _ProfilesBoardScreenState extends State<ProfilesBoardScreen>
               if (_editMode) ...[
                 TextButton(
                   key: const ValueKey('profiles_board_edit_cancel'),
-                  onPressed: () => _setEditMode(false),
+                  onPressed: _cancelEditMode,
                   style: TextButton.styleFrom(
                     visualDensity: VisualDensity.compact,
                     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -317,14 +608,7 @@ class _ProfilesBoardScreenState extends State<ProfilesBoardScreen>
                   padding: const EdgeInsets.only(right: 4),
                   child: TextButton(
                     key: const ValueKey('profiles_board_edit_done'),
-                    onPressed: () {
-                      _commitEditSlots();
-                      _setEditMode(false);
-                      UnitanaToast.showSuccess(
-                        context,
-                        DashboardCopy.profilesBoardUpdated(context),
-                      );
-                    },
+                    onPressed: _doneEditMode,
                     style: TextButton.styleFrom(
                       visualDensity: VisualDensity.compact,
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -374,7 +658,11 @@ class _ProfilesBoardScreenState extends State<ProfilesBoardScreen>
                             ),
                         itemCount: _editMode
                             ? _editSlots.length
-                            : (ordered.length + addTileCount),
+                            : (ordered.length +
+                                  addTileCount +
+                                  _sortedPreservedAddSlots(
+                                    ordered.length,
+                                  ).length),
                         itemBuilder: (context, index) {
                           if (_editMode) {
                             final slotId = _editSlots[index];
@@ -405,9 +693,8 @@ class _ProfilesBoardScreenState extends State<ProfilesBoardScreen>
                                           ? 0
                                           : index - ordered.length;
                                       return _AddProfileTile(
-                                        onTap: () => widget.onAddProfile(
-                                          slotIndex: index,
-                                        ),
+                                        onTap: () =>
+                                            _handleAddProfile(slotIndex: index),
                                         slotIndex: slotIndex,
                                       );
                                     },
@@ -441,8 +728,10 @@ class _ProfilesBoardScreenState extends State<ProfilesBoardScreen>
                                   isActive: active,
                                   isEditing: false,
                                   onTap: () {},
+                                  onLongPress: null,
                                   onEdit: () {},
                                   onDelete: () {},
+                                  onMoreActions: () {},
                                   flagEmojiForCountry: _flagEmoji,
                                   homeAndDestination: _homeAndDestination,
                                 );
@@ -453,9 +742,12 @@ class _ProfilesBoardScreenState extends State<ProfilesBoardScreen>
                                   isEditing: true,
                                   onTap: () =>
                                       widget.onSwitchProfile(profile.id),
+                                  onLongPress: null,
                                   onEdit: () =>
                                       widget.onEditProfile(profile.id),
                                   onDelete: () => _confirmDelete(profile),
+                                  onMoreActions: () =>
+                                      _showProfileActions(profile),
                                   flagEmojiForCountry: _flagEmoji,
                                   homeAndDestination: _homeAndDestination,
                                 );
@@ -506,16 +798,27 @@ class _ProfilesBoardScreenState extends State<ProfilesBoardScreen>
                             );
                           }
 
-                          if (index >= ordered.length) {
-                            final addSlot = index - ordered.length;
+                          final preservedAddSlots = _sortedPreservedAddSlots(
+                            ordered.length,
+                          );
+                          final isPreservedAddSlot = preservedAddSlots.contains(
+                            index,
+                          );
+                          final profileIndex = _profileIndexForVisibleSlot(
+                            visibleSlotIndex: index,
+                            preservedAddSlots: preservedAddSlots,
+                          );
+
+                          if (isPreservedAddSlot ||
+                              profileIndex >= ordered.length) {
+                            final addSlot = math.max(0, index - ordered.length);
                             return _AddProfileTile(
-                              onTap: () =>
-                                  widget.onAddProfile(slotIndex: index),
+                              onTap: () => _handleAddProfile(slotIndex: index),
                               slotIndex: addSlot,
                             );
                           }
 
-                          final profile = ordered[index];
+                          final profile = ordered[profileIndex];
                           final active =
                               profile.id == widget.state.activeProfileId;
 
@@ -543,9 +846,14 @@ class _ProfilesBoardScreenState extends State<ProfilesBoardScreen>
                                   isEditing: _editMode,
                                   onTap: () =>
                                       widget.onSwitchProfile(profile.id),
+                                  onLongPress: _editMode
+                                      ? null
+                                      : () => _showProfileActions(profile),
                                   onEdit: () =>
                                       widget.onEditProfile(profile.id),
                                   onDelete: () => _confirmDelete(profile),
+                                  onMoreActions: () =>
+                                      _showProfileActions(profile),
                                   flagEmojiForCountry: _flagEmoji,
                                   homeAndDestination: _homeAndDestination,
                                 );
@@ -556,8 +864,10 @@ class _ProfilesBoardScreenState extends State<ProfilesBoardScreen>
                                 isActive: active,
                                 isEditing: false,
                                 onTap: () {},
+                                onLongPress: null,
                                 onEdit: () {},
                                 onDelete: () {},
+                                onMoreActions: () {},
                                 flagEmojiForCountry: _flagEmoji,
                                 homeAndDestination: _homeAndDestination,
                               );
@@ -662,8 +972,10 @@ class _ProfileTile extends StatelessWidget {
   final bool isActive;
   final bool isEditing;
   final VoidCallback onTap;
+  final VoidCallback? onLongPress;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
+  final VoidCallback onMoreActions;
   final String Function(String?) flagEmojiForCountry;
   final (Place?, Place?) Function(UnitanaProfile) homeAndDestination;
 
@@ -672,8 +984,10 @@ class _ProfileTile extends StatelessWidget {
     required this.isActive,
     required this.isEditing,
     required this.onTap,
+    required this.onLongPress,
     required this.onEdit,
     required this.onDelete,
+    required this.onMoreActions,
     required this.flagEmojiForCountry,
     required this.homeAndDestination,
   });
@@ -715,190 +1029,276 @@ class _ProfileTile extends StatelessWidget {
         destination?.cityName ??
         DashboardCopy.profilesBoardDestinationFallback(context);
 
-    return InkWell(
-      key: ValueKey('profiles_board_tile_${profile.id}'),
-      borderRadius: BorderRadius.circular(16),
-      onTap: onTap,
-      child: Ink(
-        decoration: BoxDecoration(
-          color: isActive ? activeTile : baseTile,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: tileBorder, width: isActive ? 1.6 : 1),
+    return FocusTraversalOrder(
+      order: NumericFocusOrder(1),
+      child: Semantics(
+        container: true,
+        button: true,
+        selected: isActive,
+        label: DashboardCopy.profilesBoardSemanticsLabel(
+          context,
+          profileName: profile.name,
+          homeCity: homeCity,
+          destinationCity: destCity,
+          isActive: isActive,
         ),
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final tight = constraints.maxHeight < 190;
-            final cellPad = tight ? 10.0 : 12.0;
-            final cityFont = tight ? 12.0 : 13.0;
-            final titleFont = tight ? 14.0 : 15.0;
-            final iconBox = tight ? 28.0 : 32.0;
-            final iconSize = tight ? 16.0 : 18.0;
+        hint: DashboardCopy.profilesBoardSemanticsHint(
+          context,
+          isActive: isActive,
+        ),
+        child: InkWell(
+          key: ValueKey('profiles_board_tile_${profile.id}'),
+          borderRadius: BorderRadius.circular(16),
+          onTap: onTap,
+          onLongPress: onLongPress,
+          child: Ink(
+            decoration: BoxDecoration(
+              color: isActive ? activeTile : baseTile,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: tileBorder, width: isActive ? 1.6 : 1),
+            ),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final tight = constraints.maxHeight < 190;
+                final cellPad = tight ? 10.0 : 12.0;
+                final cityFont = tight ? 12.0 : 13.0;
+                final titleFont = tight ? 14.0 : 15.0;
+                final iconBox = tight ? 28.0 : 32.0;
+                final iconSize = tight ? 16.0 : 18.0;
+                final badgeHorizontalPad = tight ? 6.0 : 8.0;
+                final badgeVerticalPad = tight ? 2.0 : 3.0;
+                final badgeFont = tight ? 10.0 : 11.0;
 
-            return Padding(
-              padding: EdgeInsets.all(cellPad),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
+                return Padding(
+                  padding: EdgeInsets.all(cellPad),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Expanded(
-                        child: Text(
-                          profile.name,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: GoogleFonts.robotoSlab(
-                            fontWeight: FontWeight.w800,
-                            fontSize: titleFont,
-                            color: textPrimary,
-                          ),
-                        ),
-                      ),
-                      if (isActive)
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 3,
-                          ),
-                          decoration: BoxDecoration(
-                            color: badgeBg,
-                            borderRadius: BorderRadius.circular(999),
-                          ),
-                          child: Text(
-                            DashboardCopy.profilesBoardActiveBadge(context),
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: badgeFg,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                  if (isEditing) ...[
-                    SizedBox(height: tight ? 2 : 6),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        IconButton(
-                          key: ValueKey('profiles_board_edit_${profile.id}'),
-                          tooltip: DashboardCopy.profilesBoardTooltipEdit(
-                            context,
-                          ),
-                          visualDensity: VisualDensity.compact,
-                          padding: const EdgeInsets.all(4),
-                          constraints: BoxConstraints.tightFor(
-                            width: iconBox,
-                            height: iconBox,
-                          ),
-                          onPressed: onEdit,
-                          icon: Icon(Icons.edit_rounded, size: iconSize),
-                        ),
-                        const SizedBox(width: 2),
-                        IconButton(
-                          key: ValueKey('profiles_board_delete_${profile.id}'),
-                          tooltip: DashboardCopy.profilesBoardTooltipDelete(
-                            context,
-                          ),
-                          visualDensity: VisualDensity.compact,
-                          padding: const EdgeInsets.all(4),
-                          constraints: BoxConstraints.tightFor(
-                            width: iconBox,
-                            height: iconBox,
-                          ),
-                          onPressed: onDelete,
-                          icon: Icon(
-                            Icons.delete_outline_rounded,
-                            size: iconSize,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                  SizedBox(height: tight ? 4 : 8),
-                  Expanded(
-                    child: Container(
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(12),
-                        color: rowPanel,
-                        border: Border.all(color: rowDivider),
-                      ),
-                      child: Column(
+                      Row(
                         children: [
                           Expanded(
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 10,
-                              ),
-                              child: Row(
-                                children: [
-                                  SizedBox(
-                                    width: 22,
-                                    child: Icon(
-                                      Icons.home_rounded,
-                                      size: 14,
-                                      color: homeIcon,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 6),
-                                  Expanded(
-                                    child: Text(
-                                      '$homeFlag $homeCity',
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.w700,
-                                        fontSize: cityFont,
-                                        color: textPrimary,
-                                      ),
-                                    ),
-                                  ),
-                                ],
+                            child: Text(
+                              profile.name,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: GoogleFonts.robotoSlab(
+                                fontWeight: FontWeight.w800,
+                                fontSize: titleFont,
+                                color: textPrimary,
                               ),
                             ),
                           ),
-                          Container(height: 1, color: rowDivider),
-                          Expanded(
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 10,
+                          if (isActive)
+                            Container(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: badgeHorizontalPad,
+                                vertical: badgeVerticalPad,
                               ),
-                              child: Row(
-                                children: [
-                                  SizedBox(
-                                    width: 22,
-                                    child: Icon(
-                                      Icons.flight_takeoff_rounded,
-                                      size: 14,
-                                      color: destinationIcon,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 6),
-                                  Expanded(
-                                    child: Text(
-                                      '$destFlag $destCity',
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.w700,
-                                        fontSize: cityFont,
-                                        color: textPrimary,
-                                      ),
-                                    ),
-                                  ),
-                                ],
+                              decoration: BoxDecoration(
+                                color: badgeBg,
+                                borderRadius: BorderRadius.circular(999),
+                              ),
+                              child: Text(
+                                DashboardCopy.profilesBoardActiveBadge(context),
+                                style: TextStyle(
+                                  fontSize: badgeFont,
+                                  color: badgeFg,
+                                  fontWeight: FontWeight.w700,
+                                ),
                               ),
                             ),
-                          ),
+                          if (!isEditing) ...[
+                            const SizedBox(width: 4),
+                            _ProfileCornerActionButton(
+                              key: ValueKey(
+                                'profiles_board_more_${profile.id}',
+                              ),
+                              tooltip:
+                                  DashboardCopy.profilesBoardTooltipMoreActions(
+                                    context,
+                                  ),
+                              compact: tight,
+                              onTap: onMoreActions,
+                            ),
+                          ],
                         ],
                       ),
-                    ),
+                      if (isEditing) ...[
+                        SizedBox(height: tight ? 2 : 6),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            IconButton(
+                              key: ValueKey(
+                                'profiles_board_edit_${profile.id}',
+                              ),
+                              tooltip: DashboardCopy.profilesBoardTooltipEdit(
+                                context,
+                              ),
+                              visualDensity: VisualDensity.compact,
+                              padding: const EdgeInsets.all(4),
+                              constraints: BoxConstraints.tightFor(
+                                width: iconBox,
+                                height: iconBox,
+                              ),
+                              onPressed: onEdit,
+                              icon: Icon(Icons.edit_rounded, size: iconSize),
+                            ),
+                            const SizedBox(width: 2),
+                            IconButton(
+                              key: ValueKey(
+                                'profiles_board_delete_${profile.id}',
+                              ),
+                              tooltip: DashboardCopy.profilesBoardTooltipDelete(
+                                context,
+                              ),
+                              visualDensity: VisualDensity.compact,
+                              padding: const EdgeInsets.all(4),
+                              constraints: BoxConstraints.tightFor(
+                                width: iconBox,
+                                height: iconBox,
+                              ),
+                              onPressed: onDelete,
+                              icon: Icon(
+                                Icons.delete_outline_rounded,
+                                size: iconSize,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                      SizedBox(height: tight ? 4 : 8),
+                      Expanded(
+                        child: Container(
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(12),
+                            color: rowPanel,
+                            border: Border.all(color: rowDivider),
+                          ),
+                          child: Column(
+                            children: [
+                              Expanded(
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 10,
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      SizedBox(
+                                        width: 22,
+                                        child: Icon(
+                                          Icons.home_rounded,
+                                          size: 14,
+                                          color: homeIcon,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Expanded(
+                                        child: Text(
+                                          '$homeFlag $homeCity',
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.w700,
+                                            fontSize: cityFont,
+                                            color: textPrimary,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              Container(height: 1, color: rowDivider),
+                              Expanded(
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 10,
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      SizedBox(
+                                        width: 22,
+                                        child: Icon(
+                                          Icons.flight_takeoff_rounded,
+                                          size: 14,
+                                          color: destinationIcon,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Expanded(
+                                        child: Text(
+                                          '$destFlag $destCity',
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.w700,
+                                            fontSize: cityFont,
+                                            color: textPrimary,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-            );
-          },
+                );
+              },
+            ),
+          ),
         ),
       ),
     );
   }
 }
+
+class _ProfileCornerActionButton extends StatelessWidget {
+  final String tooltip;
+  final bool compact;
+  final VoidCallback onTap;
+
+  const _ProfileCornerActionButton({
+    super.key,
+    required this.tooltip,
+    this.compact = false,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final buttonSize = compact ? 32.0 : 40.0;
+    final iconSize = compact ? 18.0 : 20.0;
+    return FocusTraversalOrder(
+      order: NumericFocusOrder(2),
+      child: Semantics(
+        button: true,
+        label: tooltip,
+        child: Material(
+          color: scheme.surface.withAlpha(220),
+          shape: const CircleBorder(),
+          child: InkWell(
+            customBorder: const CircleBorder(),
+            onTap: onTap,
+            child: Tooltip(
+              message: tooltip,
+              child: SizedBox(
+                width: buttonSize,
+                height: buttonSize,
+                child: Icon(Icons.more_horiz_rounded, size: iconSize),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+enum _ProfileTileAction { reorder, rename, edit, delete }

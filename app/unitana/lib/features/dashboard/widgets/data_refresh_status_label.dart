@@ -68,14 +68,17 @@ class _DataRefreshStatusLabelState extends State<DataRefreshStatusLabel> {
   }
 
   String? _buildLabel(DashboardLiveDataController liveData) {
-    final isLive =
-        liveData.weatherNetworkEnabled &&
+    final weatherSurfaceEnabled =
+        liveData.weatherNetworkAllowed &&
         liveData.weatherBackend != WeatherBackend.mock;
-    if (!isLive && widget.hideWhenUnavailable) return null;
+    final useWeatherFreshness = weatherSurfaceEnabled;
+    if (!weatherSurfaceEnabled && widget.hideWhenUnavailable) return null;
 
     if (liveData.isRefreshing) return DashboardCopy.updating(context);
 
-    final last = liveData.lastRefreshedAt;
+    final last = useWeatherFreshness
+        ? liveData.lastWeatherRefreshedAt
+        : liveData.lastRefreshedAt;
     if (last == null) return DashboardCopy.notUpdated(context);
 
     final age = DateTime.now().difference(last);
@@ -100,7 +103,12 @@ class _DataRefreshStatusLabelState extends State<DataRefreshStatusLabel> {
         if (text == null) return const SizedBox.shrink();
 
         final cs = Theme.of(context).colorScheme;
-        final last = widget.liveData.lastRefreshedAt;
+        final useWeatherFreshness =
+            widget.liveData.weatherNetworkAllowed &&
+            widget.liveData.weatherBackend != WeatherBackend.mock;
+        final last = useWeatherFreshness
+            ? widget.liveData.lastWeatherRefreshedAt
+            : widget.liveData.lastRefreshedAt;
         final bool isStale =
             !widget.liveData.isRefreshing &&
             last != null &&

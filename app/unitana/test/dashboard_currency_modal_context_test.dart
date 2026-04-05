@@ -172,14 +172,15 @@ void main() {
       );
       expect(pickerList, findsOneWidget);
 
+      final search = find.byKey(
+        ValueKey('tool_unit_picker_search_currency_convert_$side'),
+      );
+      expect(search, findsOneWidget);
+      await tester.enterText(search, code);
+      await tester.pumpAndSettle();
+
       final itemKey = ValueKey('tool_unit_item_currency_convert_${side}_$code');
       final item = find.byKey(itemKey);
-      var found = item.evaluate().isNotEmpty;
-      for (var i = 0; i < 120 && !found; i++) {
-        await tester.drag(pickerList, const Offset(0, -220));
-        await tester.pumpAndSettle();
-        found = item.evaluate().isNotEmpty;
-      }
       expect(item, findsOneWidget);
       await tester.ensureVisible(item);
       await tester.pumpAndSettle();
@@ -202,5 +203,39 @@ void main() {
 
     expect(readCode('tool_unit_from_currency_convert'), 'AUD');
     expect(readCode('tool_unit_to_currency_convert'), 'CAD');
+  });
+
+  testWidgets('Currency picker surfaces selected and common currencies', (
+    tester,
+  ) async {
+    await pumpDashboardForTest(tester);
+
+    await tester.tap(find.byKey(const ValueKey('dashboard_tools_button')));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('toolpicker_search')),
+      'currency',
+    );
+    await tester.pumpAndSettle(const Duration(milliseconds: 250));
+    await tester.tap(
+      find.byKey(const ValueKey('toolpicker_search_tool_currency_convert')),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(
+      find.byKey(const ValueKey('tool_unit_from_currency_convert')),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Selected'), findsOneWidget);
+    expect(find.text('Common'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('tool_unit_item_currency_convert_from_USD')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('tool_unit_item_currency_convert_from_EUR')),
+      findsOneWidget,
+    );
   });
 }

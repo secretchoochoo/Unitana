@@ -8,24 +8,22 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../../common/widgets/unitana_notice_card.dart';
 import '../../../common/debug/picker_perf_trace.dart';
+import '../../../common/debug/runtime_perf_trace.dart';
 import '../../../data/cities.dart' show kCurrencySymbols;
 import '../../../data/city_picker_engine.dart';
 import '../../../data/city_label_utils.dart';
 import '../../../data/city_repository.dart';
 import '../../../data/country_currency_map.dart';
-import '../../../theme/dracula_palette.dart';
 import '../../../models/place.dart';
+import '../../../theme/dracula_palette.dart';
 import '../../../utils/timezone_utils.dart';
 
 import '../models/dashboard_session_controller.dart';
 import '../models/dashboard_copy.dart';
 import '../models/dashboard_exceptions.dart';
-import '../models/flight_time_estimator.dart';
 import '../models/freshness_copy.dart';
-import '../models/jet_lag_planner.dart';
 import '../models/lens_accents.dart';
 import '../models/numeric_input_policy.dart';
-import '../models/place_geo_lookup.dart';
 import '../models/time_zone_catalog.dart';
 import '../models/tool_helper_calculators.dart';
 import '../models/tool_lookup_catalog.dart';
@@ -35,9 +33,14 @@ import '../models/tool_definitions.dart';
 import '../models/canonical_tools.dart';
 
 import 'destructive_confirmation_sheet.dart';
+import 'searchable_option_picker_sheet.dart';
 import 'tool_default_surface.dart';
+import 'tool_default_workspace.dart';
+import 'tool_helper_surfaces.dart';
 import 'tool_lookup_surface.dart';
+import 'tool_lookup_workspace.dart';
 import 'tool_time_surface.dart';
+import 'tool_time_workspace.dart';
 
 /// Bottom sheet calculator for tool tiles.
 ///
@@ -124,29 +127,42 @@ class ToolModalBottomSheet extends StatefulWidget {
     bool canAddWidget = false,
     Future<void> Function()? onAddWidget,
   }) {
+    final openTrace = RuntimePerfTrace.start('tool_modal.open');
+    var openLogged = false;
     return showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       showDragHandle: true,
-      builder: (_) => ToolModalBottomSheet(
-        tool: tool,
-        session: session,
-        preferMetric: preferMetric,
-        prefer24h: prefer24h,
-        eurToUsd: eurToUsd,
-        currencyRateForPair: currencyRateForPair,
-        currencyIsStale: currencyIsStale,
-        currencyShouldRetryNow: currencyShouldRetryNow,
-        currencyLastErrorAt: currencyLastErrorAt,
-        currencyLastRefreshedAt: currencyLastRefreshedAt,
-        currencyNetworkEnabled: currencyNetworkEnabled,
-        currencyRefreshCadence: currencyRefreshCadence,
-        onRetryCurrencyNow: onRetryCurrencyNow,
-        home: home,
-        destination: destination,
-        canAddWidget: canAddWidget,
-        onAddWidget: onAddWidget,
-      ),
+      builder: (_) {
+        if (!openLogged) {
+          RuntimePerfTrace.logElapsed(
+            'tool_modal.open',
+            openTrace,
+            extra: 'tool=${tool.id}',
+            minMs: 1,
+          );
+          openLogged = true;
+        }
+        return ToolModalBottomSheet(
+          tool: tool,
+          session: session,
+          preferMetric: preferMetric,
+          prefer24h: prefer24h,
+          eurToUsd: eurToUsd,
+          currencyRateForPair: currencyRateForPair,
+          currencyIsStale: currencyIsStale,
+          currencyShouldRetryNow: currencyShouldRetryNow,
+          currencyLastErrorAt: currencyLastErrorAt,
+          currencyLastRefreshedAt: currencyLastRefreshedAt,
+          currencyNetworkEnabled: currencyNetworkEnabled,
+          currencyRefreshCadence: currencyRefreshCadence,
+          onRetryCurrencyNow: onRetryCurrencyNow,
+          home: home,
+          destination: destination,
+          canAddWidget: canAddWidget,
+          onAddWidget: onAddWidget,
+        );
+      },
     );
   }
 
@@ -284,6 +300,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
   final TextEditingController _energyWeightController = TextEditingController(
     text: '70',
   );
+  final TextEditingController _taxRateController = TextEditingController();
   Timer? _noticeTimer;
   Timer? _timeTicker;
   Timer? _jetLagTipTicker;
@@ -311,6 +328,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
   String? _lookupFromSystem;
   String? _lookupToSystem;
   String? _lookupEntryKey;
+  String? _lookupGroupKey;
   int _lookupMatrixPageIndex = 0;
   String? _timeFromZoneId;
   String? _timeToZoneId;
@@ -320,8 +338,6 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
   int _tipPercent = 15;
   int _tipSplitCount = 1;
   String _tipRoundingMode = 'none';
-  List<int> _taxPresetPercents = const <int>[5, 8, 10];
-  int _taxPercent = 8;
   String _taxMode = 'add_on';
   bool _unitPriceCompareEnabled = false;
   String _unitPriceUnitA = 'g';
@@ -521,52 +537,6 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
     _jetLagWakeMinutes = 7 * 60;
   }
 
-  int _normalizeMinutesOfDay(int minutes) {
-    var out = minutes % (24 * 60);
-    if (out < 0) out += 24 * 60;
-    return out;
-  }
-
-  String _formatMinutesOfDay(int minutes, {required bool use24h}) {
-    final norm = _normalizeMinutesOfDay(minutes);
-    final hh = norm ~/ 60;
-    final mm = (norm % 60).toString().padLeft(2, '0');
-    if (use24h) {
-      return '${hh.toString().padLeft(2, '0')}:$mm';
-    }
-    final isPm = hh >= 12;
-    var h12 = hh % 12;
-    if (h12 == 0) h12 = 12;
-    return '$h12:$mm ${isPm ? 'PM' : 'AM'}';
-  }
-
-  int _jetLagShiftedMinutes({
-    required int baseMinutes,
-    required JetLagPlan plan,
-  }) {
-    if (plan.isNoShift) return baseMinutes;
-    final delta = plan.direction == JetLagDirection.eastbound
-        ? -plan.dailyShiftMinutes
-        : plan.dailyShiftMinutes;
-    return _normalizeMinutesOfDay(baseMinutes + delta);
-  }
-
-  String _countryFlag(String countryCode) {
-    final cc = countryCode.trim().toUpperCase();
-    if (cc.length != 2) return '';
-    final first = cc.codeUnitAt(0);
-    final second = cc.codeUnitAt(1);
-    if (first < 65 || first > 90 || second < 65 || second > 90) return '';
-    return String.fromCharCodes(<int>[first + 127397, second + 127397]);
-  }
-
-  List<String> _jetLagTipsForPlan(JetLagPlan plan, String destinationLabel) {
-    return DashboardCopy.jetLagTips(
-      plan: plan,
-      destinationLabel: destinationLabel,
-    );
-  }
-
   Future<void> _pickJetLagTime({required bool bedtime}) async {
     final initial = bedtime ? _jetLagBedtimeMinutes : _jetLagWakeMinutes;
     final picked = await showTimePicker(
@@ -603,6 +573,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
     _paceBuilderDistanceController.dispose();
     _paceBuilderTimeController.dispose();
     _energyWeightController.dispose();
+    _taxRateController.dispose();
     _controller.dispose();
     super.dispose();
   }
@@ -677,6 +648,16 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
   List<ToolLookupEntry> _lookupEntriesForTool() =>
       toolLookupEntriesFor(widget.tool.canonicalToolId);
 
+  List<ToolLookupEntry> _visibleLookupEntriesForTool() {
+    final rows = _lookupEntriesForTool();
+    if (!_isClothingLookupTool) return rows;
+    return toolLookupEntriesForGroup(
+      canonicalToolId: widget.tool.canonicalToolId,
+      rows: rows,
+      groupKey: _lookupGroupKey,
+    );
+  }
+
   ToolLookupEntry? _activeLookupEntry() {
     final rows = _lookupEntriesForTool();
     if (rows.isEmpty) return null;
@@ -697,14 +678,23 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
     _lookupFromSystem = defaults?.fromSystem;
     _lookupToSystem = defaults?.toSystem;
     _lookupEntryKey = defaults?.entryKey;
+    final rows = _lookupEntriesForTool();
+    final active = rows.cast<ToolLookupEntry?>().firstWhere(
+      (row) => row?.keyId == _lookupEntryKey,
+      orElse: () => rows.isEmpty ? null : rows.first,
+    );
+    _lookupGroupKey = active == null
+        ? null
+        : toolLookupGroupKeyForRow(
+            canonicalToolId: widget.tool.canonicalToolId,
+            row: active,
+          );
   }
 
   void _seedTipHelperDefaults() {
     final countryCode = _activeTipCountryCode();
     _tipPresetPercents = tipPresetsForCountry(countryCode);
-    _tipPercent = _tipPresetPercents.contains(15)
-        ? 15
-        : _tipPresetPercents[(_tipPresetPercents.length / 2).floor()];
+    _tipPercent = defaultTipPercentForCountry(countryCode);
     _tipSplitCount = 1;
     _tipRoundingMode = 'none';
     if (_controller.text.trim().isEmpty) {
@@ -714,11 +704,12 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
 
   void _seedTaxVatDefaults() {
     final countryCode = _activeTipCountryCode();
-    _taxPresetPercents = taxPresetsForCountry(countryCode);
-    _taxPercent = _taxPresetPercents.contains(8)
-        ? 8
-        : _taxPresetPercents[(_taxPresetPercents.length / 2).floor()];
-    _taxMode = 'add_on';
+    _taxRateController.text = defaultTaxPercentForCountry(
+      countryCode,
+    ).toString();
+    _taxMode = defaultTaxModeAddOnForCountry(countryCode)
+        ? 'add_on'
+        : 'inclusive';
     if (_controller.text.trim().isEmpty) {
       _controller.text = '100';
     }
@@ -773,6 +764,22 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
         .toUpperCase();
   }
 
+  String _activePricingContextLabel() {
+    final preferred = widget.session.reality == DashboardReality.destination
+        ? widget.destination
+        : widget.home;
+    final fallback = preferred == widget.destination
+        ? widget.home
+        : widget.destination;
+    final place = preferred ?? fallback;
+    final city = place?.cityName.trim() ?? '';
+    final countryCode = (place?.countryCode ?? _activeTipCountryCode())
+        .trim()
+        .toUpperCase();
+    if (city.isEmpty) return countryCode;
+    return '$city, $countryCode';
+  }
+
   String _tipCurrencyCode() {
     final cc = _activeTipCountryCode();
     final code = kCountryToCurrencyCode[cc];
@@ -791,6 +798,15 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
 
   double? _parseTaxVatAmount() {
     final raw = _controller.text.trim();
+    if (raw.isEmpty) return null;
+    final parsed = double.tryParse(raw);
+    if (parsed == null || parsed.isNaN || !parsed.isFinite) return null;
+    if (parsed < 0) return null;
+    return parsed;
+  }
+
+  double? _parseTaxRatePercent() {
+    final raw = _taxRateController.text.trim();
     if (raw.isEmpty) return null;
     final parsed = double.tryParse(raw);
     if (parsed == null || parsed.isNaN || !parsed.isFinite) return null;
@@ -892,6 +908,42 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
     return parsed;
   }
 
+  String _formatWeightInputValue(double value) {
+    final rounded = value.roundToDouble();
+    if ((value - rounded).abs() < 0.05) {
+      return rounded.toStringAsFixed(0);
+    }
+    return value.toStringAsFixed(1);
+  }
+
+  void _convertDisplayedWeightInput(
+    TextEditingController controller, {
+    required String fromUnit,
+    required String toUnit,
+  }) {
+    if (fromUnit == toUnit) return;
+    final raw = controller.text.trim();
+    if (raw.isEmpty) return;
+    final parsed = double.tryParse(raw);
+    if (parsed == null || parsed.isNaN || !parsed.isFinite || parsed <= 0) {
+      return;
+    }
+
+    double converted = parsed;
+    if (fromUnit == 'kg' && toUnit == 'lb') {
+      converted = parsed / 0.45359237;
+    } else if (fromUnit == 'lb' && toUnit == 'kg') {
+      converted = parsed * 0.45359237;
+    } else {
+      return;
+    }
+
+    controller.text = _formatWeightInputValue(converted);
+    controller.selection = TextSelection.collapsed(
+      offset: controller.text.length,
+    );
+  }
+
   int? _parseHydrationExerciseMinutes() {
     final raw = _hydrationExerciseController.text.trim();
     if (raw.isEmpty) return null;
@@ -901,139 +953,51 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
   }
 
   Widget _buildHydrationBody(BuildContext context, Color accent) {
-    final panelBg = _ToolModalThemePolicy.panelBg(context);
-    final panelBorder = _ToolModalThemePolicy.panelBorder(context);
-    final textMuted = _ToolModalThemePolicy.textMuted(context);
     final estimate = computeHydrationEstimate(
       weightKg: _parseHydrationWeightKg(),
       exerciseMinutes: _parseHydrationExerciseMinutes(),
       climateBand: _hydrationClimateBand,
     );
-
-    String climateLabel(String band) {
-      switch (band) {
-        case 'cool':
-          return 'Cool';
-        case 'warm':
-          return 'Warm';
-        case 'hot':
-          return 'Hot';
-        case 'temperate':
-        default:
-          return 'Temperate';
-      }
-    }
-
-    return ListView(
-      key: ValueKey('tool_hydration_scroll_${widget.tool.id}'),
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-      children: [
-        TextField(
-          key: ValueKey('tool_hydration_weight_${widget.tool.id}'),
-          controller: _controller,
-          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-          decoration: InputDecoration(
-            labelText: 'Body weight ($_hydrationWeightUnit)',
-            hintText: _hydrationWeightUnit == 'kg' ? '70' : '155',
-          ),
-          onChanged: (_) => setState(() {}),
-        ),
-        const SizedBox(height: 8),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: [
-            ChoiceChip(
-              key: ValueKey('tool_hydration_unit_${widget.tool.id}_kg'),
-              label: const Text('kg'),
-              selected: _hydrationWeightUnit == 'kg',
-              onSelected: (_) => setState(() {
-                _hydrationWeightUnit = 'kg';
-              }),
-            ),
-            ChoiceChip(
-              key: ValueKey('tool_hydration_unit_${widget.tool.id}_lb'),
-              label: const Text('lb'),
-              selected: _hydrationWeightUnit == 'lb',
-              onSelected: (_) => setState(() {
-                _hydrationWeightUnit = 'lb';
-              }),
-            ),
-          ],
-        ),
-        const SizedBox(height: 10),
-        TextField(
-          key: ValueKey('tool_hydration_exercise_${widget.tool.id}'),
-          controller: _hydrationExerciseController,
-          keyboardType: TextInputType.number,
-          decoration: const InputDecoration(
-            labelText: 'Exercise minutes today',
-            hintText: '30',
-          ),
-          onChanged: (_) => setState(() {}),
-        ),
-        const SizedBox(height: 10),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: ['cool', 'temperate', 'warm', 'hot'].map((band) {
-            return ChoiceChip(
-              key: ValueKey('tool_hydration_climate_${widget.tool.id}_$band'),
-              label: Text(climateLabel(band)),
-              selected: _hydrationClimateBand == band,
-              onSelected: (_) => setState(() {
-                _hydrationClimateBand = band;
-              }),
-            );
-          }).toList(),
-        ),
-        const SizedBox(height: 12),
-        Container(
-          key: ValueKey('tool_hydration_result_${widget.tool.id}'),
-          padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
-          decoration: BoxDecoration(
-            color: panelBg,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: panelBorder),
-          ),
-          child: estimate == null
-              ? Text(
-                  'Enter valid weight and exercise minutes.',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: textMuted,
-                    fontWeight: FontWeight.w700,
-                  ),
-                )
-              : Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _TerminalLine(
-                      prompt: '>',
-                      input: 'Daily fluid estimate',
-                      output:
-                          '${estimate.totalLiters.toStringAsFixed(1)} L (${estimate.totalFluidOunces.toStringAsFixed(0)} fl oz)',
-                      emphasize: true,
-                      arrowColor: accent,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      DashboardCopy.disclaimerMedical(context),
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: textMuted,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ],
-                ),
-        ),
-      ],
+    return ToolHydrationSurface(
+      toolId: widget.tool.id,
+      weightController: _controller,
+      exerciseController: _hydrationExerciseController,
+      weightUnit: _hydrationWeightUnit,
+      climateBand: _hydrationClimateBand,
+      climateHelpText: DashboardCopy.hydrationClimateHelp(
+        context,
+        climateBand: _hydrationClimateBand,
+      ),
+      invalidMessage: 'Enter valid weight and exercise minutes.',
+      disclaimerText: DashboardCopy.disclaimerMedical(context),
+      resultSummary: estimate == null
+          ? null
+          : 'Daily fluid estimate -> ${estimate.totalLiters.toStringAsFixed(1)} L (${estimate.totalFluidOunces.toStringAsFixed(0)} fl oz)',
+      theme: ToolHelperSurfaceTheme(
+        accent: accent,
+        panelBg: _ToolModalThemePolicy.panelBg(context),
+        panelBgSoft: _ToolModalThemePolicy.panelBgSoft(context),
+        panelBorder: _ToolModalThemePolicy.panelBorder(context),
+        textMuted: _ToolModalThemePolicy.textMuted(context),
+        headingTone: _ToolModalThemePolicy.headingTone(context),
+      ),
+      onWeightChanged: (_) => setState(() {}),
+      onExerciseChanged: (_) => setState(() {}),
+      onSelectWeightUnit: (nextUnit) => setState(() {
+        _convertDisplayedWeightInput(
+          _controller,
+          fromUnit: _hydrationWeightUnit,
+          toUnit: nextUnit,
+        );
+        _hydrationWeightUnit = nextUnit;
+      }),
+      onSelectClimateBand: (band) => setState(() {
+        _hydrationClimateBand = band;
+      }),
     );
   }
 
   Widget _buildTipHelperBody(BuildContext context, Color accent) {
-    final panelBg = _ToolModalThemePolicy.panelBg(context);
-    final panelBorder = _ToolModalThemePolicy.panelBorder(context);
-    final textMuted = _ToolModalThemePolicy.textMuted(context);
     final tip = computeTip(
       amount: _parseTipAmount(),
       tipPercent: _tipPercent,
@@ -1041,290 +1005,187 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
       roundingMode: _tipRoundingMode,
     );
 
-    return ListView(
-      key: ValueKey('tool_tip_scroll_${widget.tool.id}'),
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-      children: [
-        TextField(
-          key: ValueKey('tool_tip_amount_${widget.tool.id}'),
-          controller: _controller,
-          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-          decoration: InputDecoration(
-            labelText: DashboardCopy.tipBillAmountLabel(
-              context,
-              _tipCurrencyCode(),
-            ),
-            hintText: DashboardCopy.tipAmountHint(context),
-          ),
-          onChanged: (_) => setState(() {}),
-        ),
-        const SizedBox(height: 10),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: [
-            for (final p in _tipPresetPercents)
-              ChoiceChip(
-                key: ValueKey('tool_tip_chip_${widget.tool.id}_$p'),
-                label: Text('$p%'),
-                selected: _tipPercent == p,
-                onSelected: (_) => setState(() {
-                  _tipPercent = p;
-                }),
-              ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        Row(
-          children: [
-            Text(
-              DashboardCopy.tipSplitLabel(context),
-              style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.w800,
-                color: _ToolModalThemePolicy.headingTone(context),
-              ),
-            ),
-            const Spacer(),
-            IconButton(
-              key: ValueKey('tool_tip_split_minus_${widget.tool.id}'),
-              onPressed: _tipSplitCount <= 1
-                  ? null
-                  : () => setState(() {
-                      _tipSplitCount = math.max(1, _tipSplitCount - 1);
-                    }),
-              icon: const Icon(Icons.remove_circle_outline_rounded),
-            ),
-            Text(
-              '$_tipSplitCount',
-              key: ValueKey('tool_tip_split_value_${widget.tool.id}'),
-              style: Theme.of(
-                context,
-              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
-            ),
-            IconButton(
-              key: ValueKey('tool_tip_split_plus_${widget.tool.id}'),
-              onPressed: () => setState(() {
-                _tipSplitCount = math.min(12, _tipSplitCount + 1);
-              }),
-              icon: const Icon(Icons.add_circle_outline_rounded),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children:
-              [
-                ('none', DashboardCopy.tipRoundingLabel(context, 'none')),
-                ('nearest', DashboardCopy.tipRoundingLabel(context, 'nearest')),
-                ('up', DashboardCopy.tipRoundingLabel(context, 'up')),
-                ('down', DashboardCopy.tipRoundingLabel(context, 'down')),
-              ].map((pair) {
-                return ChoiceChip(
-                  key: ValueKey('tool_tip_round_${widget.tool.id}_${pair.$1}'),
-                  label: Text(pair.$2),
-                  selected: _tipRoundingMode == pair.$1,
-                  onSelected: (_) => setState(() {
-                    _tipRoundingMode = pair.$1;
-                  }),
-                );
-              }).toList(),
-        ),
-        const SizedBox(height: 12),
-        Container(
-          key: ValueKey('tool_tip_result_${widget.tool.id}'),
-          padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
-          decoration: BoxDecoration(
-            color: panelBg,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: panelBorder),
-          ),
-          child: tip == null
-              ? Text(
-                  DashboardCopy.tipInvalidAmount(context),
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: textMuted,
-                    fontWeight: FontWeight.w700,
-                  ),
-                )
-              : Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _TerminalLine(
-                      prompt: '>',
-                      input: DashboardCopy.tipLineLabel(context, _tipPercent),
-                      output: _moneyWithCode(tip.tipAmount),
-                      emphasize: true,
-                      arrowColor: accent,
-                    ),
-                    const SizedBox(height: 6),
-                    _TerminalLine(
-                      prompt: '>',
-                      input: DashboardCopy.tipTotalLabel(context),
-                      output: _moneyWithCode(tip.totalAmount),
-                      emphasize: true,
-                      arrowColor: accent,
-                    ),
-                    const SizedBox(height: 6),
-                    _TerminalLine(
-                      prompt: '>',
-                      input: DashboardCopy.tipPerPersonLabel(
-                        context,
-                        _tipSplitCount,
-                      ),
-                      output: _moneyWithCode(tip.perPersonAmount),
-                      emphasize: false,
-                      arrowColor: accent,
-                    ),
-                    if (tip.roundDelta.abs() >= 0.005) ...[
-                      const SizedBox(height: 8),
-                      Text(
-                        DashboardCopy.tipRoundingAdjustment(
-                          context,
-                          sign: tip.roundDelta > 0 ? '+' : '',
-                          deltaAmount: _moneyWithCode(tip.roundDelta)
-                              .replaceFirst(
-                                _currencySymbol(_tipCurrencyCode()),
-                                '',
-                              ),
-                        ),
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: textMuted,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-        ),
+    return ToolTipHelperSurface(
+      toolId: widget.tool.id,
+      amountController: _controller,
+      presetPercents: _tipPresetPercents,
+      selectedPercent: _tipPercent,
+      splitCount: _tipSplitCount,
+      roundingMode: _tipRoundingMode,
+      amountLabel: DashboardCopy.tipBillAmountLabel(
+        context,
+        _tipCurrencyCode(),
+      ),
+      amountHint: DashboardCopy.tipAmountHint(context),
+      splitLabel: DashboardCopy.tipSplitLabel(context),
+      roundingChoices: <(String, String)>[
+        ('none', DashboardCopy.tipRoundingLabel(context, 'none')),
+        ('nearest', DashboardCopy.tipRoundingLabel(context, 'nearest')),
+        ('up', DashboardCopy.tipRoundingLabel(context, 'up')),
+        ('down', DashboardCopy.tipRoundingLabel(context, 'down')),
       ],
+      invalidAmountText: DashboardCopy.tipInvalidAmount(context),
+      resultChild: tip == null
+          ? null
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _TerminalLine(
+                  prompt: '>',
+                  input: DashboardCopy.tipLineLabel(context, _tipPercent),
+                  output: _moneyWithCode(tip.tipAmount),
+                  emphasize: true,
+                  arrowColor: accent,
+                ),
+                const SizedBox(height: 6),
+                _TerminalLine(
+                  prompt: '>',
+                  input: DashboardCopy.tipTotalLabel(context),
+                  output: _moneyWithCode(tip.totalAmount),
+                  emphasize: true,
+                  arrowColor: accent,
+                ),
+                const SizedBox(height: 6),
+                _TerminalLine(
+                  prompt: '>',
+                  input: DashboardCopy.tipPerPersonLabel(
+                    context,
+                    _tipSplitCount,
+                  ),
+                  output: _moneyWithCode(tip.perPersonAmount),
+                  emphasize: false,
+                  arrowColor: accent,
+                ),
+                if (tip.roundDelta.abs() >= 0.005) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    DashboardCopy.tipRoundingAdjustment(
+                      context,
+                      sign: tip.roundDelta > 0 ? '+' : '',
+                      deltaAmount: _moneyWithCode(
+                        tip.roundDelta,
+                      ).replaceFirst(_currencySymbol(_tipCurrencyCode()), ''),
+                    ),
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: _ToolModalThemePolicy.textMuted(context),
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+      theme: ToolHelperSurfaceTheme(
+        accent: accent,
+        panelBg: _ToolModalThemePolicy.panelBg(context),
+        panelBgSoft: _ToolModalThemePolicy.panelBgSoft(context),
+        panelBorder: _ToolModalThemePolicy.panelBorder(context),
+        textMuted: _ToolModalThemePolicy.textMuted(context),
+        headingTone: _ToolModalThemePolicy.headingTone(context),
+      ),
+      onAmountChanged: (_) => setState(() {}),
+      onSelectPercent: (percent) => setState(() {
+        _tipPercent = percent;
+      }),
+      onDecreaseSplit: _tipSplitCount <= 1
+          ? null
+          : () => setState(() {
+              _tipSplitCount = math.max(1, _tipSplitCount - 1);
+            }),
+      onIncreaseSplit: () => setState(() {
+        _tipSplitCount = math.min(12, _tipSplitCount + 1);
+      }),
+      onSelectRoundingMode: (mode) => setState(() {
+        _tipRoundingMode = mode;
+      }),
     );
   }
 
   Widget _buildTaxVatBody(BuildContext context, Color accent) {
-    final panelBg = _ToolModalThemePolicy.panelBg(context);
-    final panelBorder = _ToolModalThemePolicy.panelBorder(context);
-    final textMuted = _ToolModalThemePolicy.textMuted(context);
     final isAddOn = _taxMode == 'add_on';
+    final currencyCode = _tipCurrencyCode();
+    final pricingContextLabel = _activePricingContextLabel();
+    final taxPercent = _parseTaxRatePercent();
     final breakdown = computeTaxBreakdown(
       amount: _parseTaxVatAmount(),
-      taxPercent: _taxPercent,
+      taxPercent: taxPercent ?? -1,
       isAddOn: isAddOn,
     );
 
-    return ListView(
-      key: ValueKey('tool_tax_scroll_${widget.tool.id}'),
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-      children: [
-        TextField(
-          key: ValueKey('tool_tax_amount_${widget.tool.id}'),
-          controller: _controller,
-          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-          decoration: InputDecoration(
-            labelText: DashboardCopy.taxAmountLabel(
-              context,
-              isAddOn: isAddOn,
-              currencyCode: _tipCurrencyCode(),
-            ),
-            hintText: DashboardCopy.taxAmountHint(context),
-          ),
-          onChanged: (_) => setState(() {}),
-        ),
-        const SizedBox(height: 10),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: [
-            ChoiceChip(
-              key: ValueKey('tool_tax_mode_${widget.tool.id}_add_on'),
-              label: Text(DashboardCopy.taxModeAddOn(context)),
-              selected: isAddOn,
-              onSelected: (_) => setState(() {
-                _taxMode = 'add_on';
-              }),
-            ),
-            ChoiceChip(
-              key: ValueKey('tool_tax_mode_${widget.tool.id}_inclusive'),
-              label: Text(DashboardCopy.taxModeInclusive(context)),
-              selected: !isAddOn,
-              onSelected: (_) => setState(() {
-                _taxMode = 'inclusive';
-              }),
-            ),
-          ],
-        ),
-        const SizedBox(height: 10),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: [
-            for (final p in _taxPresetPercents)
-              ChoiceChip(
-                key: ValueKey('tool_tax_chip_${widget.tool.id}_$p'),
-                label: Text('$p%'),
-                selected: _taxPercent == p,
-                onSelected: (_) => setState(() {
-                  _taxPercent = p;
-                }),
-              ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        Container(
-          key: ValueKey('tool_tax_result_${widget.tool.id}'),
-          padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
-          decoration: BoxDecoration(
-            color: panelBg,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: panelBorder),
-          ),
-          child: breakdown == null
-              ? Text(
-                  DashboardCopy.taxInvalidAmount(context),
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: textMuted,
+    return ToolTaxVatSurface(
+      toolId: widget.tool.id,
+      amountController: _controller,
+      rateController: _taxRateController,
+      isAddOn: isAddOn,
+      amountLabel: DashboardCopy.taxAmountLabel(
+        context,
+        isAddOn: isAddOn,
+        currencyCode: currencyCode,
+      ),
+      amountHint: DashboardCopy.taxAmountHint(context),
+      rateLabel: DashboardCopy.taxRateLabel(context),
+      rateHint: DashboardCopy.taxRateHint(context),
+      presetContextText: DashboardCopy.taxPresetContext(
+        context,
+        locationLabel: pricingContextLabel,
+        currencyCode: currencyCode,
+      ),
+      addOnModeLabel: DashboardCopy.taxModeAddOn(context),
+      inclusiveModeLabel: DashboardCopy.taxModeInclusive(context),
+      invalidAmountText: DashboardCopy.taxInvalidAmount(context),
+      modeHelpText: breakdown == null
+          ? null
+          : DashboardCopy.taxModeHelp(context, isAddOn: isAddOn),
+      resultChild: breakdown == null
+          ? null
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _TerminalLine(
+                  prompt: '>',
+                  input: DashboardCopy.taxSubtotalLine(context),
+                  output: _moneyWithCode(breakdown.subtotal),
+                  emphasize: true,
+                  arrowColor: accent,
+                ),
+                const SizedBox(height: 6),
+                _TerminalLine(
+                  prompt: '>',
+                  input: DashboardCopy.taxLineLabel(context, taxPercent),
+                  output: _moneyWithCode(breakdown.taxAmount),
+                  emphasize: false,
+                  arrowColor: accent,
+                ),
+                const SizedBox(height: 6),
+                _TerminalLine(
+                  prompt: '>',
+                  input: DashboardCopy.taxTotalLine(context),
+                  output: _moneyWithCode(breakdown.totalAmount),
+                  emphasize: true,
+                  arrowColor: accent,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  DashboardCopy.taxModeHelp(context, isAddOn: isAddOn),
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: _ToolModalThemePolicy.textMuted(context),
                     fontWeight: FontWeight.w700,
                   ),
-                )
-              : Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _TerminalLine(
-                      prompt: '>',
-                      input: DashboardCopy.taxSubtotalLine(context),
-                      output: _moneyWithCode(breakdown.subtotal),
-                      emphasize: true,
-                      arrowColor: accent,
-                    ),
-                    const SizedBox(height: 6),
-                    _TerminalLine(
-                      prompt: '>',
-                      input: DashboardCopy.taxLineLabel(context, _taxPercent),
-                      output: _moneyWithCode(breakdown.taxAmount),
-                      emphasize: false,
-                      arrowColor: accent,
-                    ),
-                    const SizedBox(height: 6),
-                    _TerminalLine(
-                      prompt: '>',
-                      input: DashboardCopy.taxTotalLine(context),
-                      output: _moneyWithCode(breakdown.totalAmount),
-                      emphasize: true,
-                      arrowColor: accent,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      DashboardCopy.taxModeHelp(context, isAddOn: isAddOn),
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: textMuted,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ],
                 ),
-        ),
-      ],
+              ],
+            ),
+      theme: ToolHelperSurfaceTheme(
+        accent: accent,
+        panelBg: _ToolModalThemePolicy.panelBg(context),
+        panelBgSoft: _ToolModalThemePolicy.panelBgSoft(context),
+        panelBorder: _ToolModalThemePolicy.panelBorder(context),
+        textMuted: _ToolModalThemePolicy.textMuted(context),
+        headingTone: _ToolModalThemePolicy.headingTone(context),
+      ),
+      onAmountChanged: (_) => setState(() {}),
+      onRateChanged: (_) => setState(() {}),
+      onSelectMode: (nextIsAddOn) => setState(() {
+        _taxMode = nextIsAddOn ? 'add_on' : 'inclusive';
+      }),
     );
   }
 
@@ -1417,148 +1278,9 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
       }
     }
 
-    Widget productCard({
-      required String title,
-      required TextEditingController priceController,
-      required TextEditingController qtyController,
-      required String selectedUnit,
-      required ValueChanged<String> onUnitSelected,
-      required String keyPrefix,
-      required bool isPrimaryCard,
-    }) {
-      return Container(
-        padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
-        decoration: BoxDecoration(
-          color: isPrimaryCard ? panelBg : panelBgSoft,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: panelBorder),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              title,
-              style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                color: _ToolModalThemePolicy.textPrimary(context),
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-            const SizedBox(height: 8),
-            TextField(
-              key: ValueKey('tool_unit_price_price_$keyPrefix'),
-              controller: priceController,
-              keyboardType: const TextInputType.numberWithOptions(
-                decimal: true,
-              ),
-              decoration: InputDecoration(
-                labelText: DashboardCopy.unitPriceLabelPrice(
-                  context,
-                  primaryCurrencyCode,
-                ),
-                hintText: DashboardCopy.unitPricePriceHint(context),
-              ),
-              onChanged: (_) => setState(() {}),
-            ),
-            const SizedBox(height: 8),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      TextField(
-                        key: ValueKey('tool_unit_price_qty_$keyPrefix'),
-                        controller: qtyController,
-                        keyboardType: const TextInputType.numberWithOptions(
-                          decimal: true,
-                        ),
-                        decoration: InputDecoration(
-                          labelText: DashboardCopy.unitPriceLabelQuantity(
-                            context,
-                          ),
-                          hintText: DashboardCopy.unitPriceQuantityHint(
-                            context,
-                          ),
-                        ),
-                        onChanged: (_) => setState(() {}),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        'Enter unit amount (g, oz, mL, L).',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: textMuted,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Padding(
-                  padding: const EdgeInsets.only(top: 2),
-                  child: SizedBox(
-                    height: 56,
-                    child: OutlinedButton(
-                      key: ValueKey('tool_unit_price_unit_$keyPrefix'),
-                      onPressed: () async {
-                        final picked = await showModalBottomSheet<String>(
-                          context: context,
-                          showDragHandle: true,
-                          builder: (context) => SafeArea(
-                            child: ListView(
-                              shrinkWrap: true,
-                              children: [
-                                for (final unit in kUnitPriceUnits)
-                                  ListTile(
-                                    title: Text(unit),
-                                    trailing: unit == selectedUnit
-                                        ? const Icon(Icons.check_rounded)
-                                        : null,
-                                    onTap: () =>
-                                        Navigator.of(context).pop(unit),
-                                  ),
-                              ],
-                            ),
-                          ),
-                        );
-                        if (picked == null) return;
-                        onUnitSelected(picked);
-                      },
-                      child: Text(selectedUnit),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      );
-    }
-
     final normalizedTarget = metricsA?.normalizedTargetLabel ?? '1 base';
     final benchmarkShort = metricsA?.benchmarkShortLabel ?? 'base unit';
     final benchmarkLong = metricsA?.benchmarkLongLabel ?? '1 base unit';
-
-    Widget quickStep(String text, IconData icon) {
-      return Padding(
-        padding: const EdgeInsets.only(right: 8, bottom: 2),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 14, color: accent.withAlpha(210)),
-            const SizedBox(width: 6),
-            Text(
-              text,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: _ToolModalThemePolicy.textPrimary(context),
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ],
-        ),
-      );
-    }
 
     Widget productResultBlock({
       required String title,
@@ -1615,189 +1337,149 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
       );
     }
 
-    return ListView(
-      key: ValueKey('tool_unit_price_scroll_${widget.tool.id}'),
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-      children: [
-        Container(
-          padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
-          decoration: BoxDecoration(
-            color: panelBg,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: panelBorder),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                DashboardCopy.unitPriceCoach(
-                  context,
-                  primaryCurrency: primaryCurrencyCode,
-                  secondaryCurrency: secondaryCurrencyCode,
-                ),
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: _ToolModalThemePolicy.textPrimary(context),
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  quickStep('1 Price', Icons.local_offer_rounded),
-                  quickStep('2 Units', Icons.straighten_rounded),
-                  quickStep('3 Compare', Icons.compare_arrows_rounded),
-                ],
-              ),
-            ],
-          ),
-        ),
-        if (secondaryCurrencyCode != null) ...[
-          const SizedBox(height: 8),
-          Container(
-            padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
-            decoration: BoxDecoration(
-              color: panelBgSoft,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: panelBorder),
+    return ToolUnitPriceSurface(
+      toolId: widget.tool.id,
+      coachText: DashboardCopy.unitPriceCoach(
+        context,
+        primaryCurrency: primaryCurrencyCode,
+        secondaryCurrency: secondaryCurrencyCode,
+      ),
+      currencyContextText: secondaryCurrencyCode == null
+          ? null
+          : '$activePlaceName ($primaryCurrencyCode) • $oppositePlaceName ($secondaryCurrencyCode)',
+      quickSteps: const <(String, IconData)>[
+        ('1 Price', Icons.local_offer_rounded),
+        ('2 Units', Icons.straighten_rounded),
+        ('3 Compare', Icons.compare_arrows_rounded),
+      ],
+      productA: ToolUnitPriceProductConfig(
+        title: DashboardCopy.unitPriceProductTitle(context, isA: true),
+        priceController: _unitPriceAController,
+        qtyController: _unitQtyAController,
+        selectedUnit: _unitPriceUnitA,
+        keyPrefix: '${widget.tool.id}_a',
+        isPrimaryCard: true,
+      ),
+      productB: !_unitPriceCompareEnabled
+          ? null
+          : ToolUnitPriceProductConfig(
+              title: DashboardCopy.unitPriceProductTitle(context, isA: false),
+              priceController: _unitPriceBController,
+              qtyController: _unitQtyBController,
+              selectedUnit: _unitPriceUnitB,
+              keyPrefix: '${widget.tool.id}_b',
+              isPrimaryCard: false,
             ),
-            child: Text(
-              '$activePlaceName ($primaryCurrencyCode) • $oppositePlaceName ($secondaryCurrencyCode)',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+      compareEnabled: _unitPriceCompareEnabled,
+      compareToggleLabel: DashboardCopy.unitPriceCompareToggle(context),
+      swapLabel: DashboardCopy.swapCta(context),
+      invalidProductText: DashboardCopy.unitPriceInvalidProductA(context),
+      resultChild: perBaseA == null
+          ? Text(
+              DashboardCopy.unitPriceInvalidProductA(context),
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                 color: textMuted,
                 fontWeight: FontWeight.w700,
               ),
-            ),
-          ),
-        ],
-        const SizedBox(height: 8),
-        productCard(
-          title: DashboardCopy.unitPriceProductTitle(context, isA: true),
-          priceController: _unitPriceAController,
-          qtyController: _unitQtyAController,
-          selectedUnit: _unitPriceUnitA,
-          onUnitSelected: (unit) =>
-              _handleUnitPriceUnitSelected(forProductA: true, unit: unit),
-          keyPrefix: '${widget.tool.id}_a',
-          isPrimaryCard: true,
-        ),
-        const SizedBox(height: 8),
-        SwitchListTile.adaptive(
-          key: ValueKey('tool_unit_price_compare_${widget.tool.id}'),
-          value: _unitPriceCompareEnabled,
-          contentPadding: EdgeInsets.zero,
-          title: Text(
-            DashboardCopy.unitPriceCompareToggle(context),
-            style: Theme.of(
-              context,
-            ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w700),
-          ),
-          onChanged: (v) {
-            setState(() {
-              _unitPriceCompareEnabled = v;
-              if (_unitPriceCompareEnabled &&
-                  !unitPriceSameFamily(_unitPriceUnitA, _unitPriceUnitB)) {
-                _unitPriceUnitB = unitPriceDefaultFamilyUnitFor(
-                  _unitPriceUnitA,
-                );
-              }
-            });
-          },
-        ),
-        if (_unitPriceCompareEnabled) ...[
-          Align(
-            alignment: Alignment.centerRight,
-            child: OutlinedButton.icon(
-              key: ValueKey('tool_unit_price_swap_${widget.tool.id}'),
-              onPressed: _swapUnitPriceProducts,
-              icon: const Icon(Icons.swap_vert_rounded),
-              label: Text(DashboardCopy.swapCta(context)),
-            ),
-          ),
-          const SizedBox(height: 8),
-          productCard(
-            title: DashboardCopy.unitPriceProductTitle(context, isA: false),
-            priceController: _unitPriceBController,
-            qtyController: _unitQtyBController,
-            selectedUnit: _unitPriceUnitB,
-            onUnitSelected: (unit) =>
-                _handleUnitPriceUnitSelected(forProductA: false, unit: unit),
-            keyPrefix: '${widget.tool.id}_b',
-            isPrimaryCard: false,
-          ),
-          const SizedBox(height: 8),
-        ],
-        Container(
-          key: ValueKey('tool_unit_price_result_${widget.tool.id}'),
-          padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
-          decoration: BoxDecoration(
-            color: panelBg,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: panelBorder),
-          ),
-          child: perBaseA == null
-              ? Text(
-                  DashboardCopy.unitPriceInvalidProductA(context),
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: textMuted,
-                    fontWeight: FontWeight.w700,
+            )
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                productResultBlock(
+                  title: DashboardCopy.unitPriceProductTitle(
+                    context,
+                    isA: true,
                   ),
-                )
-              : Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    productResultBlock(
-                      title: DashboardCopy.unitPriceProductTitle(
-                        context,
-                        isA: true,
-                      ),
-                      per100Primary: per100A,
-                      per1kPrimary: per1kA,
-                      per100Secondary: per100ASecondary,
-                      per1kSecondary: per1kASecondary,
-                    ),
-                    const SizedBox(height: 6),
-                    if (_unitPriceCompareEnabled)
-                      productResultBlock(
-                        title: DashboardCopy.unitPriceProductTitle(
-                          context,
-                          isA: false,
-                        ),
-                        per100Primary: per100B,
-                        per1kPrimary: per1kB,
-                        per100Secondary: per100BSecondary,
-                        per1kSecondary: per1kBSecondary,
-                      ),
-                    if (_unitPriceCompareEnabled && compareText != null) ...[
-                      const SizedBox(height: 8),
-                      Text(
-                        compareText,
-                        key: ValueKey(
-                          'tool_unit_price_compare_result_${widget.tool.id}',
-                        ),
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: textMuted,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ],
-                    if (comparable) ...[
-                      const SizedBox(height: 6),
-                      Text(
-                        'Cost for $normalizedTarget: '
-                        '${_moneyWithCurrency(per1kA!, primaryCurrencyCode)} vs '
-                        '${_moneyWithCurrency(per1kB!, primaryCurrencyCode)}',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: textMuted,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ],
-                  ],
+                  per100Primary: per100A,
+                  per1kPrimary: per1kA,
+                  per100Secondary: per100ASecondary,
+                  per1kSecondary: per1kASecondary,
                 ),
-        ),
-      ],
+                const SizedBox(height: 6),
+                if (_unitPriceCompareEnabled)
+                  productResultBlock(
+                    title: DashboardCopy.unitPriceProductTitle(
+                      context,
+                      isA: false,
+                    ),
+                    per100Primary: per100B,
+                    per1kPrimary: per1kB,
+                    per100Secondary: per100BSecondary,
+                    per1kSecondary: per1kBSecondary,
+                  ),
+                if (_unitPriceCompareEnabled && compareText != null) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    compareText,
+                    key: ValueKey(
+                      'tool_unit_price_compare_result_${widget.tool.id}',
+                    ),
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: textMuted,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+                if (comparable) ...[
+                  const SizedBox(height: 6),
+                  Text(
+                    'Cost for $normalizedTarget: '
+                    '${_moneyWithCurrency(per1kA!, primaryCurrencyCode)} vs '
+                    '${_moneyWithCurrency(per1kB!, primaryCurrencyCode)}',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: textMuted,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+      theme: ToolHelperSurfaceTheme(
+        accent: accent,
+        panelBg: panelBg,
+        panelBgSoft: panelBgSoft,
+        panelBorder: panelBorder,
+        textMuted: textMuted,
+        headingTone: _ToolModalThemePolicy.headingTone(context),
+      ),
+      onPriceChanged: (_) => setState(() {}),
+      onQtyChanged: (_) => setState(() {}),
+      onPickUnit: (keyPrefix, selectedUnit) async {
+        final picked = await showModalBottomSheet<String>(
+          context: context,
+          showDragHandle: true,
+          builder: (context) => SafeArea(
+            child: ListView(
+              shrinkWrap: true,
+              children: [
+                for (final unit in kUnitPriceUnits)
+                  ListTile(
+                    title: Text(unit),
+                    trailing: unit == selectedUnit
+                        ? const Icon(Icons.check_rounded)
+                        : null,
+                    onTap: () => Navigator.of(context).pop(unit),
+                  ),
+              ],
+            ),
+          ),
+        );
+        if (picked == null) return;
+        _handleUnitPriceUnitSelected(
+          forProductA: keyPrefix.endsWith('_a'),
+          unit: picked,
+        );
+      },
+      onCompareEnabledChanged: (value) {
+        setState(() {
+          _unitPriceCompareEnabled = value;
+          if (_unitPriceCompareEnabled &&
+              !unitPriceSameFamily(_unitPriceUnitA, _unitPriceUnitB)) {
+            _unitPriceUnitB = unitPriceDefaultFamilyUnitFor(_unitPriceUnitA);
+          }
+        });
+      },
+      onSwapProducts: _swapUnitPriceProducts,
     );
   }
 
@@ -1903,6 +1585,16 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
     if (selected == null || !mounted) return;
     setState(() {
       _lookupEntryKey = selected;
+      final row = _lookupEntriesForTool().cast<ToolLookupEntry?>().firstWhere(
+        (entry) => entry?.keyId == selected,
+        orElse: () => null,
+      );
+      if (row != null) {
+        _lookupGroupKey = toolLookupGroupKeyForRow(
+          canonicalToolId: widget.tool.canonicalToolId,
+          row: row,
+        );
+      }
     });
   }
 
@@ -1964,12 +1656,27 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
   }
 
   Future<void> _pickUnit({required bool isFrom}) async {
-    final choices = _isCurrencyTool ? _currencyChoices : _multiUnitChoices;
+    if (_isCurrencyTool) {
+      final selected = await _pickCurrencyUnit(isFrom: isFrom);
+      if (selected == null || !mounted) return;
+
+      setState(() {
+        final oldFrom = _fromCurrencyCode;
+        final oldTo = _toCurrencyCode;
+        final nextFrom = isFrom ? selected : oldFrom;
+        final nextTo = isFrom ? oldTo : selected;
+        _currencyFromOverride = nextFrom;
+        _currencyToOverride = nextTo;
+        _forward = true;
+        _seedCurrencySuggestedInput(force: true);
+      });
+      return;
+    }
+
+    final choices = _multiUnitChoices;
     if (choices.isEmpty) return;
 
-    final current = _isCurrencyTool
-        ? (isFrom ? _fromCurrencyCode : _toCurrencyCode)
-        : (isFrom ? _fromUnitOverride : _toUnitOverride);
+    final current = isFrom ? _fromUnitOverride : _toUnitOverride;
 
     final selected = await showModalBottomSheet<String>(
       context: context,
@@ -2032,27 +1739,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
                                 fontWeight: FontWeight.w700,
                               ),
                         ),
-                        subtitle: _isCurrencyTool
-                            ? Builder(
-                                builder: (_) {
-                                  final symbol = _currencySymbolOrNull(u);
-                                  if (symbol == null) {
-                                    return const SizedBox.shrink();
-                                  }
-                                  return Text(
-                                    symbol,
-                                    style: Theme.of(context).textTheme.bodySmall
-                                        ?.copyWith(
-                                          color:
-                                              _ToolModalThemePolicy.textMuted(
-                                                context,
-                                              ),
-                                          fontWeight: FontWeight.w700,
-                                        ),
-                                  );
-                                },
-                              )
-                            : null,
+                        subtitle: null,
                         trailing: (u == current)
                             ? Icon(
                                 Icons.check_rounded,
@@ -2075,21 +1762,84 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
     if (selected == null || !mounted) return;
 
     setState(() {
-      if (_isCurrencyTool) {
-        final oldFrom = _fromCurrencyCode;
-        final oldTo = _toCurrencyCode;
-        final nextFrom = isFrom ? selected : oldFrom;
-        final nextTo = isFrom ? oldTo : selected;
-        _currencyFromOverride = nextFrom;
-        _currencyToOverride = nextTo;
-        _forward = true;
-        _seedCurrencySuggestedInput(force: true);
-      } else if (isFrom) {
+      if (isFrom) {
         _fromUnitOverride = selected;
       } else {
         _toUnitOverride = selected;
       }
     });
+  }
+
+  List<String> _currencySuggestedValues({required bool isFrom}) {
+    final current = isFrom ? _fromCurrencyCode : _toCurrencyCode;
+    final other = isFrom ? _toCurrencyCode : _fromCurrencyCode;
+    final ordered = <String>[
+      other,
+      _homeCurrencyCode,
+      _destinationCurrencyCode,
+      'USD',
+      'EUR',
+      'GBP',
+      'JPY',
+      'CAD',
+      'AUD',
+    ];
+    final seen = <String>{current};
+    final out = <String>[];
+    for (final code in ordered) {
+      final normalized = code.trim().toUpperCase();
+      if (normalized.isEmpty || seen.contains(normalized)) continue;
+      seen.add(normalized);
+      out.add(normalized);
+    }
+    return out;
+  }
+
+  Future<String?> _pickCurrencyUnit({required bool isFrom}) async {
+    final current = isFrom ? _fromCurrencyCode : _toCurrencyCode;
+    final side = isFrom ? 'from' : 'to';
+    final options = _currencyChoices
+        .map(
+          (code) => SearchableOptionPickerEntry<String>(
+            value: code,
+            title: code,
+            subtitle: _currencySymbolOrNull(code),
+            searchTokens: <String>[code, _currencySymbolOrNull(code) ?? ''],
+            key: ValueKey('tool_unit_item_${widget.tool.id}_${side}_$code'),
+          ),
+        )
+        .toList(growable: false);
+
+    return showModalBottomSheet<String>(
+      context: context,
+      showDragHandle: true,
+      builder: (context) => SearchableOptionPickerSheet<String>(
+        title: DashboardCopy.unitPickerTitle(
+          context,
+          isCurrencyTool: true,
+          isFrom: isFrom,
+        ),
+        closeTooltip: DashboardCopy.unitPickerCloseTooltip(context),
+        searchHint: DashboardCopy.unitPickerSearchHint(
+          context,
+          isCurrencyTool: true,
+        ),
+        noMatchesText: DashboardCopy.unitPickerNoMatchesHint(context),
+        selectedHeader: DashboardCopy.unitPickerSelectedHeader(context),
+        suggestedHeader: DashboardCopy.unitPickerSuggestedHeader(context),
+        allHeader: DashboardCopy.unitPickerAllHeader(
+          context,
+          isCurrencyTool: true,
+        ),
+        selectedValue: current,
+        suggestedValues: _currencySuggestedValues(isFrom: isFrom),
+        options: options,
+        listKey: ValueKey('tool_unit_picker_currency_convert_$side'),
+        searchFieldKey: ValueKey(
+          'tool_unit_picker_search_currency_convert_$side',
+        ),
+      ),
+    );
   }
 
   void _showNotice(String text, UnitanaNoticeKind kind) {
@@ -2565,389 +2315,100 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
       ),
     );
 
-    return Container(
-      key: const ValueKey('tool_pace_insights_card'),
-      padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
-      decoration: BoxDecoration(
-        color: panelBg,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: panelBorder),
+    return ToolPaceInsightsSurface(
+      paceMode: _paceMode,
+      builderDistanceUnit: _paceBuilderDistanceUnit,
+      builderDistanceController: _paceBuilderDistanceController,
+      builderTimeController: _paceBuilderTimeController,
+      goalTimeController: _paceGoalTimeController,
+      currentPerKm: perKm,
+      currentPerMi: perMi,
+      currentKmh: kmh,
+      currentMph: mph,
+      raceTargets: raceTargets,
+      builderResult: builderResult,
+      goalTargets: paceGoalTargetsForMode(_paceMode),
+      selectedGoalDistanceKm: _paceGoalDistanceKm,
+      goalResult: goalResult,
+      theme: ToolHelperSurfaceTheme(
+        accent: accent,
+        panelBg: panelBg,
+        panelBgSoft: _ToolModalThemePolicy.panelBgSoft(context),
+        panelBorder: panelBorder,
+        textMuted: textMuted,
+        headingTone: headingTone,
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Pace Insights',
-            style: Theme.of(context).textTheme.titleSmall?.copyWith(
-              color: headingTone,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            '${formatPace(perKm)} min/km • ${formatPace(perMi)} min/mi',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: accent,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            '${kmh.toStringAsFixed(1)} km/h • ${mph.toStringAsFixed(1)} mph',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: textMuted.withAlpha(236),
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 8),
-          SegmentedButton<PaceActivityMode>(
-            key: const ValueKey('tool_pace_mode'),
-            segments: const [
-              ButtonSegment(
-                value: PaceActivityMode.running,
-                label: Text('Run'),
-              ),
-              ButtonSegment(value: PaceActivityMode.rowing, label: Text('Row')),
-            ],
-            selected: {_paceMode},
-            onSelectionChanged: (selection) {
-              final next = selection.isEmpty
-                  ? PaceActivityMode.running
-                  : selection.first;
-              setState(() {
-                _paceMode = next;
-                if (_paceMode == PaceActivityMode.rowing &&
-                    _paceGoalDistanceKm > 10) {
-                  _paceGoalDistanceKm = defaultPaceGoalDistanceKmForMode(
-                    _paceMode,
-                  );
-                }
-              });
-            },
-          ),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 6,
-            children: [
-              for (final target in raceTargets)
-                DecoratedBox(
-                  decoration: BoxDecoration(
-                    color: panelBg.withAlpha(216),
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: panelBorder.withAlpha(170)),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(8, 6, 8, 6),
-                    child: Text(
-                      '${target.label} ${formatDurationMinutes(perKm * target.km)}',
-                      style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                        color: _ToolModalThemePolicy.textPrimary(context),
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                  ),
-                ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          Divider(height: 1, color: panelBorder.withAlpha(150)),
-          const SizedBox(height: 10),
-          Text(
-            'Distance + Time → Pace',
-            style: Theme.of(context).textTheme.titleSmall?.copyWith(
-              color: headingTone,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  key: const ValueKey('tool_pace_builder_distance'),
-                  controller: _paceBuilderDistanceController,
-                  keyboardType: const TextInputType.numberWithOptions(
-                    decimal: true,
-                  ),
-                  decoration: InputDecoration(
-                    hintText: paceBuilderDistanceHint(_paceMode),
-                    labelText: 'Distance',
-                  ),
-                  onChanged: (_) => setState(() {}),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Wrap(
-                spacing: 6,
-                children: [
-                  for (final unit in paceBuilderDistanceUnits(_paceMode))
-                    ChoiceChip(
-                      key: ValueKey('tool_pace_builder_unit_$unit'),
-                      label: Text(unit),
-                      selected: _paceBuilderDistanceUnit == unit,
-                      onSelected: (_) {
-                        setState(() {
-                          _paceBuilderDistanceUnit = unit;
-                        });
-                      },
-                    ),
-                ],
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          TextField(
-            key: const ValueKey('tool_pace_builder_time'),
-            controller: _paceBuilderTimeController,
-            keyboardType: TextInputType.datetime,
-            decoration: const InputDecoration(
-              hintText: 'Duration (mm:ss or h:mm:ss)',
-            ),
-            onChanged: (_) => setState(() {}),
-          ),
-          if (builderResult != null) ...[
-            const SizedBox(height: 8),
-            Text(
-              'Derived pace: ${formatPace(builderResult.perKmMinutes)} min/km • ${formatPace(builderResult.perMiMinutes)} min/mi'
-              ' • ${formatPace(builderResult.split500Minutes)} /500m',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: accent,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: TextButton.icon(
-                key: const ValueKey('tool_pace_builder_apply'),
-                onPressed: () {
-                  setState(() {
-                    _controller.text = formatPace(
-                      builderResult.minutesForInputUnit(_fromUnit),
-                    );
-                  });
-                },
-                icon: const Icon(Icons.input_rounded, size: 16),
-                label: const Text('Use as input pace'),
-              ),
-            ),
-          ],
-          const SizedBox(height: 10),
-          Divider(height: 1, color: panelBorder.withAlpha(150)),
-          const SizedBox(height: 10),
-          Text(
-            'Goal Planner',
-            style: Theme.of(context).textTheme.titleSmall?.copyWith(
-              color: headingTone,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Wrap(
-            spacing: 8,
-            runSpacing: 6,
-            children: [
-              for (final item in paceGoalTargetsForMode(_paceMode))
-                ChoiceChip(
-                  key: ValueKey('tool_pace_goal_dist_${item.label}'),
-                  label: Text(item.label),
-                  selected: _paceGoalDistanceKm == item.km,
-                  onSelected: (_) {
-                    setState(() {
-                      _paceGoalDistanceKm = item.km;
-                    });
-                  },
-                ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          TextField(
-            key: const ValueKey('tool_pace_goal_input'),
-            controller: _paceGoalTimeController,
-            keyboardType: TextInputType.datetime,
-            decoration: const InputDecoration(
-              hintText: 'Goal time (mm:ss or h:mm:ss)',
-            ),
-            onChanged: (_) => setState(() {}),
-          ),
-          if (goalResult != null) ...[
-            const SizedBox(height: 8),
-            Text(
-              _paceMode == PaceActivityMode.rowing
-                  ? 'Required split: ${formatPace(goalResult.split500Minutes)} /500m • ${formatPace(goalResult.perKmMinutes)} min/km'
-                  : 'Required pace: ${formatPace(goalResult.perKmMinutes)} min/km • ${formatPace(goalResult.perMiMinutes)} min/mi',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: accent,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-            const SizedBox(height: 6),
-            SizedBox(
-              height: 90,
-              child: _PaceCheckpointBarChart(
-                checkpoints: goalResult.checkpoints,
-                accent: accent,
-                textColor: _ToolModalThemePolicy.textPrimary(context),
-              ),
-            ),
-            const SizedBox(height: 6),
-            Wrap(
-              spacing: 8,
-              runSpacing: 6,
-              children: [
-                for (final cp in goalResult.checkpoints)
-                  DecoratedBox(
-                    decoration: BoxDecoration(
-                      color: panelBg.withAlpha(216),
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: panelBorder.withAlpha(160)),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(8, 6, 8, 6),
-                      child: Text(
-                        '${cp.label} ${formatDurationMinutes(cp.minutes)}',
-                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                          color: _ToolModalThemePolicy.textPrimary(context),
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-          ] else ...[
-            const SizedBox(height: 6),
-            Text(
-              'Enter a goal time to see required pace and split checkpoints.',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: textMuted,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ],
-        ],
-      ),
+      emptyGoalText:
+          'Enter a goal time to see required pace and split checkpoints.',
+      onModeChanged: (next) {
+        setState(() {
+          _paceMode = next;
+          if (_paceMode == PaceActivityMode.rowing &&
+              _paceGoalDistanceKm > 10) {
+            _paceGoalDistanceKm = defaultPaceGoalDistanceKmForMode(_paceMode);
+          }
+        });
+      },
+      onBuilderDistanceChanged: (_) => setState(() {}),
+      onBuilderUnitChanged: (unit) => setState(() {
+        _paceBuilderDistanceUnit = unit;
+      }),
+      onBuilderTimeChanged: (_) => setState(() {}),
+      onApplyBuilderResult: () {
+        if (builderResult == null) return;
+        setState(() {
+          _controller.text = formatPace(
+            builderResult.minutesForInputUnit(_fromUnit),
+          );
+        });
+      },
+      onGoalDistanceChanged: (km) => setState(() {
+        _paceGoalDistanceKm = km;
+      }),
+      onGoalTimeChanged: (_) => setState(() {}),
     );
   }
 
   Widget _buildEnergyPlannerCard(BuildContext context, Color accent) {
-    final panelBg = _ToolModalThemePolicy.panelBg(context);
-    final panelBorder = _ToolModalThemePolicy.panelBorder(context);
-    final textMuted = _ToolModalThemePolicy.textMuted(context);
-    final headingTone = _ToolModalThemePolicy.headingTone(context);
     final energySnapshot = computeEnergySnapshot(
       weightRaw: parsePositiveDouble(_energyWeightController.text),
       weightUnit: _energyWeightUnit,
       activityLevel: _energyActivity,
     );
 
-    return Container(
-      key: const ValueKey('tool_energy_planner_card'),
-      padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
-      decoration: BoxDecoration(
-        color: panelBg,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: panelBorder),
+    return ToolEnergyPlannerSurface(
+      weightController: _energyWeightController,
+      weightUnit: _energyWeightUnit,
+      activityLevel: _energyActivity,
+      activityHelpText: DashboardCopy.energyActivityHelp(
+        context,
+        activityLevel: _energyActivity,
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Daily Energy Snapshot',
-            style: Theme.of(context).textTheme.titleSmall?.copyWith(
-              color: headingTone,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  key: const ValueKey('tool_energy_weight_input'),
-                  controller: _energyWeightController,
-                  keyboardType: const TextInputType.numberWithOptions(
-                    decimal: true,
-                  ),
-                  decoration: const InputDecoration(
-                    labelText: 'Body weight',
-                    hintText: '70',
-                  ),
-                  onChanged: (_) => setState(() {}),
-                ),
-              ),
-              const SizedBox(width: 8),
-              ChoiceChip(
-                key: const ValueKey('tool_energy_weight_unit_kg'),
-                label: const Text('kg'),
-                selected: _energyWeightUnit == 'kg',
-                onSelected: (_) => setState(() {
-                  _energyWeightUnit = 'kg';
-                }),
-              ),
-              const SizedBox(width: 6),
-              ChoiceChip(
-                key: const ValueKey('tool_energy_weight_unit_lb'),
-                label: const Text('lb'),
-                selected: _energyWeightUnit == 'lb',
-                onSelected: (_) => setState(() {
-                  _energyWeightUnit = 'lb';
-                }),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 6,
-            children: [
-              ChoiceChip(
-                key: const ValueKey('tool_energy_activity_light'),
-                label: const Text('Light'),
-                selected: _energyActivity == 'light',
-                onSelected: (_) => setState(() {
-                  _energyActivity = 'light';
-                }),
-              ),
-              ChoiceChip(
-                key: const ValueKey('tool_energy_activity_moderate'),
-                label: const Text('Moderate'),
-                selected: _energyActivity == 'moderate',
-                onSelected: (_) => setState(() {
-                  _energyActivity = 'moderate';
-                }),
-              ),
-              ChoiceChip(
-                key: const ValueKey('tool_energy_activity_high'),
-                label: const Text('High'),
-                selected: _energyActivity == 'high',
-                onSelected: (_) => setState(() {
-                  _energyActivity = 'high';
-                }),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          if (energySnapshot != null)
-            Text(
-              'Maintain: ${energySnapshot.maintenanceCalories.round()} cal (${energySnapshot.maintenanceKilojoules.round()} kJ)\n'
-              'Cut: ${energySnapshot.cutCalories.round()} cal • Gain: ${energySnapshot.gainCalories.round()} cal',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: accent,
-                fontWeight: FontWeight.w800,
-              ),
-            )
-          else
-            Text(
-              'Enter body weight to estimate a rough daily calorie target.',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: textMuted,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-        ],
+      estimateSummary: energySnapshot == null
+          ? null
+          : 'Estimated maintenance: ${energySnapshot.maintenanceCalories.round()} kcal (${energySnapshot.maintenanceKilojoules.round()} kJ)\n'
+                'Cut target: ${energySnapshot.cutCalories.round()} kcal • Gain target: ${energySnapshot.gainCalories.round()} kcal',
+      emptyPrompt: 'Enter body weight to estimate rough daily energy needs.',
+      theme: ToolHelperSurfaceTheme(
+        accent: accent,
+        panelBg: _ToolModalThemePolicy.panelBg(context),
+        panelBgSoft: _ToolModalThemePolicy.panelBgSoft(context),
+        panelBorder: _ToolModalThemePolicy.panelBorder(context),
+        textMuted: _ToolModalThemePolicy.textMuted(context),
+        headingTone: _ToolModalThemePolicy.headingTone(context),
       ),
+      onWeightChanged: (_) => setState(() {}),
+      onSelectWeightUnit: (nextUnit) => setState(() {
+        _convertDisplayedWeightInput(
+          _energyWeightController,
+          fromUnit: _energyWeightUnit,
+          toUnit: nextUnit,
+        );
+        _energyWeightUnit = nextUnit;
+      }),
+      onSelectActivity: (activity) => setState(() {
+        _energyActivity = activity;
+      }),
     );
   }
 
@@ -3069,14 +2530,15 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
       _showNotice(copiedLabel, UnitanaNoticeKind.info);
     }
 
-    return ToolLookupSurface(
+    return ToolLookupWorkspace(
       toolId: widget.tool.id,
       canonicalToolId: widget.tool.canonicalToolId,
       isFullMatrix: _isFullMatrixLookupTool,
       isClothingLookupTool: _isClothingLookupTool,
       hasCustomSelection: _hasCustomLookupSelection,
       selectedRow: row,
-      rows: _lookupEntriesForTool(),
+      rows: _visibleLookupEntriesForTool(),
+      selectedClothingGroupKey: _lookupGroupKey,
       fromSystem: from,
       toSystem: to,
       matrixPageIndex: _lookupMatrixPageIndex,
@@ -3088,22 +2550,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
         textMuted: textMuted,
         headingTone: headingTone,
         selectedTone: _ToolModalThemePolicy.dangerTone(context),
-      ),
-      resultWidget: Container(
-        key: ValueKey('tool_lookup_result_${widget.tool.id}'),
-        padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
-        decoration: BoxDecoration(
-          color: panelBg,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: panelBorder),
-        ),
-        child: _TerminalLine(
-          prompt: '>',
-          input: '$from: ${_lookupValue(row: row, system: from)}',
-          output: '$to: ${_lookupValue(row: row, system: to)}',
-          emphasize: true,
-          arrowColor: accent,
-        ),
+        successTone: _ToolModalThemePolicy.successTone(context),
       ),
       onPickFromSystem: () => _pickLookupSystem(isFrom: true),
       onPickToSystem: () => _pickLookupSystem(isFrom: false),
@@ -3115,9 +2562,39 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
           _lookupMatrixPageIndex = pageIndex;
         });
       },
+      onSelectClothingGroup: (groupKey) {
+        setState(() {
+          _lookupGroupKey = groupKey;
+          final matchingRows = toolLookupEntriesForGroup(
+            canonicalToolId: widget.tool.canonicalToolId,
+            rows: _lookupEntriesForTool(),
+            groupKey: groupKey,
+          );
+          final currentEntryKey = _lookupEntryKey;
+          final stillVisible = matchingRows.any(
+            (entry) => entry.keyId == currentEntryKey,
+          );
+          if (!stillVisible && matchingRows.isNotEmpty) {
+            _lookupEntryKey = matchingRows.first.keyId;
+          }
+          _lookupMatrixPageIndex = 0;
+        });
+      },
       onSelectEntry: (entryKey) {
         setState(() {
           _lookupEntryKey = entryKey;
+          final row = _lookupEntriesForTool()
+              .cast<ToolLookupEntry?>()
+              .firstWhere(
+                (entry) => entry?.keyId == entryKey,
+                orElse: () => null,
+              );
+          if (row != null) {
+            _lookupGroupKey = toolLookupGroupKeyForRow(
+              canonicalToolId: widget.tool.canonicalToolId,
+              row: row,
+            );
+          }
         });
       },
       onCopyValue:
@@ -3779,457 +3256,48 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
           )
           .id;
     }
-
-    final fromId = _timeFromZoneId!;
-    final toId = _timeToZoneId!;
-    String labelFor(String id) => options
-        .firstWhere(
-          (o) => o.id == id,
-          orElse: () => (id: id, label: id, subtitle: null),
-        )
-        .label;
-    final fromDisplayLabel = _timeFromDisplayLabel ?? labelFor(fromId);
-    final toDisplayLabel = _timeToDisplayLabel ?? labelFor(toId);
-
-    final nowUtc = DateTime.now().toUtc();
-    final fromNow = TimezoneUtils.nowInZone(fromId, nowUtc: nowUtc);
-    final toNow = TimezoneUtils.nowInZone(toId, nowUtc: nowUtc);
-    final jetLagPlan = JetLagPlanner.planFromZoneTimes(
-      fromNow: fromNow,
-      toNow: toNow,
-    );
-
-    String clock(ZoneTime zt, {required bool use24h}) {
-      return TimezoneUtils.formatClock(zt, use24h: use24h);
-    }
-
-    String zoneMeta(ZoneTime zt) {
-      final minutes = zt.offsetMinutes;
-      final sign = minutes >= 0 ? '+' : '-';
-      final abs = minutes.abs();
-      final hh = (abs ~/ 60).toString().padLeft(2, '0');
-      final mm = (abs % 60).toString().padLeft(2, '0');
-      return 'UTC$sign$hh:$mm ${zt.abbreviation}';
-    }
-
-    final timeConverterHistory = widget.session.historyFor(widget.tool.id);
-    final deltaMetricLabel = jetLagPlan.deltaLabelForUi;
-    final homeGeo = PlaceGeoLookup.forPlace(widget.home);
-    final destinationGeo = PlaceGeoLookup.forPlace(widget.destination);
-    final flightEstimate = FlightTimeEstimator.estimate(
-      fromLat: homeGeo?.lat,
-      fromLon: homeGeo?.lon,
-      toLat: destinationGeo?.lat,
-      toLon: destinationGeo?.lon,
-    );
-    String cleanDisplayLabel(String raw, String fallback) {
-      final cleaned = raw
-          .replaceFirst(RegExp(r'^\s*(Home|Destination)\s*·\s*'), '')
-          .trim();
-      return cleaned.isEmpty ? fallback : cleaned;
-    }
-
-    String countryCodeFromLabel(String label) {
-      final parts = label.split(',');
-      if (parts.length < 2) return '';
-      final tail = parts.last.trim();
-      if (RegExp(r'^[A-Za-z]{2}$').hasMatch(tail)) return tail.toUpperCase();
-      return '';
-    }
-
-    String cityNameFromLabel(String label, String fallback) {
-      final pieces = label.split(',');
-      final city = pieces.first.trim();
-      return city.isEmpty ? fallback : city;
-    }
-
-    String cityFromLabel(String raw, String fallback) {
-      final cleaned = raw
-          .replaceFirst(RegExp(r'^\s*(Home|Destination)\s*·\s*'), '')
-          .trim();
-      final comma = cleaned.indexOf(',');
-      if (comma <= 0) return cleaned.isEmpty ? fallback : cleaned;
-      final city = cleaned.substring(0, comma).trim();
-      return city.isEmpty ? fallback : city;
-    }
-
-    final fromLabelRaw = cleanDisplayLabel(
-      _timeFromDisplayLabel ?? '',
-      labelFor(fromId),
-    );
-    final toLabelRaw = cleanDisplayLabel(
-      _timeToDisplayLabel ?? '',
-      labelFor(toId),
-    );
-    final fromCity = cityNameFromLabel(fromLabelRaw, labelFor(fromId));
-    final toCity = cityNameFromLabel(toLabelRaw, labelFor(toId));
-    final fromCountryCode = countryCodeFromLabel(fromLabelRaw);
-    final toCountryCode = countryCodeFromLabel(toLabelRaw);
-    final fromFlag = _countryFlag(fromCountryCode);
-    final toFlag = _countryFlag(toCountryCode);
-    final fromPrefix = fromFlag.isEmpty ? '' : '$fromFlag ';
-    final toPrefix = toFlag.isEmpty ? '' : '$toFlag ';
-
-    final sections = <Widget>[];
-
-    if (_isJetLagDeltaTool ||
-        (!_isWorldClockMapTool && !_isTimeZoneConverterTool)) {
-      final dateImpact = JetLagPlanner.dateImpactLabel(
-        fromLocal: fromNow.local,
-        toLocal: toNow.local,
-      );
-      final directionCompact = DashboardCopy.timeDirection(
-        context: context,
-        direction: jetLagPlan.direction,
-      );
-      final dateImpactCompactRaw = dateImpact
-          .replaceFirst('Destination is ', '')
-          .replaceFirst('calendar ', '');
-      final dateImpactCompact = DashboardCopy.dateImpactTitleCase(
-        dateImpactCompactRaw,
-      );
-      sections.add(
-        ToolTimeFactsCard(
-          title: DashboardCopy.factsTitle(
-            context,
-            isJetLagTool: _isJetLagDeltaTool,
-          ),
-          showDualAnalogClocks:
-              !_isJetLagDeltaTool && !_isTimeZoneConverterTool,
-          fromCity: fromCity,
-          toCity: toCity,
-          fromPrefix: fromPrefix,
-          toPrefix: toPrefix,
-          fromLocalTime: fromNow.local,
-          toLocalTime: toNow.local,
-          fromDigitalHud:
-              '${clock(fromNow, use24h: widget.prefer24h)} ${fromNow.abbreviation}',
-          toDigitalHud:
-              '${clock(toNow, use24h: widget.prefer24h)} ${toNow.abbreviation}',
-          fromClockLine:
-              '${clock(fromNow, use24h: widget.prefer24h)} (${zoneMeta(fromNow)})',
-          toClockLine:
-              '${clock(toNow, use24h: widget.prefer24h)} (${zoneMeta(toNow)})',
-          offsetLabel: DashboardCopy.timeFactsOffsetLabel(context),
-          offsetValue: _isJetLagDeltaTool
-              ? '$toPrefix$toCity vs $fromPrefix$fromCity: $deltaMetricLabel · $directionCompact'
-              : '$toPrefix$toCity vs $fromPrefix$fromCity: $deltaMetricLabel',
-          dateLabel: _isJetLagDeltaTool
-              ? DashboardCopy.timeFactsDateLabel(context)
-              : null,
-          dateValue: _isJetLagDeltaTool ? dateImpactCompact : null,
-          flightLabel: _isJetLagDeltaTool && flightEstimate != null
-              ? DashboardCopy.timeFactsFlightLabel(context)
-              : null,
-          flightValue: _isJetLagDeltaTool && flightEstimate != null
-              ? flightEstimate.factsLabel.replaceFirst(
-                  'Estimated flight time: ',
-                  '',
-                )
-              : null,
-          theme: theme,
-        ),
-      );
-    }
-
-    if (_isJetLagDeltaTool) {
-      final showOverlapHints = true;
-      final gateOverlap = jetLagPlan.absDeltaHours <= 3;
-      final showOverlapDetails =
-          showOverlapHints && (!gateOverlap || _jetLagOverlapExpanded);
-      final targetBedtime = _jetLagShiftedMinutes(
-        baseMinutes: _jetLagBedtimeMinutes,
-        plan: jetLagPlan,
-      );
-      final targetWake = _jetLagShiftedMinutes(
-        baseMinutes: _jetLagWakeMinutes,
-        plan: jetLagPlan,
-      );
-      final tonightSleep = jetLagPlan.isNoShift
-          ? _formatMinutesOfDay(_jetLagBedtimeMinutes, use24h: widget.prefer24h)
-          : _formatMinutesOfDay(targetBedtime, use24h: widget.prefer24h);
-      final tonightWake = jetLagPlan.isNoShift
-          ? _formatMinutesOfDay(_jetLagWakeMinutes, use24h: widget.prefer24h)
-          : _formatMinutesOfDay(targetWake, use24h: widget.prefer24h);
-      final baselineSleep = _formatMinutesOfDay(
-        _jetLagBedtimeMinutes,
-        use24h: widget.prefer24h,
-      );
-      final baselineWake = _formatMinutesOfDay(
-        _jetLagWakeMinutes,
-        use24h: widget.prefer24h,
-      );
-      String overlapFor({required int destHour, required int destMinute}) {
-        final destLocal = DateTime(
-          toNow.local.year,
-          toNow.local.month,
-          toNow.local.day,
-          destHour,
-          destMinute,
-        );
-        final asUtc = TimezoneUtils.localToUtc(toId, destLocal);
-        final homeAtThatTime = TimezoneUtils.nowInZone(fromId, nowUtc: asUtc);
-        return TimezoneUtils.formatClock(
-          homeAtThatTime,
-          use24h: widget.prefer24h,
-        );
-      }
-
-      InlineSpan styledCallWindowLine(String line) {
-        final baseStyle = Theme.of(context).textTheme.bodySmall?.copyWith(
-          fontWeight: FontWeight.w700,
-          color: textPrimary.withAlpha(235),
-        );
-        final toCityStyle = baseStyle?.copyWith(
-          color: warningTone.withAlpha(242),
-          fontWeight: FontWeight.w800,
-        );
-        final fromCityStyle = baseStyle?.copyWith(
-          color: infoTone.withAlpha(238),
-          fontWeight: FontWeight.w800,
-        );
-        final timeStyle = baseStyle?.copyWith(
-          color: textPrimary.withAlpha(248),
-          fontWeight: FontWeight.w900,
-        );
-        final planFromCity = widget.home?.cityName ?? labelFor(fromId);
-        final planToCity = widget.destination?.cityName ?? labelFor(toId);
-        final timeMatches = RegExp(
-          r'\b\d{1,2}:\d{2}\b',
-        ).allMatches(line).toList();
-        final spans = <InlineSpan>[];
-        var cursor = 0;
-        while (cursor < line.length) {
-          final toMatchAt = planToCity.isEmpty
-              ? -1
-              : line.indexOf(planToCity, cursor);
-          final fromMatchAt = planFromCity.isEmpty
-              ? -1
-              : line.indexOf(planFromCity, cursor);
-          var timeMatchAt = -1;
-          Match? nextTimeMatch;
-          for (final match in timeMatches) {
-            if (match.start >= cursor) {
-              timeMatchAt = match.start;
-              nextTimeMatch = match;
-              break;
-            }
-          }
-          final hasToMatch = toMatchAt >= 0;
-          final hasFromMatch = fromMatchAt >= 0;
-          final hasTimeMatch = timeMatchAt >= 0 && nextTimeMatch != null;
-          if (!hasToMatch && !hasFromMatch && !hasTimeMatch) {
-            spans.add(TextSpan(text: line.substring(cursor), style: baseStyle));
-            break;
-          }
-          var matchStart = -1;
-          var matchToken = '';
-          var matchStyle = baseStyle;
-          if (hasTimeMatch &&
-              (!hasToMatch || timeMatchAt <= toMatchAt) &&
-              (!hasFromMatch || timeMatchAt <= fromMatchAt)) {
-            matchStart = timeMatchAt;
-            matchToken = nextTimeMatch.group(0) ?? '';
-            matchStyle = timeStyle;
-          } else if (hasToMatch &&
-              (!hasFromMatch || toMatchAt <= fromMatchAt)) {
-            matchStart = toMatchAt;
-            matchToken = planToCity;
-            matchStyle = toCityStyle;
-          } else if (hasFromMatch) {
-            matchStart = fromMatchAt;
-            matchToken = planFromCity;
-            matchStyle = fromCityStyle;
-          }
-          if (matchStart > cursor) {
-            spans.add(
-              TextSpan(
-                text: line.substring(cursor, matchStart),
-                style: baseStyle,
-              ),
-            );
-          }
-          spans.add(TextSpan(text: matchToken, style: matchStyle));
-          cursor = matchStart + matchToken.length;
-        }
-        return TextSpan(children: spans, style: baseStyle);
-      }
-
-      final overlapMorning = overlapFor(destHour: 9, destMinute: 0);
-      final overlapEvening = overlapFor(destHour: 20, destMinute: 0);
-      final tipPool = _jetLagTipsForPlan(jetLagPlan, labelFor(toId));
-      final tipIndex = _jetLagTipsAutoRotateEnabled
-          ? _jetLagTipIndex % tipPool.length
-          : 0;
-      final tipText = tipPool[tipIndex];
-      final fromCityPlan = widget.home?.cityName ?? labelFor(fromId);
-      final toCityPlan = widget.destination?.cityName ?? labelFor(toId);
-
-      sections.add(
-        ToolJetLagPlannerCard(
-          title: DashboardCopy.jetLagPlanTitle(context),
-          offsetLabel: DashboardCopy.timeFactsOffsetLabel(context),
-          bandLabelTitle: DashboardCopy.jetLagBandLabel(context),
-          dailyShiftLabelTitle: DashboardCopy.jetLagDailyShiftLabel(context),
-          deltaMetricLabel: deltaMetricLabel,
-          bandLabel: jetLagPlan.bandLabel,
-          adjustmentDays: jetLagPlan.adjustmentDays,
-          dailyShiftLabel: jetLagPlan.dailyShiftLabel,
-          bedtimeButtonLabel: DashboardCopy.jetLagBedtimeButton(
-            context,
-            _formatMinutesOfDay(
-              _jetLagBedtimeMinutes,
-              use24h: widget.prefer24h,
-            ),
-          ),
-          wakeButtonLabel: DashboardCopy.jetLagWakeButton(
-            context,
-            _formatMinutesOfDay(_jetLagWakeMinutes, use24h: widget.prefer24h),
-          ),
-          tonightTargetLabel: DashboardCopy.jetLagTonightTargetLabel(context),
-          tonightScheduleText:
-              '${DashboardCopy.jetLagSleepPrefix(context)}$tonightSleep${DashboardCopy.jetLagWakePrefix(context)}$tonightWake',
-          baselineLabel: !jetLagPlan.isNoShift
-              ? DashboardCopy.jetLagBaselineLabel(context)
-              : null,
-          baselineScheduleText: !jetLagPlan.isNoShift
-              ? '${DashboardCopy.jetLagSleepPrefix(context)}$baselineSleep${DashboardCopy.jetLagWakePrefix(context)}$baselineWake'
-              : null,
-          quickTipsTitle: DashboardCopy.quickTipsTitle(context),
-          tipText: tipText,
-          tipKeySuffix: tipIndex,
-          callWindowsTitle: DashboardCopy.callWindowsTitle(context),
-          showOverlapHints: showOverlapHints,
-          showOverlapDetails: showOverlapDetails,
-          showOverlapExpandCta: gateOverlap && !_jetLagOverlapExpanded,
-          showCallWindowsLabel: DashboardCopy.showCallWindowsCta(context),
-          overlapIntro: DashboardCopy.overlapIntro(context),
-          overlapMorningLine: styledCallWindowLine(
-            DashboardCopy.jetLagCallWindowMorning(
-              context,
-              toCity: toCityPlan,
-              overlapMorning: overlapMorning,
-              fromCity: fromCityPlan,
-            ),
-          ),
-          overlapEveningLine: styledCallWindowLine(
-            DashboardCopy.jetLagCallWindowEvening(
-              context,
-              toCity: toCityPlan,
-              overlapEvening: overlapEvening,
-              fromCity: fromCityPlan,
-            ),
-          ),
-          theme: theme,
-          onPickBedtime: () => _pickJetLagTime(bedtime: true),
-          onPickWakeTime: () => _pickJetLagTime(bedtime: false),
-          onExpandOverlap: gateOverlap && !_jetLagOverlapExpanded
-              ? () {
-                  setState(() {
-                    _jetLagOverlapExpanded = true;
-                  });
-                }
-              : null,
-        ),
-      );
-    }
-
-    if (_isWorldClockMapTool) {
-      final worldFromCity = cityFromLabel(fromDisplayLabel, labelFor(fromId));
-      final worldToCity = cityFromLabel(toDisplayLabel, labelFor(toId));
-      final fromOffsetHours = fromNow.offsetMinutes / 60.0;
-      final toOffsetHours = toNow.offsetMinutes / 60.0;
-      final deltaHours = ((toNow.offsetMinutes - fromNow.offsetMinutes) / 60.0)
-          .toStringAsFixed(1);
-      final sameZone = fromNow.offsetMinutes == toNow.offsetMinutes;
-      sections.add(
-        ToolWorldTimeMapCard(
-          title: DashboardCopy.worldTimeZonesTitle(context),
-          summary: sameZone
-              ? DashboardCopy.worldTimeSameZoneSummary(
-                  context,
-                  fromCity: worldFromCity,
-                  toCity: worldToCity,
-                )
-              : DashboardCopy.worldTimeOffsetSummary(
-                  context,
-                  fromCity: worldFromCity,
-                  toCity: worldToCity,
-                  deltaHours:
-                      '${deltaHours.startsWith('-') ? '' : '+'}$deltaHours',
-                ),
-          fromCity: worldFromCity,
-          toCity: worldToCity,
-          fromOffsetHours: fromOffsetHours,
-          toOffsetHours: toOffsetHours,
-          theme: theme,
-        ),
-      );
-    }
-
-    if (_isTimeZoneConverterTool) {
-      sections.add(
-        ToolTimeConverterSection(
-          toolId: widget.tool.id,
-          title: DashboardCopy.convertLocalTimeTitle(context),
-          helperText: DashboardCopy.convertLocalTimeHelper(
-            context,
-            fromDisplayLabel,
-          ),
-          inputHint: DashboardCopy.timeConverterInputHint(context),
-          convertLabel: DashboardCopy.convertTimeCta(context),
-          resultPlaceholderInput: DashboardCopy.resultPlaceholderInput(context),
-          resultPlaceholderOutput: DashboardCopy.resultPlaceholderOutput(
-            context,
-          ),
-          controller: _timeConvertController,
-          resultLine: _resultLine,
-          theme: theme,
-          onRunConversion: _runTimeZoneConversion,
-        ),
-      );
-      sections.add(
-        ToolTimeHistorySection(
-          history: timeConverterHistory,
-          historyTitle: DashboardCopy.historyTitle(context),
-          clearLabel: DashboardCopy.clearCta(context),
-          emptyHistoryLabel: DashboardCopy.historyEmptyLabel(context),
-          theme: theme,
-          onClear: timeConverterHistory.isEmpty
-              ? null
-              : () async {
-                  final historyClearedLabel =
-                      DashboardCopy.historyClearedNotice(context);
-                  final confirmed = await _confirmClearHistory(context);
-                  if (!confirmed) return;
-                  widget.session.clearHistory(widget.tool.id);
-                  _showNotice(historyClearedLabel, UnitanaNoticeKind.success);
-                },
-        ),
-      );
-    }
-
-    return ToolTimeSurface(
+    return ToolTimeWorkspace(
       toolId: widget.tool.id,
-      fromZoneTitle: DashboardCopy.timeFromZoneTitle(
-        context,
-        isJetLagTool: _isJetLagDeltaTool,
-      ),
-      fromDisplayLabel: fromDisplayLabel,
-      toZoneTitle: DashboardCopy.timeToZoneTitle(
-        context,
-        isJetLagTool: _isJetLagDeltaTool,
-      ),
-      toDisplayLabel: toDisplayLabel,
+      home: widget.home,
+      destination: widget.destination,
+      prefer24h: widget.prefer24h,
+      isJetLagDeltaTool: _isJetLagDeltaTool,
+      isWorldClockMapTool: _isWorldClockMapTool,
+      isTimeZoneConverterTool: _isTimeZoneConverterTool,
       showAddWidget: widget.canAddWidget && widget.onAddWidget != null,
-      addWidgetLabel: DashboardCopy.addWidgetCta(context),
-      swapLabel: DashboardCopy.swapCta(context),
+      fromZoneId: _timeFromZoneId!,
+      toZoneId: _timeToZoneId!,
+      fromDisplayLabelOverride: _timeFromDisplayLabel,
+      toDisplayLabelOverride: _timeToDisplayLabel,
+      options: options,
+      history: widget.session.historyFor(widget.tool.id),
+      timeConvertController: _timeConvertController,
+      resultLine: _resultLine,
+      jetLagBedtimeMinutes: _jetLagBedtimeMinutes,
+      jetLagWakeMinutes: _jetLagWakeMinutes,
+      jetLagOverlapExpanded: _jetLagOverlapExpanded,
+      jetLagTipsAutoRotateEnabled: _jetLagTipsAutoRotateEnabled,
+      jetLagTipIndex: _jetLagTipIndex,
       theme: theme,
       onPickFromZone: () => _pickTimeZone(isFrom: true),
       onPickToZone: () => _pickTimeZone(isFrom: false),
       onSwapZones: _swapTimeZones,
       onAddWidget: _handleAddWidget,
-      sections: sections,
+      onRunConversion: _runTimeZoneConversion,
+      onClearHistory: () async {
+        final historyClearedLabel = DashboardCopy.historyClearedNotice(context);
+        final confirmed = await _confirmClearHistory(context);
+        if (!confirmed) return;
+        widget.session.clearHistory(widget.tool.id);
+        _showNotice(historyClearedLabel, UnitanaNoticeKind.success);
+      },
+      onPickBedtime: () => _pickJetLagTime(bedtime: true),
+      onPickWakeTime: () => _pickJetLagTime(bedtime: false),
+      onExpandOverlap: () {
+        setState(() {
+          _jetLagOverlapExpanded = true;
+        });
+      },
     );
   }
 
@@ -4557,7 +3625,7 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
       warningTone: _ToolModalThemePolicy.warningTone(context),
       successTone: _ToolModalThemePolicy.successTone(context),
     );
-    return ToolDefaultSurface(
+    return ToolDefaultWorkspace(
       toolId: widget.tool.id,
       controller: _controller,
       requiresFreeformInput: _requiresFreeformInput,
@@ -4575,28 +3643,24 @@ class _ToolModalBottomSheetState extends State<ToolModalBottomSheet> {
       convertLabel: DashboardCopy.convertCta(context),
       addWidgetLabel: DashboardCopy.addWidgetCta(context),
       resetDefaultsLabel: DashboardCopy.lookupResetDefaults(context),
+      resultLine: _resultLine,
+      history: history,
+      historyTitle: DashboardCopy.historyTitle(context),
+      historyCopyHint: DashboardCopy.historyCopyHint(context),
+      clearHistoryLabel: DashboardCopy.clearHistoryButtonLabel(context),
+      emptyHistoryLabel: DashboardCopy.historyEmptyLabel(context),
+      resultPlaceholderInput: DashboardCopy.resultPlaceholderInput(context),
+      resultPlaceholderOutput: DashboardCopy.resultPlaceholderOutput(context),
       onRunConversion: _runConversion,
       onSwapUnits: _swapUnits,
       onPickFromUnit: () => _pickUnit(isFrom: true),
       onPickToUnit: () => _pickUnit(isFrom: false),
       onResetDefaults: _resetUnitSelectionToDefaults,
       onAddWidget: _handleAddWidget,
-      postContent: ToolResultHistorySection(
-        toolId: widget.tool.id,
-        resultLine: _resultLine,
-        history: history,
-        theme: theme,
-        historyTitle: DashboardCopy.historyTitle(context),
-        historyCopyHint: DashboardCopy.historyCopyHint(context),
-        clearHistoryLabel: DashboardCopy.clearHistoryButtonLabel(context),
-        emptyHistoryLabel: DashboardCopy.historyEmptyLabel(context),
-        resultPlaceholderInput: DashboardCopy.resultPlaceholderInput(context),
-        resultPlaceholderOutput: DashboardCopy.resultPlaceholderOutput(context),
-        onCopyResult: _copyHistoryResult,
-        onCopyInput: _copyHistoryInput,
-        onClearHistory: _clearToolHistory,
-        extraSections: _defaultPostSections(accent),
-      ),
+      onCopyResult: _copyHistoryResult,
+      onCopyInput: _copyHistoryInput,
+      onClearHistory: _clearToolHistory,
+      extraSections: _defaultPostSections(accent),
     );
   }
 
@@ -4728,76 +3792,6 @@ class _TimeZoneQuickChip extends StatelessWidget {
           fontWeight: FontWeight.w700,
         ),
       ),
-    );
-  }
-}
-
-class _PaceCheckpointBarChart extends StatelessWidget {
-  final List<PaceCheckpoint> checkpoints;
-  final Color accent;
-  final Color textColor;
-
-  const _PaceCheckpointBarChart({
-    required this.checkpoints,
-    required this.accent,
-    required this.textColor,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    if (checkpoints.isEmpty) return const SizedBox.shrink();
-    final maxMinutes = checkpoints
-        .map((cp) => cp.minutes)
-        .fold<double>(0, (a, b) => math.max(a, b));
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.end,
-      children: [
-        for (final cp in checkpoints)
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 3),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: Text(
-                      cp.label.split('•').first.trim(),
-                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: textColor.withAlpha(220),
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Expanded(
-                    child: Align(
-                      alignment: Alignment.bottomCenter,
-                      child: FractionallySizedBox(
-                        heightFactor: maxMinutes <= 0
-                            ? 0
-                            : (cp.minutes / maxMinutes),
-                        child: DecoratedBox(
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment.bottomCenter,
-                              end: Alignment.topCenter,
-                              colors: [
-                                accent.withAlpha(170),
-                                accent.withAlpha(105),
-                              ],
-                            ),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-      ],
     );
   }
 }

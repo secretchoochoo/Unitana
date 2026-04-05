@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'dashboard_test_helpers.dart';
@@ -19,32 +18,8 @@ Future<void> _searchTool(WidgetTester tester, String query) async {
 
 void main() {
   testWidgets(
-    'Clothing Sizes matrix shows disclaimer, copy, and missing mappings',
+    'Clothing Sizes matrix filters by garment group and surfaces missing mappings',
     (tester) async {
-      String lastClipboardText = '';
-      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
-        SystemChannels.platform,
-        (call) async {
-          switch (call.method) {
-            case 'Clipboard.setData':
-              final args =
-                  (call.arguments as Map?) ?? const <String, dynamic>{};
-              lastClipboardText = (args['text']?.toString() ?? '').trim();
-              return null;
-            case 'Clipboard.getData':
-              return <String, dynamic>{'text': lastClipboardText};
-            default:
-              return null;
-          }
-        },
-      );
-      addTearDown(() {
-        tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
-          SystemChannels.platform,
-          null,
-        );
-      });
-
       await pumpDashboardForTest(tester);
       await _openToolPicker(tester);
       await _searchTool(tester, 'clothing sizes');
@@ -63,19 +38,60 @@ void main() {
         findsOneWidget,
       );
       expect(find.textContaining('Approximate reference only'), findsWidgets);
+      expect(
+        find.byKey(
+          const ValueKey('tool_lookup_group_chip_clothing_sizes_women_tops'),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey('tool_lookup_group_summary_clothing_sizes')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(
+          const ValueKey(
+            'tool_lookup_matrix_cell_clothing_sizes_cloth_w_tops_xs_US',
+          ),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(
+          const ValueKey(
+            'tool_lookup_matrix_row_clothing_sizes_cloth_m_tops_m',
+          ),
+        ),
+        findsNothing,
+      );
 
       await tester.tap(
         find.byKey(
-          const ValueKey(
-            'tool_lookup_matrix_cell_clothing_sizes_cloth_w_tops_s_US',
-          ),
+          const ValueKey('tool_lookup_group_chip_clothing_sizes_men_tops'),
         ),
       );
-      await tester.pump(const Duration(milliseconds: 120));
-      expect(lastClipboardText, '4-6');
+      await tester.pumpAndSettle();
+      expect(
+        find.byKey(
+          const ValueKey(
+            'tool_lookup_matrix_cell_clothing_sizes_cloth_m_tops_m_US',
+          ),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(
+          const ValueKey(
+            'tool_lookup_matrix_row_clothing_sizes_cloth_w_tops_s',
+          ),
+        ),
+        findsNothing,
+      );
 
       await tester.tap(
-        find.byKey(const ValueKey('tool_lookup_matrix_next_clothing_sizes')),
+        find.byKey(
+          const ValueKey('tool_lookup_group_chip_clothing_sizes_outerwear'),
+        ),
       );
       await tester.pumpAndSettle();
 
@@ -88,11 +104,15 @@ void main() {
         of: find.byKey(const ValueKey('tool_lookup_matrix_clothing_sizes')),
         matching: find.byType(Scrollable),
       );
-      for (var i = 0; i < 8 && targetRow.evaluate().isEmpty; i++) {
-        await tester.drag(matrixScrollable.first, const Offset(0, -220));
+      for (var i = 0; i < 4 && targetRow.evaluate().isEmpty; i++) {
+        await tester.drag(matrixScrollable.first, const Offset(0, -180));
         await tester.pumpAndSettle(const Duration(milliseconds: 80));
       }
       expect(targetRow, findsOneWidget);
+      await tester.tap(
+        find.byKey(const ValueKey('tool_lookup_matrix_next_clothing_sizes')),
+      );
+      await tester.pumpAndSettle();
       expect(
         find.descendant(of: targetRow, matching: find.text('—')),
         findsWidgets,

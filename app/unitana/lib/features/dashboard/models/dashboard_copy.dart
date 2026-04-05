@@ -165,16 +165,18 @@ class DashboardCopy {
   }
 
   static String convertLocalTimeTitle(BuildContext context) =>
-      DashboardLocalizations.of(
-        context,
-      ).text('dashboard.time.converter.title', fallback: 'Convert Local Time');
+      DashboardLocalizations.of(context).text(
+        'dashboard.time.converter.title',
+        fallback: 'Convert a Specific Time',
+      );
   static String convertLocalTimeHelper(
     BuildContext context,
     String fromDisplayLabel,
   ) => DashboardLocalizations.of(context).text(
     'dashboard.time.converter.helper',
     params: <String, String>{'fromDisplayLabel': fromDisplayLabel},
-    fallback: 'Enter as YYYY-MM-DD HH:MM in $fromDisplayLabel',
+    fallback:
+        'Enter the local date and time in $fromDisplayLabel, then convert it into the other zone.',
   );
   static String convertTimeCta(BuildContext context) =>
       DashboardLocalizations.of(
@@ -459,6 +461,16 @@ class DashboardCopy {
       DashboardLocalizations.of(
         context,
       ).text('dashboard.dashboard.tooltip.openMenu', fallback: 'Open menu');
+  static String dashboardTileMoreActionsTooltip(BuildContext context) =>
+      DashboardLocalizations.of(context).text(
+        'dashboard.dashboard.tooltip.tileMoreActions',
+        fallback: 'More tile actions',
+      );
+  static String dashboardTileSemanticsHint(BuildContext context) =>
+      DashboardLocalizations.of(context).text(
+        'dashboard.dashboard.semantics.tileHint',
+        fallback: 'Double tap to open. More actions button available.',
+      );
   static String dashboardRefreshDataTooltip(BuildContext context) =>
       DashboardLocalizations.of(context).text(
         'dashboard.dashboard.tooltip.refreshData',
@@ -700,6 +712,32 @@ class DashboardCopy {
       DashboardLocalizations.of(
         context,
       ).text('dashboard.dashboard.edit.done', fallback: 'Done');
+  static String editDiscardTitle(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.edit.discard.title', fallback: 'Discard changes?');
+  static String dashboardEditDiscardMessage(
+    BuildContext context,
+  ) => DashboardLocalizations.of(context).text(
+    'dashboard.edit.discard.dashboardMessage',
+    fallback:
+        'You have unsaved dashboard changes. Discard them and leave edit mode?',
+  );
+  static String profilesEditDiscardMessage(
+    BuildContext context,
+  ) => DashboardLocalizations.of(context).text(
+    'dashboard.edit.discard.profilesMessage',
+    fallback:
+        'You have unsaved profile layout changes. Discard them and leave edit mode?',
+  );
+  static String editDiscardConfirm(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.edit.discard.confirm', fallback: 'Discard Changes');
+  static String editDiscardCancel(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.edit.discard.keepEditing', fallback: 'Keep Editing');
   static String dashboardResetDefaultsMessage(
     BuildContext context,
   ) => DashboardLocalizations.of(context).text(
@@ -979,11 +1017,85 @@ class DashboardCopy {
       DashboardLocalizations.of(
         context,
       ).text('dashboard.profiles.tooltip.edit', fallback: 'Edit this profile');
+  static String profilesBoardTooltipRename(BuildContext context) =>
+      DashboardLocalizations.of(context).text(
+        'dashboard.profiles.tooltip.rename',
+        fallback: 'Rename this profile',
+      );
   static String profilesBoardTooltipDelete(BuildContext context) =>
       DashboardLocalizations.of(context).text(
         'dashboard.profiles.tooltip.delete',
         fallback: 'Delete this profile',
       );
+  static String profilesBoardTooltipMoreActions(BuildContext context) =>
+      DashboardLocalizations.of(context).text(
+        'dashboard.profiles.tooltip.moreActions',
+        fallback: 'More profile actions',
+      );
+  static String profilesBoardActionReorder(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.profiles.action.reorder', fallback: 'Reorder Profiles');
+  static String profilesBoardActionRename(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.profiles.action.rename', fallback: 'Rename Profile');
+  static String profilesBoardRenameTitle(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.profiles.rename.title', fallback: 'Rename profile');
+  static String profilesBoardRenameLabel(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.profiles.rename.label', fallback: 'Profile name');
+  static String profilesBoardRenameHint(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.profiles.rename.hint', fallback: 'Weekend in Portugal');
+  static String profilesBoardRenameCancel(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.profiles.rename.cancel', fallback: 'Cancel');
+  static String profilesBoardRenameSave(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.profiles.rename.save', fallback: 'Save');
+  static String profilesBoardRenameInvalid(BuildContext context) =>
+      DashboardLocalizations.of(context).text(
+        'dashboard.profiles.rename.invalid',
+        fallback: 'Enter a profile name.',
+      );
+  static String profilesBoardRenamed(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.profiles.renamed', fallback: 'Profile renamed');
+  static String profilesBoardSemanticsLabel(
+    BuildContext context, {
+    required String profileName,
+    required String homeCity,
+    required String destinationCity,
+    required bool isActive,
+  }) => DashboardLocalizations.of(context).text(
+    'dashboard.profiles.semantics.label',
+    params: <String, String>{
+      'profileName': profileName,
+      'homeCity': homeCity,
+      'destinationCity': destinationCity,
+      'status': isActive ? profilesBoardActiveBadge(context) : '',
+    },
+    fallback: isActive
+        ? '$profileName. ${profilesBoardActiveBadge(context)}. Home $homeCity. Destination $destinationCity.'
+        : '$profileName. Home $homeCity. Destination $destinationCity.',
+  );
+  static String profilesBoardSemanticsHint(
+    BuildContext context, {
+    required bool isActive,
+  }) => DashboardLocalizations.of(context).text(
+    'dashboard.profiles.semantics.hint',
+    fallback: isActive
+        ? 'Double tap to keep this profile active. More actions button available.'
+        : 'Double tap to switch to this profile. More actions button available.',
+  );
   static String profilesBoardHomeFallback(BuildContext context) =>
       DashboardLocalizations.of(
         context,
@@ -1063,8 +1175,8 @@ class DashboardCopy {
         ? 'dashboard.tax.subtotalLabel'
         : 'dashboard.tax.totalLabel';
     final fallback = isAddOn
-        ? 'Subtotal ($currencyCode)'
-        : 'Total ($currencyCode)';
+        ? 'Price before tax ($currencyCode)'
+        : 'Total paid ($currencyCode)';
     return DashboardLocalizations.of(context).text(
       key,
       params: <String, String>{'currencyCode': currencyCode},
@@ -1074,11 +1186,11 @@ class DashboardCopy {
 
   static String taxModeAddOn(BuildContext context) => DashboardLocalizations.of(
     context,
-  ).text('dashboard.tax.mode.addOn', fallback: 'Add-on tax');
+  ).text('dashboard.tax.mode.addOn', fallback: 'Add tax to price');
   static String taxModeInclusive(BuildContext context) =>
       DashboardLocalizations.of(
         context,
-      ).text('dashboard.tax.mode.inclusive', fallback: 'VAT inclusive');
+      ).text('dashboard.tax.mode.inclusive', fallback: 'Find tax in total');
   static String taxInvalidAmount(BuildContext context) =>
       DashboardLocalizations.of(context).text(
         'dashboard.tax.invalidAmount',
@@ -1088,11 +1200,11 @@ class DashboardCopy {
       DashboardLocalizations.of(
         context,
       ).text('dashboard.tax.line.subtotal', fallback: 'Subtotal');
-  static String taxLineLabel(BuildContext context, int percent) =>
+  static String taxLineLabel(BuildContext context, num? percent) =>
       DashboardLocalizations.of(context).text(
         'dashboard.tax.line.tax',
-        params: <String, String>{'percent': '$percent'},
-        fallback: 'Tax ($percent%)',
+        params: <String, String>{'percent': _formatPercentLabel(percent)},
+        fallback: 'Tax (${_formatPercentLabel(percent)}%)',
       );
   static String taxTotalLine(BuildContext context) => DashboardLocalizations.of(
     context,
@@ -1102,8 +1214,8 @@ class DashboardCopy {
         ? 'dashboard.tax.mode.help.addOn'
         : 'dashboard.tax.mode.help.inclusive';
     final fallback = isAddOn
-        ? 'Mode: add tax on top of subtotal'
-        : 'Mode: tax already included in total';
+        ? 'Use this when the listed price does not include tax yet.'
+        : 'Use this when tax or VAT is already included in the total.';
     return DashboardLocalizations.of(context).text(key, fallback: fallback);
   }
 
@@ -1111,6 +1223,38 @@ class DashboardCopy {
       DashboardLocalizations.of(
         context,
       ).text('dashboard.tax.inputHint.amount', fallback: '100.00');
+
+  static String taxRateLabel(BuildContext context) => DashboardLocalizations.of(
+    context,
+  ).text('dashboard.tax.rateLabel', fallback: 'Rate');
+
+  static String taxRateHint(BuildContext context) => DashboardLocalizations.of(
+    context,
+  ).text('dashboard.tax.rateHint', fallback: '23');
+
+  static String taxPresetContext(
+    BuildContext context, {
+    required String locationLabel,
+    required String currencyCode,
+  }) => DashboardLocalizations.of(context).text(
+    'dashboard.tax.presetContext',
+    params: <String, String>{
+      'locationLabel': locationLabel,
+      'currencyCode': currencyCode,
+    },
+    fallback:
+        'Enter the exact local rate if you know it. Typical pricing context is based on $locationLabel ($currencyCode), but the rate stays fully manual.',
+  );
+
+  static String _formatPercentLabel(num? value) {
+    if (value == null) return '0';
+    if (value is int) return value.toString();
+    final rounded = value.roundToDouble();
+    if ((value - rounded).abs() < 0.001) {
+      return rounded.toStringAsFixed(0);
+    }
+    return value.toStringAsFixed(1);
+  }
 
   static String unitPriceCompareInvalid(BuildContext context) =>
       DashboardLocalizations.of(context).text(
@@ -1269,6 +1413,38 @@ class DashboardCopy {
     fallback:
         'Non-medical estimate for general planning only. Consult qualified professionals for health or nutrition advice.',
   );
+  static String hydrationClimateHelp(
+    BuildContext context, {
+    required String climateBand,
+  }) {
+    final key = 'dashboard.hydration.climate.help.$climateBand';
+    final fallback = switch (climateBand) {
+      'cool' => 'Cool: lower sweat loss and lighter day-to-day heat exposure.',
+      'warm' =>
+        'Warm: noticeable heat or sun exposure that usually raises fluid needs.',
+      'hot' =>
+        'Hot: sustained heat, sun, or humidity where extra hydration matters more.',
+      _ => 'Temperate: mild day-to-day conditions with no major heat stress.',
+    };
+    return DashboardLocalizations.of(context).text(key, fallback: fallback);
+  }
+
+  static String energyActivityHelp(
+    BuildContext context, {
+    required String activityLevel,
+  }) {
+    final key = 'dashboard.energy.activity.help.$activityLevel';
+    final fallback = switch (activityLevel) {
+      'light' =>
+        'Light: mostly seated or easy day-to-day activity with little structured exercise.',
+      'high' =>
+        'High: physically active days, training, or work that keeps you moving a lot.',
+      _ =>
+        'Moderate: a typical active day with regular walking or some exercise.',
+    };
+    return DashboardLocalizations.of(context).text(key, fallback: fallback);
+  }
+
   static String disclaimerWeather(
     BuildContext context,
   ) => DashboardLocalizations.of(context).text(
@@ -1299,6 +1475,37 @@ class DashboardCopy {
         'dashboard.tool.unitPicker.tooltip.close',
         fallback: 'Close picker',
       );
+  static String unitPickerSearchHint(
+    BuildContext context, {
+    required bool isCurrencyTool,
+  }) => DashboardLocalizations.of(context).text(
+    isCurrencyTool
+        ? 'dashboard.tool.unitPicker.search.currency'
+        : 'dashboard.tool.unitPicker.search.unit',
+    fallback: isCurrencyTool ? 'Search currencies' : 'Search units',
+  );
+  static String unitPickerNoMatchesHint(BuildContext context) =>
+      DashboardLocalizations.of(context).text(
+        'dashboard.tool.unitPicker.noMatches',
+        fallback: 'No matching options',
+      );
+  static String unitPickerSelectedHeader(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.tool.unitPicker.selected', fallback: 'Selected');
+  static String unitPickerSuggestedHeader(BuildContext context) =>
+      DashboardLocalizations.of(
+        context,
+      ).text('dashboard.tool.unitPicker.suggested', fallback: 'Common');
+  static String unitPickerAllHeader(
+    BuildContext context, {
+    required bool isCurrencyTool,
+  }) => DashboardLocalizations.of(context).text(
+    isCurrencyTool
+        ? 'dashboard.tool.unitPicker.allCurrencies'
+        : 'dashboard.tool.unitPicker.allUnits',
+    fallback: isCurrencyTool ? 'All currencies' : 'All units',
+  );
   static String timePickerModeCities(BuildContext context) =>
       DashboardLocalizations.of(
         context,
@@ -1428,6 +1635,30 @@ class DashboardCopy {
       WeatherEmergencySeverity.warning => 'Warning',
       WeatherEmergencySeverity.emergency => 'Emergency',
     },
+  );
+  static String weatherEmergencyTapHint(BuildContext context) =>
+      DashboardLocalizations.of(context).text(
+        'dashboard.weather.emergency.tapHint',
+        fallback: 'Tap for details',
+      );
+  static String weatherEmergencyDetailsTitle(BuildContext context) =>
+      DashboardLocalizations.of(context).text(
+        'dashboard.weather.emergency.detailsTitle',
+        fallback: 'Alert details',
+      );
+  static String weatherEmergencyDetailsGuidance(BuildContext context) =>
+      DashboardLocalizations.of(context).text(
+        'dashboard.weather.emergency.guidance',
+        fallback:
+            'Check official local weather and transport sources before travel.',
+      );
+  static String weatherPrecipChanceLabel(
+    BuildContext context, {
+    required int percent,
+  }) => DashboardLocalizations.of(context).text(
+    'dashboard.weather.precip.chance',
+    params: <String, String>{'percent': '$percent'},
+    fallback: '$percent% precip',
   );
   static String weatherForecastModeLabel(
     BuildContext context, {
@@ -1560,6 +1791,108 @@ class DashboardCopy {
       return weatherConditionByScene(context, mapped);
     }
     return raw;
+  }
+
+  static String weatherConditionLikely(
+    BuildContext context,
+    String condition,
+  ) => DashboardLocalizations.of(context).text(
+    'dashboard.weather.confidence.likely',
+    params: <String, String>{'condition': condition},
+    fallback: '$condition likely',
+  );
+
+  static String weatherLowVisibilityRisk(BuildContext context) =>
+      DashboardLocalizations.of(context).text(
+        'dashboard.weather.confidence.lowVisibilityRisk',
+        fallback: 'Low visibility risk',
+      );
+
+  static String weatherPossiblePrecipitation(BuildContext context) =>
+      DashboardLocalizations.of(context).text(
+        'dashboard.weather.confidence.possiblePrecipitation',
+        fallback: 'Possible precipitation',
+      );
+
+  static String weatherPossibleWintryMix(BuildContext context) =>
+      DashboardLocalizations.of(context).text(
+        'dashboard.weather.confidence.possibleWintry',
+        fallback: 'Possible wintry conditions',
+      );
+
+  static String weatherUnsettledConditions(BuildContext context) =>
+      DashboardLocalizations.of(context).text(
+        'dashboard.weather.confidence.unsettled',
+        fallback: 'Unsettled conditions',
+      );
+
+  static String weatherCurrentConditionsUncertain(BuildContext context) =>
+      DashboardLocalizations.of(context).text(
+        'dashboard.weather.confidence.uncertain',
+        fallback: 'Current conditions uncertain',
+      );
+
+  static String weatherPresentationLabel(
+    BuildContext context, {
+    required WeatherPresentation presentation,
+  }) {
+    final base = weatherConditionLabel(
+      context,
+      sceneKey: presentation.originalSceneKey,
+      rawText: presentation.rawConditionText,
+    );
+    switch (presentation.confidenceBand) {
+      case WeatherConfidenceBand.high:
+        return base;
+      case WeatherConfidenceBand.medium:
+        switch (presentation.originalSceneKey) {
+          case SceneKey.clear:
+          case SceneKey.partlyCloudy:
+          case SceneKey.cloudy:
+          case SceneKey.overcast:
+          case SceneKey.windy:
+            return base;
+          default:
+            return weatherConditionLikely(context, base);
+        }
+      case WeatherConfidenceBand.low:
+        switch (presentation.originalSceneKey) {
+          case SceneKey.fog:
+          case SceneKey.mist:
+          case SceneKey.hazeDust:
+          case SceneKey.smokeWildfire:
+          case SceneKey.ashfall:
+            return weatherLowVisibilityRisk(context);
+          case SceneKey.drizzle:
+          case SceneKey.freezingDrizzle:
+          case SceneKey.rainLight:
+          case SceneKey.rainModerate:
+          case SceneKey.rainHeavy:
+          case SceneKey.thunderRain:
+          case SceneKey.freezingRain:
+            return weatherPossiblePrecipitation(context);
+          case SceneKey.sleet:
+          case SceneKey.snowLight:
+          case SceneKey.snowModerate:
+          case SceneKey.snowHeavy:
+          case SceneKey.blowingSnow:
+          case SceneKey.blizzard:
+          case SceneKey.icePellets:
+          case SceneKey.thunderSnow:
+            return weatherPossibleWintryMix(context);
+          case SceneKey.tornado:
+          case SceneKey.squall:
+          case SceneKey.windy:
+            return weatherUnsettledConditions(context);
+          case SceneKey.clear:
+          case SceneKey.partlyCloudy:
+          case SceneKey.cloudy:
+          case SceneKey.overcast:
+            return base;
+        }
+      case WeatherConfidenceBand.veryLow:
+        return weatherCurrentConditionsUncertain(context);
+    }
   }
 
   static String heroEnvLabel(BuildContext context, {required bool isAqi}) =>

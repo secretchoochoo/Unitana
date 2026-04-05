@@ -57,17 +57,15 @@ void main() {
     await tester.pump(const Duration(milliseconds: 120));
   }
 
-  Future<void> openTimeZoneConverterTool(WidgetTester tester) async {
+  Future<void> openTimeTool(WidgetTester tester) async {
     await tester.tap(find.byKey(const Key('dashboard_tools_button')));
     await tester.pumpAndSettle(const Duration(milliseconds: 250));
     await tester.enterText(
       find.byKey(const ValueKey('toolpicker_search')),
-      'time zone converter',
+      'time',
     );
     await tester.pumpAndSettle(const Duration(milliseconds: 250));
-    await tester.tap(
-      find.byKey(const ValueKey('toolpicker_search_tool_timezone_lookup')),
-    );
+    await tester.tap(find.byKey(const ValueKey('toolpicker_search_tool_time')));
     await tester.pumpAndSettle(const Duration(milliseconds: 300));
   }
 
@@ -110,7 +108,7 @@ void main() {
 
     final state = buildSeededState();
     await pumpDashboard(tester, state);
-    await openTimeZoneConverterTool(tester);
+    await openTimeTool(tester);
 
     await tester.tap(find.byKey(const ValueKey('tool_time_from_zone')));
     await tester.pumpAndSettle(const Duration(milliseconds: 250));

@@ -4,6 +4,47 @@ import 'package:flutter_test/flutter_test.dart';
 import 'dashboard_test_helpers.dart';
 
 void main() {
+  testWidgets('Profile tiles expose visible quick actions outside edit mode', (
+    tester,
+  ) async {
+    await pumpDashboardForTest(tester);
+
+    await tester.tap(find.byKey(const Key('dashboard_menu_button')));
+    final profilesTile = find.widgetWithText(ListTile, 'Profiles');
+    await pumpUntilFound(tester, profilesTile);
+
+    await ensureVisibleAligned(tester, profilesTile);
+    await tester.tap(profilesTile);
+    await pumpUntilFound(
+      tester,
+      find.byKey(const Key('profiles_board_screen')),
+    );
+
+    final moreButton = find.byKey(
+      const ValueKey('profiles_board_more_profile_1'),
+    );
+    await pumpUntilFound(tester, moreButton);
+    await tester.tap(moreButton);
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const ValueKey('profiles_board_action_reorder_profile_1')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('profiles_board_action_rename_profile_1')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('profiles_board_action_edit_profile_1')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('profiles_board_edit_done')),
+      findsNothing,
+    );
+  });
+
   testWidgets('Profile switcher opens and Edit profile launches wizard', (
     tester,
   ) async {

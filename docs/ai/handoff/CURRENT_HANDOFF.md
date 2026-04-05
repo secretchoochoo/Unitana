@@ -1,9 +1,658 @@
 # CURRENT_HANDOFF (Unitana) - Wizard, Collapsing Header, Multi-Profile
 
 ## Snapshot
-- **Date:** 2026-02-20
-- **Status:** XL-W3 is complete (docs verification + ownership hardening). XL-X phase A and phase B are complete and validated green; XL-X phase C is queued next. Pack O is iceboxed and Pack V is closed.
+- **Date:** 2026-04-05
+- **Status:** XL-Z1, XL-Z2, XL-Z3, XL-Z4, and XL-Z5 are complete and verified green. XL-Z6 is in progress with phases A-B complete plus follow-up accessibility/usability fixes landed after phase B. Weather-provider research is documented but currently paused; the runtime path is considered good enough for now. Historical XL-W / XL-X notes remain below as prior context.
 - **Operating mode:** Codex is now the primary workflow; apply edits directly in-repo (do not require patch zip workflow unless explicitly requested).
+
+## Latest changes (2026-04-05)
+- Release prep completed for `v1.1.0+2`:
+  - app version bumped in `app/unitana/pubspec.yaml`,
+  - dashboard build metadata defaults now match the release version/build number,
+  - fresh Android release artifact built at:
+    - `app/unitana/build/app/outputs/flutter-apk/app-release.apk`
+  - full repo verification passed on the final rerun before packaging.
+
+## Latest changes (2026-04-05)
+- Weather confidence disclaimer copy removed from the weather summary details surface:
+  - kept the underlying confidence/disagreement logic,
+  - removed the extra explanatory hint text because it added clutter without improving trust,
+  - focused weather confidence tests were updated accordingly.
+  - current product stance:
+    - softer labels stay,
+    - extra disclaimer text does not.
+
+## Latest changes (2026-04-05)
+- Regional weather override decision recorded:
+  - added:
+    - `docs/ai/reference/WEATHER_REGIONAL_OVERRIDE_DECISION_2026-04-05.md`
+  - conclusion:
+    - do not add any country-specific runtime override yet,
+    - broader regional-provider evaluation is now explicitly deferred unless product priorities change.
+  - concrete supporting evidence:
+    - the `200`-city report stays near-neutral overall,
+    - Open-Meteo still shows more fog false positives than MET Norway,
+    - Portugal-specific signals are real but currently too sparse to justify a hard override on their own.
+  - recommended next-start order:
+    - 1. keep the current provider + confidence/disagreement path,
+    - 2. leave `M-Z13` deferred unless we intentionally restart weather-provider research,
+    - 3. move back to broader product backlog work.
+
+## Latest changes (2026-04-05)
+- Live second-opinion weather disagreement scoring completed:
+  - added a minimal MET Norway runtime client:
+    - `app/unitana/lib/data/met_norway_client.dart`
+  - risky current-condition labels now get a bounded live second opinion before the final confidence presentation settles,
+  - this is intentionally narrow:
+    - not a full runtime provider matrix,
+    - only risky labels/scenes trigger the second-provider path.
+  - confidence policy now blends:
+    - benchmark priors,
+    - freshness,
+    - supporting fields,
+    - live MET Norway disagreement for risky cases.
+  - focused disagreement regression coverage added:
+    - `app/unitana/test/dashboard_weather_confidence_policy_test.dart`
+  - targeted verification passed:
+    - `flutter analyze`
+    - focused weather regression suite green
+  - recommended next-start order:
+    - 1. inspect benchmark outliers to see whether any region-specific override is worth the added complexity,
+    - 2. optionally surface a small “conditions uncertain” explainer when disagreement softens the label,
+    - 3. otherwise leave provider strategy stable and move back to broader product backlog work.
+
+## Latest changes (2026-04-05)
+- 200-city weather-provider benchmark completed:
+  - added report:
+    - `docs/ai/reference/WEATHER_PROVIDER_BENCHMARK_SAMPLE200_2026-04-05.md`
+  - broad-sample result:
+    - observation coverage: `97/200`
+    - `Open-Meteo`: `55` wins, `0.713` avg composite, `37%` exact bucket match
+    - `MET Norway`: `42` wins, `0.698` avg composite, `47%` exact bucket match
+    - benchmark-derived provider priors are now effectively neutral:
+      - `Open-Meteo`: `50.2%`
+      - `MET Norway`: `49.8%`
+  - product implication:
+    - do not switch providers based on current benchmark evidence,
+    - do not overweight provider priors,
+    - keep leaning on runtime confidence + supporting signals,
+    - if we want stronger truthfulness next, the next serious step is live disagreement signals or selective regional overrides.
+  - recommended next-start order:
+    - 1. add second-provider disagreement scoring only for risky current-condition cases,
+    - 2. review outlier regions before adding any targeted override path,
+    - 3. keep provider-prior weights close to neutral until a larger repeated benchmark says otherwise.
+
+## Latest changes (2026-04-05)
+- Weather confidence runtime hardening completed:
+  - added a pure runtime confidence policy:
+    - `app/unitana/lib/features/dashboard/models/dashboard_weather_confidence.dart`
+  - live weather snapshots now carry confidence-supporting metadata:
+    - cloud cover
+    - visibility
+  - dashboard weather tile, hero, and weather summary now use confidence-aware presentation:
+    - medium-confidence fog-like states soften to labels like `Fog likely`,
+    - low/very-low-confidence weather avoids strong claims like `Fog`,
+    - fog visuals are visually downshifted when confidence is not high.
+  - benchmark work advanced from smoke-run only to a saved 100-city report:
+    - `docs/ai/reference/WEATHER_PROVIDER_BENCHMARK_SAMPLE100_2026-04-05.md`
+    - observation coverage: `39/100`
+    - provider priors from that sample:
+      - `MET Norway`: `52.1%`
+      - `Open-Meteo`: `47.9%`
+  - added focused regression coverage:
+    - `app/unitana/test/dashboard_weather_confidence_policy_test.dart`
+    - `app/unitana/test/dashboard_weather_summary_tile_reality_switch_test.dart`
+    - `app/unitana/test/dashboard_places_hero_v2_test.dart`
+    - `app/unitana/test/weather_summary_tile_open_smoke_test.dart`
+    - `app/unitana/test/weather_summary_narrow_layout_smoke_test.dart`
+  - targeted verification passed:
+    - `flutter analyze`
+    - focused weather regression suite green
+  - recommended next-start order:
+    - 1. optionally run the `200`-city benchmark pass,
+    - 2. decide whether benchmark priors should be refreshed from broader coverage before further tuning,
+    - 3. if needed, add second-provider disagreement signals or targeted regional overrides instead of relying only on provider priors + supporting signals.
+
+## Latest changes (2026-04-05)
+- Expanded weather benchmark foundation completed:
+  - upgraded `app/unitana/tool/weather_provider_benchmark.dart` to support:
+    - sampling from the full `assets/data/cities_v1.json` dataset,
+    - deterministic `--sample-size` / `--sample-seed` runs,
+    - automatic nearest-METAR-station lookup through AviationWeather `stationinfo`,
+    - station-cache persistence for repeated runs,
+    - benchmark-derived provider priors in report output.
+  - added broader benchmark regression coverage:
+    - `app/unitana/test/weather_provider_benchmark_test.dart`
+      - dataset sampling,
+      - nearest-station chooser,
+      - provider-prior normalization.
+  - added guidance doc for future runtime scoring:
+    - `docs/ai/reference/WEATHER_CONFIDENCE_AND_PROVIDER_PRIOR_2026-04-05.md`
+  - completed a live expanded-sample smoke run:
+    - `tmp/weather_provider_benchmark_sample30.md`
+    - `tmp/weather_provider_benchmark_sample30.json`
+    - observation coverage: `17/30`
+    - provider priors from that sample:
+      - `MET Norway`: `55.1%`
+      - `Open-Meteo`: `44.9%`
+  - recommended next-start order:
+    - 1. run and save a `100`-city benchmark report,
+    - 2. run and save a `200`-city benchmark report,
+    - 3. turn the benchmark priors + live-signal rules into an app-side runtime weather-confidence policy.
+
+## Latest changes (2026-04-05)
+- Weather-provider evaluation harness completed:
+  - added a standalone research harness for provider comparison:
+    - `app/unitana/tool/weather_provider_benchmark.dart`
+  - added a curated 25-city benchmark fixture:
+    - `app/unitana/tool/fixtures/weather_benchmark_cities.json`
+  - the harness compares:
+    - `Open-Meteo`,
+    - `MET Norway`,
+    - `METAR` airport observations as an observation proxy.
+  - added normalization/scoring unit coverage:
+    - `app/unitana/test/weather_provider_benchmark_test.dart`
+  - documented purpose, caveats, and run instructions:
+    - `docs/ai/reference/WEATHER_PROVIDER_BENCHMARK_HARNESS_2026-04-05.md`
+  - completed a live Porto smoke run and wrote outputs to:
+    - `tmp/weather_provider_benchmark_porto.md`
+    - `tmp/weather_provider_benchmark_porto.json`
+  - completed the first full benchmark report:
+    - `docs/ai/reference/WEATHER_PROVIDER_BENCHMARK_2026-04-05.md`
+    - `tmp/weather_provider_benchmark_2026-04-05.json`
+  - important current evidence:
+    - Porto smoke run favored `MET Norway` over `Open-Meteo`,
+    - Open-Meteo overcalled fog against the airport observation proxy in that Porto sample,
+    - full 25-city run produced `23` scored cities because Santiago and Dubai lacked live METAR observation payloads at run time,
+    - full-run summary:
+      - `Open-Meteo`: `13` wins, `0.763` average composite, `61%` exact bucket match,
+      - `MET Norway`: `10` wins, `0.727` average composite, `52%` exact bucket match.
+  - recommended next-start order:
+    - 1. review false-positive and city-by-city outliers in `WEATHER_PROVIDER_BENCHMARK_2026-04-05.md` before making a provider decision,
+    - 2. decide whether to keep Open-Meteo, switch providers, or adopt a hybrid/fallback rule,
+    - 3. continue `XL-Z6` phase C semantics/focus-order work once the provider direction is clearer.
+
+## Latest changes (2026-04-05)
+- Weather freshness hardening completed:
+  - weather now tracks its own successful refresh timestamp separately from shared live-data refresh state,
+  - the dashboard refresh label now keys off weather freshness when a live weather backend is selected, so a successful currency refresh no longer makes stale/failed weather look freshly updated,
+  - the weather summary sheet now uses weather-specific freshness instead of shared live-data freshness,
+  - dashboard auto-refresh weather cadence now keys off the last successful weather refresh instead of the shared timestamp,
+  - devtools weather freshness output now reflects weather-specific refresh timing,
+  - added focused regression coverage:
+    - `app/unitana/test/dashboard_live_data_refresh_fallback_test.dart`
+    - `app/unitana/test/data_refresh_status_label_weather_contract_test.dart`
+  - targeted verification passed:
+    - `flutter analyze`
+    - focused weather freshness regression suite green
+  - recommended next-start order:
+    - 1. slot-preservation/profile-grid follow-up,
+    - 2. continue `XL-Z6` phase C semantics/focus-order work,
+    - 3. weather-provider trust follow-up if we want explicit fallback/error UI on the hero itself.
+
+## Latest changes (2026-04-05)
+- M-Z9 weather visibility phase completed:
+  - threaded precipitation probability through both provider adapters and the dashboard forecast models,
+  - weather widget tile preview now surfaces precipitation chance when it is meaningful instead of only showing condition text,
+  - Places Hero now surfaces precipitation probability in the visible weather condition chip when relevant,
+  - weather alerts are now inspectable instead of passive:
+    - the weather summary alert banner opens a dedicated details sheet,
+    - the hero marquee becomes tappable during active alert states and opens the same detail sheet for the active place,
+  - the weather summary sheet now exposes precipitation chance inline on place cards when relevant,
+  - added focused regression coverage:
+    - `app/unitana/test/dashboard_weather_summary_tile_reality_switch_test.dart`
+    - `app/unitana/test/weather_alert_details_sheet_test.dart`
+  - revalidated weather surfaces with focused regressions:
+    - `app/unitana/test/weather_summary_tile_open_smoke_test.dart`
+    - `app/unitana/test/weather_summary_narrow_layout_smoke_test.dart`
+    - `app/unitana/test/dashboard_places_hero_v2_test.dart`
+  - targeted verification passed:
+    - `flutter analyze`
+    - focused weather regression suite green
+  - recommended next-start order:
+    - 1. continue `XL-Z6` phase C semantics/focus-order work,
+    - 2. slot-preservation follow-up on dashboard/profiles if still not resolved cleanly,
+    - 3. later `M-Z7` phase B only if we decide to maintain a broader dated tax-rate table.
+
+## Latest changes (2026-04-05)
+- Tax / VAT manual-rate-first phase completed:
+  - Tax / VAT now keeps additive vs inclusive handling explicit while making the rate itself the primary editable input,
+  - default mode now follows place context instead of always assuming US-style add-on behavior:
+    - `US` / `CA` default to add-on,
+    - VAT-style contexts like `PT` default to inclusive,
+  - the rate field is prefilled from country-aware defaults but remains fully editable,
+  - the quick-fill rate chips were later removed entirely so the helper now stays focused on explicit manual entry,
+  - Portugal now seeds `23%` as the default manual rate for PT-oriented pricing context,
+  - dashboard Tax / VAT tile preview now follows reality/place context instead of staying pinned to a generic currency/rate fallback,
+  - updated focused regression coverage:
+    - `app/unitana/test/tax_vat_helper_modal_interaction_test.dart`
+    - `app/unitana/test/tool_helper_surfaces_test.dart`
+    - `app/unitana/test/tool_helper_calculators_test.dart`
+    - `app/unitana/test/dashboard_tax_vat_tile_reality_switch_test.dart`
+  - full repo verification passed:
+    - `./tools/verify.sh`
+    - local result: `+289 ~6: All tests passed!`
+  - recommended next-start order:
+    - 1. `M-Z9` precipitation probability + actionable weather alert details,
+    - 2. `XL-Z6` phase C semantics/focus-order work,
+    - 3. later `M-Z7` phase B if we want a broader curated, reference-dated country-rate table.
+
+## Latest changes (2026-04-05)
+- Tip Helper context/preset follow-up completed:
+  - preserved the US-oriented preset contract through a shared helper:
+    - US/CA keep `5%`, `10%`, `15%`, `18%`, and `20%`,
+    - PT and similar Europe presets remain lower-tip-oriented (`5%`, `10%`, `15%`).
+  - dashboard Tip Helper tile preview is now reality-aware instead of staying pinned to a stale/default currency symbol:
+    - destination context previews now show `€100.00`,
+    - home context previews now show `$100.00`,
+    - preview secondary text derives from country-aware default tip policy instead of a hard-coded static fallback.
+  - added focused regression coverage:
+    - `app/unitana/test/tip_helper_modal_interaction_test.dart`
+    - `app/unitana/test/dashboard_tip_helper_tile_reality_switch_test.dart`
+  - full repo verification passed:
+    - `./tools/verify.sh`
+    - local result: `+288 ~6: All tests passed!`
+  - recommended next-start order:
+    - 1. `M-Z7` Tax / VAT manual-rate-first rebuild,
+    - 2. `M-Z9` precipitation probability + actionable weather alert details,
+    - 3. continue `XL-Z6` phase C semantics/focus-order work once the higher-trust product defects above are addressed.
+
+## Latest changes (2026-04-04)
+- Overnight handoff / paused WIP:
+  - session stopped mid-slice before bed; no full regression run was completed for the newest dashboard/profile slot-preservation changes,
+  - current partial code changes in progress:
+    - `app/unitana/lib/features/dashboard/widgets/dashboard_board.dart`
+      - removal paths now call anchor-freezing before tile deletion so dashboard removals can preserve the vacated slot instead of dense-packing immediately,
+    - `app/unitana/lib/features/dashboard/widgets/profiles_board_screen.dart`
+      - added in-progress support for preserved empty profile slots after deletion,
+      - added in-progress long-press wiring on profile tiles outside edit mode,
+      - compile state checked with `flutter analyze` and it is currently clean,
+      - focused/profile/dashboard regression tests were **not** rerun yet after these newest edits.
+  - user-reported issues to pick up first next session:
+    - dashboard tile removal still feels wrong because the empty slot is not consistently preserved where the tile was removed,
+    - profile tile long-press should open actions outside edit mode,
+    - deleting a profile should leave the visible slot open instead of collapsing the rest of the grid leftward,
+    - weather improvements requested:
+      - show precipitation chance when relevant in the weather widget / hero / weather details flow,
+      - make weather alerts feel actionable and inspectable instead of passive/inconspicuous,
+    - Tax / VAT should be fixed next:
+      - move toward manual-rate-first input,
+      - stop relying on obviously incomplete/arbitrary preset values,
+      - Portugal `23%` VAT was called out explicitly as a trust-gap example,
+  - recommended next-start order:
+    - 1. finish and verify dashboard/profile slot-preservation + profile long-press behavior,
+    - 2. rework Tax / VAT toward manual-rate-first UX,
+    - 3. add precipitation + alert-detail improvements to weather surfaces.
+
+## Latest changes (2026-04-04)
+- XL-Z6 usability follow-up completed:
+  - added a lightweight `Rename profile` quick action on the profiles board so users can rename a profile without going through the full wizard,
+  - introduced a dedicated rename bottom sheet with localized copy, inline validation through the save state, and success feedback toast behavior,
+  - added focused regression coverage:
+    - `app/unitana/test/profile_feedback_toast_test.dart`
+    - `app/unitana/test/profile_switcher_edit_profile_flow_test.dart`
+  - next recommended continuation inside XL-Z6:
+    - phase C: extend the semantics/focus-order audit into tool-modal and picker surfaces, then add non-color category indicators and more small-device coverage where density remains high.
+
+## Latest changes (2026-04-04)
+- Product direction update: standalone time conversion retired
+  - removed the standalone `timezone_lookup` discovery entry from the tool picker and registry,
+  - normalized legacy `timezone_lookup` / `time_zone_converter` references to the main `time` tool so saved layouts and old ids resolve safely,
+  - updated registry and picker regression coverage to match the new product decision,
+  - Tax/VAT follow-up remains captured separately as `M-Z7`.
+
+## Latest changes (2026-04-04)
+- XL-Z6 phase B completed:
+  - added direct semantics-tree regression coverage for the high-value dashboard/profile action surfaces:
+    - `app/unitana/test/dashboard_accessibility_semantics_test.dart`
+  - fixed a real small-phone responsive regression in the profiles board:
+    - compacted the active badge and visible corner-action button when tile height is tight,
+    - preserved the visible action affordance without overflowing the profile header row on `320x568`-class phones.
+  - added focused responsive smoke coverage for the profiles board:
+    - `app/unitana/test/profiles_board_responsive_smoke_test.dart`
+  - recorded the Tax/VAT trust follow-up as a dedicated backlog slice:
+    - `docs/ai/reference/XL_Z_RECONCILED_AUDIT_AND_EXECUTION_BACKLOG_2026-04-04.md` (`M-Z7`)
+  - next recommended continuation inside XL-Z6:
+    - phase C: extend the semantics/focus-order audit into tool-modal and picker surfaces, then add non-color category indicators and more small-device coverage where density remains high.
+
+## Latest changes (2026-04-04)
+- XL-Z6 phase A completed:
+  - added visible alternatives to hidden tile-management gestures:
+    - dashboard tool tiles now expose a visible corner actions button outside edit mode,
+    - profile tiles now expose a visible corner actions button outside edit mode.
+  - strengthened action discoverability without changing the existing long-press contract:
+    - dashboard visible action path opens the same quick-action sheet as long-press,
+    - profile visible action path exposes reorder/edit actions without forcing edit mode first.
+  - improved semantics on high-value tile surfaces:
+    - `app/unitana/lib/features/dashboard/widgets/unitana_tile.dart` now exposes richer semantic labels using title + values instead of title only,
+    - profile tiles now expose explicit selected/button semantics plus profile-specific label and hint copy.
+  - updated copy + seed coverage for the new affordances:
+    - `app/unitana/lib/features/dashboard/models/dashboard_copy.dart`
+    - `app/unitana/lib/l10n/localization_seed.dart`
+  - added focused regression coverage:
+    - `app/unitana/test/dashboard_quick_actions_mode_contract_test.dart`
+    - `app/unitana/test/profile_switcher_edit_profile_flow_test.dart`
+  - next recommended continuation inside XL-Z6:
+    - phase B: continue the semantics/focus-order audit and add responsive coverage for small-phone and tablet dashboard/profile states.
+
+## Latest changes (2026-04-04)
+- XL-Z5 phase E completed:
+  - introduced a dedicated weather domain module:
+    - `app/unitana/lib/features/dashboard/models/dashboard_weather_domain.dart`
+  - moved the remaining weather-heavy live-data responsibilities out of the root controller:
+    - weather backend selection persistence,
+    - weather/sun/forecast snapshot storage,
+    - weather debug overrides,
+    - emergency assessment entrypoint,
+    - weather refresh pipeline and deterministic fallback seeding.
+  - narrowed `app/unitana/lib/features/dashboard/models/dashboard_live_data.dart` from ~2059 LOC to ~1494 LOC by delegating weather responsibilities to the new domain seam.
+  - added focused persistence coverage:
+    - `app/unitana/test/dashboard_weather_persistence_hydration_test.dart`
+  - XL-Z5 closeout:
+    - currency, env, and weather now have dedicated domain seams,
+    - dashboard-side build-triggered live-data side effects were removed earlier in phase C,
+    - runtime timing instrumentation and the city dataset loading decision were completed in phase D.
+  - next recommended continuation:
+    - XL-Z6: accessibility and responsive hardening.
+
+## Latest changes (2026-04-04)
+- XL-Z5 phase D completed:
+  - added debug-only runtime timing instrumentation:
+    - `app/unitana/lib/common/debug/runtime_perf_trace.dart`
+  - instrumented key runtime paths:
+    - `app/unitana/lib/data/city_repository.dart` for city dataset load timing,
+    - `app/unitana/lib/features/dashboard/dashboard_screen.dart` for dashboard startup, dashboard refresh, and tool-picker open timing,
+    - `app/unitana/lib/features/dashboard/widgets/tool_modal_bottom_sheet.dart` for tool modal open timing.
+  - documented the city dataset loading decision:
+    - `docs/ai/reference/CITY_DATASET_LOADING_DECISION_2026-04-04.md`
+  - product/architecture decision:
+    - keep the current hybrid city-data loading strategy for now,
+    - do not add unconditional eager-loading,
+    - do not segment the dataset yet,
+    - use the new runtime traces to decide if stronger lazy-loading or segmentation is justified later.
+  - next recommended continuation inside XL-Z5:
+    - phase E: decide whether the remaining weather-heavy path still needs a dedicated domain extraction, or close XL-Z5 after a lighter cleanup pass if the controller shape is now acceptable relative to the original risk.
+
+## Latest changes (2026-04-04)
+- XL-Z5 phase C completed:
+  - narrowed dashboard live-data orchestration in `app/unitana/lib/features/dashboard/dashboard_screen.dart`:
+    - removed visible-place seeding from `build()`,
+    - removed auto-refresh checks from `build()`,
+    - introduced an explicit post-frame live-data maintenance scheduler,
+    - primed visible hero places through a dedicated helper instead of relying on rebuild-time side effects,
+    - added test-only live-data injection so orchestration contracts can be verified directly.
+  - added focused regression coverage:
+    - `app/unitana/test/dashboard_live_data_maintenance_contract_test.dart`
+  - revalidated dashboard behavior around refresh/render paths:
+    - `app/unitana/test/dashboard_smoke_test.dart`
+    - `app/unitana/test/devtools_clock_override_test.dart`
+  - next recommended continuation inside XL-Z5:
+    - phase D: decide whether to extract the remaining weather domain or pivot to instrumentation and city-loading decisions now that the screen is no longer initiating live-data side effects from `build()`.
+
+## Latest changes (2026-04-04)
+- XL-Z5 phase B completed:
+  - introduced a dedicated live-data env / air-quality domain module:
+    - `app/unitana/lib/features/dashboard/models/dashboard_env_domain.dart`
+  - moved bounded env responsibilities out of `dashboard_live_data.dart`:
+    - per-place `EnvSnapshot` storage,
+    - deterministic env seeding,
+    - pollen bucketing from provider grains,
+    - best-effort air-quality refresh,
+    - env-specific error tracking and fallback preservation.
+  - preserved `DashboardLiveDataController`'s existing env-facing API by delegating through the new domain seam.
+  - added focused regression coverage for AQ failure behavior:
+    - `app/unitana/test/dashboard_live_data_refresh_fallback_test.dart`
+  - revalidated broader env/weather consumers:
+    - `app/unitana/test/dashboard_live_data_global_city_coverage_test.dart`
+    - `app/unitana/test/weather_emergency_taxonomy_test.dart`
+  - next recommended continuation inside XL-Z5:
+    - phase C: extract or narrow the remaining weather/orchestration path and then address build-triggered refresh/seeding behavior with the new domain seams in place.
+
+## Latest changes (2026-04-04)
+- XL-Z5 phase A completed:
+  - introduced a dedicated live-data currency domain module:
+    - `app/unitana/lib/features/dashboard/models/dashboard_currency_domain.dart`
+  - moved bounded currency responsibilities out of `dashboard_live_data.dart`:
+    - backend selection state,
+    - cached EUR-base rate hydration,
+    - stale/retry cadence checks,
+    - refresh normalization and provider fallback,
+    - mock-rate restoration and cross-currency rate lookup helpers.
+  - preserved `DashboardLiveDataController`'s existing public currency API by delegating through the new domain seam instead of changing dashboard callers.
+  - added direct regression coverage:
+    - `app/unitana/test/dashboard_currency_persistence_hydration_test.dart`
+  - revalidated currency- and refresh-facing regression coverage:
+    - `app/unitana/test/dashboard_currency_retry_cache_semantics_test.dart`
+    - `app/unitana/test/dashboard_currency_rate_coverage_test.dart`
+    - `app/unitana/test/dashboard_currency_global_mapping_test.dart`
+    - `app/unitana/test/dashboard_live_data_refresh_fallback_test.dart`
+  - next recommended continuation inside XL-Z5:
+    - phase B: extract env / air-quality state behind a similar domain seam, then reassess the remaining weather orchestration and build-triggered refresh paths.
+
+## Latest changes (2026-04-04)
+- XL-Z4 phase E completed:
+  - introduced a dedicated default-workspace module:
+    - `app/unitana/lib/features/dashboard/widgets/tool_default_workspace.dart`
+  - moved the generic converter shell composition out of `tool_modal_bottom_sheet.dart`:
+    - default input / unit-picker / action stack handoff,
+    - generic result + history workspace composition,
+    - standard converter post-sections routed through a dedicated module boundary.
+  - preserved modal-owned conversion logic, clipboard/session side effects, and tool-specific extras while reducing modal ownership of the shared default converter path.
+  - added direct workspace coverage:
+    - `app/unitana/test/tool_default_workspace_test.dart`
+  - revalidated existing standard-converter modal regressions:
+    - `app/unitana/test/length_tool_modal_interaction_test.dart`
+    - `app/unitana/test/tool_modal_history_lazy_build_smoke_test.dart`
+  - architectural impact:
+    - `tool_modal_bottom_sheet.dart` reduced further from ~3778 LOC to ~3775 LOC.
+  - XL-Z4 closeout assessment:
+    - the remaining modal complexity is now mostly orchestration, picker flows, and tool state rather than large surface composition branches,
+    - recommended next slice is `XL-Z5`, not more UI-surface extraction.
+
+## Latest changes (2026-04-04)
+- XL-Z4 phase D completed:
+  - introduced a dedicated lookup-workspace module:
+    - `app/unitana/lib/features/dashboard/widgets/tool_lookup_workspace.dart`
+  - moved the lookup/reference composition layer out of `tool_modal_bottom_sheet.dart`:
+    - result-card assembly,
+    - lookup workspace composition around `ToolLookupSurface`,
+    - matrix/reference presentation handoff through a dedicated module boundary.
+  - preserved modal-owned picker flows, selection persistence, and copy/session side effects while reducing modal ownership of lookup-specific assembly.
+  - added direct workspace coverage:
+    - `app/unitana/test/tool_lookup_workspace_test.dart`
+  - revalidated existing lookup modal-path regression coverage:
+    - `app/unitana/test/clothing_sizes_matrix_interaction_test.dart`
+    - `app/unitana/test/cups_grams_estimates_matrix_interaction_test.dart`
+    - `app/unitana/test/shoe_sizes_tool_modal_interaction_test.dart`
+  - architectural impact:
+    - `tool_modal_bottom_sheet.dart` reduced further from ~3793 LOC to ~3778 LOC.
+  - next recommended continuation inside XL-Z4:
+    - phase E: finish thinning the modal by extracting any remaining inline helper flows and deciding whether the modal is ready for controller/state decomposition or whether XL-Z5 should start next.
+
+## Latest changes (2026-04-04)
+- XL-Z4 phase C completed:
+  - introduced a dedicated time-workspace module:
+    - `app/unitana/lib/features/dashboard/widgets/tool_time_workspace.dart`
+  - moved the time-family composition layer out of `tool_modal_bottom_sheet.dart`:
+    - facts card assembly,
+    - jet-lag planner composition,
+    - world-time map composition,
+    - timezone-converter workspace + history composition.
+  - preserved modal-owned state transitions, picker flows, history clearing, and widget insertion while reducing modal ownership to routing/state orchestration.
+  - added direct workspace coverage:
+    - `app/unitana/test/tool_time_workspace_test.dart`
+  - revalidated existing modal-path regression coverage:
+    - `app/unitana/test/time_tool_modal_interaction_test.dart`
+    - `app/unitana/test/jet_lag_delta_modal_interaction_test.dart`
+    - `app/unitana/test/toolpicker_activation_bundle_test.dart`
+  - architectural impact:
+    - `tool_modal_bottom_sheet.dart` reduced further from ~4250 LOC to ~3793 LOC.
+  - next recommended continuation inside XL-Z4:
+    - phase D: extract lookup/reference orchestration and continue thinning the modal toward routing + state only.
+
+## Latest changes (2026-04-04)
+- XL-Z4 phase B completed:
+  - expanded `tool_helper_surfaces.dart` with additional extracted modules:
+    - unit price surface,
+    - pace insights / planner surface.
+  - moved the unit-price comparison layout and the pace insights/planner card out of `tool_modal_bottom_sheet.dart`.
+  - preserved modal-owned state and picker callbacks while further thinning the tool modal toward composition.
+  - added direct widget coverage for the newly extracted surfaces:
+    - `app/unitana/test/tool_helper_surfaces_test.dart`
+  - revalidated existing modal-path regression coverage:
+    - `app/unitana/test/unit_price_helper_modal_interaction_test.dart`
+    - `app/unitana/test/pace_tool_modal_interaction_test.dart`
+    - `app/unitana/test/toolpicker_activation_bundle_test.dart`
+  - architectural impact:
+    - `tool_modal_bottom_sheet.dart` reduced further from ~4711 LOC to ~4250 LOC.
+  - next recommended continuation inside XL-Z4:
+    - phase C: extract lookup/reference orchestration and more of the time-family branch so the modal shell becomes mostly routing + notices + shared chrome.
+
+## Latest changes (2026-04-04)
+- XL-Z4 phase A completed:
+  - introduced a dedicated helper-surface module:
+    - `app/unitana/lib/features/dashboard/widgets/tool_helper_surfaces.dart`
+  - extracted the first bounded set of dedicated helper UIs out of `tool_modal_bottom_sheet.dart`:
+    - hydration,
+    - tip helper,
+    - Tax / VAT,
+    - daily energy estimate.
+  - preserved controller/state ownership inside the modal while moving high-churn UI branching into dedicated widgets with callback contracts.
+  - added direct widget coverage for the extracted module:
+    - `app/unitana/test/tool_helper_surfaces_test.dart`
+  - revalidated existing modal-path coverage after extraction:
+    - `app/unitana/test/hydration_tool_modal_interaction_test.dart`
+    - `app/unitana/test/tip_helper_modal_interaction_test.dart`
+    - `app/unitana/test/tax_vat_helper_modal_interaction_test.dart`
+    - `app/unitana/test/multi_unit_display_value_conversion_test.dart`
+    - `app/unitana/test/toolpicker_activation_bundle_test.dart`
+  - architectural impact:
+    - `tool_modal_bottom_sheet.dart` reduced from ~5050 LOC to ~4711 LOC in this extraction pass.
+  - next recommended continuation inside XL-Z4:
+    - phase B: extract lookup/reference and remaining context-aware tool branches behind the same module contract.
+
+## Latest changes (2026-04-04)
+- XL-Z3 phase B completed:
+  - initially demoted and reframed the timezone converter around the actual job of converting a specific local date/time between zones.
+  - completed the clothing-size interaction redesign:
+    - added garment-group-first progressive disclosure (`Women Tops`, `Women Bottoms`, `Men Tops`, `Men Bottoms`, `Outerwear`),
+    - filtered the matrix to the selected garment group instead of dropping users into a broad static table,
+    - updated the clothing matrix reference header to `Garment / Size`,
+    - kept matrix paging only for system columns, not garment/category browsing.
+  - product-direction decisions now implemented for the remaining XL-Z3 debates:
+    - timezone converter: `retired later the same day; legacy references now fold into the main time tool`,
+    - clothing sizes: `keep, but make garment-first progressive disclosure the primary interaction`,
+    - energy: retain as an estimate-oriented helper for now; revisit only with usage data.
+  - updated regression coverage:
+    - `app/unitana/test/tool_lookup_catalog_test.dart`
+    - `app/unitana/test/clothing_sizes_matrix_interaction_test.dart`
+    - `app/unitana/test/time_tool_modal_interaction_test.dart`
+    - `app/unitana/test/tool_registry_architecture_matrix_test.dart`
+    - `app/unitana/test/toolpicker_activation_bundle_test.dart`
+    - `app/unitana/test/localization_seed_contract_test.dart`
+  - verification:
+    - targeted regression suite passed on 2026-04-04.
+- XL-Z3 is now complete:
+  - phase A: naming cleanup, Tax/VAT plain-language framing, hydration/energy/clothing copy clarity
+  - phase B: timezone converter positioning + clothing progressive disclosure
+- Next recommended continuation:
+  - XL-Z4: tool surface architecture decomposition.
+
+## Latest changes (2026-04-04)
+- XL-Z3 phase A completed:
+  - renamed the `Odd & Useful` lens to `Reference` and updated lens copy.
+  - clarified tax/VAT product language:
+    - plain-language mode labels,
+    - clearer amount labels,
+    - visible preset-context guidance tied to the active pricing context.
+  - renamed cups/grams utility surface to `Cups to Grams` with updated search coverage.
+  - improved hydration and energy helper clarity:
+    - added selected climate/activity explanations,
+    - reframed the energy planner as an estimate,
+    - normalized energy output copy to `kcal` + `kJ`.
+  - improved clothing lookup helper copy:
+    - more explicit reference-only framing,
+    - clearer "choose the garment page first" guidance.
+  - updated regression coverage:
+    - `app/unitana/test/localization_seed_contract_test.dart`
+    - `app/unitana/test/tax_vat_helper_modal_interaction_test.dart`
+    - `app/unitana/test/hydration_tool_modal_interaction_test.dart`
+    - `app/unitana/test/toolpicker_activation_bundle_test.dart`
+    - `app/unitana/test/cups_grams_estimates_matrix_interaction_test.dart`
+  - verification:
+    - full `./tools/verify.sh` passed on 2026-04-04 (`+265 ~6`, all tests passed).
+- XL-Z2 phase B completed:
+  - added shared discard-confirmation sheet:
+    - `app/unitana/lib/features/dashboard/widgets/edit_session_discard_sheet.dart`
+  - completed dashboard/profile edit-session discard semantics:
+    - clean cancel exits immediately,
+    - dirty cancel prompts,
+    - `Keep Editing` vs `Discard Changes` behavior is now explicit.
+  - fixed dashboard false-dirty behavior on edit entry:
+    - anchor freezing during edit setup no longer counts as a user edit.
+  - fixed profile edit dirty-tracking:
+    - reorder changes are now tracked explicitly,
+    - profile order comparisons are now order-aware.
+  - updated regression coverage:
+    - `app/unitana/test/edit_session_discard_contract_test.dart`
+  - verification:
+    - targeted `flutter test test/edit_session_discard_contract_test.dart` passed on 2026-04-04.
+    - full `./tools/verify.sh` passed on 2026-04-04 (`+265 ~6`, all tests passed).
+- XL-Z2 is now complete:
+  - phase A: shared searchable picker + dashboard quick-action contract
+  - phase B: shared edit-session discard semantics across dashboard + profiles
+- Next recommended continuation:
+  - XL-Z3: tool clarity, product labeling, and utility-surface rationalization.
+
+## Latest changes (2026-04-04)
+- XL-Z2 phase A completed:
+  - added reusable searchable picker shell:
+    - `app/unitana/lib/features/dashboard/widgets/searchable_option_picker_sheet.dart`
+  - upgraded currency picker interaction:
+    - searchable list,
+    - selected value surfaced at top,
+    - common currencies surfaced at top,
+    - existing picker keys preserved for regression stability.
+  - updated dashboard quick-action contract:
+    - long-press tile actions no longer implicitly enter edit mode,
+    - added explicit `Edit Widgets` action in the quick-action sheet.
+  - updated regression coverage:
+    - `app/unitana/test/dashboard_currency_modal_context_test.dart`
+    - `app/unitana/test/dashboard_quick_actions_mode_contract_test.dart`
+    - `app/unitana/test/dashboard_tool_insertion_persistence_test.dart`
+  - verification:
+    - full `./tools/verify.sh` passed on 2026-04-04.
+
+## Latest changes (2026-04-04)
+- XL-Z1 completed:
+  - added shared compile-time developer-tools flag contract:
+    - `app/unitana/lib/app/build_flags.dart`
+  - unified dashboard + live-data developer-tools gating onto the same flag.
+  - restored deterministic currency fallback behavior so currency UI/contracts do not blank when live rates are absent.
+  - fixed hydration + energy displayed-value conversion when switching `kg`/`lb`.
+  - aligned `time_zone_converter` lens metadata with the odd-useful/reference surface direction.
+  - added regression coverage:
+    - `app/unitana/test/multi_unit_display_value_conversion_test.dart`
+    - updated `app/unitana/test/tool_registry_architecture_matrix_test.dart`
+  - added CI workflow scaffold:
+    - `.github/workflows/ci.yml`
+  - verification:
+    - full `./tools/verify.sh` passed on 2026-04-04 (`docs verify`, `dart format .`, `flutter analyze`, `flutter test`)
+- Next recommended slice:
+  - `XL-Z2` Interaction Consistency Foundation
+
+## Latest changes (2026-04-04)
+- Added reconciled audit + current execution backlog artifact:
+  - `docs/ai/reference/XL_Z_RECONCILED_AUDIT_AND_EXECUTION_BACKLOG_2026-04-04.md`
+- Resolved audit disagreement into a single working position:
+  - app is not in emergency-rewrite territory,
+  - but interaction consistency, concentrated complexity, and missing CI enforcement remain the primary risks.
+- Current recommended sequence:
+  - `XL-Z1` Release Gates And Trust Bugs
+  - `XL-Z2` Interaction Consistency Foundation
+  - `XL-Z3` Tool Clarity And Product Rationalization
+- Important audit note:
+  - local verification in the current workspace shows `flutter analyze` passing but `flutter test` not fully green as of 2026-04-04.
 
 ## Latest changes (2026-02-20)
 - XL-X phase B completed (tool modal decomposition + render-cost cleanup):

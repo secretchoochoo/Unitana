@@ -67,7 +67,7 @@ void main() {
     );
     expect(
       toolLookupReferenceHeader(CanonicalToolId.clothingSizes),
-      'Category',
+      'Garment / Size',
     );
     expect(
       toolLookupShouldPersistMatrixSelection(CanonicalToolId.paperSizes),
@@ -79,5 +79,34 @@ void main() {
       ),
       isFalse,
     );
+  });
+
+  test('clothing lookup exposes stable garment groups and row mapping', () {
+    final rows = toolLookupEntriesFor(CanonicalToolId.clothingSizes);
+    final groups = toolLookupGroupsFor(CanonicalToolId.clothingSizes);
+    final outerwearRows = toolLookupEntriesForGroup(
+      canonicalToolId: CanonicalToolId.clothingSizes,
+      rows: rows,
+      groupKey: 'outerwear',
+    );
+
+    expect(groups.map((group) => group.keyId), <String>[
+      'women_tops',
+      'women_bottoms',
+      'men_tops',
+      'men_bottoms',
+      'outerwear',
+    ]);
+    expect(
+      toolLookupGroupKeyForRow(
+        canonicalToolId: CanonicalToolId.clothingSizes,
+        row: rows.firstWhere((row) => row.keyId == 'cloth_m_bottoms_32'),
+      ),
+      'men_bottoms',
+    );
+    expect(outerwearRows.map((row) => row.keyId), <String>[
+      'cloth_outer_unisex_m',
+      'cloth_outer_unisex_xl',
+    ]);
   });
 }

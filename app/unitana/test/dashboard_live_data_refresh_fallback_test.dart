@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:unitana/data/open_meteo_air_quality_client.dart';
 import 'package:unitana/data/open_meteo_client.dart';
 import 'package:unitana/data/weather_api_client.dart';
+import 'package:unitana/data/frankfurter_client.dart';
 import 'package:unitana/features/dashboard/models/dashboard_live_data.dart';
 import 'package:unitana/models/place.dart';
 
@@ -62,6 +63,7 @@ class _FixedOpenMeteoClient extends OpenMeteoClient {
           OpenMeteoHourlyForecastPoint(
             timeUtc: now.add(Duration(hours: i)),
             temperatureC: 6 + (i * 0.1),
+            precipitationChancePercent: 18 + i,
           ),
       ],
       daily: [
@@ -70,6 +72,7 @@ class _FixedOpenMeteoClient extends OpenMeteoClient {
             dayUtc: DateTime.utc(2026, 2, 6 + i),
             maxTemperatureC: 9 + i.toDouble(),
             minTemperatureC: 1 + i.toDouble(),
+            precipitationChancePercent: 24 + i,
           ),
       ],
     );
@@ -125,6 +128,7 @@ class _SelectiveFailOpenMeteoClient extends OpenMeteoClient {
           OpenMeteoHourlyForecastPoint(
             timeUtc: now.add(Duration(hours: i)),
             temperatureC: 16 + (i * 0.1),
+            precipitationChancePercent: 12 + i,
           ),
       ],
       daily: [
@@ -133,9 +137,22 @@ class _SelectiveFailOpenMeteoClient extends OpenMeteoClient {
             dayUtc: DateTime.utc(2026, 2, 6 + i),
             maxTemperatureC: 18 + i.toDouble(),
             minTemperatureC: 9 + i.toDouble(),
+            precipitationChancePercent: 20 + i,
           ),
       ],
     );
+  }
+}
+
+class _FakeFrankfurterClient extends FrankfurterClient {
+  Map<String, double>? latestRatesResult;
+
+  @override
+  Future<Map<String, double>?> fetchLatestRates({
+    String base = 'EUR',
+    Uri? endpointOverride,
+  }) async {
+    return latestRatesResult;
   }
 }
 
@@ -186,7 +203,41 @@ void main() {
     expect(live.sunFor(p), isNotNull);
     expect(live.envFor(p), isNotNull);
     expect(live.lastRefreshedAt, isNull);
+    expect(live.lastWeatherRefreshedAt, isNull);
   });
+
+  test(
+    'shared refresh timestamp can advance from currency while weather remains not updated',
+    () async {
+      final currency = _FakeFrankfurterClient()
+        ..latestRatesResult = <String, double>{'EUR': 1.0, 'USD': 1.1};
+      final live = DashboardLiveDataController(
+        openMeteoClient: _FailingOpenMeteoClient(),
+        openMeteoAirQualityClient: _FailingAirQualityClient(),
+        frankfurterClient: currency,
+        allowLiveRefreshInTestHarness: true,
+        refreshDebounceDuration: Duration.zero,
+        simulatedNetworkLatency: Duration.zero,
+        currencyRetryBackoffDuration: Duration.zero,
+      );
+      addTearDown(live.dispose);
+
+      final p = place(
+        id: 'porto',
+        city: 'Porto',
+        country: 'PT',
+        tz: 'Europe/Lisbon',
+      );
+
+      await live.setWeatherBackend(WeatherBackend.openMeteo);
+      await live.setCurrencyBackend(CurrencyBackend.frankfurter);
+      await live.refreshAll(places: [p]);
+
+      expect(live.lastRefreshedAt, isNotNull);
+      expect(live.lastWeatherRefreshedAt, isNull);
+      expect(live.lastCurrencyRefreshedAt, isNotNull);
+    },
+  );
 
   test(
     'refreshAll seeds fallback snapshots when Open-Meteo has no coords',
@@ -244,6 +295,39 @@ void main() {
       expect(env, isNotNull);
       expect(env!.usAqi, isNotNull);
       expect(env.pollenIndex, isNotNull);
+      expect(live.lastRefreshedAt, isNotNull);
+    },
+  );
+
+  test(
+    'refreshAll records env error while preserving seeded env fallback when AQ refresh fails',
+    () async {
+      final live = DashboardLiveDataController(
+        openMeteoClient: _FixedOpenMeteoClient(),
+        openMeteoAirQualityClient: _FailingAirQualityClient(),
+        allowLiveRefreshInTestHarness: true,
+        refreshDebounceDuration: Duration.zero,
+        simulatedNetworkLatency: Duration.zero,
+      );
+      addTearDown(live.dispose);
+
+      final p = place(
+        id: 'denver',
+        city: 'Denver',
+        country: 'US',
+        tz: 'America/Denver',
+      );
+
+      await live.setWeatherBackend(WeatherBackend.openMeteo);
+      await live.refreshAll(places: [p]);
+
+      final env = live.envFor(p);
+      expect(env, isNotNull);
+      expect(env!.usAqi, isNotNull);
+      expect(env.pollenIndex, isNotNull);
+      expect(live.lastEnvError, isNotNull);
+      expect(live.lastEnvErrorAt, isNotNull);
+      // Weather succeeded, so the batch should still count as fresh.
       expect(live.lastRefreshedAt, isNotNull);
     },
   );

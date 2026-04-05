@@ -275,14 +275,22 @@ class DashboardSessionController extends ChangeNotifier {
 
   HeroEnvPillMode get heroEnvPillMode => _heroEnvPillMode;
 
+  String _normalizeToolId(String toolId) {
+    final normalized = toolId.trim();
+    return switch (normalized) {
+      'time_zone_converter' || 'timezone_lookup' => 'time',
+      _ => normalized,
+    };
+  }
+
   MatrixWidgetSelection? matrixWidgetSelectionFor(String toolId) {
-    final key = toolId.trim();
+    final key = _normalizeToolId(toolId);
     if (key.isEmpty) return null;
     return _matrixWidgetSelectionByTool[key];
   }
 
   TimeZoneWidgetSelection? timeZoneSelectionFor(String toolId) {
-    final key = toolId.trim();
+    final key = _normalizeToolId(toolId);
     if (key.isEmpty) return null;
     return _timeZoneSelectionByTool[key];
   }
@@ -296,7 +304,7 @@ class DashboardSessionController extends ChangeNotifier {
     required String primaryLabel,
     required String secondaryLabel,
   }) async {
-    final normalizedToolId = toolId.trim();
+    final normalizedToolId = _normalizeToolId(toolId);
     if (normalizedToolId.isEmpty) return;
     final selection = MatrixWidgetSelection(
       rowKey: rowKey,
@@ -328,7 +336,7 @@ class DashboardSessionController extends ChangeNotifier {
     required String fromZoneId,
     required String toZoneId,
   }) async {
-    final normalizedToolId = toolId.trim();
+    final normalizedToolId = _normalizeToolId(toolId);
     final normalizedFrom = fromZoneId.trim();
     final normalizedTo = toZoneId.trim();
     if (normalizedToolId.isEmpty ||
@@ -381,18 +389,20 @@ class DashboardSessionController extends ChangeNotifier {
   }
 
   List<ConversionRecord> historyFor(String toolId) {
-    return List<ConversionRecord>.unmodifiable(_history[toolId] ?? const []);
+    return List<ConversionRecord>.unmodifiable(
+      _history[_normalizeToolId(toolId)] ?? const [],
+    );
   }
 
   ConversionRecord? latestFor(String toolId) {
-    final list = _history[toolId];
+    final list = _history[_normalizeToolId(toolId)];
     if (list == null || list.isEmpty) return null;
     return list.first;
   }
 
   void addRecord(ConversionRecord record) {
     final list = _history.putIfAbsent(
-      record.toolId,
+      _normalizeToolId(record.toolId),
       () => <ConversionRecord>[],
     );
     list.insert(0, record);
@@ -403,9 +413,10 @@ class DashboardSessionController extends ChangeNotifier {
   }
 
   void clearHistory(String toolId) {
-    final list = _history[toolId];
+    final normalizedToolId = _normalizeToolId(toolId);
+    final list = _history[normalizedToolId];
     if (list == null || list.isEmpty) return;
-    _history.remove(toolId);
+    _history.remove(normalizedToolId);
     notifyListeners();
   }
 

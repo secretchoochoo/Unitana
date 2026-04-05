@@ -1,5 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:unitana/features/dashboard/models/activity_lenses.dart';
+import 'package:unitana/features/dashboard/models/tool_definitions.dart';
 import 'package:unitana/features/dashboard/models/tool_registry.dart';
 
 void main() {
@@ -16,9 +18,6 @@ void main() {
 
     expect(byId['jet_lag_delta']?.surfaceType, ToolSurfaceType.dedicated);
     expect(byId['jet_lag_delta']?.aliasTargetToolId, isNull);
-
-    expect(byId['timezone_lookup']?.surfaceType, ToolSurfaceType.aliasPreset);
-    expect(byId['timezone_lookup']?.aliasTargetToolId, 'time_zone_converter');
 
     expect(byId['oven_temperature']?.surfaceType, ToolSurfaceType.aliasPreset);
     expect(byId['oven_temperature']?.aliasTargetToolId, 'temperature');
@@ -54,5 +53,21 @@ void main() {
     expect(hydration!.isEnabled, isTrue);
     expect(hydration.surfaceType, ToolSurfaceType.dedicated);
     expect(hydration.deferReason, isNull);
+  });
+
+  test('retired time conversion ids normalize to the main time tool', () {
+    expect(ToolRegistry.byId['timezone_lookup'], isNull);
+    expect(
+      ToolDefinitions.byId('time_zone_converter')?.id,
+      equals(ToolDefinitions.time.id),
+    );
+    expect(
+      ToolDefinitions.byId('timezone_lookup')?.id,
+      equals(ToolDefinitions.time.id),
+    );
+    expect(
+      ToolDefinitions.byId('time')?.lensId,
+      equals(ActivityLensId.travelEssentials),
+    );
   });
 }

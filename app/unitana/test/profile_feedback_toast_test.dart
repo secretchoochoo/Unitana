@@ -34,6 +34,15 @@ Future<void> _openProfilesBoard(WidgetTester tester) async {
   await _pumpFor(tester);
 }
 
+Future<void> _openProfileActions(
+  WidgetTester tester, {
+  required String profileId,
+}) async {
+  final moreButton = find.byKey(ValueKey('profiles_board_more_$profileId'));
+  await tester.tap(moreButton);
+  await _pumpFor(tester);
+}
+
 Future<void> _pickCity(
   WidgetTester tester, {
   required Key buttonKey,
@@ -113,5 +122,40 @@ void main() {
     await _pumpFor(tester, ticks: 6);
 
     expect(find.text('Profile created'), findsOneWidget);
+  });
+
+  testWidgets('Rename profile works without entering the wizard', (
+    tester,
+  ) async {
+    await pumpDashboardForTest(tester);
+    await _openProfilesBoard(tester);
+    await _openProfileActions(tester, profileId: 'profile_1');
+
+    await tester.tap(
+      find.byKey(const ValueKey('profiles_board_action_rename_profile_1')),
+    );
+    await _pumpUntil(
+      tester,
+      find.byKey(const Key('profiles_board_rename_sheet')),
+    );
+
+    expect(find.byKey(const Key('first_run_step_welcome')), findsNothing);
+
+    await tester.enterText(
+      find.byKey(const Key('profiles_board_rename_input')),
+      'Weekend Portugal',
+    );
+    await _pumpFor(tester);
+    await tester.tap(find.byKey(const Key('profiles_board_rename_save')));
+    await _pumpFor(tester, ticks: 6);
+
+    expect(find.text('Profile renamed'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey('profiles_board_tile_profile_1')),
+        matching: find.text('Weekend Portugal'),
+      ),
+      findsOneWidget,
+    );
   });
 }

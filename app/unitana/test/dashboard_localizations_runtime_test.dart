@@ -96,7 +96,7 @@ void main() {
       expect(weatherEs, 'Clima');
       expect(citiesEs, 'Ciudades');
       expect(settingsTitleEs, 'Idioma');
-      expect(englishFallback, 'Convertir Local Hora');
+      expect(englishFallback, 'Convertir una hora concreta');
     },
   );
 

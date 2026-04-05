@@ -210,11 +210,21 @@ class ToolRegistry {
     ),
     ToolRegistryTool(
       toolId: 'cups_grams_estimates',
-      label: 'Cups ↔ Grams Estimates',
+      label: 'Cups to Grams',
       icon: Icons.restaurant_menu_rounded,
       isEnabled: true,
       surfaceType: ToolSurfaceType.configurableTemplate,
       lenses: <String>[ActivityLensId.foodCooking],
+      searchTokens: <String>[
+        'cups',
+        'cup',
+        'grams',
+        'gram',
+        'estimates',
+        'baking',
+        'flour',
+        'sugar',
+      ],
     ),
 
     // Health and Fitness
@@ -380,7 +390,7 @@ class ToolRegistry {
     ),
     ToolRegistryTool(
       toolId: 'tax_vat_helper',
-      label: 'Sales Tax / VAT Helper',
+      label: 'Tax / VAT',
       icon: Icons.calculate_rounded,
       isEnabled: true,
       surfaceType: ToolSurfaceType.dedicated,
@@ -445,15 +455,6 @@ class ToolRegistry {
       lenses: <String>[ActivityLensId.oddUseful],
       searchTokens: <String>['twin', 'full', 'queen', 'king', 'cal king'],
     ),
-    ToolRegistryTool(
-      toolId: 'timezone_lookup',
-      label: 'Time Zone Converter',
-      icon: Icons.travel_explore_rounded,
-      isEnabled: true,
-      surfaceType: ToolSurfaceType.aliasPreset,
-      aliasTargetToolId: 'time_zone_converter',
-      lenses: <String>[ActivityLensId.quickTools, ActivityLensId.oddUseful],
-    ),
   ];
 
   static final Map<String, ToolRegistryTool> byId =
@@ -509,13 +510,11 @@ class ToolRegistry {
           'shoe_sizes',
           'clothing_sizes',
           'paper_sizes',
-          'timezone_lookup',
         ],
         ActivityLensId.oddUseful: <String>[
           'shoe_sizes',
           'paper_sizes',
           'mattress_sizes',
-          'timezone_lookup',
           'clothing_sizes',
         ],
       };
@@ -548,7 +547,6 @@ class ToolRegistry {
     'clothing_sizes',
     'paper_sizes',
     'mattress_sizes',
-    'timezone_lookup',
   ];
 
   static List<ToolRegistryTool> deferredTools() =>

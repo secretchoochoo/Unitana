@@ -48,6 +48,13 @@ void main() {
     );
     await tester.pumpAndSettle(const Duration(milliseconds: 150));
 
+    expect(
+      find.text(
+        'Warm: noticeable heat or sun exposure that usually raises fluid needs.',
+      ),
+      findsOneWidget,
+    );
+
     final rich = find.descendant(
       of: find.byKey(const ValueKey('tool_hydration_result_hydration')),
       matching: find.byType(RichText),

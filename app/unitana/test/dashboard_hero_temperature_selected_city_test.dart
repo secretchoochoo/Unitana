@@ -25,6 +25,14 @@ void main() {
     await pumpStable(tester);
 
     Future<(String, String)> readTemps() async {
+      await pumpUntilFound(
+        tester,
+        find.byKey(const ValueKey('hero_primary_temp')),
+      );
+      await pumpUntilFound(
+        tester,
+        find.byKey(const ValueKey('hero_secondary_temp')),
+      );
       final primary = tester.widget<Text>(
         find.byKey(const ValueKey('hero_primary_temp')),
       );

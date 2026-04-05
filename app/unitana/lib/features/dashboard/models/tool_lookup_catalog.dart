@@ -31,6 +31,14 @@ class ToolLookupDefaults {
   });
 }
 
+@immutable
+class ToolLookupGroup {
+  final String keyId;
+  final String label;
+
+  const ToolLookupGroup({required this.keyId, required this.label});
+}
+
 List<String> toolLookupSystemsFor(String canonicalToolId) {
   switch (canonicalToolId) {
     case CanonicalToolId.shoeSizes:
@@ -97,6 +105,64 @@ bool toolLookupShouldPersistMatrixSelection(String canonicalToolId) {
   }
 }
 
+List<ToolLookupGroup> toolLookupGroupsFor(String canonicalToolId) {
+  switch (canonicalToolId) {
+    case CanonicalToolId.clothingSizes:
+      return const <ToolLookupGroup>[
+        ToolLookupGroup(keyId: 'women_tops', label: 'Women Tops'),
+        ToolLookupGroup(keyId: 'women_bottoms', label: 'Women Bottoms'),
+        ToolLookupGroup(keyId: 'men_tops', label: 'Men Tops'),
+        ToolLookupGroup(keyId: 'men_bottoms', label: 'Men Bottoms'),
+        ToolLookupGroup(keyId: 'outerwear', label: 'Outerwear'),
+      ];
+    default:
+      return const <ToolLookupGroup>[];
+  }
+}
+
+String? toolLookupGroupKeyForRow({
+  required String canonicalToolId,
+  required ToolLookupEntry row,
+}) {
+  switch (canonicalToolId) {
+    case CanonicalToolId.clothingSizes:
+      final key = row.keyId;
+      if (key.startsWith('cloth_w_tops_')) return 'women_tops';
+      if (key.startsWith('cloth_w_bottoms_')) return 'women_bottoms';
+      if (key.startsWith('cloth_m_tops_')) return 'men_tops';
+      if (key.startsWith('cloth_m_bottoms_')) return 'men_bottoms';
+      if (key.startsWith('cloth_outer_')) return 'outerwear';
+      return null;
+    default:
+      return null;
+  }
+}
+
+List<ToolLookupEntry> toolLookupEntriesForGroup({
+  required String canonicalToolId,
+  required List<ToolLookupEntry> rows,
+  required String? groupKey,
+}) {
+  if (groupKey == null || groupKey.trim().isEmpty) {
+    return rows;
+  }
+  switch (canonicalToolId) {
+    case CanonicalToolId.clothingSizes:
+      return rows
+          .where(
+            (row) =>
+                toolLookupGroupKeyForRow(
+                  canonicalToolId: canonicalToolId,
+                  row: row,
+                ) ==
+                groupKey,
+          )
+          .toList(growable: false);
+    default:
+      return rows;
+  }
+}
+
 String toolLookupReferenceLabel({
   required String canonicalToolId,
   required ToolLookupEntry row,
@@ -113,7 +179,7 @@ String toolLookupReferenceLabel({
 String toolLookupReferenceHeader(String canonicalToolId) {
   return switch (canonicalToolId) {
     CanonicalToolId.shoeSizes => 'Foot (cm)',
-    CanonicalToolId.clothingSizes => 'Category',
+    CanonicalToolId.clothingSizes => 'Garment / Size',
     _ => 'Reference',
   };
 }

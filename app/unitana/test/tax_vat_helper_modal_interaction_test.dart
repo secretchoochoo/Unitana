@@ -17,7 +17,7 @@ Future<void> _searchTool(WidgetTester tester, String query) async {
 }
 
 void main() {
-  testWidgets('Tax/VAT Helper calculates add-on and inclusive modes', (
+  testWidgets('Tax/VAT tool uses plain-language modes and calculates totals', (
     tester,
   ) async {
     await pumpDashboardForTest(tester);
@@ -37,21 +37,27 @@ void main() {
       find.byKey(const ValueKey('tool_tax_result_tax_vat_helper')),
       findsOneWidget,
     );
+    expect(find.text('Add tax to price'), findsOneWidget);
+    expect(find.text('Find tax in total'), findsOneWidget);
+    expect(find.textContaining('Enter the exact local rate'), findsOneWidget);
+    expect(find.widgetWithText(TextField, 'Rate'), findsOneWidget);
+
+    final rateField = find.byKey(
+      const ValueKey('tool_tax_rate_tax_vat_helper'),
+    );
+    expect(rateField, findsOneWidget);
+    expect(find.text('23'), findsWidgets);
+
+    final inclusiveChip = tester.widget<ChoiceChip>(
+      find.byKey(const ValueKey('tool_tax_mode_tax_vat_helper_inclusive')),
+    );
+    expect(inclusiveChip.selected, isTrue);
 
     await tester.enterText(
       find.byKey(const ValueKey('tool_tax_amount_tax_vat_helper')),
       '120',
     );
-    await tester.pumpAndSettle(const Duration(milliseconds: 120));
-
-    final chips = find.byType(ChoiceChip);
-    expect(chips, findsWidgets);
-    await tester.tap(chips.first);
-    await tester.pumpAndSettle(const Duration(milliseconds: 120));
-
-    await tester.tap(
-      find.byKey(const ValueKey('tool_tax_mode_tax_vat_helper_inclusive')),
-    );
+    await tester.enterText(rateField, '23');
     await tester.pumpAndSettle(const Duration(milliseconds: 120));
 
     final richLines = find.descendant(
@@ -66,7 +72,11 @@ void main() {
         .join('\n');
 
     expect(text, contains('Subtotal'));
-    expect(text, contains('Tax ('));
+    expect(text, contains('Tax (23%)'));
     expect(text, contains('Total'));
+    expect(
+      find.text('Use this when tax or VAT is already included in the total.'),
+      findsOneWidget,
+    );
   });
 }

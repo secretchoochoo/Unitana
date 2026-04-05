@@ -83,23 +83,6 @@ void main() {
       );
     });
 
-    testWidgets('Time Zone Converter card', (tester) async {
-      await pumpToolSurface(tester, tool: ToolDefinitions.timeZoneConverter);
-      if (!shouldRunGoldens) return;
-
-      await tester.enterText(
-        find.byKey(const ValueKey('tool_time_convert_input')),
-        '2026-06-01 12:00',
-      );
-      tester.testTextInput.hide();
-      await tester.pump(const Duration(milliseconds: 120));
-
-      await expectLater(
-        find.byKey(const ValueKey('tool_time_converter_card')),
-        matchesGoldenFile('goldens/tool_time_zone_converter_card.png'),
-      );
-    });
-
     testWidgets('Tool title wraps to two lines with ellipsis', (tester) async {
       const longTitleTool = ToolDefinition(
         id: 'golden_long_title_overflow',

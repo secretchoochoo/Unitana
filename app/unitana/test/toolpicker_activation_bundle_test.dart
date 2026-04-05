@@ -178,24 +178,18 @@ void main() {
     expect(find.byKey(const ValueKey('tool_title_baking')), findsOneWidget);
   });
 
-  testWidgets(
-    'timezone lookup is enabled and opens Time Zone Converter modal',
-    (tester) async {
-      await pumpDashboardForTest(tester);
-      await _openToolPicker(tester);
-      await _searchTool(tester, 'time zone');
+  testWidgets('standalone time conversion no longer appears in the picker', (
+    tester,
+  ) async {
+    await pumpDashboardForTest(tester);
+    await _openToolPicker(tester);
+    await _searchTool(tester, 'time zone converter');
 
-      await tester.tap(
-        find.byKey(const ValueKey('toolpicker_search_tool_timezone_lookup')),
-      );
-      await tester.pumpAndSettle();
-
-      expect(
-        find.byKey(const ValueKey('tool_title_time_zone_converter')),
-        findsOneWidget,
-      );
-    },
-  );
+    expect(
+      find.byKey(const ValueKey('toolpicker_search_tool_timezone_lookup')),
+      findsNothing,
+    );
+  });
 
   testWidgets('weather summary opens weather sheet (not converter modal)', (
     tester,
@@ -306,6 +300,8 @@ void main() {
       find.byKey(const ValueKey('tool_energy_planner_card')),
       findsOneWidget,
     );
+    expect(find.text('Daily Energy Estimate'), findsOneWidget);
+    expect(find.textContaining('Rough maintenance estimate'), findsOneWidget);
     expect(
       find.byKey(const ValueKey('tool_disclaimer_energy')),
       findsOneWidget,
@@ -369,12 +365,12 @@ void main() {
     );
   });
 
-  testWidgets('cups/grams estimates is enabled and opens lookup modal', (
+  testWidgets('cups to grams is enabled and opens lookup modal', (
     tester,
   ) async {
     await pumpDashboardForTest(tester);
     await _openToolPicker(tester);
-    await _searchTool(tester, 'grams estimates');
+    await _searchTool(tester, 'cups');
 
     await tester.tap(
       find.byKey(const ValueKey('toolpicker_search_tool_cups_grams_estimates')),

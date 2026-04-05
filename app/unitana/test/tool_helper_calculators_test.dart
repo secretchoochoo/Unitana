@@ -4,9 +4,10 @@ import 'package:unitana/features/dashboard/models/tool_helper_calculators.dart';
 
 void main() {
   test('tip presets vary by country', () {
-    expect(tipPresetsForCountry('US'), const <int>[15, 18, 20]);
+    expect(tipPresetsForCountry('US'), const <int>[5, 10, 15, 18, 20]);
     expect(tipPresetsForCountry('pt'), const <int>[5, 10, 15]);
     expect(tipPresetsForCountry('JP'), const <int>[0, 5, 10]);
+    expect(tipPresetsForCountry('AU'), const <int>[5, 10, 15, 20]);
   });
 
   test('computeTip applies percent, split, and rounding', () {

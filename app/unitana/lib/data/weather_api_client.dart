@@ -7,10 +7,12 @@ import 'package:http/http.dart' as http;
 class WeatherApiHourlyForecastPoint {
   final DateTime timeUtc;
   final double temperatureC;
+  final int? precipitationChancePercent;
 
   const WeatherApiHourlyForecastPoint({
     required this.timeUtc,
     required this.temperatureC,
+    required this.precipitationChancePercent,
   });
 }
 
@@ -19,11 +21,13 @@ class WeatherApiDailyForecastPoint {
   final DateTime dayUtc;
   final double maxTemperatureC;
   final double minTemperatureC;
+  final int? precipitationChancePercent;
 
   const WeatherApiDailyForecastPoint({
     required this.dayUtc,
     required this.maxTemperatureC,
     required this.minTemperatureC,
+    required this.precipitationChancePercent,
   });
 }
 
@@ -32,6 +36,8 @@ class WeatherApiForecast {
   final double temperatureC;
   final double windKmh;
   final double gustKmh;
+  final int? cloudCoverPercent;
+  final double? visibilityKm;
 
   /// WeatherAPI condition `code` (integer).
   final int conditionCode;
@@ -49,6 +55,8 @@ class WeatherApiForecast {
     required this.temperatureC,
     required this.windKmh,
     required this.gustKmh,
+    this.cloudCoverPercent,
+    this.visibilityKm,
     required this.conditionCode,
     required this.conditionText,
     required this.sunriseUtc,
@@ -187,6 +195,8 @@ class WeatherApiClient {
     final tempC = (current['temp_c'] as num?)?.toDouble() ?? 0.0;
     final windKph = (current['wind_kph'] as num?)?.toDouble() ?? 0.0;
     final gustKph = (current['gust_kph'] as num?)?.toDouble() ?? windKph;
+    final cloudCoverPercent = (current['cloud'] as num?)?.toInt();
+    final visibilityKm = (current['vis_km'] as num?)?.toDouble();
 
     final condition =
         current['condition'] as Map<String, dynamic>? ??
@@ -264,6 +274,7 @@ class WeatherApiClient {
         final dayVals = dayMap['day'] as Map<String, dynamic>? ?? const {};
         final maxC = (dayVals['maxtemp_c'] as num?)?.toDouble();
         final minC = (dayVals['mintemp_c'] as num?)?.toDouble();
+        final chanceOfRain = (dayVals['daily_chance_of_rain'] as num?)?.toInt();
         if (dateEpoch != null && maxC != null && minC != null) {
           dailyPoints.add(
             WeatherApiDailyForecastPoint(
@@ -273,6 +284,7 @@ class WeatherApiClient {
               ),
               maxTemperatureC: maxC,
               minTemperatureC: minC,
+              precipitationChancePercent: chanceOfRain,
             ),
           );
         }
@@ -282,6 +294,7 @@ class WeatherApiClient {
           final hm = hourRaw as Map<String, dynamic>;
           final epoch = (hm['time_epoch'] as num?)?.toInt();
           final hourTempC = (hm['temp_c'] as num?)?.toDouble();
+          final chanceOfRain = (hm['chance_of_rain'] as num?)?.toInt();
           if (epoch == null || hourTempC == null) continue;
           hourlyPoints.add(
             WeatherApiHourlyForecastPoint(
@@ -290,6 +303,7 @@ class WeatherApiClient {
                 isUtc: true,
               ),
               temperatureC: hourTempC,
+              precipitationChancePercent: chanceOfRain,
             ),
           );
         }
@@ -300,6 +314,8 @@ class WeatherApiClient {
       temperatureC: tempC,
       windKmh: windKph,
       gustKmh: gustKph,
+      cloudCoverPercent: cloudCoverPercent,
+      visibilityKm: visibilityKm,
       conditionCode: conditionCode,
       conditionText: conditionText,
       sunriseUtc: sunriseUtc,

@@ -27,7 +27,7 @@ void main() {
     );
     expect(
       LocalizationSeed.enUs['dashboard.time.converter.title'],
-      'Convert Local Time',
+      'Convert a Specific Time',
     );
     expect(
       LocalizationSeed.enUs['dashboard.time.converter.inputHint'],
@@ -43,8 +43,19 @@ void main() {
       'Enter a valid amount to calculate tip.',
     );
     expect(LocalizationSeed.enUs['dashboard.tip.inputHint.amount'], '100.00');
-    expect(LocalizationSeed.enUs['dashboard.tax.mode.addOn'], 'Add-on tax');
+    expect(
+      LocalizationSeed.enUs['dashboard.tax.mode.addOn'],
+      'Add tax to price',
+    );
     expect(LocalizationSeed.enUs['dashboard.tax.inputHint.amount'], '100.00');
+    expect(
+      LocalizationSeed.enUs['dashboard.lens.odd_useful.name'],
+      'Reference',
+    );
+    expect(
+      LocalizationSeed.enUs['dashboard.tools.cups_grams_estimates.title'],
+      'Cups to Grams',
+    );
     expect(
       LocalizationSeed.enUs['dashboard.unitPrice.compareToggle'],
       'Compare with Product B',

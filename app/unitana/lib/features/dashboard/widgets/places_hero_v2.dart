@@ -13,6 +13,7 @@ import '../../../utils/timezone_utils.dart';
 import '../models/dashboard_copy.dart';
 import '../models/dashboard_live_data.dart';
 import '../models/dashboard_session_controller.dart';
+import 'weather_summary_bottom_sheet.dart';
 
 class PlacesHeroV2 extends StatelessWidget {
   final Place? home;
@@ -68,6 +69,12 @@ class PlacesHeroV2 extends StatelessWidget {
         final primaryWeather = primary == null
             ? null
             : liveData.weatherFor(primary);
+        final primaryWeatherPresentation = primary == null
+            ? null
+            : liveData.weatherPresentationFor(primary);
+        final primaryForecast = primary == null
+            ? null
+            : liveData.forecastFor(primary);
         final primaryEmergency = primary == null
             ? const WeatherEmergencyAssessment(
                 severity: WeatherEmergencySeverity.none,
@@ -177,9 +184,25 @@ class PlacesHeroV2 extends StatelessWidget {
                             envMode: session.heroEnvPillMode,
                             onToggleEnvMode: session.toggleHeroEnvPillMode,
                             sun: primarySun,
-                            sceneKey: primaryWeather?.sceneKey,
-                            conditionLabel: primaryWeather?.conditionText,
+                            sceneKey:
+                                primaryWeatherPresentation?.displaySceneKey ??
+                                primaryWeather?.sceneKey,
+                            conditionLabel: _heroConditionLabel(
+                              context,
+                              nowUtc: liveData.nowUtc,
+                              presentation: primaryWeatherPresentation,
+                              forecast: primaryForecast,
+                            ),
                             emergency: primaryEmergency,
+                            onEmergencyTap:
+                                primary != null && primaryEmergency.isActive
+                                ? () =>
+                                      WeatherSummaryBottomSheet.showEmergencyDetails(
+                                        context,
+                                        place: primary,
+                                        emergency: primaryEmergency,
+                                      )
+                                : null,
                             isNight: isNight,
                             primaryTzId: primary?.timeZoneId,
                             secondaryTzId: secondary?.timeZoneId,
@@ -526,6 +549,7 @@ class _HeroBandsBody extends StatelessWidget {
   final SceneKey? sceneKey;
   final String? conditionLabel;
   final WeatherEmergencyAssessment emergency;
+  final VoidCallback? onEmergencyTap;
   final bool isNight;
   final String? primaryTzId;
   final String? secondaryTzId;
@@ -550,6 +574,7 @@ class _HeroBandsBody extends StatelessWidget {
     required this.sceneKey,
     required this.conditionLabel,
     required this.emergency,
+    required this.onEmergencyTap,
     required this.isNight,
     required this.primaryTzId,
     required this.secondaryTzId,
@@ -627,6 +652,7 @@ class _HeroBandsBody extends StatelessWidget {
                   sceneKey: sceneKey,
                   conditionLabel: conditionLabel,
                   emergency: emergency,
+                  onEmergencyTap: onEmergencyTap,
                   includeTestKeys: includeTestKeys,
                   renderConditionLabel: false,
                 ),
@@ -1594,6 +1620,7 @@ class _RightMarqueeSlot extends StatelessWidget {
   final SceneKey? sceneKey;
   final String? conditionLabel;
   final WeatherEmergencyAssessment emergency;
+  final VoidCallback? onEmergencyTap;
   final bool includeTestKeys;
 
   final bool renderConditionLabel;
@@ -1604,6 +1631,7 @@ class _RightMarqueeSlot extends StatelessWidget {
     required this.sceneKey,
     required this.conditionLabel,
     required this.emergency,
+    required this.onEmergencyTap,
     this.includeTestKeys = true,
     this.renderConditionLabel = true,
   });
@@ -1655,125 +1683,132 @@ class _RightMarqueeSlot extends StatelessWidget {
         return SizedBox(
           key: includeTestKeys ? const ValueKey('hero_marquee_slot') : null,
           height: h,
-          child: DecoratedBox(
-            decoration: BoxDecoration(
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: emergency.isActive ? onEmergencyTap : null,
               borderRadius: BorderRadius.circular(radius),
-              border: Border.all(
-                color: cs.outlineVariant.withAlpha(170),
-                width: (layout?.strokeHairline ?? 1.0),
-              ),
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(radius),
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  if (emergency.isActive)
-                    IgnorePointer(
-                      child: Container(
-                        color: _alertTone(
-                          context,
-                          emergency.severity,
-                        ).withAlpha(20),
-                      ),
-                    ),
-                  HeroAliveMarquee(
-                    includeTestKeys: includeTestKeys,
-                    compact: compact,
-                    isNight: isNight,
-                    sceneKey: sceneKey,
-                    conditionLabel: conditionLabel,
-                    renderConditionLabel: renderConditionLabel,
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(radius),
+                  border: Border.all(
+                    color: cs.outlineVariant.withAlpha(170),
+                    width: (layout?.strokeHairline ?? 1.0),
                   ),
-                  // Subtle scrim so the condition chip stays readable over any scene.
-                  if (!renderConditionLabel)
-                    IgnorePointer(
-                      child: Align(
-                        alignment: Alignment.bottomCenter,
-                        child: Container(
-                          height: compact ? 18.0 : 22.0,
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment.topCenter,
-                              end: Alignment.bottomCenter,
-                              colors: [
-                                Colors.transparent,
-                                Colors.black.withAlpha(110),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  // Condition chip (widget-layer) so it never disappears visually.
-                  if (!renderConditionLabel)
-                    Positioned(
-                      left: 6,
-                      right: 6,
-                      bottom: compact ? 4 : 5,
-                      child: Center(
-                        child: Container(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: compact ? 8 : 10,
-                            vertical: compact ? 3 : 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: cs.surface.withAlpha(190),
-                            borderRadius: BorderRadius.circular(
-                              compact ? 10 : 12,
-                            ),
-                            border: Border.all(
-                              color: cs.outlineVariant.withAlpha(170),
-                              width: (layout?.strokeHairline ?? 1.0),
-                            ),
-                          ),
-                          child: Text(
-                            label,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: GoogleFonts.inconsolata(
-                              fontSize: compact ? 10 : 11,
-                              fontWeight: FontWeight.w800,
-                              color: cs.onSurface,
-                              height: 1.0,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  if (emergency.isActive)
-                    Positioned(
-                      top: compact ? 4 : 6,
-                      right: compact ? 4 : 6,
-                      child: DecoratedBox(
-                        decoration: BoxDecoration(
-                          color: _alertTone(
-                            context,
-                            emergency.severity,
-                          ).withAlpha(210),
-                          borderRadius: BorderRadius.circular(999),
-                        ),
-                        child: Padding(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: compact ? 6 : 8,
-                            vertical: compact ? 2 : 3,
-                          ),
-                          child: Text(
-                            DashboardCopy.weatherEmergencyShortLabel(
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(radius),
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      if (emergency.isActive)
+                        IgnorePointer(
+                          child: Container(
+                            color: _alertTone(
                               context,
-                              severity: emergency.severity,
-                            ),
-                            style: GoogleFonts.inconsolata(
-                              fontSize: compact ? 8 : 9,
-                              fontWeight: FontWeight.w900,
-                              color: Colors.white,
-                              height: 1.0,
+                              emergency.severity,
+                            ).withAlpha(20),
+                          ),
+                        ),
+                      HeroAliveMarquee(
+                        includeTestKeys: includeTestKeys,
+                        compact: compact,
+                        isNight: isNight,
+                        sceneKey: sceneKey,
+                        conditionLabel: conditionLabel,
+                        renderConditionLabel: renderConditionLabel,
+                      ),
+                      // Subtle scrim so the condition chip stays readable over any scene.
+                      if (!renderConditionLabel)
+                        IgnorePointer(
+                          child: Align(
+                            alignment: Alignment.bottomCenter,
+                            child: Container(
+                              height: compact ? 18.0 : 22.0,
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  begin: Alignment.topCenter,
+                                  end: Alignment.bottomCenter,
+                                  colors: [
+                                    Colors.transparent,
+                                    Colors.black.withAlpha(110),
+                                  ],
+                                ),
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                    ),
-                ],
+                      // Condition chip (widget-layer) so it never disappears visually.
+                      if (!renderConditionLabel)
+                        Positioned(
+                          left: 6,
+                          right: 6,
+                          bottom: compact ? 4 : 5,
+                          child: Center(
+                            child: Container(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: compact ? 8 : 10,
+                                vertical: compact ? 3 : 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: cs.surface.withAlpha(190),
+                                borderRadius: BorderRadius.circular(
+                                  compact ? 10 : 12,
+                                ),
+                                border: Border.all(
+                                  color: cs.outlineVariant.withAlpha(170),
+                                  width: (layout?.strokeHairline ?? 1.0),
+                                ),
+                              ),
+                              child: Text(
+                                label,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: GoogleFonts.inconsolata(
+                                  fontSize: compact ? 10 : 11,
+                                  fontWeight: FontWeight.w800,
+                                  color: cs.onSurface,
+                                  height: 1.0,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      if (emergency.isActive)
+                        Positioned(
+                          top: compact ? 4 : 6,
+                          right: compact ? 4 : 6,
+                          child: DecoratedBox(
+                            decoration: BoxDecoration(
+                              color: _alertTone(
+                                context,
+                                emergency.severity,
+                              ).withAlpha(210),
+                              borderRadius: BorderRadius.circular(999),
+                            ),
+                            child: Padding(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: compact ? 6 : 8,
+                                vertical: compact ? 2 : 3,
+                              ),
+                              child: Text(
+                                DashboardCopy.weatherEmergencyShortLabel(
+                                  context,
+                                  severity: emergency.severity,
+                                ),
+                                style: GoogleFonts.inconsolata(
+                                  fontSize: compact ? 8 : 9,
+                                  fontWeight: FontWeight.w900,
+                                  color: Colors.white,
+                                  height: 1.0,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
               ),
             ),
           ),
@@ -2202,6 +2237,51 @@ String _fmtOneDecimal(double value) {
     return rounded.substring(0, rounded.length - 2);
   }
   return rounded;
+}
+
+String? _heroConditionLabel(
+  BuildContext context, {
+  required DateTime nowUtc,
+  required WeatherPresentation? presentation,
+  required WeatherForecastSnapshot? forecast,
+}) {
+  final rawCondition = presentation == null
+      ? null
+      : DashboardCopy.weatherPresentationLabel(
+          context,
+          presentation: presentation,
+        );
+  final precipChance = _primaryPrecipitationChance(
+    nowUtc: nowUtc,
+    forecast: forecast,
+  );
+  if (precipChance == null || precipChance < 15) {
+    return rawCondition;
+  }
+  final precipLabel = DashboardCopy.weatherPrecipChanceLabel(
+    context,
+    percent: precipChance,
+  );
+  final base = (rawCondition ?? '').trim();
+  if (base.isEmpty || base == '—') return precipLabel;
+  return '$base • $precipLabel';
+}
+
+int? _primaryPrecipitationChance({
+  required DateTime nowUtc,
+  required WeatherForecastSnapshot? forecast,
+}) {
+  if (forecast == null) return null;
+  for (final hourly in forecast.hourly) {
+    if (hourly.timeUtc.isBefore(nowUtc)) continue;
+    final precip = hourly.precipitationChancePercent;
+    if (precip != null) return precip;
+  }
+  for (final daily in forecast.daily) {
+    final precip = daily.precipitationChancePercent;
+    if (precip != null) return precip;
+  }
+  return null;
 }
 
 _WindMeasureRow _windMeasureRow(double? kmh, {required bool useImperial}) {

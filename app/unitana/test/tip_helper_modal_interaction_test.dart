@@ -41,6 +41,15 @@ void main() {
     );
     await tester.pumpAndSettle(const Duration(milliseconds: 120));
 
+    expect(
+      find.byKey(const ValueKey('tool_tip_chip_tip_helper_5')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('tool_tip_chip_tip_helper_10')),
+      findsOneWidget,
+    );
+
     final chips = find.byType(ChoiceChip);
     expect(chips, findsWidgets);
     await tester.tap(chips.first);
@@ -73,5 +82,81 @@ void main() {
     expect(text, contains('Tip ('));
     expect(text, contains('Total'));
     expect(text, contains('Per person (3)'));
+  });
+
+  testWidgets('Tip Helper reflects destination pricing context by default', (
+    tester,
+  ) async {
+    await pumpDashboardForTest(tester);
+    await _openToolPicker(tester);
+    await _searchTool(tester, 'tip helper');
+
+    await tester.tap(
+      find.byKey(const ValueKey('toolpicker_search_tool_tip_helper')),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Bill Amount (EUR)'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('tool_tip_chip_tip_helper_5')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('tool_tip_chip_tip_helper_10')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('tool_tip_chip_tip_helper_15')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('tool_tip_chip_tip_helper_18')),
+      findsNothing,
+    );
+    expect(
+      find.byKey(const ValueKey('tool_tip_chip_tip_helper_20')),
+      findsNothing,
+    );
+  });
+
+  testWidgets('Tip Helper keeps 18 and 20 percent presets for US context', (
+    tester,
+  ) async {
+    await pumpDashboardForTest(tester);
+
+    final homeSeg = find.byKey(const ValueKey('places_hero_segment_home'));
+    await ensureVisibleAligned(tester, homeSeg);
+    await tester.tap(homeSeg, warnIfMissed: false);
+    await tester.pumpAndSettle(const Duration(milliseconds: 200));
+
+    await _openToolPicker(tester);
+    await _searchTool(tester, 'tip helper');
+
+    await tester.tap(
+      find.byKey(const ValueKey('toolpicker_search_tool_tip_helper')),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Bill Amount (USD)'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('tool_tip_chip_tip_helper_5')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('tool_tip_chip_tip_helper_10')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('tool_tip_chip_tip_helper_15')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('tool_tip_chip_tip_helper_18')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('tool_tip_chip_tip_helper_20')),
+      findsOneWidget,
+    );
   });
 }

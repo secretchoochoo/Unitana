@@ -6,7 +6,7 @@ List<int> tipPresetsForCountry(String countryCode) {
   switch (countryCode.trim().toUpperCase()) {
     case 'US':
     case 'CA':
-      return const <int>[15, 18, 20];
+      return const <int>[5, 10, 15, 18, 20];
     case 'JP':
     case 'KR':
       return const <int>[0, 5, 10];
@@ -17,8 +17,14 @@ List<int> tipPresetsForCountry(String countryCode) {
     case 'DE':
       return const <int>[5, 10, 15];
     default:
-      return const <int>[10, 15, 20];
+      return const <int>[5, 10, 15, 20];
   }
+}
+
+int defaultTipPercentForCountry(String countryCode) {
+  final presets = tipPresetsForCountry(countryCode);
+  if (presets.contains(15)) return 15;
+  return presets[(presets.length / 2).floor()];
 }
 
 List<int> taxPresetsForCountry(String countryCode) {
@@ -27,16 +33,59 @@ List<int> taxPresetsForCountry(String countryCode) {
       return const <int>[6, 8, 10];
     case 'CA':
       return const <int>[5, 13, 15];
+    case 'PT':
+      return const <int>[6, 13, 23];
     case 'GB':
+      return const <int>[5, 20];
     case 'FR':
-    case 'DE':
-    case 'IT':
-    case 'ES':
       return const <int>[5, 10, 20];
+    case 'DE':
+      return const <int>[7, 19];
+    case 'IT':
+      return const <int>[4, 10, 22];
+    case 'ES':
+      return const <int>[4, 10, 21];
     case 'JP':
       return const <int>[8, 10];
     default:
       return const <int>[5, 8, 10];
+  }
+}
+
+int defaultTaxPercentForCountry(String countryCode) {
+  final normalized = countryCode.trim().toUpperCase();
+  switch (normalized) {
+    case 'US':
+      return 8;
+    case 'CA':
+      return 13;
+    case 'PT':
+      return 23;
+    case 'GB':
+      return 20;
+    case 'FR':
+      return 20;
+    case 'DE':
+      return 19;
+    case 'IT':
+      return 22;
+    case 'ES':
+      return 21;
+    case 'JP':
+      return 10;
+    default:
+      final presets = taxPresetsForCountry(normalized);
+      return presets[(presets.length / 2).floor()];
+  }
+}
+
+bool defaultTaxModeAddOnForCountry(String countryCode) {
+  switch (countryCode.trim().toUpperCase()) {
+    case 'US':
+    case 'CA':
+      return true;
+    default:
+      return false;
   }
 }
 
@@ -107,10 +156,10 @@ class TaxBreakdown {
 
 TaxBreakdown? computeTaxBreakdown({
   required double? amount,
-  required int taxPercent,
+  required double taxPercent,
   required bool isAddOn,
 }) {
-  if (amount == null) return null;
+  if (amount == null || taxPercent < 0) return null;
   final rate = taxPercent / 100.0;
   final subtotal = isAddOn ? amount : amount / (1.0 + rate);
   final taxAmount = isAddOn ? amount * rate : amount - subtotal;

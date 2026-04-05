@@ -18,7 +18,7 @@ Future<void> _searchTool(WidgetTester tester, String query) async {
 }
 
 void main() {
-  testWidgets('Cups/grams estimates matrix supports copy + row reselection', (
+  testWidgets('Cups to grams matrix supports copy + row reselection', (
     tester,
   ) async {
     String lastClipboardText = '';
@@ -46,7 +46,7 @@ void main() {
 
     await pumpDashboardForTest(tester);
     await _openToolPicker(tester);
-    await _searchTool(tester, 'grams estimates');
+    await _searchTool(tester, 'cups');
 
     await tester.tap(
       find.byKey(const ValueKey('toolpicker_search_tool_cups_grams_estimates')),

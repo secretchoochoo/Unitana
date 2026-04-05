@@ -20,6 +20,7 @@ class ToolLookupSurfaceTheme {
   final Color textMuted;
   final Color headingTone;
   final Color selectedTone;
+  final Color successTone;
 
   const ToolLookupSurfaceTheme({
     required this.accent,
@@ -29,6 +30,7 @@ class ToolLookupSurfaceTheme {
     required this.textMuted,
     required this.headingTone,
     required this.selectedTone,
+    required this.successTone,
   });
 }
 
@@ -40,6 +42,8 @@ class ToolLookupSurface extends StatelessWidget {
   final bool hasCustomSelection;
   final ToolLookupEntry selectedRow;
   final List<ToolLookupEntry> rows;
+  final List<ToolLookupGroup> clothingGroups;
+  final String? selectedClothingGroupKey;
   final String fromSystem;
   final String toSystem;
   final int matrixPageIndex;
@@ -51,6 +55,7 @@ class ToolLookupSurface extends StatelessWidget {
   final VoidCallback onPickEntry;
   final VoidCallback onResetSelection;
   final ValueChanged<int> onMatrixPageChanged;
+  final ValueChanged<String> onSelectClothingGroup;
   final ValueChanged<String> onSelectEntry;
   final ToolLookupValueCopyCallback onCopyValue;
   final String Function(ToolLookupEntry row, String system) lookupValue;
@@ -65,6 +70,8 @@ class ToolLookupSurface extends StatelessWidget {
     required this.hasCustomSelection,
     required this.selectedRow,
     required this.rows,
+    required this.clothingGroups,
+    required this.selectedClothingGroupKey,
     required this.fromSystem,
     required this.toSystem,
     required this.matrixPageIndex,
@@ -76,6 +83,7 @@ class ToolLookupSurface extends StatelessWidget {
     required this.onPickEntry,
     required this.onResetSelection,
     required this.onMatrixPageChanged,
+    required this.onSelectClothingGroup,
     required this.onSelectEntry,
     required this.onCopyValue,
     required this.lookupValue,
@@ -90,10 +98,13 @@ class ToolLookupSurface extends StatelessWidget {
         canonicalToolId: canonicalToolId,
         isClothingLookupTool: isClothingLookupTool,
         rows: rows,
+        clothingGroups: clothingGroups,
+        selectedClothingGroupKey: selectedClothingGroupKey,
         selectedEntryKey: selectedRow.keyId,
         matrixPageIndex: matrixPageIndex,
         theme: theme,
         onMatrixPageChanged: onMatrixPageChanged,
+        onSelectClothingGroup: onSelectClothingGroup,
         onSelectEntry: onSelectEntry,
         onCopyValue: onCopyValue,
         lookupValue: lookupValue,
@@ -128,10 +139,13 @@ class _ToolLookupFullMatrixView extends StatelessWidget {
   final String canonicalToolId;
   final bool isClothingLookupTool;
   final List<ToolLookupEntry> rows;
+  final List<ToolLookupGroup> clothingGroups;
+  final String? selectedClothingGroupKey;
   final String selectedEntryKey;
   final int matrixPageIndex;
   final ToolLookupSurfaceTheme theme;
   final ValueChanged<int> onMatrixPageChanged;
+  final ValueChanged<String> onSelectClothingGroup;
   final ValueChanged<String> onSelectEntry;
   final ToolLookupValueCopyCallback onCopyValue;
   final String Function(ToolLookupEntry row, String system) lookupValue;
@@ -142,10 +156,13 @@ class _ToolLookupFullMatrixView extends StatelessWidget {
     required this.canonicalToolId,
     required this.isClothingLookupTool,
     required this.rows,
+    required this.clothingGroups,
+    required this.selectedClothingGroupKey,
     required this.selectedEntryKey,
     required this.matrixPageIndex,
     required this.theme,
     required this.onMatrixPageChanged,
+    required this.onSelectClothingGroup,
     required this.onSelectEntry,
     required this.onCopyValue,
     required this.lookupValue,
@@ -164,6 +181,12 @@ class _ToolLookupFullMatrixView extends StatelessWidget {
         .take(pageSize)
         .toList(growable: false);
     final visibleLabel = visibleSystems.join(' • ');
+    final selectedClothingGroup = clothingGroups
+        .cast<ToolLookupGroup?>()
+        .firstWhere(
+          (group) => group?.keyId == selectedClothingGroupKey,
+          orElse: () => clothingGroups.isEmpty ? null : clothingGroups.first,
+        );
 
     Widget headerCell(
       String text, {
@@ -251,13 +274,42 @@ class _ToolLookupFullMatrixView extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            DashboardCopy.lookupMatrixHelp(context),
+            isClothingLookupTool
+                ? 'Choose a garment group first. Tap a row to focus. Tap any value cell to copy.'
+                : DashboardCopy.lookupMatrixHelp(context),
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
               color: theme.textMuted,
               fontWeight: FontWeight.w600,
             ),
           ),
           if (isClothingLookupTool) ...[
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (final group in clothingGroups)
+                  ChoiceChip(
+                    key: ValueKey(
+                      'tool_lookup_group_chip_${toolId}_${group.keyId}',
+                    ),
+                    label: Text(group.label),
+                    selected: group.keyId == selectedClothingGroup?.keyId,
+                    onSelected: (_) => onSelectClothingGroup(group.keyId),
+                  ),
+              ],
+            ),
+            if (selectedClothingGroup != null) ...[
+              const SizedBox(height: 8),
+              Text(
+                'Showing ${selectedClothingGroup.label} (${rows.length} rows).',
+                key: ValueKey('tool_lookup_group_summary_$toolId'),
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: theme.textMuted,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
             const SizedBox(height: 8),
             Container(
               key: const ValueKey('tool_lookup_disclaimer_clothing_sizes'),
@@ -268,7 +320,7 @@ class _ToolLookupFullMatrixView extends StatelessWidget {
                 border: Border.all(color: theme.panelBorder),
               ),
               child: Text(
-                'Sizes vary by brand and cut. Use this as a reference and check retailer size charts.',
+                'Approximate reference only. Choose a garment group first, then check retailer size charts because fit varies by brand and cut.',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: theme.textMuted,
                   fontWeight: FontWeight.w700,

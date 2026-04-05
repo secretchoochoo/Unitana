@@ -86,6 +86,7 @@ class WeatherSummaryBottomSheet extends StatelessWidget {
     required Place? home,
     required Place? destination,
   }) {
+    liveData.ensureSeeded([?destination, ?home]);
     return showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -98,6 +99,97 @@ class WeatherSummaryBottomSheet extends StatelessWidget {
     );
   }
 
+  static Future<void> showEmergencyDetails(
+    BuildContext context, {
+    required Place place,
+    required WeatherEmergencyAssessment emergency,
+  }) {
+    return showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (_) {
+        final theme = Theme.of(context);
+        final tone = _WeatherSheetThemePolicy.emergencyTone(
+          context,
+          emergency.severity,
+        );
+        final flag = _flagEmoji(place.countryCode);
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 18),
+            child: Column(
+              key: ValueKey('weather_alert_details_sheet_${place.id}'),
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  DashboardCopy.weatherEmergencyDetailsTitle(context),
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '$flag ${place.cityName}',
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: tone.withAlpha(20),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: tone.withAlpha(155)),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          DashboardCopy.weatherEmergencyShortLabel(
+                            context,
+                            severity: emergency.severity,
+                          ),
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            color: tone,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          DashboardCopy.weatherEmergencyReason(
+                            context,
+                            reasonKey: emergency.reasonKey,
+                          ),
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          DashboardCopy.weatherEmergencyDetailsGuidance(
+                            context,
+                          ),
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
@@ -106,10 +198,12 @@ class WeatherSummaryBottomSheet extends StatelessWidget {
         final theme = Theme.of(context);
         final cs = theme.colorScheme;
 
-        final refreshedAt = liveData.lastRefreshedAt;
+        final refreshedAt = liveData.lastWeatherRefreshedAt;
         final staleSuffix = DashboardCopy.weatherStaleSuffix(
           isStale:
-              liveData.isStale && !liveData.isRefreshing && refreshedAt != null,
+              liveData.isWeatherStale &&
+              !liveData.isRefreshing &&
+              refreshedAt != null,
         );
         final refreshedLabelBase = refreshedAt == null
             ? DashboardCopy.notUpdated(context)
@@ -261,6 +355,20 @@ class WeatherSummaryBottomSheet extends StatelessWidget {
     return names[idx];
   }
 
+  int? _primaryPrecipitationChance(WeatherForecastSnapshot? forecast) {
+    if (forecast == null) return null;
+    for (final hourly in forecast.hourly) {
+      if (hourly.timeUtc.isBefore(liveData.nowUtc)) continue;
+      final precip = hourly.precipitationChancePercent;
+      if (precip != null) return precip;
+    }
+    for (final daily in forecast.daily) {
+      final precip = daily.precipitationChancePercent;
+      if (precip != null) return precip;
+    }
+    return null;
+  }
+
   bool _isNightForPlace(Place place, {required SunTimesSnapshot? sun}) {
     final nowUtc = liveData.nowUtc;
     if (sun != null) {
@@ -328,11 +436,17 @@ class WeatherSummaryBottomSheet extends StatelessWidget {
         ? '${tempF!.round()}°F'
         : '${tempC.round()}°C';
 
-    final condition = DashboardCopy.weatherConditionLabel(
-      context,
-      sceneKey: weather?.sceneKey,
-      rawText: weather?.conditionText,
-    );
+    final presentation = liveData.weatherPresentationFor(place);
+    final condition = presentation == null
+        ? DashboardCopy.weatherConditionLabel(
+            context,
+            sceneKey: weather?.sceneKey,
+            rawText: weather?.conditionText,
+          )
+        : DashboardCopy.weatherPresentationLabel(
+            context,
+            presentation: presentation,
+          );
 
     final windKmh = weather?.windKmh;
     final gustKmh = weather?.gustKmh;
@@ -420,6 +534,10 @@ class WeatherSummaryBottomSheet extends StatelessWidget {
     final daily = (forecast?.daily ?? const <DailyForecastPoint>[])
         .take(7)
         .toList();
+    final precipChance = _primaryPrecipitationChance(forecast);
+    final precipLabel = precipChance != null && precipChance >= 15
+        ? DashboardCopy.weatherPrecipChanceLabel(context, percent: precipChance)
+        : null;
     final bannerDaily = daily.isEmpty ? null : daily.first;
     final bannerHigh = bannerDaily == null
         ? '—'
@@ -479,7 +597,9 @@ class WeatherSummaryBottomSheet extends StatelessWidget {
                                 includeTestKeys: false,
                                 compact: true,
                                 isNight: _isNightForPlace(place, sun: sun),
-                                sceneKey: weather?.sceneKey,
+                                sceneKey:
+                                    presentation?.displaySceneKey ??
+                                    weather?.sceneKey,
                                 conditionLabel: condition,
                                 renderConditionLabel: false,
                               ),
@@ -534,6 +654,21 @@ class WeatherSummaryBottomSheet extends StatelessWidget {
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                               ),
+                              if (precipLabel != null)
+                                Text(
+                                  precipLabel,
+                                  key: ValueKey(
+                                    'weather_summary_precip_${place.id}',
+                                  ),
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    color: _WeatherSheetThemePolicy.coolTone(
+                                      context,
+                                    ),
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
                             ],
                           ),
                         ),
@@ -619,51 +754,62 @@ class WeatherSummaryBottomSheet extends StatelessWidget {
             ),
             const SizedBox(height: 5),
             if (emergency.isActive) ...[
-              DecoratedBox(
-                key: ValueKey('weather_summary_alert_${place.id}'),
-                decoration: BoxDecoration(
-                  color: _WeatherSheetThemePolicy.emergencyTone(
-                    context,
-                    emergency.severity,
-                  ).withAlpha(28),
+              Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  key: ValueKey('weather_summary_alert_${place.id}'),
                   borderRadius: BorderRadius.circular(10),
-                  border: Border.all(
-                    color: _WeatherSheetThemePolicy.emergencyTone(
-                      context,
-                      emergency.severity,
-                    ).withAlpha(165),
+                  onTap: () => showEmergencyDetails(
+                    context,
+                    place: place,
+                    emergency: emergency,
                   ),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 5,
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.warning_amber_rounded,
-                        size: 16,
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: _WeatherSheetThemePolicy.emergencyTone(
+                        context,
+                        emergency.severity,
+                      ).withAlpha(28),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
                         color: _WeatherSheetThemePolicy.emergencyTone(
                           context,
                           emergency.severity,
-                        ),
+                        ).withAlpha(165),
                       ),
-                      const SizedBox(width: 6),
-                      Expanded(
-                        child: Text(
-                          '${DashboardCopy.weatherEmergencyLabel(context)}: ${DashboardCopy.weatherEmergencyShortLabel(context, severity: emergency.severity)} • ${DashboardCopy.weatherEmergencyReason(context, reasonKey: emergency.reasonKey)}',
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: _WeatherSheetThemePolicy.textPrimary(
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 5,
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.warning_amber_rounded,
+                            size: 16,
+                            color: _WeatherSheetThemePolicy.emergencyTone(
                               context,
+                              emergency.severity,
                             ),
-                            fontWeight: FontWeight.w700,
                           ),
-                        ),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              '${DashboardCopy.weatherEmergencyLabel(context)}: ${DashboardCopy.weatherEmergencyShortLabel(context, severity: emergency.severity)} • ${DashboardCopy.weatherEmergencyReason(context, reasonKey: emergency.reasonKey)} • ${DashboardCopy.weatherEmergencyTapHint(context)}',
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: _WeatherSheetThemePolicy.textPrimary(
+                                  context,
+                                ),
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
+                    ),
                   ),
                 ),
               ),
