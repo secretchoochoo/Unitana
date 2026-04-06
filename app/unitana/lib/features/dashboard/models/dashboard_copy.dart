@@ -104,6 +104,16 @@ class DashboardCopy {
   static String addWidgetCta(BuildContext context) => DashboardLocalizations.of(
     context,
   ).text('dashboard.tool.cta.addWidget', fallback: '+ Add Widget');
+  static String showAllWidgetsCta(BuildContext context) =>
+      DashboardLocalizations.of(context).text(
+        'dashboard.board.cta.showAllWidgets',
+        fallback: 'Show all widgets',
+      );
+  static String showFewerWidgetsCta(BuildContext context) =>
+      DashboardLocalizations.of(context).text(
+        'dashboard.board.cta.showFewerWidgets',
+        fallback: 'Show fewer widgets',
+      );
   static String lookupFromLabel(BuildContext context, String value) =>
       DashboardLocalizations.of(context).text(
         'dashboard.lookup.from',

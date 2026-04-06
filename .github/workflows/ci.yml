@@ -24,6 +24,9 @@ jobs:
       - name: Verify docs
         run: ./docs/tools/verify_docs.sh
 
+      - name: Verify release config
+        run: ./tools/verify_release_config.sh
+
       - name: Install dependencies
         working-directory: app/unitana
         run: flutter pub get

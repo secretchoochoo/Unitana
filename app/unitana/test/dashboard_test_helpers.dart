@@ -53,9 +53,12 @@ Future<void> pumpDashboardForTest(
   WidgetTester tester, {
   UnitanaAppState? state,
   Size surfaceSize = const Size(390, 844),
+  bool resetStorage = true,
 }) async {
   // Ensure deterministic storage.
-  SharedPreferences.setMockInitialValues({});
+  if (resetStorage) {
+    SharedPreferences.setMockInitialValues({});
+  }
 
   await tester.binding.setSurfaceSize(surfaceSize);
   addTearDown(() async => tester.binding.setSurfaceSize(null));

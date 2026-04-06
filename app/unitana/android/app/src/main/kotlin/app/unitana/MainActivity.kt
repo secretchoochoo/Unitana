@@ -1,4 +1,4 @@
-package com.example.unitana
+package app.unitana
 
 import io.flutter.embedding.android.FlutterActivity
 

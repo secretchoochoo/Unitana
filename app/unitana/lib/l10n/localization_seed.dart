@@ -44,6 +44,8 @@ class LocalizationSeed {
     'dashboard.tool.tooltip.close': 'Close tool',
     'dashboard.tool.cta.swap': 'Swap',
     'dashboard.tool.cta.addWidget': '+ Add Widget',
+    'dashboard.board.cta.showAllWidgets': 'Show all widgets',
+    'dashboard.board.cta.showFewerWidgets': 'Show fewer widgets',
     'dashboard.tool.input.editValue': 'Edit Value',
     'dashboard.tool.input.hint': 'Enter Value',
     'dashboard.tool.history.title': 'History',

@@ -20,8 +20,8 @@ Canonical map for `docs/ai/reference` ownership so handoff/context/prompt flows 
 - `PUBLIC_RELEASE_BRANCHING_STRATEGY_XL_O.md`
 - `TOOL_ACTION_ROW_ALIGNMENT_POLICY.md`
 - `WORKFLOW.md`
+- `XL_AA_PRIORITIZED_TAKEOVER_BACKLOG_2026-04-05.md`
 - `XL_BACKLOG_BUNDLE_MAP_2026-02-11.md`
-- `XL_Z_RECONCILED_AUDIT_AND_EXECUTION_BACKLOG_2026-04-04.md`
 
 ## Supporting (Active But Scoped)
 - `CONFIRMATION_DIALOG_POLICY.md`
@@ -53,6 +53,7 @@ Canonical map for `docs/ai/reference` ownership so handoff/context/prompt flows 
 - `TOOLS_DESIGN_SPRINT_BRIEF.md` (pre-closure sprint brief)
 - `TIME_TOOL_V2_PRODUCT_SPEC.md` (historical intermediate planning; use latest closure docs and handoff)
 - `PACK_F_MEGA_SLICE_TOOLS_EXPANSION_PLAN.md` (historical execution plan)
+- `XL_Z_RECONCILED_AUDIT_AND_EXECUTION_BACKLOG_2026-04-04.md` (mostly executed; use `XL_AA_PRIORITIZED_TAKEOVER_BACKLOG_2026-04-05.md` for next-slice planning)
 
 ## Ownership Rule
 - If a topic has a `PACK_*_CLOSURE_*` artifact, treat that closure artifact as authoritative.

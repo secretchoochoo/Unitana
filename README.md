@@ -21,6 +21,12 @@ From repo root:
 ./tools/verify.sh
 ```
 
+Release-config guard:
+
+```bash
+./tools/verify_release_config.sh
+```
+
 ## Repo Layout
 
 - `app/unitana/`: Flutter app source and tests.
@@ -38,6 +44,7 @@ From repo root:
 
 - `docs/README.md`
 - `docs/00-mvp-truth.md`
+- `docs/architecture/RELEASE_BUILD_WORKFLOW.md`
 - `docs/ai/handoff/CURRENT_HANDOFF.md`
 - `docs/ai/context_db.json`
 - `docs/ai/prompts/NEXT_CHAT_PROMPT.md`

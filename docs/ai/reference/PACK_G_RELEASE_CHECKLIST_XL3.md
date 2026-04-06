@@ -41,6 +41,8 @@ Scope: Pack G final checklist/signoff artifacts with B/C closure-proof links.
 ## Guardrails
 - [x] City picker performance budget remains passing:
   - `app/unitana/test/city_picker_perf_budget_test.dart`
+- [x] Release config guard can verify non-example platform IDs and reject debug-signed Android release config:
+  - `tools/verify_release_config.sh`
 - [x] Goldens remain opt-in only.
 - [x] Core non-negotiables preserved (collapsing header morph, hero key uniqueness, wizard preview test key policy).
 

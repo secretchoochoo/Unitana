@@ -66,6 +66,13 @@ void main() {
         find.byKey(const ValueKey('profiles_board_more_profile_1')),
         findsOneWidget,
       );
+
+      final grid = tester.widget<GridView>(
+        find.byKey(const Key('profiles_board_grid')),
+      );
+      final delegate =
+          grid.gridDelegate as SliverGridDelegateWithFixedCrossAxisCount;
+      expect(delegate.crossAxisCount, 3);
     },
   );
 }

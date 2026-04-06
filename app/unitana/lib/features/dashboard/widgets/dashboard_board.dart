@@ -31,14 +31,26 @@ import 'weather_summary_bottom_sheet.dart';
 
 // Layout constants for the dashboard grid.
 //
-// Baseline row counts intentionally leave visible empty slots so add-widget
-// targets remain discoverable in non-edit mode.
-// - Phone (2 cols): 9 rows.
-// - Tablet (3 cols): 8 rows.
+// Browsing mode should feel compact and complete rather than like a partially
+// filled edit canvas. We only keep the larger placeholder grid while actively
+// editing, where open slots and drag targets are useful.
 const int _minRowsPhone = 9;
 const int _minRowsTablet = 8;
+const int _maxBrowsingRowsPhone = 5;
+const int _maxBrowsingRowsTablet = 4;
 const double _gap = 12.0;
 const double _tileHeightRatio = 0.78;
+
+int dashboardBoardColumnsForWidth(double availableWidth) {
+  if (availableWidth >= 1080) return 4;
+  if (availableWidth >= 520) return 3;
+  return 2;
+}
+
+int dashboardBoardBrowsingRowCapForWidth(double availableWidth) {
+  final cols = dashboardBoardColumnsForWidth(availableWidth);
+  return cols <= 2 ? _maxBrowsingRowsPhone : _maxBrowsingRowsTablet;
+}
 
 class _DragTilePayload {
   final bool isDefault;
@@ -102,6 +114,8 @@ class _DashboardBoardState extends State<DashboardBoard>
   final Set<String> _pulsingToolIds = <String>{};
   final Map<String, Timer> _pulseTimers = <String, Timer>{};
   String? _lastSeedSignature;
+  bool _isBrowsingExpanded = false;
+  bool _hasBrowsingOverflow = false;
 
   late final AnimationController _wiggle;
 
@@ -206,7 +220,7 @@ class _DashboardBoardState extends State<DashboardBoard>
   }
 
   Future<void> _freezeVisibleAnchorsForEdit() async {
-    final cols = widget.availableWidth >= 520 ? 3 : 2;
+    final cols = dashboardBoardColumnsForWidth(widget.availableWidth);
     final heroAnchorOffset = _heroAnchorOffsetForCols(cols);
     int adjustAnchor(int raw) =>
         heroAnchorOffset == 0 ? raw : math.max(0, raw - heroAnchorOffset);
@@ -358,7 +372,18 @@ class _DashboardBoardState extends State<DashboardBoard>
 
   Future<void> _focusExistingToolTile(String toolId) async {
     final targetItemId = _firstVisibleItemIdForTool[toolId];
-    if (targetItemId == null || targetItemId.trim().isEmpty) return;
+    if (targetItemId == null || targetItemId.trim().isEmpty) {
+      if (!widget.isEditing && !_isBrowsingExpanded && _hasBrowsingOverflow) {
+        setState(() {
+          _isBrowsingExpanded = true;
+        });
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          unawaited(_focusExistingToolTile(toolId));
+        });
+      }
+      return;
+    }
     final targetContext = _toolTileKeyForItem(targetItemId).currentContext;
     if (targetContext == null) return;
     await Scrollable.ensureVisible(
@@ -474,7 +499,7 @@ class _DashboardBoardState extends State<DashboardBoard>
     // Seed per-place snapshots when place context changes.
     _maybeEnsureSeeded(home, dest);
 
-    final cols = widget.availableWidth >= 520 ? 3 : 2;
+    final cols = dashboardBoardColumnsForWidth(widget.availableWidth);
 
     // Some persisted anchors still encode the old in-grid hero offset.
     // Remove it only when anchors clearly match that legacy shape.
@@ -528,20 +553,31 @@ class _DashboardBoardState extends State<DashboardBoard>
     ];
 
     final placed = _place(items, cols);
+    final rowsUsed = placed.isEmpty
+        ? 0
+        : placed.map((p) => p.row + p.span.rowSpan).reduce(math.max);
+    final browsingRowCap = dashboardBoardBrowsingRowCapForWidth(
+      widget.availableWidth,
+    );
+    final shouldClipBrowsingRows =
+        !widget.isEditing && !_isBrowsingExpanded && rowsUsed > browsingRowCap;
+    _hasBrowsingOverflow = !widget.isEditing && rowsUsed > browsingRowCap;
+    final visiblePlaced = shouldClipBrowsingRows
+        ? placed
+              .where((p) => p.row + p.span.rowSpan <= browsingRowCap)
+              .toList(growable: false)
+        : placed;
     _firstVisibleItemIdForTool.clear();
-    for (final placedItem in placed) {
+    for (final placedItem in visiblePlaced) {
       final toolId = placedItem.item.toolId;
       if (toolId == null) continue;
       _firstVisibleItemIdForTool.putIfAbsent(toolId, () => placedItem.item.id);
     }
-    final rowsUsed = placed.isEmpty
-        ? 0
-        : placed.map((p) => p.row + p.span.rowSpan).reduce(math.max);
 
-    // Give the grid some breathing room so users see open slots without
-    // entering edit mode. This also makes the “+” affordance discoverable.
     final minRows = cols <= 2 ? _minRowsPhone : _minRowsTablet;
-    final targetRows = math.max(rowsUsed, minRows);
+    final targetRows = widget.isEditing
+        ? math.max(rowsUsed, minRows)
+        : (shouldClipBrowsingRows ? browsingRowCap : rowsUsed);
 
     final tileW = (widget.availableWidth - (cols - 1) * _gap) / cols;
     final tileH = tileW * _tileHeightRatio;
@@ -549,22 +585,31 @@ class _DashboardBoardState extends State<DashboardBoard>
         ? 0.0
         : targetRows * tileH + (targetRows - 1) * _gap;
 
-    final occupied = _occupiedCells(placed);
-    final placeholders = _placeholderCells(occupied, cols, targetRows);
+    final occupied = _occupiedCells(visiblePlaced);
+    final placeholders = widget.isEditing
+        ? _placeholderCells(occupied, cols, targetRows)
+        : const <_Cell>[];
+    final inlineAddAnchor = _nextInlineAddAnchor(
+      occupied: occupied,
+      cols: cols,
+      rowsUsed: rowsUsed,
+    );
 
-    return SizedBox(
-      height: boardH,
-      child: Stack(
-        children: [
-          // “Empty cell” affordances.
-          for (final cell in placeholders)
-            Positioned(
-              left: cell.col * (tileW + _gap),
-              top: cell.row * (tileH + _gap),
-              width: tileW,
-              height: tileH,
-              child: widget.isEditing
-                  ? DragTarget<_DragTilePayload>(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (boardH > 0)
+          SizedBox(
+            height: boardH,
+            child: Stack(
+              children: [
+                for (final cell in placeholders)
+                  Positioned(
+                    left: cell.col * (tileW + _gap),
+                    top: cell.row * (tileH + _gap),
+                    width: tileW,
+                    height: tileH,
+                    child: DragTarget<_DragTilePayload>(
                       onWillAcceptWithDetails: (details) => true,
                       onAcceptWithDetails: (details) => _handleDrop(
                         dragged: details.data,
@@ -583,35 +628,69 @@ class _DashboardBoardState extends State<DashboardBoard>
                           ),
                         );
                       },
-                    )
-                  : _AddToolTile(
-                      key: ValueKey(
-                        'dashboard_add_slot_${cell.row}_${cell.col}',
-                      ),
-                      onTap: () => _showToolPicker(
-                        context,
-                        anchor: DashboardAnchor(
-                          index: cell.row * cols + cell.col,
-                        ),
-                      ),
                     ),
+                  ),
+                for (final p in visiblePlaced)
+                  Positioned(
+                    left: p.col * (tileW + _gap),
+                    top: p.row * (tileH + _gap),
+                    width: p.span.colSpan * tileW + (p.span.colSpan - 1) * _gap,
+                    height:
+                        p.span.rowSpan * tileH + (p.span.rowSpan - 1) * _gap,
+                    child: _buildTile(
+                      context,
+                      p.item,
+                      home,
+                      dest,
+                      currentIndex: p.row * cols + p.col,
+                    ),
+                  ),
+              ],
             ),
-          for (final p in placed)
-            Positioned(
-              left: p.col * (tileW + _gap),
-              top: p.row * (tileH + _gap),
-              width: p.span.colSpan * tileW + (p.span.colSpan - 1) * _gap,
-              height: p.span.rowSpan * tileH + (p.span.rowSpan - 1) * _gap,
-              child: _buildTile(
-                context,
-                p.item,
-                home,
-                dest,
-                currentIndex: p.row * cols + p.col,
+          ),
+        if (!widget.isEditing && _hasBrowsingOverflow)
+          Padding(
+            padding: EdgeInsets.only(top: boardH > 0 ? 8 : 0),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton.icon(
+                key: const ValueKey('dashboard_board_overflow_toggle'),
+                onPressed: () {
+                  setState(() {
+                    _isBrowsingExpanded = !_isBrowsingExpanded;
+                  });
+                },
+                icon: Icon(
+                  _isBrowsingExpanded
+                      ? Icons.unfold_less_rounded
+                      : Icons.unfold_more_rounded,
+                ),
+                label: Text(
+                  _isBrowsingExpanded
+                      ? DashboardCopy.showFewerWidgetsCta(context)
+                      : DashboardCopy.showAllWidgetsCta(context),
+                ),
               ),
             ),
-        ],
-      ),
+          ),
+        if (!widget.isEditing)
+          Padding(
+            padding: EdgeInsets.only(
+              top: _hasBrowsingOverflow ? 4 : (boardH > 0 ? 12 : 0),
+            ),
+            child: SizedBox(
+              height: tileH,
+              child: _AddToolTile(
+                key: const ValueKey('dashboard_add_slot_inline'),
+                onTap: () => _showToolPicker(
+                  context,
+                  anchor: DashboardAnchor(index: inlineAddAnchor),
+                ),
+                showLabel: true,
+              ),
+            ),
+          ),
+      ],
     );
   }
 
@@ -1429,6 +1508,22 @@ class _DashboardBoardState extends State<DashboardBoard>
       }
     }
     return out;
+  }
+
+  int _nextInlineAddAnchor({
+    required Set<_Cell> occupied,
+    required int cols,
+    required int rowsUsed,
+  }) {
+    for (var r = 0; r < rowsUsed; r += 1) {
+      for (var c = 0; c < cols; c += 1) {
+        final cell = _Cell(c, r);
+        if (!occupied.contains(cell)) {
+          return r * cols + c;
+        }
+      }
+    }
+    return rowsUsed * cols;
   }
 
   Future<void> _showToolPicker(
@@ -2348,8 +2443,9 @@ class _Cell {
 
 class _AddToolTile extends StatelessWidget {
   final VoidCallback onTap;
+  final bool showLabel;
 
-  const _AddToolTile({super.key, required this.onTap});
+  const _AddToolTile({super.key, required this.onTap, this.showLabel = false});
 
   @override
   Widget build(BuildContext context) {
@@ -2357,6 +2453,7 @@ class _AddToolTile extends StatelessWidget {
 
     final fg = theme.colorScheme.onSurface.withValues(alpha: 0.55);
     final border = theme.dividerColor.withValues(alpha: 0.35);
+    final label = DashboardCopy.addWidgetCta(context);
 
     return Material(
       color: theme.cardColor,
@@ -2369,7 +2466,30 @@ class _AddToolTile extends StatelessWidget {
             borderRadius: BorderRadius.circular(16),
             border: Border.all(color: border),
           ),
-          child: Center(child: Icon(Icons.add, size: 40, color: fg)),
+          child: Center(
+            child: showLabel
+                ? Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.add_circle_outline_rounded,
+                        size: 30,
+                        color: fg,
+                      ),
+                      const SizedBox(height: 10),
+                      Text(
+                        label,
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          color: theme.colorScheme.onSurface.withValues(
+                            alpha: 0.82,
+                          ),
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  )
+                : Icon(Icons.add, size: 40, color: fg),
+          ),
         ),
       ),
     );

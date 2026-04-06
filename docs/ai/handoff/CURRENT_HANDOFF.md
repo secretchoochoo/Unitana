@@ -6,6 +6,61 @@
 - **Operating mode:** Codex is now the primary workflow; apply edits directly in-repo (do not require patch zip workflow unless explicitly requested).
 
 ## Latest changes (2026-04-05)
+- XL-AA2 phase C completed:
+  - dashboard browsing now has an explicit overflow contract instead of always rendering the full board,
+  - overcrowded boards collapse to a capped browsing layout with `Show all widgets` / `Show fewer widgets`,
+  - edit mode still exposes the full board so drag/drop and insertion workflows do not lose reach,
+  - duplicate-tool focus can auto-expand the collapsed board when the existing tile is currently hidden,
+  - focused density regression coverage was expanded in:
+    - `app/unitana/test/dashboard_board_density_contract_test.dart`
+  - focused dashboard regression tests passed after the AA2 phase-C changes.
+- XL-AA2 phase A completed:
+  - dashboard browsing mode no longer renders a full empty-slot canvas just to advertise add-widget affordances,
+  - the dashboard now uses a single inline `Add Widget` entry in non-edit mode while keeping the larger placeholder grid for edit mode,
+  - profile board tablet layouts now scale to three columns instead of staying fixed at two,
+  - added focused regression coverage:
+    - `app/unitana/test/dashboard_board_density_contract_test.dart`
+    - `app/unitana/test/profiles_board_responsive_smoke_test.dart`
+  - full repo verification passed after the AA2 phase-A changes.
+- XL-AA2 phase B completed:
+  - dashboard wide layouts now support a four-column board instead of stretching the same three-column layout forever,
+  - reorder persistence coverage now explicitly protects phone, tablet, and wide-layout transitions,
+  - full repo verification passed after the AA2 phase-B changes.
+- remaining AA2 work:
+  - promote the highest-value dashboard/profile density states into mandatory visual regression coverage,
+  - revisit whether dashboard and profiles should share more of the same responsive-grid rules,
+  - decide later whether the current expand/collapse overflow model is the final product contract or a stepping stone to a stricter capped or sectioned board.
+
+## Latest changes (2026-04-05)
+- XL-AA1 phase A completed:
+  - replaced example platform identifiers with `app.unitana` across Android, iOS, macOS, and Linux release-facing config,
+  - moved Android release config off debug signing and onto a `key.properties`-driven release-signing path,
+  - added `app/unitana/android/key.properties.example` as the local release-signing template,
+  - added local Apple signing override templates and release-workflow documentation:
+    - `app/unitana/ios/Flutter/Signing.xcconfig.example`
+    - `app/unitana/macos/Runner/Configs/Signing.xcconfig.example`
+    - `docs/architecture/RELEASE_BUILD_WORKFLOW.md`
+  - added repo-level release config guard:
+    - `tools/verify_release_config.sh`
+  - wired the new guard into:
+    - `tools/verify.sh`
+    - `.github/workflows/ci.yml`
+  - full repo verification passed after the AA1 phase-A changes.
+- remaining AA1 work:
+  - provision the real Android keystore outside the repo and validate a signed release build,
+  - confirm Apple distribution-signing settings for an actual production delivery path.
+
+## Latest changes (2026-04-05)
+- A new prioritized takeover backlog was created to replace the now-mostly-executed XL-Z planning artifact for forward work:
+  - `docs/ai/reference/XL_AA_PRIORITIZED_TAKEOVER_BACKLOG_2026-04-05.md`
+- recommended next-start order from that backlog:
+  - `XL-AA1` Release Hardening And Production Identity
+  - `XL-AA2` Dashboard Density, Layout, And Board UX
+- planning stance update:
+  - do not keep using old XL-Z baseline issues as if they are still current,
+  - treat the next cycle as consolidation, product clarity, release hardening, and structural ownership work.
+
+## Latest changes (2026-04-05)
 - Release prep completed for `v1.1.0+2`:
   - app version bumped in `app/unitana/pubspec.yaml`,
   - dashboard build metadata defaults now match the release version/build number,

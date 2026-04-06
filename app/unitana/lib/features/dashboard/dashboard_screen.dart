@@ -2103,7 +2103,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                   // Grid geometry (kept in sync with DashboardBoard)
                   const gridGap = 12.0;
                   const tileHeightRatio = 0.78;
-                  final cols = availableWidth >= 520 ? 3 : 2;
+                  final cols = dashboardBoardColumnsForWidth(availableWidth);
                   final tileW = (availableWidth - (cols - 1) * gridGap) / cols;
                   final tileH = tileW * tileHeightRatio;
                   final heroHeight = (2 * tileH) + gridGap;

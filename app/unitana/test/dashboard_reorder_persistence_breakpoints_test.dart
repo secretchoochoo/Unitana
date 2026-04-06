@@ -12,7 +12,7 @@ import 'package:unitana/theme/app_theme.dart';
 import 'dashboard_test_helpers.dart';
 
 /// Ensures drag-reorder persists when the dashboard shifts between the
-/// phone grid (2 columns) and tablet grid (3 columns).
+/// phone grid (2 columns), tablet grid (3 columns), and wide grid (4 columns).
 ///
 /// Notes:
 /// - Edit mode has a continuous “jiggle” animation, so avoid pumpAndSettle
@@ -148,5 +148,16 @@ void main() {
 
     // Persisted: Distance remains before Baking in the tablet grid.
     expect(comesBefore(tabletDistance, tabletBaking), isTrue);
+
+    // Wide layout (4 columns): rebuild again and keep the same relative order.
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump(const Duration(milliseconds: 50));
+
+    await pumpDashboard(const Size(1280, 900));
+
+    final wideBaking = tester.getTopLeft(bakingTile);
+    final wideDistance = tester.getTopLeft(distanceTile);
+
+    expect(comesBefore(wideDistance, wideBaking), isTrue);
   });
 }

@@ -1,0 +1,11 @@
+// Copy to `app/unitana/ios/Flutter/Signing.xcconfig` for local release signing.
+// Keep the real file uncommitted.
+//
+// Automatic signing example:
+// DEVELOPMENT_TEAM = YOURTEAMID
+// CODE_SIGN_STYLE = Automatic
+//
+// If you need manual signing, uncomment and set the values explicitly:
+// CODE_SIGN_STYLE = Manual
+// CODE_SIGN_IDENTITY[sdk=iphoneos*] = Apple Distribution
+// PROVISIONING_PROFILE_SPECIFIER = Unitana App Store

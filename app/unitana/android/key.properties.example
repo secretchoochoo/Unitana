@@ -1,0 +1,7 @@
+# Copy this file to `app/unitana/android/key.properties` and replace the values
+# with your real release keystore configuration. This file must never be
+# committed with secrets.
+storeFile=../keystores/unitana-release.jks
+storePassword=REPLACE_ME
+keyAlias=unitana
+keyPassword=REPLACE_ME

@@ -9,6 +9,7 @@ REPO_ROOT="$(cd -- "${SCRIPT_DIR}/.." && pwd)"
 APP_ROOT="${REPO_ROOT}/app/unitana"
 
 "${REPO_ROOT}/docs/tools/verify_docs.sh"
+"${REPO_ROOT}/tools/verify_release_config.sh"
 
 cd "${APP_ROOT}"
 
