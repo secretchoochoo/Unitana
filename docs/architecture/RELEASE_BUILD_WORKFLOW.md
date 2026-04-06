@@ -33,7 +33,18 @@ Expected fields:
 - `keyAlias`
 - `keyPassword`
 
-The committed Android Gradle config will refuse release builds if this file is missing so we do not silently sign release artifacts with the debug key.
+The committed Android Gradle config refuses release builds if this file is
+missing so we do not silently sign release artifacts with the debug key.
+
+For local-only smoke builds when real signing material is unavailable, you can
+explicitly opt into the old fallback path:
+
+```bash
+UNITANA_ALLOW_DEBUG_RELEASE_SIGNING=true flutter build apk --release
+```
+
+That override is intentionally noisy and should not be used for public or
+production release artifacts.
 
 ## Apple signing setup
 
@@ -72,6 +83,15 @@ flutter build appbundle \
 ### Android APK
 
 ```bash
+flutter build apk \
+  --release \
+  --dart-define=UNITANA_DEVTOOLS_ENABLED=false
+```
+
+### Android APK with explicit local debug-signing fallback
+
+```bash
+UNITANA_ALLOW_DEBUG_RELEASE_SIGNING=true \
 flutter build apk \
   --release \
   --dart-define=UNITANA_DEVTOOLS_ENABLED=false

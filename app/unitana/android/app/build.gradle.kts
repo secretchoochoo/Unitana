@@ -11,6 +11,12 @@ plugins {
 val releaseKeystoreProperties = Properties()
 val releaseKeystorePropertiesFile = rootProject.file("key.properties")
 val hasReleaseKeystore = releaseKeystorePropertiesFile.exists()
+val allowDebugReleaseSigning =
+    (providers.gradleProperty("unitana.allowDebugReleaseSigning").orNull
+        ?: System.getenv("UNITANA_ALLOW_DEBUG_RELEASE_SIGNING"))
+        ?.equals("true", ignoreCase = true) == true
+val isReleaseTaskRequested =
+    gradle.startParameter.taskNames.any { it.contains("Release", ignoreCase = true) }
 
 fun releaseKeystoreProperty(name: String): String =
     releaseKeystoreProperties.getProperty(name)?.takeIf { it.isNotBlank() }
@@ -59,17 +65,25 @@ android {
         release {
             if (hasReleaseKeystore) {
                 signingConfig = signingConfigs.getByName("release")
+            } else if (allowDebugReleaseSigning) {
+                signingConfig = signingConfigs.findByName("debug")
             }
         }
     }
 }
 
-if (gradle.startParameter.taskNames.any { it.contains("Release", ignoreCase = true) } &&
-    !hasReleaseKeystore
-) {
+if (isReleaseTaskRequested && !hasReleaseKeystore && !allowDebugReleaseSigning) {
     throw GradleException(
         "Release signing requires app/unitana/android/key.properties. " +
             "Release builds must not use debug signing.",
+    )
+}
+
+if (isReleaseTaskRequested && !hasReleaseKeystore && allowDebugReleaseSigning) {
+    logger.warn(
+        "Building a debug-signed release artifact because " +
+            "UNITANA_ALLOW_DEBUG_RELEASE_SIGNING=true. " +
+            "Do not treat this APK as a production-signed release.",
     )
 }
 
